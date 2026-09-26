@@ -1,4 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
+import { CalendarClock, FileClock } from "lucide-react";
 import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -20,16 +21,12 @@ export function AccountingDashboard({ summary }: AccountingDashboardProps) {
         <DashboardStatCard
           label={en.dashboard.pendingVoidApprovals}
           value={String(summary.pendingVoidApprovals)}
-          badge={
-            summary.pendingVoidApprovals > 0
-              ? { tone: "warning", label: en.status.pending }
-              : undefined
-          }
+          icon={FileClock}
         />
         <DashboardStatCard
           label={en.dashboard.overdueTotal}
           value={format(summary.overdueTotal)}
-          badge={{ tone: "error", label: en.status.overdue }}
+          icon={CalendarClock}
         />
         <DashboardStatCard
           label={en.dashboard.unsignedCloseouts}

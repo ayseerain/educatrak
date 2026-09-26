@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import type { AuthenticatedUser } from "@/lib/types";
 import * as mockAdapter from "@/api/mockAdapter";
@@ -16,9 +16,15 @@ function renderWithProviders(user: AuthenticatedUser) {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <DashboardPage user={user} />
+        <LocationPath />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+function LocationPath() {
+  const { pathname } = useLocation();
+  return <output aria-label="Current path">{pathname}</output>;
 }
 
 const cashier: AuthenticatedUser = {
@@ -94,6 +100,15 @@ describe("DashboardPage", () => {
     expect(
       screen.queryByRole("button", { name: /record payment/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the notification log from the failed emails widget", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(administrator);
+
+    await user.click(await screen.findByRole("link", { name: /view failed emails/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications");
   });
 
   it("Registrar dashboard exposes no financial information", () => {

@@ -1,4 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
+import { Database, MailSearch } from "lucide-react";
 import { en } from "@/i18n/en";
 import { formatDateTime } from "@/lib/dates";
 import type { AdministratorDashboardSummary } from "@/api/dashboardTypes";
@@ -18,11 +19,7 @@ export function AdminDashboard({ summary }: AdminDashboardProps) {
         <DashboardStatCard
           label={en.dashboard.lastBackup}
           value={formatDateTime(summary.lastBackupAt)}
-          badge={
-            summary.lastBackupSucceeded
-              ? { tone: "success", label: en.status.cleared }
-              : { tone: "error", label: en.status.error }
-          }
+          icon={Database}
         />
         <DashboardStatCard
           label={en.dashboard.activeUsers}
@@ -31,11 +28,8 @@ export function AdminDashboard({ summary }: AdminDashboardProps) {
         <DashboardStatCard
           label={en.dashboard.failedEmails}
           value={String(summary.failedEmailCount)}
-          badge={
-            summary.failedEmailCount > 0
-              ? { tone: "error", label: en.status.error }
-              : undefined
-          }
+          icon={MailSearch}
+          action={{ to: "/notifications", label: en.dashboard.viewFailedEmails }}
         />
       </div>
     </div>

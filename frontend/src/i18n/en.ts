@@ -66,6 +66,7 @@ export const en = {
     unsignedCloseouts: "Unsigned close-outs",
     lastBackup: "Last backup",
     activeUsers: "Active users",
+    viewFailedEmails: "View failed emails",
     todaysTotals: "Today's totals",
     goToReports: "Go to reports",
     goToAuditLog: "Go to audit log",

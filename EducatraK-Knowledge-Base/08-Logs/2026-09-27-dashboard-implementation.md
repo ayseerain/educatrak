@@ -73,3 +73,16 @@ without decorative glyphs.
 
 Validation: `npm.cmd run build` passed with the existing Vite chunk-size
 warning; `npm.cmd run test` passed with 10 tests.
+
+## Dashboard widget refinements
+
+**Timestamp:** Sunday, September 27, 2026 — 06:19:58 +08:00
+
+Removed redundant status badges from dashboard stat widgets and replaced them
+with contextual icons. Added links from the Cashier and Administrator failed
+email widgets to the notification log at `/notifications`, with a navigation
+regression test.
+
+Validation: `npm.cmd run test -- src/test/dashboard.test.tsx` passed with 13
+tests; `npm.cmd run build` passed with the existing Vite chunk-size warning;
+editor diagnostics reported no errors.

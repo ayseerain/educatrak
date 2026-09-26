@@ -1,4 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
+import { CalendarClock, ClipboardCheck, MailSearch } from "lucide-react";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
@@ -27,20 +28,13 @@ export function CashierDashboard({ summary }: CashierDashboardProps) {
         <DashboardStatCard
           label={en.dashboard.dueSoon}
           value={String(summary.dueSoonCount)}
-          badge={
-            summary.dueSoonCount > 0
-              ? { tone: "warning", label: en.status.dueSoon }
-              : undefined
-          }
+          icon={CalendarClock}
         />
         <DashboardStatCard
           label={en.dashboard.failedEmails}
           value={String(summary.failedEmailCount)}
-          badge={
-            summary.failedEmailCount > 0
-              ? { tone: "error", label: en.status.error }
-              : undefined
-          }
+          icon={MailSearch}
+          action={{ to: "/notifications", label: en.dashboard.viewFailedEmails }}
         />
         <DashboardStatCard
           label={en.dashboard.closeoutReminder}
@@ -49,11 +43,7 @@ export function CashierDashboard({ summary }: CashierDashboardProps) {
               ? en.dashboard.closeoutStatusDone
               : en.dashboard.closeoutStatusOpen
           }
-          badge={
-            summary.closeoutDone
-              ? { tone: "success", label: en.status.cleared }
-              : { tone: "warning", label: en.status.pending }
-          }
+          icon={ClipboardCheck}
         />
       </div>
 
