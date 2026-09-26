@@ -115,3 +115,15 @@ regression test.
 Validation: `npm.cmd run test -- src/test/dashboard.test.tsx` passed with 13
 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning;
 editor diagnostics reported no errors.
+
+## Dashboard widget layout pass
+
+**Timestamp:** Sunday, September 27, 2026 — 06:38:15 +08:00
+
+Adjusted the existing dashboard widgets to use a more compact reference-inspired
+layout: shorter metric cards, a left accent edge, tighter internal spacing, and
+consistent stretched grid rows across all role dashboards. Existing displayed
+labels, values, icons, actions, and dashboard sections were preserved.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+14 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.

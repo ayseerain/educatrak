@@ -11,8 +11,8 @@ interface AuditorDashboardProps {
 
 export function AuditorDashboard({ summary }: AuditorDashboardProps) {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 items-start gap-3 lg:grid-cols-3">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.overallEnrolledStudents}
           value={String(summary.overallEnrolledStudents)}

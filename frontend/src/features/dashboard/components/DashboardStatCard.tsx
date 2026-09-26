@@ -19,16 +19,16 @@ export function DashboardStatCard({
   action,
 }: DashboardStatCardProps) {
   return (
-    <Card className="group flex min-h-[148px] flex-col border-t-2 border-t-brand-green-light/70 p-4 transition-shadow hover:shadow-md">
-      <div className="flex min-h-9 items-start justify-between gap-3">
+    <Card className="group flex min-h-[112px] flex-col border-l-4 border-t-0 border-l-brand-green p-3 transition-shadow hover:shadow-md">
+      <div className="flex min-h-8 items-start justify-between gap-3">
         <CardLabel className="max-w-[12rem] leading-5">{label}</CardLabel>
         {Icon && (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">
             <Icon aria-hidden="true" className="h-[18px] w-[18px] transition-transform group-hover:scale-105" strokeWidth={1.8} />
           </span>
         )}
       </div>
-      <CardValue className="mt-2 truncate">{value}</CardValue>
+      <CardValue className="mt-1 truncate">{value}</CardValue>
       {helperText && <CardHelperText>{helperText}</CardHelperText>}
       {action && (
         <Link
