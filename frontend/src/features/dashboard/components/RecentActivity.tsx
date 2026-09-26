@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
-import { formatTime } from "@/lib/dates";
+import { formatDate, formatDateTime, formatTime } from "@/lib/dates";
 import type { RecentPayment } from "@/api/dashboardTypes";
 
 const METHOD_LABEL: Record<RecentPayment["method"], string> = {
@@ -39,7 +39,9 @@ export function RecentActivity({
       header: en.table.time,
       cell: ({ getValue }) => (
         <span className="text-text-muted-readable">
-          {formatTime(getValue<string>())}
+          {formatDate(getValue<string>()) === formatDate(new Date())
+            ? formatTime(getValue<string>())
+            : formatDateTime(getValue<string>())}
         </span>
       ),
     },

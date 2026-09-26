@@ -57,6 +57,35 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the dashboard range filter and enrolled-student widget", async () => {
+    renderWithProviders(cashier);
+    expect(await screen.findByText(/overall enrolled students/i)).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /filter range/i })).toHaveValue(
+      "last_7_days",
+    );
+  });
+
+  it("filters sample payment activity by the selected range", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(cashier);
+
+    await screen.findByRole("button", { name: /record payment/i });
+    const rangeFilter = screen.getByRole("combobox", { name: /filter range/i });
+    const activityRows = () => screen.getAllByRole("row").length - 1;
+
+    await waitFor(() => expect(activityRows()).toBe(5));
+
+    await user.selectOptions(rangeFilter, "today");
+    await waitFor(() => expect(activityRows()).toBe(2));
+
+    await user.selectOptions(rangeFilter, "last_30_days");
+    await waitFor(() => expect(activityRows()).toBe(9));
+
+    await user.selectOptions(rangeFilter, "school_year");
+    await waitFor(() => expect(activityRows()).toBe(13));
+    expect(screen.getAllByText(/, \d{1,2}:\d{2}/).length).toBeGreaterThan(1);
+  });
+
   it("does not show Record Payment for Administrator", async () => {
     renderWithProviders(administrator);
     await waitFor(() =>
@@ -107,6 +136,7 @@ describe("DashboardPage", () => {
   it("shows an empty state when there is no recent activity", async () => {
     vi.spyOn(mockAdapter, "fetchDashboardSummary").mockResolvedValueOnce({
       role: "cashier",
+      overallEnrolledStudents: 60,
       todayCollectionsTotal: centavos(0),
       paymentsTodayCount: 0,
       dueSoonCount: 0,

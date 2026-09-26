@@ -35,6 +35,33 @@ their archived status. The active app opens the dashboard with the fictional
 Validation after the change: `npm.cmd run build` passed and
 `npm.cmd run test` passed with 10 tests.
 
+## Dashboard activity range and cashier controls
+
+**Timestamp:** Sunday, September 27, 2026 — 06:13:31 +08:00
+
+Expanded fictional payment activity samples across today, the past month, and
+older dates; the dashboard now filters activity to the selected range and
+shows dates for activity outside today. Aligned the cashier's Record payment
+action beside the range control.
+
+Validation: `npm.cmd run test -- src/test/dashboard.test.tsx` passed with 12
+tests; `npm.cmd run build` passed with the existing Vite chunk-size warning;
+editor diagnostics reported no errors.
+
+## Dashboard range and enrollment widget
+
+**Timestamp:** Sunday, September 27, 2026 — 06:04:58 +08:00
+
+Added a shared dashboard range filter with Today, Last 7 days, Last 30 days,
+and This school year options. The selected range is part of the dashboard
+query state and updates the accounting trend data and greeting subtitle.
+Updated the finance dashboard card grids and added the overall enrolled
+students widget using fictional mock data. The Registrar dashboard remains
+financial-data-free.
+
+Validation: `npm.cmd run build` passed with the existing Vite chunk-size
+warning; `npm.cmd run test` passed with 11 tests.
+
 ## Navigation and visual refinement
 
 **Timestamp:** Sunday, September 27, 2026 — 05:52:18 +08:00

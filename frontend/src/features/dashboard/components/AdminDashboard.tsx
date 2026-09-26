@@ -10,9 +10,11 @@ interface AdminDashboardProps {
 export function AdminDashboard({ summary }: AdminDashboardProps) {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-text-secondary">{en.dashboard.subtitle}</p>
-
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <DashboardStatCard
+          label={en.dashboard.overallEnrolledStudents}
+          value={String(summary.overallEnrolledStudents)}
+        />
         <DashboardStatCard
           label={en.dashboard.lastBackup}
           value={formatDateTime(summary.lastBackupAt)}

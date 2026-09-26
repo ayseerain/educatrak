@@ -1,29 +1,21 @@
 import { DashboardStatCard } from "./DashboardStatCard";
 import { RecentActivity } from "./RecentActivity";
-import { Button } from "@/components/ui/Button";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import type { CashierDashboardSummary } from "@/api/dashboardTypes";
 
 interface CashierDashboardProps {
   summary: CashierDashboardSummary;
-  onRecordPayment: () => void;
 }
 
-export function CashierDashboard({
-  summary,
-  onRecordPayment,
-}: CashierDashboardProps) {
+export function CashierDashboard({ summary }: CashierDashboardProps) {
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-text-secondary">{en.dashboard.subtitle}</p>
-        <Button onClick={onRecordPayment} className="text-base">
-          {en.dashboard.recordPayment}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+        <DashboardStatCard
+          label={en.dashboard.overallEnrolledStudents}
+          value={String(summary.overallEnrolledStudents)}
+        />
         <DashboardStatCard
           label={en.dashboard.todayCollections}
           value={format(summary.todayCollectionsTotal)}

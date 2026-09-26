@@ -3,6 +3,13 @@ import type { Role } from "@/lib/types";
 
 export type PaymentStatus = "posted" | "voided" | "pending";
 export type PaymentMethod = "cash" | "bank_transfer" | "gcash" | "check";
+export type DashboardRange = "today" | "last_7_days" | "last_30_days" | "school_year";
+
+export interface DashboardRangeOption {
+  value: DashboardRange;
+  label: string;
+  days: number | null;
+}
 
 export interface RecentPayment {
   id: string;
@@ -16,6 +23,7 @@ export interface RecentPayment {
 
 export interface CashierDashboardSummary {
   role: "cashier";
+  overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
   dueSoonCount: number;
@@ -31,6 +39,7 @@ export interface CollectionTrendPoint {
 
 export interface AccountingDashboardSummary {
   role: "accounting";
+  overallEnrolledStudents: number;
   pendingVoidApprovals: number;
   overdueTotal: Centavos;
   unsignedCloseouts: number;
@@ -40,6 +49,7 @@ export interface AccountingDashboardSummary {
 
 export interface AdministratorDashboardSummary {
   role: "administrator";
+  overallEnrolledStudents: number;
   lastBackupAt: string; // ISO timestamp
   lastBackupSucceeded: boolean;
   activeUserCount: number;
@@ -48,6 +58,7 @@ export interface AdministratorDashboardSummary {
 
 export interface AuditorDashboardSummary {
   role: "auditor";
+  overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
   recentActivity: RecentPayment[];
