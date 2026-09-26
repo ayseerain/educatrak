@@ -1,5 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { CalendarClock, FileClock } from "lucide-react";
+import { Banknote, CalendarClock, FileClock, Users } from "lucide-react";
 import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -13,10 +13,11 @@ interface AccountingDashboardProps {
 export function AccountingDashboard({ summary }: AccountingDashboardProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 items-start gap-3 lg:grid-cols-4">
         <DashboardStatCard
           label={en.dashboard.overallEnrolledStudents}
           value={String(summary.overallEnrolledStudents)}
+          icon={Users}
         />
         <DashboardStatCard
           label={en.dashboard.pendingVoidApprovals}
@@ -31,6 +32,7 @@ export function AccountingDashboard({ summary }: AccountingDashboardProps) {
         <DashboardStatCard
           label={en.dashboard.unsignedCloseouts}
           value={String(summary.unsignedCloseouts)}
+          icon={Banknote}
         />
       </div>
 

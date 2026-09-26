@@ -1,5 +1,6 @@
 import { DashboardStatCard } from "./DashboardStatCard";
 import { RecentActivity } from "./RecentActivity";
+import { Banknote, ReceiptText, Users } from "lucide-react";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import type { AuditorDashboardSummary } from "@/api/dashboardTypes";
@@ -11,18 +12,21 @@ interface AuditorDashboardProps {
 export function AuditorDashboard({ summary }: AuditorDashboardProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-2 items-start gap-3 lg:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.overallEnrolledStudents}
           value={String(summary.overallEnrolledStudents)}
+          icon={Users}
         />
         <DashboardStatCard
           label={en.dashboard.todayCollections}
           value={format(summary.todayCollectionsTotal)}
+          icon={Banknote}
         />
         <DashboardStatCard
           label={en.dashboard.paymentsToday}
           value={String(summary.paymentsTodayCount)}
+          icon={ReceiptText}
         />
       </div>
 

@@ -71,6 +71,15 @@ describe("DashboardPage", () => {
     );
   });
 
+  it("separates the cashier close-out status from the metric widgets", async () => {
+    renderWithProviders(cashier);
+    expect(await screen.findByText("Close-out", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText(/not yet closed out/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/complete close-out before ending today's cashier session/i),
+    ).toBeInTheDocument();
+  });
+
   it("filters sample payment activity by the selected range", async () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);

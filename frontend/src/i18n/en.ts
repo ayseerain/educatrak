@@ -60,6 +60,8 @@ export const en = {
     closeoutReminder: "Close-out",
     closeoutStatusOpen: "Not yet closed out",
     closeoutStatusDone: "Closed out",
+    closeoutStatusOpenHelp: "Complete close-out before ending today's cashier session.",
+    closeoutStatusDoneHelp: "Today's collection record is ready for review.",
     pendingVoidApprovals: "Pending void approvals",
     overdueTotal: "Overdue total",
     collectionTrend: "Collection trend (last 7 days)",

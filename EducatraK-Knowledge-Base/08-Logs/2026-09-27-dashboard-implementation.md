@@ -35,6 +35,35 @@ their archived status. The active app opens the dashboard with the fictional
 Validation after the change: `npm.cmd run build` passed and
 `npm.cmd run test` passed with 10 tests.
 
+## Dashboard widget consistency pass
+
+**Timestamp:** Sunday, September 27, 2026 — 06:24:43 +08:00
+
+Standardized the role-specific dashboard stat widgets so every metric uses a
+consistent right-side icon treatment, card height, label rhythm, and compact
+spacing. Added matching semantic icons to the previously iconless metrics and
+reduced grid gaps so the dashboard has less unused space while preserving
+readability. Kept the existing failed-email action link and role-specific
+content unchanged.
+
+Validation: `npm.cmd run test` passed with 13 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning. An initial attempted test command
+included the unsupported Vitest `--runInBand` option and did not run tests.
+
+## Dashboard close-out emphasis and widget refinement
+
+**Timestamp:** Sunday, September 27, 2026 — 06:29:48 +08:00
+
+Separated the cashier close-out status from the primary metric grid into a
+full-width status panel with icon-plus-text status treatment, semantic success
+or warning surfaces, and contextual guidance. Refined the shared metric cards
+with a restrained green accent and hover feedback, and adjusted the cashier
+metric grid to five columns on wide screens so the close-out panel has a clear
+visual position of its own.
+
+Validation: `npm.cmd run test` passed with 14 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning.
+
 ## Dashboard activity range and cashier controls
 
 **Timestamp:** Sunday, September 27, 2026 — 06:13:31 +08:00

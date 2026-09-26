@@ -1,5 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { Database, MailSearch } from "lucide-react";
+import { Database, MailSearch, Users } from "lucide-react";
 import { en } from "@/i18n/en";
 import { formatDateTime } from "@/lib/dates";
 import type { AdministratorDashboardSummary } from "@/api/dashboardTypes";
@@ -11,10 +11,11 @@ interface AdminDashboardProps {
 export function AdminDashboard({ summary }: AdminDashboardProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 items-start gap-3 lg:grid-cols-4">
         <DashboardStatCard
           label={en.dashboard.overallEnrolledStudents}
           value={String(summary.overallEnrolledStudents)}
+          icon={Users}
         />
         <DashboardStatCard
           label={en.dashboard.lastBackup}
