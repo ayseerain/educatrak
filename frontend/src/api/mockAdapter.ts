@@ -93,9 +93,28 @@ export async function fetchDashboardSummary(
         overallEnrolledStudents: 60,
         todayCollectionsTotal: centavos(4685000),
         paymentsTodayCount: 12,
-        dueSoonCount: 6,
         failedEmailCount: 2,
         closeoutDone: false,
+        accountStatusOverview: {
+          cleared: 28,
+          current: 21,
+          dueSoon: 6,
+          overdue: 5,
+        },
+        accountsNeedingAttention: [
+          {
+            id: "attention-1",
+            studentName: "Carlo Reyes (sample)",
+            amountDue: centavos(2100000),
+            severity: "warning",
+          },
+          {
+            id: "attention-2",
+            studentName: "Luis Torres (sample)",
+            amountDue: centavos(2100000),
+            severity: "error",
+          },
+        ],
         recentActivity,
       };
     case "accounting":

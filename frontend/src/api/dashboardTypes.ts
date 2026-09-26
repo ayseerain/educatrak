@@ -21,14 +21,29 @@ export interface RecentPayment {
   status: PaymentStatus;
 }
 
+export interface CashierAccountStatusOverview {
+  cleared: number;
+  current: number;
+  dueSoon: number;
+  overdue: number;
+}
+
+export interface CashierAttentionAccount {
+  id: string;
+  studentName: string;
+  amountDue: Centavos;
+  severity: "warning" | "error";
+}
+
 export interface CashierDashboardSummary {
   role: "cashier";
   overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
-  dueSoonCount: number;
   failedEmailCount: number;
   closeoutDone: boolean;
+  accountStatusOverview: CashierAccountStatusOverview;
+  accountsNeedingAttention: CashierAttentionAccount[];
   recentActivity: RecentPayment[];
 }
 

@@ -127,3 +127,53 @@ labels, values, icons, actions, and dashboard sections were preserved.
 
 Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
 14 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Cashier dashboard grouped overview
+
+**Timestamp:** Sunday, September 27, 2026 — 06:46:33 +08:00
+
+Refactored the Cashier dashboard into distinct individual KPI widgets and a
+grouped account status overview panel. Moved due-soon account status into the
+overview only, added fictional accounts needing attention, and preserved the
+separate close-out and recent activity sections. Extended the typed mock
+dashboard summary to carry account status counts and attention rows.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+16 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Cashier widget links and close-out placement
+
+**Timestamp:** Sunday, September 27, 2026 — 06:53:43 +08:00
+
+Added route links to the Cashier KPI widgets for students, reports, and
+payments so their treatment matches the failed-email widget. Moved the
+close-out status card into the left widget column below the KPI grid and made
+it more compact, removing the large empty gap caused by the taller account
+status overview panel.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+17 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Cashier top widget height alignment
+
+**Timestamp:** Sunday, September 27, 2026 — 06:54:56 +08:00
+
+Aligned the Cashier dashboard's left widget stack with the account status
+overview by stretching the two top-level columns as one group. The close-out
+card remains below the KPI cards in the left column, while the account overview
+fills the matching right column height.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+17 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Cashier dashboard compact widget pass
+
+**Timestamp:** Sunday, September 27, 2026 — 06:48:30 +08:00
+
+Tightened the grouped Cashier dashboard layout after review: prevented the
+individual KPI cards from stretching to the overview panel height, reduced the
+shared stat-card minimum height and icon size, and trimmed overview spacing so
+the widget group reads more compactly.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+16 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.

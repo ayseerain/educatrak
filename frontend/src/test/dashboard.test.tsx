@@ -71,6 +71,38 @@ describe("DashboardPage", () => {
     );
   });
 
+  it("renders the cashier account status overview without a duplicate due-soon widget", async () => {
+    renderWithProviders(cashier);
+
+    expect(await screen.findByText(/account status overview/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: /due soon: 6/i }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/^Due soon$/i)).toHaveLength(1);
+  });
+
+  it("shows cashier attention accounts with fictional names and formatted balances", async () => {
+    renderWithProviders(cashier);
+
+    expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
+    expect(screen.getByText("Carlo Reyes (sample)")).toBeInTheDocument();
+    expect(screen.getByText("Luis Torres (sample)")).toBeInTheDocument();
+    expect(screen.getAllByText(/21,000\.00/)).toHaveLength(2);
+  });
+
+  it("adds navigation links to the cashier KPI widgets", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(cashier);
+
+    expect(await screen.findByRole("link", { name: /view students/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view reports/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view payments/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: /view payments/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments");
+  });
+
   it("separates the cashier close-out status from the metric widgets", async () => {
     renderWithProviders(cashier);
     expect(await screen.findByText("Close-out", { exact: true })).toBeInTheDocument();
@@ -163,9 +195,15 @@ describe("DashboardPage", () => {
       overallEnrolledStudents: 60,
       todayCollectionsTotal: centavos(0),
       paymentsTodayCount: 0,
-      dueSoonCount: 0,
       failedEmailCount: 0,
       closeoutDone: false,
+      accountStatusOverview: {
+        cleared: 0,
+        current: 0,
+        dueSoon: 0,
+        overdue: 0,
+      },
+      accountsNeedingAttention: [],
       recentActivity: [],
     });
     renderWithProviders(cashier);
