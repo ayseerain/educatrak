@@ -23,7 +23,7 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
+    <div className="overflow-x-auto rounded-md border border-text-muted-readable">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -50,7 +50,7 @@ export function DataTable<TData>({
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="border-t border-border focus-within:bg-surface hover:bg-surface"
+              className="border-t border-text-muted-readable focus-within:bg-surface hover:bg-surface"
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-4 py-3 align-middle">
