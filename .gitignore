@@ -1,0 +1,133 @@
+# ============================================================
+# EducatraK monorepo
+# Frontend: React + TypeScript + Vite
+# Backend: Laravel + PHP + MySQL
+# ============================================================
+
+# ----------------------------
+# Operating system / editors
+# ----------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# ----------------------------
+# Secrets / environment files
+# Keep examples tracked
+# ----------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# ----------------------------
+# Frontend / Node / Vite
+# ----------------------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Local package-manager caches
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ----------------------------
+# Backend / PHP / Laravel
+# ----------------------------
+backend/vendor/
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+backend/.php-cs-fixer.cache
+backend/.phpactor.json
+backend/auth.json
+backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.*.example
+
+# Laravel generated/runtime data
+backend/bootstrap/cache/*.php
+!backend/bootstrap/cache/.gitignore
+backend/storage/*.key
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/storage/app/private/*
+backend/storage/app/public/*
+
+# Laravel public storage symlink / generated assets
+backend/public/storage
+backend/public/hot
+backend/public/build/
+
+# Laravel testing / tooling
+backend/coverage/
+backend/.phpunit.cache/
+
+# ----------------------------
+# Database local artifacts
+# ----------------------------
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.dump
+*.bak
+
+# ----------------------------
+# Generic build / temp / logs
+# ----------------------------
+coverage/
+dist/
+build/
+.tmp/
+tmp/
+temp/
+.cache/
+*.log
+*.pid
+*.seed
+
+# ----------------------------
+# Local AI/tool state
+# Do not ignore AGENTS.md or CLAUDE.md
+# ----------------------------
+.claude/settings.local.json
+.codex/
+
+# ----------------------------
+# Knowledge-base local app state
+# Preserve the knowledge itself, ignore machine-specific workspace state
+# ----------------------------
+EducatraK-Knowledge-Base/.obsidian/workspace.json
+EducatraK-Knowledge-Base/.obsidian/workspace-mobile.json
+EducatraK-Knowledge-Base/.trash/
