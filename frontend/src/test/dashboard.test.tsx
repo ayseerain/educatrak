@@ -108,6 +108,16 @@ describe("DashboardPage", () => {
     expect(screen.getAllByText(/21,000\.00/)).toHaveLength(2);
   });
 
+  it("opens overdue follow-up from the accounts needing attention panel", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(cashier);
+
+    await screen.findByText(/accounts needing attention/i);
+    await user.click(screen.getByRole("link", { name: /view all/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/followup");
+  });
+
   it("adds navigation links to the cashier KPI widgets", async () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);

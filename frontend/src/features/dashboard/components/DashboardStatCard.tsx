@@ -1,5 +1,4 @@
 import { Card, CardLabel, CardValue, CardHelperText } from "@/components/ui/Card";
-import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,10 +32,9 @@ export function DashboardStatCard({
       {action && (
         <Link
           to={action.to}
-          className="mt-auto inline-flex min-h-8 items-center gap-1 pt-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+          className="mt-auto inline-flex min-h-8 items-center pt-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
         >
           {action.label}
-          <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
       )}
     </Card>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/ui/Button";
@@ -14,8 +15,17 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 function formatWait(lockUntil: number) {
-  const minutes = Math.max(1, Math.ceil((lockUntil - Date.now()) / 60000));
-  return en.login.locked.replace("{minutes}", String(minutes));
+  const remainingMs = Math.max(0, lockUntil - Date.now());
+  const seconds = Math.max(1, Math.ceil(remainingMs / 1000));
+
+  if (seconds < 60) {
+    const template = seconds === 1 ? en.login.secondWait : en.login.secondsWait;
+    return en.login.locked.replace("{time}", template.replace("{seconds}", String(seconds)));
+  }
+
+  const minutes = Math.ceil(seconds / 60);
+  const template = minutes === 1 ? en.login.minuteWait : en.login.minutesWait;
+  return en.login.locked.replace("{time}", template.replace("{minutes}", String(minutes)));
 }
 
 export function LoginPage() {
@@ -34,6 +44,7 @@ export function LoginPage() {
   const passwordField = register("password");
   const [authError, setAuthError] = useState("");
   const [lockedUntil, setLockedUntil] = useState<number>();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     usernameRef.current?.focus();
@@ -154,16 +165,28 @@ export function LoginPage() {
               </div>
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  aria-invalid={Boolean(errors.password)}
-                  aria-describedby={errors.password ? "password-error" : undefined}
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-                  disabled={disabled}
-                  {...passwordField}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? "password-error" : undefined}
+                    className="h-11 w-full rounded-md border border-border bg-white px-3 pr-12 text-base focus-visible:border-brand-green-dark"
+                    disabled={disabled}
+                    {...passwordField}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
+                    disabled={disabled}
+                    onClick={() => setShowPassword((current) => !current)}
+                    aria-pressed={showPassword}
+                    aria-label={showPassword ? en.login.hidePassword : en.login.showPassword}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                  </button>
+                </div>
                 {errors.password?.message && (
                   <p id="password-error" className="mt-2 text-sm text-status-error">
                     {errors.password.message}

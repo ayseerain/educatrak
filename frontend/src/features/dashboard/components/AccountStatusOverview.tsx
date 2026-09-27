@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardLabel } from "@/components/ui/Card";
 import { en } from "@/i18n/en";
 import { cn } from "@/lib/cn";
@@ -117,12 +118,12 @@ export function AccountStatusOverview({
           <h2 className="text-sm font-semibold text-text-primary">
             {en.dashboard.accountsNeedingAttention}
           </h2>
-          <a
-            href="/follow-up"
+          <Link
+            to="/followup"
             className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
           >
             {en.dashboard.viewAll}
-          </a>
+          </Link>
         </div>
         <div className="space-y-2">
           {accountsNeedingAttention.map((account) => (

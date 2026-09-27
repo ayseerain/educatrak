@@ -423,3 +423,117 @@ Validation: `npm.cmd run build` passed with the existing Vite chunk-size
 warning; `npm.cmd run test` passed with 28 tests. React Router future-flag
 warnings and the existing jsdom Recharts zero-size chart warnings appeared
 during tests.
+
+## Login password visibility toggle
+
+**Timestamp:** Sunday, September 27, 2026 — 11:43:29 +08:00
+
+Added a visible password-field toggle on the `/login` screen with an eye icon
+and "Show password" / "Hide password" text. The control preserves the existing
+React Hook Form password registration and disables with the login form during
+lockout or submission.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 9
+tests.
+
+## Login password icon-only toggle
+
+**Timestamp:** Sunday, September 27, 2026 — 11:45:22 +08:00
+
+Removed the visible "Show password" / "Hide password" text from the `/login`
+password visibility toggle while keeping the eye icon and accessible button
+label. Tightened login tests to target the password input explicitly now that
+the icon button also has a password-related accessible label.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 9
+tests. An earlier run failed because broad password-label queries matched both
+the password input and the visibility button; the selectors were corrected.
+
+## Login lockout duration adjustment
+
+**Timestamp:** Sunday, September 27, 2026 — 11:49:18 +08:00
+
+Changed the mock login lockout duration from five minutes to 30 seconds after
+repeated failed attempts. Updated the lockout message formatter so waits under
+one minute display in seconds, while longer waits still use singular/plural
+minutes as appropriate.
+
+Validation: `npm test -- src/test/login.test.tsx` passed with 9 tests;
+`npm run build` passed with the existing Vite chunk-size warning.
+
+## Student profile billing action copy
+
+**Timestamp:** Sunday, September 27, 2026 — 11:56:14 +08:00
+
+Changed the Student activity link on the student profile from "Create account"
+to "Create billing record" while keeping the existing `/accounts/new` route and
+account-create permission behavior unchanged.
+
+Validation: `npm.cmd run build` passed with the existing Vite chunk-size
+warning.
+
+## Operational back navigation behavior
+
+**Timestamp:** Sunday, September 27, 2026 — 12:00:03 +08:00
+
+Changed the shared operational page Back control so it returns to the previous
+history entry when one exists, with the existing parent-route target retained
+as a fallback for direct page loads. Added a focused navigation regression test
+using a student profile opened from a different prior page.
+
+Validation: `npm.cmd run test -- --run src/test/operations.test.tsx` passed
+with 1 test; `npm.cmd run build` passed with the existing Vite chunk-size
+warning.
+
+## Operational page dashboard consistency pass
+
+**Timestamp:** Sunday, September 27, 2026 — 12:07:29 +08:00
+
+Aligned the remaining operational pages with the dashboard visual system by
+standardizing page headers, system pages, action links, form controls, metric
+cards, list tables, table hover states, and status badge treatments in
+`OperationalPages.tsx`. The pass preserved the existing mock route behavior,
+fictional sample data, role guards, and dashboard implementation.
+
+Validation: `npm.cmd run test -- --run src/test/operations.test.tsx` passed
+with 1 test; `npm.cmd run test` passed with 30 tests; `npm.cmd run build`
+passed with the existing Vite chunk-size warning.
+
+## Student activity action buttons
+
+**Timestamp:** Sunday, September 27, 2026 — 12:19:07 +08:00
+
+Changed the Student activity actions on the student profile from inline text
+links to button-styled route links consistent with the existing operational
+page actions. The payment action now uses the primary action treatment, while
+the billing record and statement actions use the secondary treatment. Routes
+and permission checks are unchanged.
+
+Validation: `npm.cmd run test -- --run src/test/operations.test.tsx` passed
+with 2 tests; `npm.cmd run build` passed with the existing Vite chunk-size
+warning.
+
+## Student payment fee name field
+
+**Timestamp:** Sunday, September 27, 2026 — 13:39:23 +08:00
+
+Added Fee name context and an editable Fee name input to the inline student
+Record payment panel so the cashier can specify what the student is paying
+before reviewing the payment. The field is prefilled from the selected next due
+record when one is available.
+
+Validation: `npm test -- operations.test.tsx` passed with 5 tests;
+`npm test` passed with 35 tests; `npm run build` passed with the existing Vite
+chunk-size warning.
+
+## Student activity button arrow removal
+
+**Timestamp:** Sunday, September 27, 2026 — 12:20:39 +08:00
+
+Removed the right-arrow icons from the Student activity action buttons on the
+student profile while keeping the button styling, routes, and permission checks
+unchanged.
+
+Validation: `npm.cmd run test -- --run src/test/operations.test.tsx` passed
+with 2 tests; `npm.cmd run build` passed with the existing Vite chunk-size
+warning.

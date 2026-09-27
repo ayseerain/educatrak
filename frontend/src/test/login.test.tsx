@@ -42,7 +42,7 @@ async function fillLogin(
   user = userEvent.setup(),
 ) {
   await user.type(screen.getByLabelText(/username/i), username);
-  await user.type(screen.getByLabelText(/password/i), password);
+  await user.type(screen.getByLabelText("Password", { selector: "input" }), password);
   await user.click(screen.getByRole("button", { name: /sign in/i }));
 }
 
@@ -50,7 +50,7 @@ function submitLogin(username: string, password: string) {
   fireEvent.change(screen.getByLabelText(/username/i), {
     target: { value: username },
   });
-  fireEvent.change(screen.getByLabelText(/password/i), {
+  fireEvent.change(screen.getByLabelText("Password", { selector: "input" }), {
     target: { value: password },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
@@ -66,8 +66,24 @@ describe("LoginPage", () => {
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toHaveFocus();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
     expect(screen.queryByText(/forgot password/i)).not.toBeInTheDocument();
+  });
+
+  it("toggles password visibility from the login form", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const passwordInput = screen.getByLabelText("Password", { selector: "input" });
+
+    expect(passwordInput).toHaveAttribute("type", "password");
+    expect(screen.queryByText(/show password/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /show password/i }));
+
+    expect(passwordInput).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: /hide password/i })).toBeInTheDocument();
+    expect(screen.queryByText(/hide password/i)).not.toBeInTheDocument();
   });
 
   it("signs in with a valid mock account and opens the dashboard", async () => {
@@ -116,14 +132,14 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/username/i), "sample.cashier");
-    await user.type(screen.getByLabelText(/password/i), "wrong-password");
+    await user.type(screen.getByLabelText("Password", { selector: "input" }), "wrong-password");
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
       await user.click(screen.getByRole("button", { name: /sign in/i }));
     }
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      /account locked\. try again in 5 minutes/i,
+      /account locked\. try again in 30 seconds/i,
     );
     expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
   });

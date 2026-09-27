@@ -54,6 +54,7 @@ interface SessionProviderProps extends PropsWithChildren {
 
 const DEFAULT_SESSION_DURATION_MS = 30 * 60 * 1000;
 const DEFAULT_WARNING_DURATION_MS = 60 * 1000;
+const LOCKOUT_DURATION_MS = 30 * 1000;
 const ACTIVITY_RENEWAL_THROTTLE_MS = 1000;
 const ACTIVITY_EVENTS = [
   "focus",
@@ -106,7 +107,7 @@ export function SessionProvider({
       if (!candidate || candidate.password !== password) {
         const attempts = (failedAttempts[normalizedUsername] ?? 0) + 1;
         if (attempts >= 3) {
-          const nextLock = now + 5 * 60 * 1000;
+          const nextLock = now + LOCKOUT_DURATION_MS;
           setLockedUntil((locks) => ({ ...locks, [normalizedUsername]: nextLock }));
           setFailedAttempts((values) => ({ ...values, [normalizedUsername]: 0 }));
           return { ok: false, lockedUntil: nextLock };
