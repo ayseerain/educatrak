@@ -5,12 +5,21 @@ import { AccountingDashboard } from "./components/AccountingDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { AuditorDashboard } from "./components/AuditorDashboard";
 import { RegistrarDashboard } from "./components/RegistrarDashboard";
+import { RecordPaymentDialog } from "./components/RecordPaymentDialog";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { en } from "@/i18n/en";
+import { add } from "@/lib/money";
+import { recordMockPayment } from "@/api/mockAdapter";
 import type { AuthenticatedUser } from "@/lib/types";
-import type { DashboardRange } from "@/api/dashboardTypes";
+import type {
+  CashierDashboardSummary,
+  DashboardRange,
+  DashboardSummary,
+  RecentPayment,
+  RecordPaymentInput,
+} from "@/api/dashboardTypes";
 import { DashboardRangeFilter, DASHBOARD_RANGE_OPTIONS } from "./components/DashboardRangeFilter";
 
 interface DashboardPageProps {
@@ -19,6 +28,8 @@ interface DashboardPageProps {
 
 export function DashboardPage({ user }: DashboardPageProps) {
   const [range, setRange] = useState<DashboardRange>("last_7_days");
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [recordedPayments, setRecordedPayments] = useState<RecentPayment[]>([]);
   // Registrar's dashboard carries no financial data and needs no fetch;
   // rendering it directly avoids requesting data the role can't see.
   if (user.role === "registrar") {
@@ -31,6 +42,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
   }
 
   const { data, isPending, isError, refetch } = useDashboard(user, range);
+  const visibleData = data?.role === "cashier"
+    ? mergeRecordedPayments(data, recordedPayments, range)
+    : data;
+
+  async function saveRecordedPayment(input: RecordPaymentInput) {
+    const payment = await recordMockPayment(input);
+    setRecordedPayments((payments) => [payment, ...payments]);
+  }
 
   return (
     <div className="space-y-4">
@@ -38,11 +57,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         user={user}
         range={range}
         onRangeChange={setRange}
-        onRecordPayment={() => {
-          // TODO(spec): the record-payment workflow/screen is not
-          // detailed in the brief beyond being reachable from here.
-          // Wired to a route once that screen is specified.
-        }}
+        onRecordPayment={() => setRecordPaymentOpen(true)}
       />
 
       {isPending && <LoadingState message={en.states.loadingDashboard} />}
@@ -54,19 +69,82 @@ export function DashboardPage({ user }: DashboardPageProps) {
         />
       )}
 
-      {data && data.role === "cashier" && (
+      {visibleData && visibleData.role === "cashier" && (
         <CashierDashboard
-          summary={data}
+          summary={visibleData}
         />
       )}
-      {data && data.role === "accounting" && (
-        <AccountingDashboard summary={data} />
+      {visibleData && visibleData.role === "accounting" && (
+        <AccountingDashboard summary={visibleData} />
       )}
-      {data && data.role === "administrator" && (
-        <AdminDashboard summary={data} />
+      {visibleData && visibleData.role === "administrator" && (
+        <AdminDashboard summary={visibleData} />
       )}
-      {data && data.role === "auditor" && <AuditorDashboard summary={data} />}
+      {visibleData && visibleData.role === "auditor" && <AuditorDashboard summary={visibleData} />}
+
+      {user.role === "cashier" && (
+        <RecordPaymentDialog
+          open={recordPaymentOpen}
+          onClose={() => setRecordPaymentOpen(false)}
+          onSave={saveRecordedPayment}
+        />
+      )}
     </div>
+  );
+}
+
+function mergeRecordedPayments(
+  summary: CashierDashboardSummary,
+  recordedPayments: RecentPayment[],
+  range: DashboardRange,
+): DashboardSummary {
+  const todayPayments = recordedPayments.filter((payment) =>
+    isTodayPayment(payment),
+  );
+  const rangePayments = recordedPayments.filter((payment) =>
+    paymentMatchesRange(payment, range),
+  );
+  const recentActivity = [...rangePayments, ...summary.recentActivity].sort(
+    (a, b) => Date.parse(b.time) - Date.parse(a.time),
+  );
+
+  return {
+    ...summary,
+    todayCollectionsTotal: todayPayments.reduce(
+      (total, payment) => add(total, payment.amount),
+      summary.todayCollectionsTotal,
+    ),
+    paymentsTodayCount: summary.paymentsTodayCount + todayPayments.length,
+    recentActivity,
+  };
+}
+
+function paymentMatchesRange(
+  payment: RecentPayment,
+  range: DashboardRange,
+): boolean {
+  if (range === "school_year") return true;
+
+  const paymentTime = Date.parse(payment.time);
+  if (range === "today") return paymentTime >= startOfManilaDay(new Date());
+
+  const days = range === "last_7_days" ? 7 : 30;
+  return paymentTime >= Date.now() - days * 24 * 60 * 60 * 1000;
+}
+
+function isTodayPayment(payment: RecentPayment): boolean {
+  return Date.parse(payment.time) >= startOfManilaDay(new Date());
+}
+
+function startOfManilaDay(value: Date): number {
+  const manilaOffsetMs = 8 * 60 * 60 * 1000;
+  const manilaDate = new Date(value.getTime() + manilaOffsetMs);
+  return (
+    Date.UTC(
+      manilaDate.getUTCFullYear(),
+      manilaDate.getUTCMonth(),
+      manilaDate.getUTCDate(),
+    ) - manilaOffsetMs
   );
 }
 

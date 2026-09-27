@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/Table";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -6,13 +7,6 @@ import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import { formatDate, formatDateTime, formatTime } from "@/lib/dates";
 import type { RecentPayment } from "@/api/dashboardTypes";
-
-const METHOD_LABEL: Record<RecentPayment["method"], string> = {
-  cash: "Cash",
-  bank_transfer: "Bank transfer",
-  gcash: "GCash",
-  check: "Check",
-};
 
 const STATUS_BADGE: Record<
   RecentPayment["status"],
@@ -33,6 +27,11 @@ export function RecentActivity({
   payments,
   showActions = false,
 }: RecentActivityProps) {
+  const [activityLimit, setActivityLimit] = useState("5");
+  const visiblePayments =
+    activityLimit === "all"
+      ? payments
+      : payments.slice(0, Number(activityLimit));
   const columns: ColumnDef<RecentPayment>[] = [
     {
       accessorKey: "time",
@@ -66,7 +65,7 @@ export function RecentActivity({
     {
       accessorKey: "method",
       header: en.table.method,
-      cell: ({ getValue }) => METHOD_LABEL[getValue<RecentPayment["method"]>()],
+      cell: ({ getValue }) => en.recordPayment.methods[getValue<RecentPayment["method"]>()],
     },
     {
       accessorKey: "status",
@@ -99,6 +98,26 @@ export function RecentActivity({
   }
 
   return (
-    <DataTable columns={columns} data={payments} caption={en.dashboard.recentActivity} />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <label className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+          <span>{en.dashboard.activityRows}</span>
+          <select
+            className="h-10 rounded-md border border-border bg-white px-3 text-sm text-text-primary focus-visible:border-brand-green-dark"
+            value={activityLimit}
+            onChange={(event) => setActivityLimit(event.target.value)}
+          >
+            <option value="5">{en.dashboard.activityLatest5}</option>
+            <option value="10">{en.dashboard.activityLatest10}</option>
+            <option value="all">{en.dashboard.activityAll}</option>
+          </select>
+        </label>
+      </div>
+      <DataTable
+        columns={columns}
+        data={visiblePayments}
+        caption={en.dashboard.recentActivity}
+      />
+    </div>
   );
 }

@@ -220,3 +220,54 @@ Updated `frontend/src/App.tsx`, `frontend/src/components/layout/Shell.tsx`,
 Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 5
 tests; `npm.cmd run test` passed with 22 tests; `npm.cmd run build` passed with
 the existing Vite chunk-size warning.
+
+## Login split widget layout
+
+**Timestamp:** Sunday, September 27, 2026 — 09:29:11 +08:00
+
+Updated the `/login` screen layout only: the existing centered form is now a
+two-panel widget with a branded visual panel on the left and the same
+username/password sign-in form on the right. The EducatraK branding, copy,
+validation, lockout behavior, and mock session flow remain unchanged.
+
+Updated `frontend/src/features/auth/LoginPage.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 5
+tests; `npm.cmd run test` passed with 22 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning.
+
+## Login widget size adjustment
+
+**Timestamp:** Sunday, September 27, 2026 — 09:30:18 +08:00
+
+Made the `/login` split widget slightly larger by increasing the maximum
+container width, desktop height, left-panel padding, and form-column width.
+No authentication behavior, copy, or branding was changed.
+
+Updated `frontend/src/features/auth/LoginPage.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 5
+tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Dashboard record payment modal and activity expansion
+
+**Timestamp:** Sunday, September 27, 2026 — 09:41:31 +08:00
+
+Added a Cashier dashboard Record Payment pop-up with required payment details,
+validation, a confirmation step, and a mock adapter save path that assigns a
+receipt number before adding the payment to Recent Activity. Confirmed payments
+now appear immediately in the dashboard activity list and today's cashier
+collection totals update for payments dated today.
+
+Added a Recent Activity row-count drop-down so users can switch between the
+latest 5, latest 10, and all activity rows.
+
+Updated `frontend/src/features/dashboard/DashboardPage.tsx`,
+`frontend/src/features/dashboard/components/RecordPaymentDialog.tsx`,
+`frontend/src/features/dashboard/components/RecentActivity.tsx`,
+`frontend/src/api/dashboardTypes.ts`, `frontend/src/api/mockAdapter.ts`,
+`frontend/src/i18n/en.ts`, and `frontend/src/test/dashboard.test.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+18 tests; `npm.cmd run test` passed with 23 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning.

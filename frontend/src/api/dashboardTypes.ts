@@ -21,6 +21,15 @@ export interface RecentPayment {
   status: PaymentStatus;
 }
 
+export interface RecordPaymentInput {
+  studentName: string;
+  amount: Centavos;
+  method: PaymentMethod;
+  reference?: string;
+  paymentDate: string; // YYYY-MM-DD from the payment form
+  backdateReason?: string;
+}
+
 export interface CashierAccountStatusOverview {
   cleared: number;
   current: number;

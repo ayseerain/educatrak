@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -116,21 +116,86 @@ describe("DashboardPage", () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);
 
-    await screen.findByRole("button", { name: /record payment/i });
+    await screen.findByText(/account status overview/i);
     const rangeFilter = screen.getByRole("combobox", { name: /filter range/i });
+    let activityRowsFilter = await screen.findByRole("combobox", {
+      name: /activity rows/i,
+    });
     const activityRows = () => screen.getAllByRole("row").length - 1;
 
     await waitFor(() => expect(activityRows()).toBe(5));
 
     await user.selectOptions(rangeFilter, "today");
+    await screen.findByText(/loading dashboard/i);
+    await waitFor(() =>
+      expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
+    );
     await waitFor(() => expect(activityRows()).toBe(2));
 
     await user.selectOptions(rangeFilter, "last_30_days");
+    await screen.findByText(/loading dashboard/i);
+    await waitFor(() =>
+      expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
+    );
+    activityRowsFilter = screen.getByRole("combobox", {
+      name: /activity rows/i,
+    });
+    await waitFor(() => expect(activityRows()).toBe(5));
+    await user.selectOptions(activityRowsFilter, "all");
     await waitFor(() => expect(activityRows()).toBe(9));
 
     await user.selectOptions(rangeFilter, "school_year");
+    await screen.findByText(/loading dashboard/i);
+    await waitFor(() =>
+      expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
+    );
+    activityRowsFilter = screen.getByRole("combobox", {
+      name: /activity rows/i,
+    });
+    await user.selectOptions(activityRowsFilter, "all");
     await waitFor(() => expect(activityRows()).toBe(13));
     expect(screen.getAllByText(/, \d{1,2}:\d{2}/).length).toBeGreaterThan(1);
+  });
+
+  it("records a payment from the dashboard modal and adds it to recent activity", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(cashier);
+
+    await user.click(await screen.findByRole("button", { name: /record payment/i }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: /record payment/i,
+    });
+    await user.type(
+      within(dialog).getByLabelText(/^student$/i),
+      "Bianca Cruz (sample)",
+    );
+    await user.type(within(dialog).getByLabelText(/amount received/i), "2500");
+    await user.selectOptions(
+      within(dialog).getByLabelText(/payment method/i),
+      "gcash",
+    );
+    await user.type(
+      within(dialog).getByLabelText(/reference number/i),
+      "GCASH-SAMPLE-001",
+    );
+    await user.click(within(dialog).getByRole("button", { name: /review payment/i }));
+
+    expect(
+      within(dialog).getByRole("heading", { name: /confirm payment/i }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/Bianca Cruz \(sample\)/i)).toBeInTheDocument();
+
+    await user.click(
+      within(dialog).getByRole("button", { name: /confirm and save/i }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: /record payment/i })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText("Bianca Cruz (sample)")).toBeInTheDocument();
+    expect(screen.getByText("OR-2026-002000")).toBeInTheDocument();
+    expect(screen.getByText(/2,500\.00/)).toBeInTheDocument();
   });
 
   it("does not show Record Payment for Administrator", async () => {

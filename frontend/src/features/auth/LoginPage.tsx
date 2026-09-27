@@ -85,61 +85,98 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-12">
-      <section className="w-full max-w-md rounded-lg border border-border bg-white p-8 shadow-card" aria-labelledby="login-title">
-        <div className="mb-8 text-center">
-          <div className="mb-5 flex items-center justify-center gap-3">
-            <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark font-bold text-white">EK</span>
-            <span className="text-xl font-semibold text-brand-green-dark">{en.app.name}</span>
+      <section
+        className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-border bg-white shadow-[0_18px_50px_rgba(0,0,0,0.12)] lg:min-h-[600px] lg:grid-cols-[1.08fr_0.92fr]"
+        aria-labelledby="login-title"
+      >
+        <div className="relative hidden overflow-hidden border-r border-white/15 bg-brand-green-dark/90 p-10 text-white backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-[-12%] top-28 h-28 -rotate-6 bg-brand-green/75"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-[-12%] top-52 h-28 rotate-6 bg-brand-green-light/65"
+          />
+          <div className="relative flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark font-bold text-white ring-1 ring-white/30"
+            >
+              EK
+            </span>
+            <span className="text-xl font-semibold">{en.app.name}</span>
           </div>
-          <h1 id="login-title" className="text-2xl font-semibold text-text-primary">{en.login.title}</h1>
-          <p className="mt-2 text-sm text-text-secondary">{en.login.subtitle}</p>
+
+          <div className="relative max-w-sm">
+            <div className="mb-4 h-1 w-16 rounded bg-brand-yellow" />
+            <p className="text-lg font-semibold leading-7">{en.login.mockHint}</p>
+          </div>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
-          <div>
-            <label htmlFor="username" className="mb-2 block text-sm font-medium text-text-primary">{en.login.username}</label>
-            <input
-              id="username"
-              autoComplete="username"
-              aria-invalid={Boolean(errors.username)}
-              aria-describedby={errors.username ? "username-error" : undefined}
-              className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-              disabled={disabled}
-              {...usernameField}
-              ref={(element) => {
-                usernameField.ref(element);
-                usernameRef.current = element;
-              }}
-            />
-            {errors.username?.message && (
-              <p id="username-error" className="mt-2 text-sm text-status-error">
-                {errors.username.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              aria-invalid={Boolean(errors.password)}
-              aria-describedby={errors.password ? "password-error" : undefined}
-              className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-              disabled={disabled}
-              {...passwordField}
-            />
-            {errors.password?.message && (
-              <p id="password-error" className="mt-2 text-sm text-status-error">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-          {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
-          <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
-        </form>
+        <div className="flex items-center justify-center px-6 py-12 sm:px-10 lg:px-14">
+          <div className="w-full max-w-lg">
+            <div className="mb-8 text-center lg:text-left">
+              <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark font-bold text-white"
+                >
+                  EK
+                </span>
+                <span className="text-xl font-semibold text-brand-green-dark">{en.app.name}</span>
+              </div>
+              <h1 id="login-title" className="text-2xl font-semibold text-text-primary">{en.login.title}</h1>
+              <p className="mt-2 text-sm text-text-secondary">{en.login.subtitle}</p>
+            </div>
 
-        <p className="mt-6 text-xs leading-5 text-text-muted-readable">{en.login.mockHint}</p>
+            <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
+              <div>
+                <label htmlFor="username" className="mb-2 block text-sm font-medium text-text-primary">{en.login.username}</label>
+                <input
+                  id="username"
+                  autoComplete="username"
+                  aria-invalid={Boolean(errors.username)}
+                  aria-describedby={errors.username ? "username-error" : undefined}
+                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
+                  disabled={disabled}
+                  {...usernameField}
+                  ref={(element) => {
+                    usernameField.ref(element);
+                    usernameRef.current = element;
+                  }}
+                />
+                {errors.username?.message && (
+                  <p id="username-error" className="mt-2 text-sm text-status-error">
+                    {errors.username.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? "password-error" : undefined}
+                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
+                  disabled={disabled}
+                  {...passwordField}
+                />
+                {errors.password?.message && (
+                  <p id="password-error" className="mt-2 text-sm text-status-error">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+              {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
+              <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
+            </form>
+
+            <p className="mt-6 text-xs leading-5 text-text-muted-readable lg:hidden">{en.login.mockHint}</p>
+          </div>
+        </div>
       </section>
     </main>
   );
