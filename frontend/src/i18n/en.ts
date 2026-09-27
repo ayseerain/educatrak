@@ -3,6 +3,7 @@
 export const en = {
   app: {
     name: "EducatraK",
+    navbarName: "Mendez Christian Academy",
   },
   login: {
     title: "Sign in",
@@ -28,7 +29,6 @@ export const en = {
   },
   header: {
     searchPlaceholder: "Search students, receipts...",
-    notifications: "Notifications",
     profileMenu: "Account menu",
     signOut: "Sign out",
   },

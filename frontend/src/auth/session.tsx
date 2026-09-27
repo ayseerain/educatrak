@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -53,7 +54,17 @@ interface SessionProviderProps extends PropsWithChildren {
 
 const DEFAULT_SESSION_DURATION_MS = 30 * 60 * 1000;
 const DEFAULT_WARNING_DURATION_MS = 60 * 1000;
-const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "focus"] as const;
+const ACTIVITY_RENEWAL_THROTTLE_MS = 1000;
+const ACTIVITY_EVENTS = [
+  "focus",
+  "input",
+  "keydown",
+  "mousedown",
+  "pointerdown",
+  "scroll",
+  "touchstart",
+  "wheel",
+] as const;
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
@@ -67,13 +78,17 @@ export function SessionProvider({
   const [isExpirationWarningOpen, setExpirationWarningOpen] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState<Record<string, number>>({});
   const [lockedUntil, setLockedUntil] = useState<Record<string, number>>({});
+  const lastActivityRenewalAt = useRef(0);
 
   const renewSession = useCallback(() => {
-    setExpiresAt(Date.now() + sessionDurationMs);
+    const now = Date.now();
+    lastActivityRenewalAt.current = now;
+    setExpiresAt(now + sessionDurationMs);
     setExpirationWarningOpen(false);
   }, [sessionDurationMs]);
 
   const logout = useCallback(() => {
+    lastActivityRenewalAt.current = 0;
     setUser(null);
     setExpiresAt(null);
     setExpirationWarningOpen(false);
@@ -102,6 +117,7 @@ export function SessionProvider({
 
       setFailedAttempts((values) => ({ ...values, [normalizedUsername]: 0 }));
       setUser(candidate.user);
+      lastActivityRenewalAt.current = now;
       setExpiresAt(now + sessionDurationMs);
       setExpirationWarningOpen(false);
       return { ok: true };
@@ -131,18 +147,27 @@ export function SessionProvider({
 
   useEffect(() => {
     if (!user || !expiresAt || isExpirationWarningOpen) return;
+    const currentExpiresAt = expiresAt;
 
     function handleActivity() {
-      setExpiresAt(Date.now() + sessionDurationMs);
+      const now = Date.now();
+      if (now >= currentExpiresAt) return;
+      if (now - lastActivityRenewalAt.current < ACTIVITY_RENEWAL_THROTTLE_MS) {
+        return;
+      }
+
+      lastActivityRenewalAt.current = now;
+      setExpiresAt(now + sessionDurationMs);
     }
 
+    const listenerOptions = { capture: true, passive: true };
     for (const eventName of ACTIVITY_EVENTS) {
-      window.addEventListener(eventName, handleActivity);
+      window.addEventListener(eventName, handleActivity, listenerOptions);
     }
 
     return () => {
       for (const eventName of ACTIVITY_EVENTS) {
-        window.removeEventListener(eventName, handleActivity);
+        window.removeEventListener(eventName, handleActivity, listenerOptions);
       }
     };
   }, [expiresAt, isExpirationWarningOpen, sessionDurationMs, user]);

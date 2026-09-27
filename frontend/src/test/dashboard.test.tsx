@@ -82,8 +82,8 @@ describe("DashboardPage", () => {
   it("shows the dashboard range filter and enrolled-student widget", async () => {
     renderWithProviders(cashier);
     expect(await screen.findByText(/overall enrolled students/i)).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: /filter range/i })).toHaveValue(
-      "last_7_days",
+    expect(screen.getByRole("button", { name: /filter range/i })).toHaveTextContent(
+      "Last 7 days",
     );
     expect(screen.getByText(/collections \(last 7 days\)/i)).toBeInTheDocument();
     expect(screen.getByText(/payments \(last 7 days\)/i)).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe("DashboardPage", () => {
     renderWithProviders(cashier);
 
     await screen.findByText(/account status overview/i);
-    const rangeFilter = screen.getByRole("combobox", { name: /filter range/i });
+    const rangeFilter = screen.getByRole("button", { name: /filter range/i });
     let activityRowsFilter = await screen.findByRole("combobox", {
       name: /activity rows/i,
     });
@@ -143,7 +143,8 @@ describe("DashboardPage", () => {
 
     await waitFor(() => expect(activityRows()).toBe(5));
 
-    await user.selectOptions(rangeFilter, "today");
+    await user.click(rangeFilter);
+    await user.click(screen.getByRole("menuitemradio", { name: "Today" }));
     await screen.findByText(/loading dashboard/i);
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
@@ -152,7 +153,8 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/payments today/i)).toBeInTheDocument();
     await waitFor(() => expect(activityRows()).toBe(2));
 
-    await user.selectOptions(rangeFilter, "last_30_days");
+    await user.click(rangeFilter);
+    await user.click(screen.getByRole("menuitemradio", { name: "Last 30 days" }));
     await screen.findByText(/loading dashboard/i);
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
@@ -164,7 +166,8 @@ describe("DashboardPage", () => {
     await user.selectOptions(activityRowsFilter, "all");
     await waitFor(() => expect(activityRows()).toBe(9));
 
-    await user.selectOptions(rangeFilter, "school_year");
+    await user.click(rangeFilter);
+    await user.click(screen.getByRole("menuitemradio", { name: "This school year" }));
     await screen.findByText(/loading dashboard/i);
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
@@ -265,10 +268,8 @@ describe("DashboardPage", () => {
 
     expect(await screen.findByText(/collection trend \(last 7 days\)/i)).toBeInTheDocument();
 
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /filter range/i }),
-      "last_30_days",
-    );
+    await user.click(screen.getByRole("button", { name: /filter range/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Last 30 days" }));
 
     await waitFor(() =>
       expect(screen.getByText(/collection trend \(last 30 days\)/i)).toBeInTheDocument(),

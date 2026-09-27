@@ -370,3 +370,26 @@ Validation: `npm.cmd run build` passed (with the existing Vite chunk-size
 warning); `npm.cmd run test` passed with 27 tests. The documented formal audit
 phase remains untouched. Full API-backed workflows remain dependent on the
 separate Laravel implementation.
+
+## Header notification control removal
+
+**Timestamp:** Sunday, September 27, 2026 — 10:38:48 +08:00
+
+Removed the standalone notification bell from the authenticated top navigation.
+The existing notification-log sidebar entry and failed-email dashboard links
+remain available.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 7
+tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Dashboard range dropdown polish
+
+**Timestamp:** Sunday, September 27, 2026 — 10:46:25 +08:00
+
+Replaced the dashboard range native select with the existing Radix dropdown
+primitive. The control now uses a consistent trigger, a clean bordered menu,
+and a checkmark plus light-green selected state instead of browser-native menu
+styling. Range-filter behavior and keyboard menu support are preserved.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+20 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.

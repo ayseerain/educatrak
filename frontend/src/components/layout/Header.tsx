@@ -40,14 +40,6 @@ export function Header({ user, onLogout }: HeaderProps) {
       <div className="flex items-center gap-4">
         <button
           type="button"
-          aria-label={en.header.notifications}
-          className="relative flex h-9 w-9 items-center justify-center rounded-md text-text-secondary hover:bg-surface"
-        >
-          <span aria-hidden="true">🔔</span>
-        </button>
-
-        <button
-          type="button"
           aria-label={en.header.profileMenu}
           className="flex items-center gap-3 rounded-md px-2 py-1 hover:bg-surface"
         >

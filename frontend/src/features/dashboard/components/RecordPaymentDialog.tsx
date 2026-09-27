@@ -320,7 +320,7 @@ export function RecordPaymentDialog({
               </label>
               <select
                 id="payment-method"
-                className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
+                className="dropdown-select"
                 disabled={isSaving}
                 {...register("method")}
               >

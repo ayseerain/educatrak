@@ -163,6 +163,30 @@ describe("LoginPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps an active user signed in when they scroll before the timeout", async () => {
+    vi.useFakeTimers();
+    renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
+
+    await act(async () => {
+      submitLogin("sample.cashier", "SamplePass123!");
+    });
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+      fireEvent.wheel(window);
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+    expect(
+      screen.queryByRole("dialog", { name: /session expiring soon/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("signs out automatically when the session expires", async () => {
     vi.useFakeTimers();
     renderApp("/login", { sessionDurationMs: 3000, warningDurationMs: 1000 });
