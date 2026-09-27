@@ -64,6 +64,41 @@ function activityForRange(
   return payments.filter((payment) => Date.parse(payment.time) >= cutoff);
 }
 
+function financialTotalsForActivity(payments: RecentPayment[]): {
+  totalCollections: ReturnType<typeof centavos>;
+  paymentCount: number;
+} {
+  return {
+    totalCollections: centavos(
+      payments.reduce((total, payment) => total + payment.amount, 0),
+    ),
+    paymentCount: payments.length,
+  };
+}
+
+/**
+ * Builds chart data from the same range-filtered activity that feeds the
+ * dashboard. This prevents the trend from falling back to a fixed "today"
+ * series when the selected range changes.
+ */
+function collectionTrendForActivity(
+  payments: RecentPayment[],
+): { date: string; totalCollected: ReturnType<typeof centavos> }[] {
+  const totalsByDate = new Map<string, number>();
+
+  for (const payment of payments) {
+    const date = dateInputForManila(new Date(payment.time));
+    totalsByDate.set(date, (totalsByDate.get(date) ?? 0) + payment.amount);
+  }
+
+  return [...totalsByDate.entries()]
+    .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+    .map(([date, totalCollected]) => ({
+      date,
+      totalCollected: centavos(totalCollected),
+    }));
+}
+
 function startOfManilaDay(value: Date): number {
   const manilaOffsetMs = 8 * 60 * 60 * 1000;
   const manilaDate = new Date(value.getTime() + manilaOffsetMs);
@@ -134,14 +169,15 @@ export async function fetchDashboardSummary(
   // Simulate network latency for realistic loading states.
   await new Promise((resolve) => setTimeout(resolve, 350));
   const recentActivity = activityForRange(makeRecentActivity(), range);
+  const financialTotals = financialTotalsForActivity(recentActivity);
 
   switch (user.role) {
     case "cashier":
       return {
         role: "cashier",
         overallEnrolledStudents: 60,
-        todayCollectionsTotal: centavos(4685000),
-        paymentsTodayCount: 12,
+        todayCollectionsTotal: financialTotals.totalCollections,
+        paymentsTodayCount: financialTotals.paymentCount,
         failedEmailCount: 2,
         closeoutDone: false,
         accountStatusOverview: {
@@ -173,15 +209,7 @@ export async function fetchDashboardSummary(
         pendingVoidApprovals: 3,
         overdueTotal: centavos(18240000),
         unsignedCloseouts: 2,
-        collectionTrend: [
-          { date: "2026-09-20", totalCollected: centavos(3120000) },
-          { date: "2026-09-21", totalCollected: centavos(4085000) },
-          { date: "2026-09-22", totalCollected: centavos(2890000) },
-          { date: "2026-09-23", totalCollected: centavos(5010000) },
-          { date: "2026-09-24", totalCollected: centavos(3760000) },
-          { date: "2026-09-25", totalCollected: centavos(4420000) },
-          { date: "2026-09-26", totalCollected: centavos(4685000) },
-        ].slice(range === "today" ? -1 : range === "last_30_days" || range === "school_year" ? undefined : -7),
+        collectionTrend: collectionTrendForActivity(recentActivity),
         recentActivity,
       };
     case "administrator":
@@ -197,8 +225,8 @@ export async function fetchDashboardSummary(
       return {
         role: "auditor",
         overallEnrolledStudents: 60,
-        todayCollectionsTotal: centavos(4685000),
-        paymentsTodayCount: 12,
+        todayCollectionsTotal: financialTotals.totalCollections,
+        paymentsTodayCount: financialTotals.paymentCount,
         recentActivity,
       };
     case "registrar":

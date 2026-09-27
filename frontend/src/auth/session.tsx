@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -37,17 +38,46 @@ interface LoginResult {
 }
 
 interface SessionContextValue {
+  expiresAt: number | null;
+  isExpirationWarningOpen: boolean;
   user: AuthenticatedUser | null;
   login: (username: string, password: string) => LoginResult;
   logout: () => void;
+  renewSession: () => void;
 }
+
+interface SessionProviderProps extends PropsWithChildren {
+  sessionDurationMs?: number;
+  warningDurationMs?: number;
+}
+
+const DEFAULT_SESSION_DURATION_MS = 30 * 60 * 1000;
+const DEFAULT_WARNING_DURATION_MS = 60 * 1000;
+const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "focus"] as const;
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
-export function SessionProvider({ children }: PropsWithChildren) {
+export function SessionProvider({
+  children,
+  sessionDurationMs = DEFAULT_SESSION_DURATION_MS,
+  warningDurationMs = DEFAULT_WARNING_DURATION_MS,
+}: SessionProviderProps) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [isExpirationWarningOpen, setExpirationWarningOpen] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState<Record<string, number>>({});
   const [lockedUntil, setLockedUntil] = useState<Record<string, number>>({});
+
+  const renewSession = useCallback(() => {
+    setExpiresAt(Date.now() + sessionDurationMs);
+    setExpirationWarningOpen(false);
+  }, [sessionDurationMs]);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setExpiresAt(null);
+    setExpirationWarningOpen(false);
+  }, []);
 
   const login = useCallback(
     (username: string, password: string): LoginResult => {
@@ -72,12 +102,62 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
       setFailedAttempts((values) => ({ ...values, [normalizedUsername]: 0 }));
       setUser(candidate.user);
+      setExpiresAt(now + sessionDurationMs);
+      setExpirationWarningOpen(false);
       return { ok: true };
     },
-    [failedAttempts, lockedUntil],
+    [failedAttempts, lockedUntil, sessionDurationMs],
   );
 
-  const value = useMemo(() => ({ user, login, logout: () => setUser(null) }), [login, user]);
+  useEffect(() => {
+    if (!user || !expiresAt) return;
+
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      const warningStartsAt = expiresAt - Math.min(warningDurationMs, sessionDurationMs);
+
+      if (now >= expiresAt) {
+        logout();
+        return;
+      }
+
+      if (now >= warningStartsAt) {
+        setExpirationWarningOpen(true);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [expiresAt, logout, sessionDurationMs, user, warningDurationMs]);
+
+  useEffect(() => {
+    if (!user || !expiresAt || isExpirationWarningOpen) return;
+
+    function handleActivity() {
+      setExpiresAt(Date.now() + sessionDurationMs);
+    }
+
+    for (const eventName of ACTIVITY_EVENTS) {
+      window.addEventListener(eventName, handleActivity);
+    }
+
+    return () => {
+      for (const eventName of ACTIVITY_EVENTS) {
+        window.removeEventListener(eventName, handleActivity);
+      }
+    };
+  }, [expiresAt, isExpirationWarningOpen, sessionDurationMs, user]);
+
+  const value = useMemo(
+    () => ({
+      expiresAt,
+      isExpirationWarningOpen,
+      user,
+      login,
+      logout,
+      renewSession,
+    }),
+    [expiresAt, isExpirationWarningOpen, login, logout, renewSession, user],
+  );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 

@@ -11,23 +11,29 @@ import { Card, CardLabel } from "@/components/ui/Card";
 import { en } from "@/i18n/en";
 import { format, type Centavos } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
-import type { CollectionTrendPoint } from "@/api/dashboardTypes";
+import type { CollectionTrendPoint, DashboardRange } from "@/api/dashboardTypes";
+import { dashboardRangeLabel } from "./dashboardRangeLabels";
 
 interface CollectionTrendProps {
   points: CollectionTrendPoint[];
+  range: DashboardRange;
 }
 
 // This is the single chart the specification permits in the entire
 // application (section 9, Accounting dashboard). Do not add more.
-export function CollectionTrend({ points }: CollectionTrendProps) {
+export function CollectionTrend({ points, range }: CollectionTrendProps) {
   const data = points.map((p) => ({
     label: formatDate(p.date).replace(", 2026", ""),
     total: p.totalCollected / 100,
   }));
+  const label =
+    range === "today"
+      ? en.dashboard.todaysTotals
+      : en.dashboard.collectionTrendRange.replace("{range}", dashboardRangeLabel(range));
 
   return (
     <Card>
-      <CardLabel>{en.dashboard.collectionTrend}</CardLabel>
+      <CardLabel>{label}</CardLabel>
       <div className="mt-3 h-56">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>

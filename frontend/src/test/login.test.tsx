@@ -1,12 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { SessionProvider } from "@/auth/session";
 import { App } from "@/App";
 
-function renderApp(initialPath = "/login") {
+interface RenderAppOptions {
+  sessionDurationMs?: number;
+  warningDurationMs?: number;
+}
+
+function renderApp(initialPath = "/login", options: RenderAppOptions = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -14,7 +19,10 @@ function renderApp(initialPath = "/login") {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialPath]}>
-        <SessionProvider>
+        <SessionProvider
+          sessionDurationMs={options.sessionDurationMs}
+          warningDurationMs={options.warningDurationMs}
+        >
           <App />
           <LocationPath />
         </SessionProvider>
@@ -28,12 +36,29 @@ function LocationPath() {
   return <output aria-label="Current path">{pathname}</output>;
 }
 
-async function fillLogin(username: string, password: string) {
-  const user = userEvent.setup();
+async function fillLogin(
+  username: string,
+  password: string,
+  user = userEvent.setup(),
+) {
   await user.type(screen.getByLabelText(/username/i), username);
   await user.type(screen.getByLabelText(/password/i), password);
   await user.click(screen.getByRole("button", { name: /sign in/i }));
 }
+
+function submitLogin(username: string, password: string) {
+  fireEvent.change(screen.getByLabelText(/username/i), {
+    target: { value: username },
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: password },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("LoginPage", () => {
   it("renders username and password login at /login", () => {
@@ -101,5 +126,57 @@ describe("LoginPage", () => {
       /account locked\. try again in 5 minutes/i,
     );
     expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
+  });
+
+  it("warns before session expiration and lets the user stay signed in", async () => {
+    vi.useFakeTimers();
+    renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
+
+    await act(async () => {
+      submitLogin("sample.cashier", "SamplePass123!");
+    });
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+
+    expect(
+      screen.getByRole("dialog", { name: /session expiring soon/i }),
+    ).toHaveTextContent(/will sign you out in 1 second/i);
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: /stay signed in/i }));
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: /session expiring soon/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: /session expiring soon/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("signs out automatically when the session expires", async () => {
+    vi.useFakeTimers();
+    renderApp("/login", { sessionDurationMs: 3000, warningDurationMs: 1000 });
+
+    await act(async () => {
+      submitLogin("sample.cashier", "SamplePass123!");
+    });
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/login");
+    expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
   });
 });

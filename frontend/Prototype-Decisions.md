@@ -50,3 +50,10 @@ The brief specifies status must use icon + text (never color alone)
 and gives example glyphs (✓ ! ⚠ × i) but doesn't map every payment
 status to a specific tone. `posted → success`, `pending → warning`,
 `voided → error` was chosen as the simplest conventional mapping.
+
+## 7. Mock session duration
+The specification requires a session timeout warning 1 minute before expiry
+with a "Stay signed in" action, but does not define the frontend prototype's
+mock inactivity duration. The in-memory mock session uses 30 minutes as a
+conventional local default. Replace this with the backend cookie-session
+expiry once the real auth client is implemented.

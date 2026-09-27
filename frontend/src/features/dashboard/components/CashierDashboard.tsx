@@ -13,13 +13,17 @@ import { AccountStatusOverview } from "./AccountStatusOverview";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
-import type { CashierDashboardSummary } from "@/api/dashboardTypes";
+import type { CashierDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
+import { financialStatLabelsForRange } from "./dashboardRangeLabels";
 
 interface CashierDashboardProps {
   summary: CashierDashboardSummary;
+  range: DashboardRange;
 }
 
-export function CashierDashboard({ summary }: CashierDashboardProps) {
+export function CashierDashboard({ summary, range }: CashierDashboardProps) {
+  const statLabels = financialStatLabelsForRange(range);
+
   return (
     <div className="space-y-4">
       <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -32,13 +36,13 @@ export function CashierDashboard({ summary }: CashierDashboardProps) {
               action={{ to: "/students", label: en.dashboard.viewStudents }}
             />
             <DashboardStatCard
-              label={en.dashboard.todayCollections}
+              label={statLabels.collections}
               value={format(summary.todayCollectionsTotal)}
               icon={Banknote}
               action={{ to: "/reports", label: en.dashboard.viewReports }}
             />
             <DashboardStatCard
-              label={en.dashboard.paymentsToday}
+              label={statLabels.payments}
               value={String(summary.paymentsTodayCount)}
               icon={ReceiptText}
               action={{ to: "/payments", label: en.dashboard.viewPayments }}
@@ -66,7 +70,7 @@ export function CashierDashboard({ summary }: CashierDashboardProps) {
         >
           {en.dashboard.recentActivity}
         </h2>
-        <RecentActivity payments={summary.recentActivity} showActions />
+        <RecentActivity payments={summary.recentActivity} range={range} showActions />
       </section>
     </div>
   );

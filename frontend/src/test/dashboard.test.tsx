@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -47,6 +47,22 @@ const auditor: AuthenticatedUser = {
   name: "Noel Aquino (sample)",
   role: "auditor",
 };
+const accounting: AuthenticatedUser = {
+  id: "u5",
+  name: "Maya Cruz (sample)",
+  role: "accounting",
+};
+
+beforeAll(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
 
 describe("DashboardPage", () => {
   it("renders the dashboard for Cashier", async () => {
@@ -69,6 +85,8 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("combobox", { name: /filter range/i })).toHaveValue(
       "last_7_days",
     );
+    expect(screen.getByText(/collections \(last 7 days\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/payments \(last 7 days\)/i)).toBeInTheDocument();
   });
 
   it("renders the cashier account status overview without a duplicate due-soon widget", async () => {
@@ -130,6 +148,8 @@ describe("DashboardPage", () => {
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
     );
+    expect(screen.getByText(/today's collections/i)).toBeInTheDocument();
+    expect(screen.getByText(/payments today/i)).toBeInTheDocument();
     await waitFor(() => expect(activityRows()).toBe(2));
 
     await user.selectOptions(rangeFilter, "last_30_days");
@@ -229,7 +249,7 @@ describe("DashboardPage", () => {
   it("Auditor dashboard has no record/void/approve controls", async () => {
     renderWithProviders(auditor);
     await waitFor(() =>
-      expect(screen.getByText(/Today's collections/i)).toBeInTheDocument(),
+      expect(screen.getByText(/collections \(last 7 days\)/i)).toBeInTheDocument(),
     );
     expect(
       screen.queryByRole("button", { name: /record payment/i }),
@@ -237,6 +257,50 @@ describe("DashboardPage", () => {
     expect(
       screen.queryByRole("button", { name: /void/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("updates accounting chart label when the range changes", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(accounting);
+
+    expect(await screen.findByText(/collection trend \(last 7 days\)/i)).toBeInTheDocument();
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /filter range/i }),
+      "last_30_days",
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText(/collection trend \(last 30 days\)/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("builds the accounting timeline from the selected range", async () => {
+    const [today, last7Days, last30Days, schoolYear] = await Promise.all([
+      mockAdapter.fetchDashboardSummary(accounting, "today"),
+      mockAdapter.fetchDashboardSummary(accounting, "last_7_days"),
+      mockAdapter.fetchDashboardSummary(accounting, "last_30_days"),
+      mockAdapter.fetchDashboardSummary(accounting, "school_year"),
+    ]);
+
+    expect(today.role).toBe("accounting");
+    expect(last7Days.role).toBe("accounting");
+    expect(last30Days.role).toBe("accounting");
+    expect(schoolYear.role).toBe("accounting");
+
+    if (
+      today.role !== "accounting" ||
+      last7Days.role !== "accounting" ||
+      last30Days.role !== "accounting" ||
+      schoolYear.role !== "accounting"
+    ) {
+      throw new Error("Accounting dashboard summary expected");
+    }
+
+    expect(today.collectionTrend).toHaveLength(1);
+    expect(last7Days.collectionTrend.length).toBeGreaterThan(today.collectionTrend.length);
+    expect(last30Days.collectionTrend.length).toBeGreaterThan(last7Days.collectionTrend.length);
+    expect(schoolYear.collectionTrend.length).toBeGreaterThan(last30Days.collectionTrend.length);
   });
 
   it("shows a loading state before data resolves", () => {
@@ -273,7 +337,7 @@ describe("DashboardPage", () => {
     });
     renderWithProviders(cashier);
     expect(
-      await screen.findByText(/no payment activity yet today/i),
+      await screen.findByText(/no payment activity for last 7 days/i),
     ).toBeInTheDocument();
   });
 

@@ -3,13 +3,17 @@ import { RecentActivity } from "./RecentActivity";
 import { Banknote, ReceiptText, Users } from "lucide-react";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
-import type { AuditorDashboardSummary } from "@/api/dashboardTypes";
+import type { AuditorDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
+import { financialStatLabelsForRange } from "./dashboardRangeLabels";
 
 interface AuditorDashboardProps {
   summary: AuditorDashboardSummary;
+  range: DashboardRange;
 }
 
-export function AuditorDashboard({ summary }: AuditorDashboardProps) {
+export function AuditorDashboard({ summary, range }: AuditorDashboardProps) {
+  const statLabels = financialStatLabelsForRange(range);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
@@ -19,12 +23,12 @@ export function AuditorDashboard({ summary }: AuditorDashboardProps) {
           icon={Users}
         />
         <DashboardStatCard
-          label={en.dashboard.todayCollections}
+          label={statLabels.collections}
           value={format(summary.todayCollectionsTotal)}
           icon={Banknote}
         />
         <DashboardStatCard
-          label={en.dashboard.paymentsToday}
+          label={statLabels.payments}
           value={String(summary.paymentsTodayCount)}
           icon={ReceiptText}
         />
@@ -53,7 +57,7 @@ export function AuditorDashboard({ summary }: AuditorDashboardProps) {
         >
           {en.dashboard.recentActivity}
         </h2>
-        <RecentActivity payments={summary.recentActivity} />
+        <RecentActivity payments={summary.recentActivity} range={range} />
       </section>
     </div>
   );

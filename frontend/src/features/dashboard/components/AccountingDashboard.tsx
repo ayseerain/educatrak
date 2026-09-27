@@ -4,13 +4,14 @@ import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
-import type { AccountingDashboardSummary } from "@/api/dashboardTypes";
+import type { AccountingDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
 
 interface AccountingDashboardProps {
   summary: AccountingDashboardSummary;
+  range: DashboardRange;
 }
 
-export function AccountingDashboard({ summary }: AccountingDashboardProps) {
+export function AccountingDashboard({ summary, range }: AccountingDashboardProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4">
@@ -36,7 +37,7 @@ export function AccountingDashboard({ summary }: AccountingDashboardProps) {
         />
       </div>
 
-      <CollectionTrend points={summary.collectionTrend} />
+      <CollectionTrend points={summary.collectionTrend} range={range} />
 
       <section aria-labelledby="recent-activity-heading">
         <h2
@@ -45,7 +46,7 @@ export function AccountingDashboard({ summary }: AccountingDashboardProps) {
         >
           {en.dashboard.recentActivity}
         </h2>
-        <RecentActivity payments={summary.recentActivity} />
+        <RecentActivity payments={summary.recentActivity} range={range} />
       </section>
     </div>
   );

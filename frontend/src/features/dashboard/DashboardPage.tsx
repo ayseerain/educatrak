@@ -72,15 +72,18 @@ export function DashboardPage({ user }: DashboardPageProps) {
       {visibleData && visibleData.role === "cashier" && (
         <CashierDashboard
           summary={visibleData}
+          range={range}
         />
       )}
       {visibleData && visibleData.role === "accounting" && (
-        <AccountingDashboard summary={visibleData} />
+        <AccountingDashboard summary={visibleData} range={range} />
       )}
       {visibleData && visibleData.role === "administrator" && (
         <AdminDashboard summary={visibleData} />
       )}
-      {visibleData && visibleData.role === "auditor" && <AuditorDashboard summary={visibleData} />}
+      {visibleData && visibleData.role === "auditor" && (
+        <AuditorDashboard summary={visibleData} range={range} />
+      )}
 
       {user.role === "cashier" && (
         <RecordPaymentDialog
@@ -98,9 +101,6 @@ function mergeRecordedPayments(
   recordedPayments: RecentPayment[],
   range: DashboardRange,
 ): DashboardSummary {
-  const todayPayments = recordedPayments.filter((payment) =>
-    isTodayPayment(payment),
-  );
   const rangePayments = recordedPayments.filter((payment) =>
     paymentMatchesRange(payment, range),
   );
@@ -110,11 +110,11 @@ function mergeRecordedPayments(
 
   return {
     ...summary,
-    todayCollectionsTotal: todayPayments.reduce(
+    todayCollectionsTotal: rangePayments.reduce(
       (total, payment) => add(total, payment.amount),
       summary.todayCollectionsTotal,
     ),
-    paymentsTodayCount: summary.paymentsTodayCount + todayPayments.length,
+    paymentsTodayCount: summary.paymentsTodayCount + rangePayments.length,
     recentActivity,
   };
 }
@@ -130,10 +130,6 @@ function paymentMatchesRange(
 
   const days = range === "last_7_days" ? 7 : 30;
   return paymentTime >= Date.now() - days * 24 * 60 * 60 * 1000;
-}
-
-function isTodayPayment(payment: RecentPayment): boolean {
-  return Date.parse(payment.time) >= startOfManilaDay(new Date());
 }
 
 function startOfManilaDay(value: Date): number {

@@ -271,3 +271,102 @@ Updated `frontend/src/features/dashboard/DashboardPage.tsx`,
 Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
 18 tests; `npm.cmd run test` passed with 23 tests; `npm.cmd run build` passed
 with the existing Vite chunk-size warning.
+
+## Session expiration warning
+
+**Timestamp:** Sunday, September 27, 2026 — 09:51:20 +08:00
+
+Implemented the authenticated session-expiration warning modal required by M0/M1.
+The in-memory mock session now tracks expiry, renews during normal activity,
+warns 1 minute before expiry, provides a Stay signed in action, and redirects
+expired sessions back to `/login` without storing credentials or personal data.
+The prototype uses a documented 30-minute mock inactivity duration until the
+real cookie-session backend expiry is available.
+
+Updated `frontend/src/auth/session.tsx`,
+`frontend/src/features/auth/SessionExpirationWarning.tsx`,
+`frontend/src/features/auth/README.md`, `frontend/src/App.tsx`,
+`frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx`, and
+`frontend/Prototype-Decisions.md`.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 7
+tests; `npm.cmd run test` passed with 25 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning. An initial build attempt caught a
+strict TypeScript narrowing issue in the countdown callback; it was fixed
+before the successful build.
+
+## Dashboard financial widgets follow selected range
+
+**Timestamp:** Sunday, September 27, 2026 — 10:00:50 +08:00
+
+Updated the Cashier and Auditor dashboard financial widgets so their collection
+and payment labels reflect the selected dashboard range. The mock dashboard
+summary now derives those widget totals from the filtered activity range, and
+newly recorded cashier payments are merged into the selected range totals rather
+than only today's totals.
+
+Updated `frontend/src/features/dashboard/DashboardPage.tsx`,
+`frontend/src/features/dashboard/components/CashierDashboard.tsx`,
+`frontend/src/features/dashboard/components/AuditorDashboard.tsx`,
+`frontend/src/features/dashboard/components/dashboardRangeLabels.ts`,
+`frontend/src/api/mockAdapter.ts`, `frontend/src/i18n/en.ts`, and
+`frontend/src/test/dashboard.test.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+18 tests; `npm.cmd run test` passed with 25 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning.
+
+## Dashboard range labels second pass
+
+**Timestamp:** Sunday, September 27, 2026 — 10:06:18 +08:00
+
+Completed the dashboard range-label fix across the remaining range-filtered
+surfaces. Recent Activity empty states now name the selected range, and the
+Accounting collection trend title changes from today's totals to the selected
+range label. The selected dashboard range is now passed into the dashboard
+children that render range-filtered activity and trend data.
+
+Updated `frontend/src/features/dashboard/DashboardPage.tsx`,
+`frontend/src/features/dashboard/components/AccountingDashboard.tsx`,
+`frontend/src/features/dashboard/components/CollectionTrend.tsx`,
+`frontend/src/features/dashboard/components/RecentActivity.tsx`,
+`frontend/src/features/dashboard/components/dashboardRangeLabels.ts`,
+`frontend/src/i18n/en.ts`, and `frontend/src/test/dashboard.test.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+19 tests; `npm.cmd run test` passed with 26 tests; `npm.cmd run build` passed
+with the existing Vite chunk-size warning. Recharts emitted expected jsdom
+zero-size chart warnings during the Accounting dashboard label test.
+
+## Accounting collection-trend range data
+
+**Timestamp:** Sunday, September 27, 2026 — 10:13:10 +08:00
+
+Fixed the Accounting collection-trend widget to build its timeline from the
+payment activity in the selected dashboard range. The widget no longer uses a
+fixed seven-day data set, so Today, Last 7 days, Last 30 days, and This school
+year each display their respective activity dates and collection totals.
+
+Updated `frontend/src/api/mockAdapter.ts` and
+`frontend/src/test/dashboard.test.tsx`.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+20 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Remaining route implementation pass
+
+**Timestamp:** Sunday, September 27, 2026 — 10:22:40 +08:00
+
+Replaced the active placeholder-route layer with capability-guarded screens for
+the remaining documented frontend routes. Added the forced first-login password
+screen, profile, students, accounts, payments, receipt/permit print views,
+voids, follow-up, clearance, close-out, reports, notifications, import,
+settings, users, roles, audit, and backup surfaces. The mock screens use only
+obviously fictional records and keep Registrar clearance reasons free of
+amounts. Updated the capability matrix and sidebar links to use the canonical
+route and capability names.
+
+Validation: `npm.cmd run build` passed (with the existing Vite chunk-size
+warning); `npm.cmd run test` passed with 27 tests. The documented formal audit
+phase remains untouched. Full API-backed workflows remain dependent on the
+separate Laravel implementation.

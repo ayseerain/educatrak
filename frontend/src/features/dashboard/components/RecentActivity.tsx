@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/Badge";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import { formatDate, formatDateTime, formatTime } from "@/lib/dates";
-import type { RecentPayment } from "@/api/dashboardTypes";
+import type { DashboardRange, RecentPayment } from "@/api/dashboardTypes";
+import { dashboardRangeLabel } from "./dashboardRangeLabels";
 
 const STATUS_BADGE: Record<
   RecentPayment["status"],
@@ -19,12 +20,14 @@ const STATUS_BADGE: Record<
 
 interface RecentActivityProps {
   payments: RecentPayment[];
+  range: DashboardRange;
   /** Cashier can act on rows (e.g. view receipt); Auditor is read-only. */
   showActions?: boolean;
 }
 
 export function RecentActivity({
   payments,
+  range,
   showActions = false,
 }: RecentActivityProps) {
   const [activityLimit, setActivityLimit] = useState("5");
@@ -94,7 +97,12 @@ export function RecentActivity({
   ];
 
   if (payments.length === 0) {
-    return <EmptyState message={en.states.emptyActivity} />;
+    const message =
+      range === "today"
+        ? en.states.emptyActivity
+        : en.states.emptyActivityInRange.replace("{range}", dashboardRangeLabel(range));
+
+    return <EmptyState message={message} />;
   }
 
   return (
