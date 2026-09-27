@@ -177,3 +177,46 @@ the widget group reads more compactly.
 
 Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
 16 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## B01 login build
+
+**Timestamp:** Sunday, September 27, 2026 — 09:04:24 +08:00
+
+Implemented the B01 `/login` screen and restored the active mock session gate.
+The login form now uses React Hook Form with Zod validation, focuses the
+username field, accepts the documented mock username/password path, redirects
+authenticated users to the dashboard, shows a generic failed-login message, and
+shows the lockout wait time after repeated failed attempts. The mock session
+remains in memory only and does not store credentials in `localStorage`.
+
+Updated `frontend/src/App.tsx`, `frontend/src/main.tsx`,
+`frontend/src/features/auth/LoginPage.tsx`, `frontend/src/i18n/en.ts`,
+`frontend/src/features/auth/README.md`, `frontend/Prototype-Overview.md`,
+`frontend/Prototype-Decisions.md`, and added
+`frontend/src/test/login.test.tsx`. Updated
+`EducatraK-Frontend-Loop-Engineering.md` so B01 is checked with a Resume Note;
+Phase 2 audit remains untouched.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 4
+tests; `npm.cmd run test` passed with 21 tests; `npm.cmd run build` passed with
+the existing Vite chunk-size warning.
+
+Next Build item: B02 First-login password change.
+
+## B01 logout control
+
+**Timestamp:** Sunday, September 27, 2026 — 09:18:43 +08:00
+
+Added a header Sign out control that calls the existing in-memory mock
+`logout()` session function, clears the signed-in user, and lets the route guard
+return the app to `/login`. The control is wired through `App`, `Shell`, and
+`Header`, with visible text and a logout icon.
+
+Updated `frontend/src/App.tsx`, `frontend/src/components/layout/Shell.tsx`,
+`frontend/src/components/layout/Header.tsx`, `frontend/src/i18n/en.ts`,
+`frontend/src/test/login.test.tsx`, and the B01 Resume Note in
+`EducatraK-Frontend-Loop-Engineering.md`.
+
+Validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 5
+tests; `npm.cmd run test` passed with 22 tests; `npm.cmd run build` passed with
+the existing Vite chunk-size warning.

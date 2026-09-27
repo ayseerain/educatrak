@@ -6,9 +6,10 @@ import { en } from "@/i18n/en";
 
 interface ShellProps extends PropsWithChildren {
   user: AuthenticatedUser;
+  onLogout: () => void;
 }
 
-export function Shell({ user, children }: ShellProps) {
+export function Shell({ user, onLogout, children }: ShellProps) {
   return (
     <div className="flex h-screen min-w-[1024px] bg-surface">
       <a
@@ -19,7 +20,7 @@ export function Shell({ user, children }: ShellProps) {
       </a>
       <Sidebar user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header user={user} />
+        <Header user={user} onLogout={onLogout} />
         <main id="main-content" className="flex-1 overflow-y-auto p-6">
           {children}
         </main>

@@ -26,14 +26,23 @@ npm run test:watch
 ```
 
 Verified in this environment: `npm run build` completes with zero
-TypeScript errors, and all tests in `src/test/dashboard.test.tsx` pass.
+TypeScript errors, and all tests in `src/test/` pass.
 
-## Previewing a different role
+## Mock sign-in
 
-`src/App.tsx` hard-codes `CURRENT_USER` (see `DECISIONS.md` #3) since
-this task didn't include a real auth/session API. Change its `role`
-field to `"cashier" | "accounting" | "administrator" | "auditor" |
-"registrar"` to see that role's sidebar and dashboard.
+The active prototype mounts `/login` and uses an in-memory mock session.
+Credentials are not stored in `localStorage`; the mock user exists only in
+React state.
+
+Sample usernames:
+
+- `sample.cashier`
+- `sample.accounting`
+- `sample.admin`
+- `sample.auditor`
+- `sample.registrar`
+
+All sample users use the dummy password `SamplePass123!`.
 
 ## Project layout
 

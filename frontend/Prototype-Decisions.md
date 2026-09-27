@@ -24,13 +24,11 @@ role-aware navigation can be reviewed end-to-end. These should be
 replaced screen-by-screen as each is specified.
 
 ## 3. Authenticated user / session source
-The brief specifies cookie-session authentication but this task did
-not include an auth API contract. `App.tsx` hard-codes a single fake
-`AuthenticatedUser` (`CURRENT_USER`) with a `TODO(spec)` note. Replace
-with a real `useSession()`/`useCurrentUser()` hook backed by the
-cookie session once that endpoint is defined. To preview a different
-role's dashboard during development, edit the `role` field on that
-constant.
+The active app now mounts `/login` for the B01 build phase and uses the
+in-memory mock session in `src/auth/session.tsx`. This keeps the frontend
+usable without a live backend while avoiding `localStorage` for credentials
+or personal data. Replace the mock with the documented cookie-session API
+when the backend client layer is implemented.
 
 ## 4. Table row actions
 The brief lists an "Actions" column as a *potential* column for the

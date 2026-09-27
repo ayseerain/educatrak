@@ -1,6 +1,8 @@
-# Archived authentication flow
+# Authentication flow
 
-The login and in-memory session files in this folder are retained for the
-future authentication implementation, but they are not mounted in the active
-application yet. The dashboard currently opens with a fictional cashier
-preview user so dashboard work can continue without a login screen.
+The `/login` route is mounted in the active application for the B01 build
+phase. It uses the in-memory mock session in `src/auth/session.tsx` so the
+frontend can run without the Laravel backend. Credentials are not stored in
+`localStorage`; the signed-in user exists only in React state for this mock.
+
+The real backend will replace this with the documented cookie-session API.

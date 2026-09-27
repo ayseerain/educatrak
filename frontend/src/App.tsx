@@ -1,17 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useSession } from "@/auth/session";
 import { Shell } from "@/components/layout/Shell";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { LoginPage } from "@/features/auth/LoginPage";
 import { en } from "@/i18n/en";
 import type { AuthenticatedUser } from "@/lib/types";
-
-// TODO(spec): authentication is archived until the auth screen and API
-// contract are implemented. This fictional user keeps the dashboard
-// previewable without storing credentials or personal data.
-const DASHBOARD_PREVIEW_USER: AuthenticatedUser = {
-  id: "preview-cashier",
-  name: "Casey Cashier (sample)",
-  role: "cashier",
-};
 
 function PlaceholderScreen({ title }: { title: string }) {
   return (
@@ -21,12 +14,17 @@ function PlaceholderScreen({ title }: { title: string }) {
   );
 }
 
-export function App() {
-  return <Routes>
-    <Route path="*" element={
-      <Shell user={DASHBOARD_PREVIEW_USER}>
-        <Routes>
-        <Route path="/" element={<DashboardPage user={DASHBOARD_PREVIEW_USER} />} />
+function AuthenticatedApp({
+  onLogout,
+  user,
+}: {
+  onLogout: () => void;
+  user: AuthenticatedUser;
+}) {
+  return (
+    <Shell user={user} onLogout={onLogout}>
+      <Routes>
+        <Route path="/" element={<DashboardPage user={user} />} />
         <Route
           path="/students"
           element={<PlaceholderScreen title={en.nav.students} />}
@@ -88,8 +86,30 @@ export function App() {
           element={<PlaceholderScreen title={en.nav.settings} />}
         />
         <Route path="*" element={<Navigate to="/404" replace />} />
-        </Routes>
-      </Shell>
-    } />
-  </Routes>;
+      </Routes>
+    </Shell>
+  );
+}
+
+export function App() {
+  const { logout, user } = useSession();
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/*"
+        element={
+          user ? (
+            <AuthenticatedApp user={user} onLogout={logout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
+  );
 }

@@ -1,3 +1,4 @@
+import { LogOut } from "lucide-react";
 import type { AuthenticatedUser } from "@/lib/types";
 import { en } from "@/i18n/en";
 
@@ -11,9 +12,10 @@ const ROLE_LABEL: Record<AuthenticatedUser["role"], string> = {
 
 interface HeaderProps {
   user: AuthenticatedUser;
+  onLogout: () => void;
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, onLogout }: HeaderProps) {
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
@@ -63,6 +65,14 @@ export function Header({ user }: HeaderProps) {
               {ROLE_LABEL[user.role]}
             </span>
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="inline-flex min-h-control items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-medium text-text-primary hover:bg-surface"
+        >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          {en.header.signOut}
         </button>
       </div>
     </header>

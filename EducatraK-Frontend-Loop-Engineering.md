@@ -67,8 +67,8 @@ For each screen below:
 - **Route:** `/login`
 - **Documented access:** All users
 - **Build scope:** Username/password login; generic failure messaging; lockout wait-time handling.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented the active `/login` route for B01 and restored the mock in-memory session gate in `frontend/src/App.tsx`, `frontend/src/main.tsx`, `frontend/src/auth/session.tsx`, and `frontend/src/features/auth/LoginPage.tsx`. The login form uses React Hook Form with Zod validation, focuses the username field, accepts username/password mock sign-in, redirects authenticated users to the dashboard, shows a generic failed-login message, and displays a lockout wait-time message after repeated failed attempts without storing credentials in `localStorage`. Added a header Sign out control through `frontend/src/components/layout/Header.tsx` and `frontend/src/components/layout/Shell.tsx` so users can clear the in-memory mock session and return to `/login`. Added focused coverage in `frontend/src/test/login.test.tsx`; updated auth/prototype notes to remove the archived-login wording. Latest validation: `npm.cmd run test -- --run src/test/login.test.tsx` passed with 5 tests; `npm.cmd run test` passed with 22 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning. Phase 2 Counter-Check & Audit has not been started. Next Build item: B02 First-login password change.
 
 ### B02. First-login password change — M1
 
@@ -100,7 +100,7 @@ For each screen below:
 - **Documented access:** ADM / CSH / ACC / AUD / REG
 - **Build scope:** One route with documented role-specific dashboard content and quick links; Accounting alone may have the single collection-trend chart.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented the role-specific dashboard foundation and route in `frontend/src/features/dashboard/`. The active app opens directly with a fictional cashier preview user; the login/session implementation is retained but archived in `frontend/src/features/auth/` until authentication is prioritized. Cashier, Accounting, Administrator, Auditor, and Registrar views use the typed mock dashboard adapter; Accounting alone renders the collection-trend chart, and Registrar receives no financial values. Loading, error/retry, empty activity, role-specific CTA visibility, and keyboard-focus behavior are covered by `frontend/src/test/dashboard.test.tsx`. Validation: `npm.cmd run build` passed; `npm.cmd run test` passed with 10 tests. Phase 2 Counter-Check & Audit has not been started. Remaining dashboard follow-up: wire the documented quick-link destinations when those screens are built; continue with B06 only when the task scope is expanded.
+- **Resume Note:** Implemented the role-specific dashboard foundation and route in `frontend/src/features/dashboard/`. The dashboard is now reached after the B01 mock login/session gate rather than through a hard-coded preview user. Cashier, Accounting, Administrator, Auditor, and Registrar views use the typed mock dashboard adapter; Accounting alone renders the collection-trend chart, and Registrar receives no financial values. Loading, error/retry, empty activity, role-specific CTA visibility, and keyboard-focus behavior are covered by `frontend/src/test/dashboard.test.tsx`. Latest validation after B01 routing changes: `npm.cmd run build` passed with the existing Vite chunk-size warning; `npm.cmd run test` passed with 21 total tests, including 17 dashboard tests. Phase 2 Counter-Check & Audit has not been started. Remaining dashboard follow-up: wire the documented quick-link destinations when those screens are built.
 
 ### B06. My Profile — M0/M1
 
@@ -798,8 +798,8 @@ A screen is never marked audited merely because it was previously built.
 
 ## Build Phase Summary
 
-- [ ] B01 — **Login** (`/login`)
-  - **Resume Note:** _Not started._
+- [x] B01 — **Login** (`/login`)
+  - **Resume Note:** Built and validated. See the detailed B01 Resume Note above. Formal Cross-Check & Audit remains unchecked by design.
 - [ ] B02 — **First-login password change** (`/first-login`)
   - **Resume Note:** _Not started._
 - [ ] B03 — **Access denied** (`/403`)
