@@ -393,3 +393,33 @@ styling. Range-filter behavior and keyboard menu support are preserved.
 
 Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
 20 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning.
+
+## Shared dropdown styling pass
+
+**Timestamp:** Sunday, September 27, 2026 — 11:31:21 +08:00
+
+Added a shared Radix-backed dropdown select component so active dropdowns use
+the same trigger, bordered menu, selected-row checkmark, and light-green
+highlight treatment. Updated the dashboard range filter, Recent Activity row
+limit, Record Payment method selector, and student grade selector to use the
+shared component. No active native `<select>` controls remain under
+`frontend/src`.
+
+Validation: `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed with
+20 tests; `npm.cmd run build` passed with the existing Vite chunk-size warning;
+`npm.cmd run test` passed with 28 tests.
+
+## Operational route back buttons
+
+**Timestamp:** Sunday, September 27, 2026 — 11:37:43 +08:00
+
+Added a shared page-header Back control and applied it to operational child
+screens with clear parent routes: student forms and profiles, account creation
+and detail, payment entry and detail, receipt and permit print views, and report
+detail pages. Direct module landing pages keep their existing sidebar/header
+navigation, and the account wizard retains its separate step Back control.
+
+Validation: `npm.cmd run build` passed with the existing Vite chunk-size
+warning; `npm.cmd run test` passed with 28 tests. React Router future-flag
+warnings and the existing jsdom Recharts zero-size chart warnings appeared
+during tests.

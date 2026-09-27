@@ -136,9 +136,6 @@ describe("DashboardPage", () => {
 
     await screen.findByText(/account status overview/i);
     const rangeFilter = screen.getByRole("button", { name: /filter range/i });
-    let activityRowsFilter = await screen.findByRole("combobox", {
-      name: /activity rows/i,
-    });
     const activityRows = () => screen.getAllByRole("row").length - 1;
 
     await waitFor(() => expect(activityRows()).toBe(5));
@@ -159,11 +156,9 @@ describe("DashboardPage", () => {
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
     );
-    activityRowsFilter = screen.getByRole("combobox", {
-      name: /activity rows/i,
-    });
     await waitFor(() => expect(activityRows()).toBe(5));
-    await user.selectOptions(activityRowsFilter, "all");
+    await user.click(screen.getByRole("button", { name: /activity rows/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: "All activity" }));
     await waitFor(() => expect(activityRows()).toBe(9));
 
     await user.click(rangeFilter);
@@ -172,10 +167,8 @@ describe("DashboardPage", () => {
     await waitFor(() =>
       expect(screen.queryByText(/loading dashboard/i)).not.toBeInTheDocument(),
     );
-    activityRowsFilter = screen.getByRole("combobox", {
-      name: /activity rows/i,
-    });
-    await user.selectOptions(activityRowsFilter, "all");
+    await user.click(screen.getByRole("button", { name: /activity rows/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: "All activity" }));
     await waitFor(() => expect(activityRows()).toBe(13));
     expect(screen.getAllByText(/, \d{1,2}:\d{2}/).length).toBeGreaterThan(1);
   });
@@ -194,10 +187,8 @@ describe("DashboardPage", () => {
       "Bianca Cruz (sample)",
     );
     await user.type(within(dialog).getByLabelText(/amount received/i), "2500");
-    await user.selectOptions(
-      within(dialog).getByLabelText(/payment method/i),
-      "gcash",
-    );
+    await user.click(within(dialog).getByRole("button", { name: /payment method/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: "GCash reference" }));
     await user.type(
       within(dialog).getByLabelText(/reference number/i),
       "GCASH-SAMPLE-001",

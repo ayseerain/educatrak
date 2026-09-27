@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/Table";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { en } from "@/i18n/en";
@@ -17,6 +18,12 @@ const STATUS_BADGE: Record<
   pending: { tone: "warning", label: en.status.pending },
   voided: { tone: "error", label: en.status.voided },
 };
+
+const ACTIVITY_LIMIT_OPTIONS = [
+  { value: "5", label: en.dashboard.activityLatest5 },
+  { value: "10", label: en.dashboard.activityLatest10 },
+  { value: "all", label: en.dashboard.activityAll },
+];
 
 interface RecentActivityProps {
   payments: RecentPayment[];
@@ -108,18 +115,16 @@ export function RecentActivity({
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <label className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+        <label className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-text-secondary">
           <span>{en.dashboard.activityRows}</span>
-          <select
+          <DropdownSelect
             aria-label={en.dashboard.activityRows}
-            className="dropdown-select min-w-[150px] px-3 text-sm"
             value={activityLimit}
-            onChange={(event) => setActivityLimit(event.target.value)}
-          >
-            <option value="5">{en.dashboard.activityLatest5}</option>
-            <option value="10">{en.dashboard.activityLatest10}</option>
-            <option value="all">{en.dashboard.activityAll}</option>
-          </select>
+            options={ACTIVITY_LIMIT_OPTIONS}
+            onChange={setActivityLimit}
+            className="min-w-[150px]"
+            contentClassName="min-w-[150px]"
+          />
         </label>
       </div>
       <DataTable

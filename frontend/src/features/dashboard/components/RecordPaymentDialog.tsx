@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { en } from "@/i18n/en";
 import { formatDate } from "@/lib/dates";
 import { format, parse } from "@/lib/money";
@@ -14,6 +15,11 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   "bank_transfer",
   "gcash",
 ];
+
+const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({
+  value: method,
+  label: en.recordPayment.methods[method],
+}));
 
 interface RecordPaymentDialogProps {
   open: boolean;
@@ -130,6 +136,7 @@ export function RecordPaymentDialog({
     register,
     reset,
     setError,
+    setValue,
     watch,
   } = useForm<RecordPaymentFormValues>({
     defaultValues: defaultValues(),
@@ -318,18 +325,22 @@ export function RecordPaymentDialog({
               >
                 {en.recordPayment.method}
               </label>
-              <select
-                id="payment-method"
-                className="dropdown-select"
+              <input type="hidden" {...register("method")} />
+              <DropdownSelect
+                aria-label={en.recordPayment.method}
+                value={watchedMethod}
+                options={PAYMENT_METHOD_OPTIONS}
+                onChange={(method) =>
+                  setValue("method", method, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
                 disabled={isSaving}
-                {...register("method")}
-              >
-                {PAYMENT_METHODS.map((method) => (
-                  <option key={method} value={method}>
-                    {en.recordPayment.methods[method]}
-                  </option>
-                ))}
-              </select>
+                className="w-full"
+                contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                align="start"
+              />
             </div>
 
             {watchedMethod !== "cash" && (
