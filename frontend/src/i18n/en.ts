@@ -146,7 +146,6 @@ export const en = {
     methods: {
       cash: "Cash",
       bank_transfer: "Bank deposit",
-      gcash: "GCash reference",
       check: "Check",
     },
   },

@@ -23,8 +23,8 @@ function renderWithProviders(user: AuthenticatedUser) {
 }
 
 function LocationPath() {
-  const { pathname } = useLocation();
-  return <output aria-label="Current path">{pathname}</output>;
+  const { pathname, search } = useLocation();
+  return <output aria-label="Current path">{pathname}{search}</output>;
 }
 
 const cashier: AuthenticatedUser = {
@@ -198,10 +198,13 @@ describe("DashboardPage", () => {
     );
     await user.type(within(dialog).getByLabelText(/amount received/i), "2500");
     await user.click(within(dialog).getByRole("button", { name: /payment method/i }));
-    await user.click(screen.getByRole("menuitemradio", { name: "GCash reference" }));
+    expect(
+      screen.queryByRole("menuitemradio", { name: /gcash/i }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: "Bank deposit" }));
     await user.type(
       within(dialog).getByLabelText(/reference number/i),
-      "GCASH-SAMPLE-001",
+      "BANK-SAMPLE-001",
     );
     await user.click(within(dialog).getByRole("button", { name: /review payment/i }));
 
@@ -238,7 +241,7 @@ describe("DashboardPage", () => {
 
     await user.click(await screen.findByRole("link", { name: /view failed emails/i }));
 
-    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications");
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
   });
 
   it("Registrar dashboard exposes no financial information", () => {

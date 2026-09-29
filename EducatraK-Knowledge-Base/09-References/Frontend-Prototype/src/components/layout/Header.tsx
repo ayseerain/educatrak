@@ -1,3 +1,4 @@
+import { Bell } from "lucide-react";
 import type { AuthenticatedUser } from "@/lib/types";
 import { en } from "@/i18n/en";
 
@@ -41,7 +42,7 @@ export function Header({ user }: HeaderProps) {
           aria-label={en.header.notifications}
           className="relative flex h-9 w-9 items-center justify-center rounded-md text-text-secondary hover:bg-surface"
         >
-          <span aria-hidden="true">🔔</span>
+          <Bell aria-hidden="true" className="h-4 w-4" />
         </button>
 
         <button

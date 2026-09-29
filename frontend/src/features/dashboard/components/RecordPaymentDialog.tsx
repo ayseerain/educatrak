@@ -13,7 +13,6 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   "cash",
   "check",
   "bank_transfer",
-  "gcash",
 ];
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({
@@ -66,7 +65,7 @@ function schemaFor(today: string) {
     .object({
       studentName: z.string().trim().min(1, en.recordPayment.studentRequired),
       amount: z.string().trim().min(1, en.recordPayment.amountRequired),
-      method: z.enum(["cash", "check", "bank_transfer", "gcash"], {
+      method: z.enum(["cash", "check", "bank_transfer"], {
         required_error: en.recordPayment.methodRequired,
       }),
       reference: z.string(),

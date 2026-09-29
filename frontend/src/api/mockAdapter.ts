@@ -23,7 +23,6 @@ let nextMockReceiptNumber = 2000;
 function makeRecentActivity(): RecentPayment[] {
   const methods: RecentPayment["method"][] = [
     "cash",
-    "gcash",
     "bank_transfer",
     "check",
   ];

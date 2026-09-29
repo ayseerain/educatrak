@@ -51,7 +51,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
               label={en.dashboard.failedEmails}
               value={String(summary.failedEmailCount)}
               icon={MailSearch}
-              action={{ to: "/notifications", label: en.dashboard.viewFailedEmails }}
+              action={{ to: "/notifications?status=failed", label: en.dashboard.viewFailedEmails }}
             />
           </div>
           <CloseoutStatus done={summary.closeoutDone} className="min-h-[116px]" />

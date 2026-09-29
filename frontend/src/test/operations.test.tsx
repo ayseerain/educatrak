@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
+import { NotificationsPage, StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
 import type { AuthenticatedUser } from "@/lib/types";
 
 const cashier: AuthenticatedUser = {
@@ -75,6 +75,15 @@ describe("operational page navigation", () => {
     expect(screen.getByLabelText(/fee name/i)).toHaveValue("SY 2026-2027 tuition");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("₱1,250.00");
     expect(screen.queryByRole("link", { name: /record payment/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /payment method/i }));
+
+    expect(
+      screen.queryByRole("menuitemradio", { name: /gcash/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitemradio", { name: "Bank transfer" }),
+    ).toBeInTheDocument();
   });
 
   it("toggles follow-up in the student activity widget without leaving the profile", async () => {
@@ -118,5 +127,40 @@ describe("operational page navigation", () => {
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
     expect(screen.getByRole("heading", { name: /statement of account/i })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: /tuition installment/i })).toBeInTheDocument();
+  });
+
+  it("filters notification status from the URL query", () => {
+    render(
+      <MemoryRouter initialEntries={["/notifications?status=failed"]}>
+        <Routes>
+          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
+    expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
+  });
+
+  it("updates the notification status filter query from the status dropdown", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={["/notifications"]}>
+        <Routes>
+          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /filter status/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: /failed/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
+    expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
   });
 });
