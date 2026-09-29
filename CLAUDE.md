@@ -25,9 +25,10 @@ Do not invent new product modules, roles, business rules, payment methods, scree
 2. Read the task request and identify which repository area it affects: root, `frontend/`, `backend/`, knowledge base, or more than one area.
 3. Consult the source-of-truth hierarchy below. Read only the knowledge-base categories and implementation files relevant to the task, but do not skip a higher-priority source that governs the requested behavior.
 4. Inspect the existing implementation before editing. Reuse established patterns and avoid duplicating functionality that already exists.
-5. Check `EducatraK-Knowledge-Base/06-Decisions/` for relevant decisions and `EducatraK-Knowledge-Base/08-Logs/` for recent context when those folders contain applicable records.
-6. Identify unresolved conflicts or missing requirements before coding. Follow the hierarchy below rather than choosing whichever document is most convenient.
-7. Keep the task scoped. Do not perform unrelated refactors, dependency upgrades, formatting sweeps, or architecture changes unless the task requires them.
+5. For frontend tasks, check `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` and any active loop-engineering ledger before building, rebuilding, or auditing screens. Verify existing Build/Audit checkboxes and Resume Notes so already-built work is reused or continued rather than duplicated.
+6. Check `EducatraK-Knowledge-Base/06-Decisions/` for relevant decisions and `EducatraK-Knowledge-Base/08-Logs/` for recent context when those folders contain applicable records.
+7. Identify unresolved conflicts or missing requirements before coding. Follow the hierarchy below rather than choosing whichever document is most convenient.
+8. Keep the task scoped. Do not perform unrelated refactors, dependency upgrades, formatting sweeps, or architecture changes unless the task requires them.
 
 ### During the Task
 

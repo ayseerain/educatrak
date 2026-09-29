@@ -26,6 +26,7 @@ export const en = {
   session: {
     title: "Session expiring soon",
     description: "For security, EducatraK will sign you out in {time}.",
+    confirmation: "Would you like to stay signed in?",
     minuteRemaining: "{minutes} minute",
     minutesRemaining: "{minutes} minutes",
     secondRemaining: "{seconds} second",
@@ -167,8 +168,8 @@ export const en = {
     error: "Error",
     info: "Information",
     posted: "Posted",
+    voidPending: "Void pending",
     voided: "Voided",
-    pending: "Pending",
   },
   states: {
     loadingActivity: "Loading today's activity...",

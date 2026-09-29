@@ -36,6 +36,42 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
   });
 
+  it("separates student status from billing status on the students page", () => {
+    render(
+      <MemoryRouter initialEntries={["/students"]}>
+        <Routes>
+          <Route path="/students" element={<StudentsPage user={cashier} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("columnheader", { name: /student status/i })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /billing status/i })).toBeInTheDocument();
+    expect(screen.getAllByText("Active")).toHaveLength(3);
+    expect(screen.getByText("Current")).toBeInTheDocument();
+    expect(screen.getByText("Due soon")).toBeInTheDocument();
+    expect(screen.getByText("Overdue")).toBeInTheDocument();
+  });
+
+  it("filters student search by the beginning of the student name", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={["/students"]}>
+        <Routes>
+          <Route path="/students" element={<StudentsPage user={cashier} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/search students/i), "B");
+
+    expect(screen.getByRole("option", { name: /basil mercado/i })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: /basil mercado/i })).toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: /amara villanueva/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("cell", { name: /cora navarro/i })).not.toBeInTheDocument();
+  });
+
   it("takes the Back button to the previous history entry", async () => {
     const user = userEvent.setup();
 
@@ -142,6 +178,20 @@ describe("operational page navigation", () => {
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
     expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
+  });
+
+  it("shows queued, sent, and failed notification delivery statuses", () => {
+    render(
+      <MemoryRouter initialEntries={["/notifications"]}>
+        <Routes>
+          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("cell", { name: /queued/i })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: /sent/i })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
   });
 
   it("updates the notification status filter query from the status dropdown", async () => {

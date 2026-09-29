@@ -26,7 +26,7 @@ function makeRecentActivity(): RecentPayment[] {
     "bank_transfer",
     "check",
   ];
-  const statuses: RecentPayment["status"][] = ["posted", "posted", "pending", "voided"];
+  const statuses: RecentPayment["status"][] = ["posted", "posted", "void_pending", "voided"];
   const now = Date.now();
 
   return RECENT_ACTIVITY_AGE_DAYS.map((daysAgo, i) => ({

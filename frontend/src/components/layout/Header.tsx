@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { LogOut } from "lucide-react";
+import { StudentSearchField } from "@/features/students/StudentSearchField";
 import type { AuthenticatedUser } from "@/lib/types";
 import { en } from "@/i18n/en";
 
@@ -16,6 +18,7 @@ interface HeaderProps {
 }
 
 export function Header({ user, onLogout }: HeaderProps) {
+  const [query, setQuery] = useState("");
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
@@ -26,14 +29,14 @@ export function Header({ user, onLogout }: HeaderProps) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-6">
       <div className="w-80 max-w-full">
-        <label htmlFor="global-search" className="sr-only">
-          {en.header.searchPlaceholder}
-        </label>
-        <input
+        <StudentSearchField
           id="global-search"
-          type="search"
+          label={en.header.searchPlaceholder}
+          value={query}
+          onChange={setQuery}
           placeholder={en.header.searchPlaceholder}
-          className="h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
+          labelClassName="sr-only"
+          inputClassName="h-9 rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
         />
       </div>
 

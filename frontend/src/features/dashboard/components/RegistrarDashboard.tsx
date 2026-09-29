@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StudentSearchField } from "@/features/students/StudentSearchField";
 import { en } from "@/i18n/en";
 
 // The specification explicitly calls for "one large student search box"
@@ -16,13 +17,12 @@ export function RegistrarDashboard() {
         >
           {en.dashboard.studentSearchLabel}
         </label>
-        <input
+        <StudentSearchField
           id="registrar-student-search"
-          type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
           placeholder={en.dashboard.studentSearchPlaceholder}
-          className="h-14 w-full rounded-md border border-border bg-white px-4 text-lg text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
+          inputClassName="h-14 rounded-md border border-border bg-white px-4 text-lg text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
         />
         <p className="mt-3 text-sm text-text-muted-readable">
           {en.dashboard.studentSearchHelp}

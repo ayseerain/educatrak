@@ -160,6 +160,7 @@ describe("LoginPage", () => {
     expect(
       screen.getByRole("dialog", { name: /session expiring soon/i }),
     ).toHaveTextContent(/will sign you out in 1 second/i);
+    expect(screen.getByText(/would you like to stay signed in/i)).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: /stay signed in/i }));
@@ -201,6 +202,37 @@ describe("LoginPage", () => {
     expect(
       screen.queryByRole("dialog", { name: /session expiring soon/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("renews the session when the user is active during the expiration warning", async () => {
+    vi.useFakeTimers();
+    renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
+
+    await act(async () => {
+      submitLogin("sample.cashier", "SamplePass123!");
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+
+    expect(
+      screen.getByRole("dialog", { name: /session expiring soon/i }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.wheel(window);
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: /session expiring soon/i }),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
   });
 
   it("signs out automatically when the session expires", async () => {

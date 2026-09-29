@@ -13,6 +13,7 @@ import { AccountStatusOverview } from "./AccountStatusOverview";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
+import { STATUS_TONE_STYLES } from "@/lib/status";
 import type { CashierDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
 import { financialStatLabelsForRange } from "./dashboardRangeLabels";
 
@@ -87,21 +88,16 @@ function CloseoutStatus({
   const statusLabel = done
     ? en.dashboard.closeoutStatusDone
     : en.dashboard.closeoutStatusOpen;
+  const statusTone = done ? STATUS_TONE_STYLES.success : STATUS_TONE_STYLES.warning;
 
   return (
     <Card
-      className={`relative overflow-hidden border-l-4 p-4 ${
-        done ? "border-l-status-success bg-[#F4FAF5]" : "border-l-status-warning bg-[#FFF9F0]"
-      } ${className ?? ""}`}
+      className={`relative overflow-hidden border-l-4 p-4 ${statusTone.borderLeft} ${statusTone.surface} ${className ?? ""}`}
       aria-labelledby="closeout-status-heading"
     >
       <div className="flex items-start gap-3">
         <span
-          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${
-            done
-              ? "bg-[#E0F2E4] text-status-success"
-              : "bg-[#FBEEDC] text-status-warning"
-          }`}
+          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${statusTone.soft} ${statusTone.text}`}
         >
           <StatusIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
         </span>

@@ -3,20 +3,17 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/Table";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Badge } from "@/components/ui/Badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import { formatDate, formatDateTime, formatTime } from "@/lib/dates";
 import type { DashboardRange, RecentPayment } from "@/api/dashboardTypes";
 import { dashboardRangeLabel } from "./dashboardRangeLabels";
 
-const STATUS_BADGE: Record<
-  RecentPayment["status"],
-  { tone: "success" | "warning" | "error"; label: string }
-> = {
-  posted: { tone: "success", label: en.status.posted },
-  pending: { tone: "warning", label: en.status.pending },
-  voided: { tone: "error", label: en.status.voided },
+const PAYMENT_STATUS_LABEL: Record<RecentPayment["status"], string> = {
+  posted: en.status.posted,
+  void_pending: en.status.voidPending,
+  voided: en.status.voided,
 };
 
 const ACTIVITY_LIMIT_OPTIONS = [
@@ -81,8 +78,8 @@ export function RecentActivity({
       accessorKey: "status",
       header: en.table.status,
       cell: ({ getValue }) => {
-        const badge = STATUS_BADGE[getValue<RecentPayment["status"]>()];
-        return <Badge tone={badge.tone} label={badge.label} />;
+        const label = PAYMENT_STATUS_LABEL[getValue<RecentPayment["status"]>()];
+        return <StatusBadge status={label} />;
       },
     },
     ...(showActions

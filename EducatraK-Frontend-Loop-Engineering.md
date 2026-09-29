@@ -67,32 +67,32 @@ For each screen below:
 - **Route:** `/login`
 - **Documented access:** All users
 - **Build scope:** Username/password login; generic failure messaging; lockout wait-time handling.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/login` with username/password authentication, generic failure messaging, repeated-failure lockout wait time, password visibility toggle, in-memory mock session handling, sign-out return to login, and login/session tests in `frontend/src/test/login.test.tsx`. Validation was recorded in the work logs; formal Phase 2 audit remains pending.
 
 ### B02. First-login password change — M1
 
 - **Route:** `/first-login`
 - **Documented access:** All users when forced
 - **Build scope:** Forced password change after account creation/admin reset; live password-rule checks.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/first-login` in `frontend/src/features/auth/FirstLoginPage.tsx` with forced password-change UI, live password-rule checks, confirmation matching, and redirect after save. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B03. Access denied — System
 
 - **Route:** `/403`
 - **Documented access:** All users
 - **Build scope:** Plain permission-denied message with return-to-dashboard action.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/403` with `DeniedPage`/`SystemPage` in `frontend/src/features/operations/OperationalPages.tsx`, including a plain access-denied message and return-to-dashboard action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B04. Not found — System
 
 - **Route:** `/404`
 - **Documented access:** All users
 - **Build scope:** Plain not-found message with return-to-dashboard action.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/404` with `NotFoundPage`/`SystemPage` in `frontend/src/features/operations/OperationalPages.tsx`, including a plain not-found message and return-to-dashboard action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B05. Role-specific Dashboard — M0
 
@@ -100,288 +100,287 @@ For each screen below:
 - **Documented access:** ADM / CSH / ACC / AUD / REG
 - **Build scope:** One route with documented role-specific dashboard content and quick links; Accounting alone may have the single collection-trend chart.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented the role-specific dashboard foundation and route in `frontend/src/features/dashboard/`, wired through `frontend/src/auth/session.tsx` and `frontend/src/App.tsx`. Cashier, Accounting, Administrator, Auditor, and Registrar views use the typed mock dashboard adapter; Accounting alone renders the collection-trend chart, and Registrar receives no financial values. Loading, error/retry, empty activity, role-specific CTA visibility, and keyboard-focus behavior are covered by `frontend/src/test/dashboard.test.tsx`. Validation: `npm.cmd run build` passed; `npm.cmd run test` passed with 10 tests. Phase 2 Counter-Check & Audit has not been started. Remaining dashboard follow-up: wire the documented quick-link destinations when those screens are built; continue with B06 only when the task scope is expanded.
+- **Resume Note:** Implemented the role-specific dashboard route in `frontend/src/features/dashboard/`, wired through `frontend/src/auth/session.tsx` and `frontend/src/App.tsx`. Cashier, Accounting, Administrator, Auditor, and Registrar views use the typed mock dashboard adapter; Accounting alone renders the collection-trend chart, and Registrar receives no financial values. Loading, error/retry, empty activity, role-specific CTA visibility, range filtering, and record-payment modal behavior are covered by `frontend/src/test/dashboard.test.tsx`. Validation was recorded in the work logs; formal Phase 2 audit remains pending.
 
 ### B06. My Profile — M0/M1
 
 - **Route:** `/profile`
 - **Documented access:** All signed-in users
 - **Build scope:** View name, role, last login; change own password; no self-edit of name/username.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/profile` as `ProfilePage` in `frontend/src/features/operations/OperationalPages.tsx`, showing user name, role, last-login sample context, and a change-password form without self-editing username/name. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B07. Student List — M2
 
 - **Route:** `/students`
 - **Documented access:** ADM / CSH / ACC / AUD / REG limited
 - **Build scope:** Search/filter student records; REG receives only the documented limited fields.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/students` as `StudentsPage` with searchable mock student records, row navigation, student/billing status separation, and Registrar-limited columns that avoid balances. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B08. New Student — M2
 
 - **Route:** `/students/new`
 - **Documented access:** ADM / CSH
 - **Build scope:** Create student and guardian information with duplicate-number handling.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/students/new` as `StudentFormPage` with student and guardian fields, grade selector, duplicate-number handling, and post-create navigation. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B09. Edit Student — M2
 
 - **Route:** `/students/:id/edit`
 - **Documented access:** ADM / CSH
 - **Build scope:** Edit permitted student/guardian links and status; no hard delete.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/students/:id/edit` as `StudentFormPage edit` with editable student/guardian fields, existing sample values, and no hard-delete action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B10. Student Profile — M2
 
 - **Route:** `/students/:id`
 - **Documented access:** ADM / CSH / ACC / AUD / REG limited
 - **Build scope:** Overview/Accounts/Payments/Notifications as permitted; REG sees limited Overview only; cashier shortcuts where documented.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/students/:id` as `StudentProfilePage` with role-aware overview data, Registrar-limited display, edit action where permitted, and inline activity widgets for follow-up, record payment, and statement context. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B11. Account List — M3
 
 - **Route:** `/accounts`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Search/filter billing accounts by documented criteria.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/accounts` as `AccountsPage` with a mock billing-account list, status display, balances, and create-account entry action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B12. Create Billing Account — M3
 
 - **Route:** `/accounts/new`
 - **Documented access:** CSH
 - **Build scope:** Four-step account wizard: student, fees, plan/schedule, review/create.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/accounts/new` as `AccountWizardPage` with a four-step mock wizard for student selection, fees/plan, schedule, and review/create. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B13. Account Detail — M3
 
 - **Route:** `/accounts/:id`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Totals, fee items, schedule, payments, adjustments, activity; cashier actions where permitted.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/accounts/:id` as `AccountDetailPage` with account totals, schedule rows, balance state, and cashier record-payment action where permitted. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B14. Record Payment — M4
 
 - **Route:** `/payments/new` and `?student=:id`
 - **Documented access:** CSH
 - **Build scope:** Fast-path payment flow with balance/next due, validation, confirmation, receipt preview and post-save feedback.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/payments/new` as `PaymentEntryPage` with student search, preselected-student context from `?student=:id`, balance display, and dashboard-linked mock payment entry flow with validation/confirmation/receipt behavior. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B15. Transaction History — M4
 
 - **Route:** `/payments`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Search/filter payments; cashier own-scope by default; export where permitted.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/payments` as `PaymentsPage` with transaction-history rows, cashier default copy, payment statuses, and record-payment action where permitted. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B16. Payment Detail — M4
 
 - **Route:** `/payments/:id`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Payment, allocation, receipt, recorder, notification status, audit information and permitted void/reprint actions.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/payments/:id` via `PaymentDetailPage` with payment summary, receipt link, email status, and cashier void-request UI requiring a reason. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B17. Receipt Print View — M4
 
 - **Route:** `/receipts/:id/print`
 - **Documented access:** CSH / ACC print; ADM / AUD view
 - **Build scope:** Print-styled receipt with sequential server number and VOID/REPRINT behavior.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/receipts/:id/print` as `ReceiptPage` with print-styled receipt content, receipt number display, payment details, and browser print action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B18. Void Approval Queue — M5
 
 - **Route:** `/voids`
 - **Documented access:** ACC; ADM/AUD read-only context as documented
 - **Build scope:** Pending void requests, approve/reject behavior and separation-of-duties constraints.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/voids` as `VoidsPage` with pending void request rows, requester/reason/amount context, approval/rejection decision text for Accounting, and separation-of-duties copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B19. Overdue Follow-up — M11
 
 - **Route:** `/followup`
 - **Documented access:** CSH / ACC / AUD
 - **Build scope:** Due-soon/overdue list, filters, print list, and reminder-batch flow for permitted roles.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/followup` as `FollowupPage` with overdue/due-soon sample rows, selectable reminder batch behavior, print-list-ready table structure, and send action gated by permission. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B20. Clearance Lookup — M10
 
 - **Route:** `/clearance`
 - **Documented access:** ADM / CSH / ACC / AUD / REG
 - **Build scope:** Enrollment/exam clearance with role-aware reasons; REG never sees amounts.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/clearance` as `ClearancePage` with student search, enrollment/exam-period clearance rows, role-aware permit action, and Registrar-safe reasons without financial amounts. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B21. Exam Permit Print View — M10
 
 - **Route:** `/permits/:studentId/:period/print`
 - **Documented access:** CSH / REG
 - **Build scope:** Printable permit only for cleared periods; print is logged.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/permits/:studentId/:period/print` as `PermitPage` with print-styled exam permit content and print action for permitted roles. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B22. End-of-Day Close-out — M13
 
 - **Route:** `/closeout`
 - **Documented access:** CSH
 - **Build scope:** System totals, counted cash, variance/reason, confirmation, lock and printable summary.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/closeout` as `CloseoutPage` with system cash total, counted-cash entry, variance calculation, variance reason field, and review action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B23. Close-out History — M13
 
 - **Route:** `/closeout/history`
 - **Documented access:** ADM / CSH own / ACC / AUD
 - **Build scope:** History and accounting sign-off for unsigned entries.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/closeout/history` as `CloseoutHistoryPage` with close-out history rows and sign-off/view action text based on role capability. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B24. Reports Hub — M7
 
 - **Route:** `/reports`
 - **Documented access:** ADM / CSH limited / ACC / AUD
 - **Build scope:** Entry point to permitted reports.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/reports` as `ReportsHubPage` with links to daily, monthly, outstanding-balance, and student-statement reports. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B25. Daily Collection Report — M7
 
 - **Route:** `/reports/daily`
 - **Documented access:** ADM / ACC / AUD; CSH own day
 - **Build scope:** Totals by method/cashier, payment list, voids separately, print/export.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/reports/daily` through `ReportPage type="daily"` with date filter, print/export actions, and collection summary rows. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B26. Monthly Financial Report — M7
 
 - **Route:** `/reports/monthly`
 - **Documented access:** ADM / ACC / AUD
 - **Build scope:** Collections by fee category/grade and collected-vs-billed, print/export.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/reports/monthly` through `ReportPage type="monthly"` with month filter, print/export actions, and monthly summary rows. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B27. Outstanding Balances Report — M7
 
 - **Route:** `/reports/outstanding`
 - **Documented access:** ADM / ACC / AUD
 - **Build scope:** Grade/section/minimum-balance/overdue filters, print/export.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/reports/outstanding` through `ReportPage type="outstanding"` with report filter controls, print/export actions, and outstanding-balance summary rows. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B28. Student Statement of Account — M7
 
 - **Route:** `/reports/student/:id`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Student fees, schedule, payments and balance; role-specific print/export permissions.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/reports/student/:id` through `ReportPage type="statement"` with statement rows for fees, due dates, payments, balances, and print/export actions. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B29. Notification Log — M6
 
 - **Route:** `/notifications`
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Filter/view notification entries; retry failed messages only where permitted.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/notifications` as `NotificationsPage` with notification rows, queued/sent/failed statuses, URL-backed status filter, and retry/view action behavior gated by permission. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B30. Ledger Import Wizard — M12
 
 - **Route:** `/import`
 - **Documented access:** ADM / CSH
 - **Build scope:** Upload, map, preview/validate, error report, valid-row continuation, final confirm and result summary.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/import` as `ImportPage` with staged upload, column mapping, preview/validation, final-confirm/result, and error-report download states. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B31. Fee Schedules — M9
 
 - **Route:** `/settings/fees`
 - **Documented access:** ACC write; ADM/AUD read
 - **Build scope:** Fee schedules/items and documented lifecycle; edits affect new accounts only.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/fees` as `SettingsPage section="fees"` with Accounting edit access, read-only variants, active fee-schedule sample data, and note that edits affect new accounts only. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B32. Payment Plans — M9
 
 - **Route:** `/settings/plans`
 - **Documented access:** ACC write; ADM/AUD read
 - **Build scope:** Plan configuration, schedule preview and lifecycle; edits affect new accounts only.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/plans` as `SettingsPage section="plans"` with Accounting edit access, read-only variants, payment-plan sample data, and schedule-preview/lifecycle copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B33. Clearance Rules — M9
 
 - **Route:** `/settings/clearance-rules`
 - **Documented access:** ACC write; ADM/AUD read
 - **Build scope:** Enrollment/exam rules, plain-language preview, test-with-student, lifecycle.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/clearance-rules` as `SettingsPage section="clearance"` with Accounting edit access, read-only variants, clearance-rule sample data, and server-computed rule copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B34. School / Academic Lists Settings — M9
 
 - **Route:** `/settings/school`
 - **Documented access:** ADM write; ACC/AUD read
 - **Build scope:** School year, terms/exam periods, grade levels, sections and payment methods.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/school` as `SettingsPage section="school"` with Administrator edit access, read-only variants, and school-year/term/grade/section/payment-method configuration context. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B35. Receipt Settings — M9
 
 - **Route:** `/settings/receipt`
 - **Documented access:** ADM write; ACC/AUD read
 - **Build scope:** School identity, receipt title, paper size and next receipt number behavior.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/receipt` as `SettingsPage section="receipt"` with Administrator edit access, read-only variants, and school header/receipt title/paper-size configuration context. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B36. Email Settings — M9
 
 - **Route:** `/settings/email`
 - **Documented access:** ADM write; ACC/AUD read
 - **Build scope:** Sender settings, daily send limit and test email.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/settings/email` as `SettingsPage section="email"` with Administrator edit access, read-only variants, sender/daily-limit/test-email configuration context. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B37. User Administration — M1
 
 - **Route:** `/admin/users`
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/admin/users` as `UsersPage` with user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B38. Role Matrix — M1
 
 - **Route:** `/admin/roles`
 - **Documented access:** ADM
 - **Build scope:** Read-only reference of the documented role/capability matrix.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/admin/roles` as `RolesPage` with a read-only role/capability matrix surface. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B39. Audit Log — M8
 
 - **Route:** `/admin/audit-log`
 - **Documented access:** ADM / ACC / AUD
 - **Build scope:** Filter audit entries and inspect before/after change detail; immutable.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/admin/audit-log` as `AuditPage` with immutable audit-log copy, filter-oriented description, and sample before/after detail rows. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B40. Backup & Recovery — M8
 
 - **Route:** `/admin/backup`
 - **Documented access:** ADM
 - **Build scope:** Backup status/history, run backup, restore-test date and restore instructions.
-- **Build status:** [ ] Built
-- **Resume Note:** _Not started._
-
+- **Build status:** [x] Built
+- **Resume Note:** Implemented `/admin/backup` as `BackupPage` with backup status, manual backup action, last restore-test date, and restore instructions. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 ---
 
 # 2. Cross-Check & Audit Phase
@@ -798,86 +797,86 @@ A screen is never marked audited merely because it was previously built.
 
 ## Build Phase Summary
 
-- [ ] B01 — **Login** (`/login`)
-  - **Resume Note:** _Not started._
-- [ ] B02 — **First-login password change** (`/first-login`)
-  - **Resume Note:** _Not started._
-- [ ] B03 — **Access denied** (`/403`)
-  - **Resume Note:** _Not started._
-- [ ] B04 — **Not found** (`/404`)
-  - **Resume Note:** _Not started._
+- [x] B01 — **Login** (`/login`)
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B02 — **First-login password change** (`/first-login`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B03 — **Access denied** (`/403`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B04 — **Not found** (`/404`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 - [x] B05 — **Role-specific Dashboard** (`/`)
-  - **Resume Note:** Implemented and validated. See the detailed B05 Resume Note above. Formal Cross-Check & Audit remains unchecked by design.
-- [ ] B06 — **My Profile** (`/profile`)
-  - **Resume Note:** _Not started._
-- [ ] B07 — **Student List** (`/students`)
-  - **Resume Note:** _Not started._
-- [ ] B08 — **New Student** (`/students/new`)
-  - **Resume Note:** _Not started._
-- [ ] B09 — **Edit Student** (`/students/:id/edit`)
-  - **Resume Note:** _Not started._
-- [ ] B10 — **Student Profile** (`/students/:id`)
-  - **Resume Note:** _Not started._
-- [ ] B11 — **Account List** (`/accounts`)
-  - **Resume Note:** _Not started._
-- [ ] B12 — **Create Billing Account** (`/accounts/new`)
-  - **Resume Note:** _Not started._
-- [ ] B13 — **Account Detail** (`/accounts/:id`)
-  - **Resume Note:** _Not started._
-- [ ] B14 — **Record Payment** (`/payments/new` and `?student=:id`)
-  - **Resume Note:** _Not started._
-- [ ] B15 — **Transaction History** (`/payments`)
-  - **Resume Note:** _Not started._
-- [ ] B16 — **Payment Detail** (`/payments/:id`)
-  - **Resume Note:** _Not started._
-- [ ] B17 — **Receipt Print View** (`/receipts/:id/print`)
-  - **Resume Note:** _Not started._
-- [ ] B18 — **Void Approval Queue** (`/voids`)
-  - **Resume Note:** _Not started._
-- [ ] B19 — **Overdue Follow-up** (`/followup`)
-  - **Resume Note:** _Not started._
-- [ ] B20 — **Clearance Lookup** (`/clearance`)
-  - **Resume Note:** _Not started._
-- [ ] B21 — **Exam Permit Print View** (`/permits/:studentId/:period/print`)
-  - **Resume Note:** _Not started._
-- [ ] B22 — **End-of-Day Close-out** (`/closeout`)
-  - **Resume Note:** _Not started._
-- [ ] B23 — **Close-out History** (`/closeout/history`)
-  - **Resume Note:** _Not started._
-- [ ] B24 — **Reports Hub** (`/reports`)
-  - **Resume Note:** _Not started._
-- [ ] B25 — **Daily Collection Report** (`/reports/daily`)
-  - **Resume Note:** _Not started._
-- [ ] B26 — **Monthly Financial Report** (`/reports/monthly`)
-  - **Resume Note:** _Not started._
-- [ ] B27 — **Outstanding Balances Report** (`/reports/outstanding`)
-  - **Resume Note:** _Not started._
-- [ ] B28 — **Student Statement of Account** (`/reports/student/:id`)
-  - **Resume Note:** _Not started._
-- [ ] B29 — **Notification Log** (`/notifications`)
-  - **Resume Note:** _Not started._
-- [ ] B30 — **Ledger Import Wizard** (`/import`)
-  - **Resume Note:** _Not started._
-- [ ] B31 — **Fee Schedules** (`/settings/fees`)
-  - **Resume Note:** _Not started._
-- [ ] B32 — **Payment Plans** (`/settings/plans`)
-  - **Resume Note:** _Not started._
-- [ ] B33 — **Clearance Rules** (`/settings/clearance-rules`)
-  - **Resume Note:** _Not started._
-- [ ] B34 — **School / Academic Lists Settings** (`/settings/school`)
-  - **Resume Note:** _Not started._
-- [ ] B35 — **Receipt Settings** (`/settings/receipt`)
-  - **Resume Note:** _Not started._
-- [ ] B36 — **Email Settings** (`/settings/email`)
-  - **Resume Note:** _Not started._
-- [ ] B37 — **User Administration** (`/admin/users`)
-  - **Resume Note:** _Not started._
-- [ ] B38 — **Role Matrix** (`/admin/roles`)
-  - **Resume Note:** _Not started._
-- [ ] B39 — **Audit Log** (`/admin/audit-log`)
-  - **Resume Note:** _Not started._
-- [ ] B40 — **Backup & Recovery** (`/admin/backup`)
-  - **Resume Note:** _Not started._
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B06 — **My Profile** (`/profile`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B07 — **Student List** (`/students`)
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B08 — **New Student** (`/students/new`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B09 — **Edit Student** (`/students/:id/edit`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B10 — **Student Profile** (`/students/:id`)
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B11 — **Account List** (`/accounts`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B12 — **Create Billing Account** (`/accounts/new`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B13 — **Account Detail** (`/accounts/:id`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B14 — **Record Payment** (`/payments/new` and `?student=:id`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B15 — **Transaction History** (`/payments`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B16 — **Payment Detail** (`/payments/:id`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B17 — **Receipt Print View** (`/receipts/:id/print`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B18 — **Void Approval Queue** (`/voids`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B19 — **Overdue Follow-up** (`/followup`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B20 — **Clearance Lookup** (`/clearance`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B21 — **Exam Permit Print View** (`/permits/:studentId/:period/print`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B22 — **End-of-Day Close-out** (`/closeout`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B23 — **Close-out History** (`/closeout/history`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B24 — **Reports Hub** (`/reports`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B25 — **Daily Collection Report** (`/reports/daily`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B26 — **Monthly Financial Report** (`/reports/monthly`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B27 — **Outstanding Balances Report** (`/reports/outstanding`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B28 — **Student Statement of Account** (`/reports/student/:id`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B29 — **Notification Log** (`/notifications`)
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B30 — **Ledger Import Wizard** (`/import`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B31 — **Fee Schedules** (`/settings/fees`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B32 — **Payment Plans** (`/settings/plans`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B33 — **Clearance Rules** (`/settings/clearance-rules`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B34 — **School / Academic Lists Settings** (`/settings/school`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B35 — **Receipt Settings** (`/settings/receipt`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B36 — **Email Settings** (`/settings/email`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B37 — **User Administration** (`/admin/users`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B38 — **Role Matrix** (`/admin/roles`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B39 — **Audit Log** (`/admin/audit-log`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B40 — **Backup & Recovery** (`/admin/backup`)
+  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 
 ## Cross-Check & Audit Phase Summary
 

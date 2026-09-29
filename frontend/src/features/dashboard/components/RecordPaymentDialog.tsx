@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import { StudentSearchField } from "@/features/students/StudentSearchField";
 import { en } from "@/i18n/en";
 import { formatDate } from "@/lib/dates";
 import { format, parse } from "@/lib/money";
@@ -142,6 +143,7 @@ export function RecordPaymentDialog({
   });
   const watchedMethod = watch("method");
   const watchedPaymentDate = watch("paymentDate");
+  const watchedStudentName = watch("studentName");
   const watchedValues = watch();
   const isBackdated = Boolean(watchedPaymentDate && watchedPaymentDate < today);
 
@@ -274,23 +276,23 @@ export function RecordPaymentDialog({
               >
                 {en.recordPayment.studentName}
               </label>
-              <input
+              <input type="hidden" {...register("studentName")} />
+              <StudentSearchField
                 id="payment-student"
+                value={watchedStudentName}
+                onChange={(studentName) =>
+                  setValue("studentName", studentName, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
                 autoFocus
                 placeholder={en.recordPayment.studentPlaceholder}
                 aria-invalid={Boolean(errors.studentName)}
-                aria-describedby={
-                  errors.studentName ? "payment-student-error" : undefined
-                }
-                className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
+                errorMessage={errors.studentName?.message}
+                inputClassName="h-11 rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
                 disabled={isSaving}
-                {...register("studentName")}
               />
-              {errors.studentName?.message && (
-                <p id="payment-student-error" className="mt-2 text-sm text-status-error">
-                  {errors.studentName.message}
-                </p>
-              )}
             </div>
 
             <div>

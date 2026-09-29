@@ -147,10 +147,12 @@ export function SessionProvider({
   }, [expiresAt, logout, sessionDurationMs, user, warningDurationMs]);
 
   useEffect(() => {
-    if (!user || !expiresAt || isExpirationWarningOpen) return;
+    if (!user || !expiresAt) return;
     const currentExpiresAt = expiresAt;
 
-    function handleActivity() {
+    function handleActivity(event: Event) {
+      if (event.type === "focus" && event.target !== window) return;
+
       const now = Date.now();
       if (now >= currentExpiresAt) return;
       if (now - lastActivityRenewalAt.current < ACTIVITY_RENEWAL_THROTTLE_MS) {
@@ -159,6 +161,7 @@ export function SessionProvider({
 
       lastActivityRenewalAt.current = now;
       setExpiresAt(now + sessionDurationMs);
+      setExpirationWarningOpen(false);
     }
 
     const listenerOptions = { capture: true, passive: true };
@@ -171,7 +174,7 @@ export function SessionProvider({
         window.removeEventListener(eventName, handleActivity, listenerOptions);
       }
     };
-  }, [expiresAt, isExpirationWarningOpen, sessionDurationMs, user]);
+  }, [expiresAt, sessionDurationMs, user]);
 
   const value = useMemo(
     () => ({

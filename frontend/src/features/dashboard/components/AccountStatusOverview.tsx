@@ -9,6 +9,7 @@ import { Card, CardLabel } from "@/components/ui/Card";
 import { en } from "@/i18n/en";
 import { cn } from "@/lib/cn";
 import { format } from "@/lib/money";
+import { STATUS_TONE_STYLES, getStatusPresentation, type StatusTone } from "@/lib/status";
 import type {
   CashierAccountStatusOverview,
   CashierAttentionAccount,
@@ -21,8 +22,6 @@ interface AccountStatusOverviewProps {
   className?: string;
 }
 
-type StatusTone = "success" | "info" | "warning" | "error";
-
 interface StatusRow {
   key: keyof CashierAccountStatusOverview;
   label: string;
@@ -30,29 +29,6 @@ interface StatusRow {
   tone: StatusTone;
   icon: LucideIcon;
 }
-
-const TONE_CLASS: Record<StatusTone, { text: string; bar: string; soft: string }> = {
-  success: {
-    text: "text-status-success",
-    bar: "bg-status-success",
-    soft: "bg-[#E0F2E4]",
-  },
-  info: {
-    text: "text-status-info",
-    bar: "bg-status-info",
-    soft: "bg-[#E8F2FC]",
-  },
-  warning: {
-    text: "text-status-warning",
-    bar: "bg-status-warning",
-    soft: "bg-[#FBEEDC]",
-  },
-  error: {
-    text: "text-status-error",
-    bar: "bg-status-error",
-    soft: "bg-[#FDE7E7]",
-  },
-};
 
 export function AccountStatusOverview({
   overview,
@@ -64,28 +40,28 @@ export function AccountStatusOverview({
       key: "cleared",
       label: en.status.cleared,
       count: overview.cleared,
-      tone: "success",
+      tone: toneForStatus(en.status.cleared),
       icon: CheckCircle2,
     },
     {
       key: "current",
       label: en.status.current,
       count: overview.current,
-      tone: "info",
+      tone: toneForStatus(en.status.current),
       icon: CircleDollarSign,
     },
     {
       key: "dueSoon",
       label: en.status.dueSoon,
       count: overview.dueSoon,
-      tone: "warning",
+      tone: toneForStatus(en.status.dueSoon),
       icon: CalendarClock,
     },
     {
       key: "overdue",
       label: en.status.overdue,
       count: overview.overdue,
-      tone: "error",
+      tone: toneForStatus(en.status.overdue),
       icon: AlertTriangle,
     },
   ];
@@ -143,7 +119,7 @@ function OverviewStatusRow({
   percent: number;
 }) {
   const Icon = row.icon;
-  const tone = TONE_CLASS[row.tone];
+  const tone = STATUS_TONE_STYLES[row.tone];
 
   return (
     <div>
@@ -178,9 +154,8 @@ function OverviewStatusRow({
 
 function AttentionAccountRow({ account }: { account: CashierAttentionAccount }) {
   const isOverdue = account.severity === "error";
-  const amountClass = isOverdue
-    ? "bg-[#FDE7E7] text-status-error"
-    : "bg-[#FBEEDC] text-status-warning";
+  const amountTone = isOverdue ? STATUS_TONE_STYLES.error : STATUS_TONE_STYLES.warning;
+  const amountClass = `${amountTone.soft} ${amountTone.text}`;
 
   return (
     <div className="flex min-h-10 items-center justify-between gap-3 rounded-md bg-surface px-3 py-2">
@@ -192,4 +167,8 @@ function AttentionAccountRow({ account }: { account: CashierAttentionAccount }) 
       </span>
     </div>
   );
+}
+
+function toneForStatus(status: string): StatusTone {
+  return getStatusPresentation(status)?.tone ?? "neutral";
 }

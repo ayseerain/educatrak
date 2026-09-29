@@ -70,6 +70,9 @@ export function SessionExpirationWarning() {
                   formatRemaining(remainingMs),
                 )}
               </Dialog.Description>
+              <p className="mt-3 text-sm font-semibold text-text-primary">
+                {en.session.confirmation}
+              </p>
             </div>
           </div>
 
