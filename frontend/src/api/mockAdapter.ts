@@ -21,11 +21,6 @@ const RECENT_ACTIVITY_AGE_DAYS = [0, 0, 1, 3, 6, 8, 14, 22, 29, 45, 90, 180, 300
 let nextMockReceiptNumber = 2000;
 
 function makeRecentActivity(): RecentPayment[] {
-  const methods: RecentPayment["method"][] = [
-    "cash",
-    "bank_transfer",
-    "check",
-  ];
   const statuses: RecentPayment["status"][] = ["posted", "posted", "void_pending", "voided"];
   const now = Date.now();
 
@@ -37,7 +32,7 @@ function makeRecentActivity(): RecentPayment[] {
     studentName: FAKE_STUDENT_NAMES[i % FAKE_STUDENT_NAMES.length]!,
     receiptNo: `OR-2026-${String(1000 + i)}`,
     amount: centavos((1500 + i * 350) * 100),
-    method: methods[i % methods.length]!,
+    method: "cash",
     status: statuses[i % statuses.length]!,
   }));
 }

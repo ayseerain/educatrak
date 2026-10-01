@@ -30,8 +30,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [range, setRange] = useState<DashboardRange>("last_7_days");
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [recordedPayments, setRecordedPayments] = useState<RecentPayment[]>([]);
+  const { data, isPending, isError, refetch } = useDashboard(user, range);
+
   // Registrar's dashboard carries no financial data and needs no fetch;
-  // rendering it directly avoids requesting data the role can't see.
+  // rendering it directly keeps the role overview free of financial fields.
   if (user.role === "registrar") {
     return (
       <div className="flex h-full flex-col">
@@ -41,7 +43,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
     );
   }
 
-  const { data, isPending, isError, refetch } = useDashboard(user, range);
   const visibleData = data?.role === "cashier"
     ? mergeRecordedPayments(data, recordedPayments, range)
     : data;

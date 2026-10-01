@@ -1,5 +1,6 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { Banknote, CalendarClock, FileClock, Users } from "lucide-react";
+import { DashboardWorkPanel } from "./DashboardWorkPanel";
+import { Banknote, CalendarClock, FileClock, ReceiptText, Settings, Users } from "lucide-react";
 import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -38,6 +39,33 @@ export function AccountingDashboard({ summary, range }: AccountingDashboardProps
       </div>
 
       <CollectionTrend points={summary.collectionTrend} range={range} />
+
+      <DashboardWorkPanel
+        title={en.dashboard.accountingWorkspace}
+        description={en.dashboard.accountingWorkspaceHelp}
+        items={[
+          {
+            label: en.dashboard.reviewVoidRequests,
+            detail: en.dashboard.reviewVoidRequestsHelp,
+            to: "/voids",
+            icon: FileClock,
+            meta: summary.pendingVoidApprovals,
+          },
+          {
+            label: en.dashboard.signOffCloseouts,
+            detail: en.dashboard.signOffCloseoutsHelp,
+            to: "/closeout/history",
+            icon: ReceiptText,
+            meta: summary.unsignedCloseouts,
+          },
+          {
+            label: en.dashboard.financeSettings,
+            detail: en.dashboard.financeSettingsHelp,
+            to: "/settings/fees",
+            icon: Settings,
+          },
+        ]}
+      />
 
       <section aria-labelledby="recent-activity-heading">
         <RecentActivity payments={summary.recentActivity} range={range} />

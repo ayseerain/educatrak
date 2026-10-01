@@ -1,7 +1,7 @@
 import { DashboardStatCard } from "./DashboardStatCard";
+import { DashboardWorkPanel } from "./DashboardWorkPanel";
 import { RecentActivity } from "./RecentActivity";
-import { Banknote, ReceiptText, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Banknote, FileSearch, ReceiptText, ShieldCheck, Users } from "lucide-react";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import type { AuditorDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
@@ -35,20 +35,24 @@ export function AuditorDashboard({ summary, range }: AuditorDashboardProps) {
         />
       </div>
 
-      <div className="flex gap-3">
-        <Link
-          to="/reports"
-          className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
-        >
-          {en.dashboard.goToReports}
-        </Link>
-        <Link
-          to="/admin/audit-log"
-          className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
-        >
-          {en.dashboard.goToAuditLog}
-        </Link>
-      </div>
+      <DashboardWorkPanel
+        title={en.dashboard.auditorWorkspace}
+        description={en.dashboard.auditorWorkspaceHelp}
+        items={[
+          {
+            label: en.dashboard.goToReports,
+            detail: en.dashboard.goToReportsHelp,
+            to: "/reports",
+            icon: FileSearch,
+          },
+          {
+            label: en.dashboard.goToAuditLog,
+            detail: en.dashboard.goToAuditLogHelp,
+            to: "/admin/audit-log",
+            icon: ShieldCheck,
+          },
+        ]}
+      />
 
       {/* Auditor view is read-only: no showActions, no record/void/approve controls. */}
       <section aria-labelledby="recent-activity-heading">

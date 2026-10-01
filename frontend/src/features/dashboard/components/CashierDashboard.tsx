@@ -1,4 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
+import { DashboardWorkPanel } from "./DashboardWorkPanel";
 import {
   AlertCircle,
   Banknote,
@@ -6,6 +7,7 @@ import {
   ClipboardCheck,
   MailSearch,
   ReceiptText,
+  SearchCheck,
   Users,
 } from "lucide-react";
 import { Card, CardLabel } from "@/components/ui/Card";
@@ -63,6 +65,35 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
           accountsNeedingAttention={summary.accountsNeedingAttention}
         />
       </div>
+
+      <DashboardWorkPanel
+        title={en.dashboard.cashierWorkspace}
+        description={en.dashboard.cashierWorkspaceHelp}
+        items={[
+          {
+            label: en.dashboard.recordPayment,
+            detail: en.dashboard.recordPaymentHelp,
+            to: "/payments/new",
+            icon: ReceiptText,
+          },
+          {
+            label: en.dashboard.findStudentAccount,
+            detail: en.dashboard.findStudentAccountHelp,
+            to: "/students",
+            icon: SearchCheck,
+            meta: `${summary.accountsNeedingAttention.length} ${en.dashboard.needAttention}`,
+          },
+          {
+            label: en.dashboard.endOfDayCloseout,
+            detail: summary.closeoutDone
+              ? en.dashboard.closeoutDoneActionHelp
+              : en.dashboard.closeoutOpenActionHelp,
+            to: "/closeout",
+            icon: ClipboardCheck,
+            meta: summary.closeoutDone ? en.dashboard.done : en.dashboard.open,
+          },
+        ]}
+      />
 
       <section aria-labelledby="recent-activity-heading">
         <RecentActivity payments={summary.recentActivity} range={range} showActions />

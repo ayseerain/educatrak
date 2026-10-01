@@ -10,11 +10,7 @@ import { formatDate } from "@/lib/dates";
 import { format, parse } from "@/lib/money";
 import type { PaymentMethod, RecordPaymentInput } from "@/api/dashboardTypes";
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  "cash",
-  "check",
-  "bank_transfer",
-];
+const PAYMENT_METHODS: PaymentMethod[] = ["cash"];
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({
   value: method,
@@ -66,7 +62,7 @@ function schemaFor(today: string) {
     .object({
       studentName: z.string().trim().min(1, en.recordPayment.studentRequired),
       amount: z.string().trim().min(1, en.recordPayment.amountRequired),
-      method: z.enum(["cash", "check", "bank_transfer"], {
+      method: z.literal("cash", {
         required_error: en.recordPayment.methodRequired,
       }),
       reference: z.string(),
@@ -88,14 +84,6 @@ function schemaFor(today: string) {
           code: z.ZodIssueCode.custom,
           path: ["amount"],
           message: en.recordPayment.amountInvalid,
-        });
-      }
-
-      if (values.method !== "cash" && values.reference.trim().length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["reference"],
-          message: en.recordPayment.referenceRequired,
         });
       }
 
@@ -343,33 +331,6 @@ export function RecordPaymentDialog({
                 align="start"
               />
             </div>
-
-            {watchedMethod !== "cash" && (
-              <div>
-                <label
-                  htmlFor="payment-reference"
-                  className="mb-2 block text-sm font-medium text-text-primary"
-                >
-                  {en.recordPayment.reference}
-                </label>
-                <input
-                  id="payment-reference"
-                  placeholder={en.recordPayment.referencePlaceholder}
-                  aria-invalid={Boolean(errors.reference)}
-                  aria-describedby={
-                    errors.reference ? "payment-reference-error" : undefined
-                  }
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-                  disabled={isSaving}
-                  {...register("reference")}
-                />
-                {errors.reference?.message && (
-                  <p id="payment-reference-error" className="mt-2 text-sm text-status-error">
-                    {errors.reference.message}
-                  </p>
-                )}
-              </div>
-            )}
 
             <div>
               <label

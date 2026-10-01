@@ -188,7 +188,7 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Search student | Type name or number; Enter picks the first match | CSH |
 | View balance and next due installment | Shown before entry | CSH |
 | Enter amount | "Pay next installment" shortcut fills the amount | CSH |
-| Choose method | From the configured list (default: Cash, Check, Bank deposit) | CSH |
+| Choose method | Cash only | CSH |
 | Enter reference number | Required for any method except Cash | CSH |
 | Set payment date | Defaults to today; back-dating requires a reason; future dates blocked | CSH |
 | Add note | Optional free text | CSH |

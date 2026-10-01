@@ -201,11 +201,14 @@ describe("DashboardPage", () => {
     expect(
       screen.queryByRole("menuitemradio", { name: /gcash/i }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("menuitemradio", { name: "Bank deposit" }));
-    await user.type(
-      within(dialog).getByLabelText(/reference number/i),
-      "BANK-SAMPLE-001",
-    );
+    expect(
+      screen.queryByRole("menuitemradio", { name: /bank deposit/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitemradio", { name: /^check$/i }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: "Cash" }));
+    expect(within(dialog).queryByLabelText(/reference number/i)).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: /review payment/i }));
 
     expect(

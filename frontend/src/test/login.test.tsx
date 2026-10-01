@@ -105,17 +105,30 @@ describe("LoginPage", () => {
 
     await fillLogin("sample.cashier", "SamplePass123!", user);
     await waitFor(() =>
-      expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
+      expect(screen.getByLabelText("Current path")).toHaveTextContent(/^\/$/),
     );
+    expect(
+      await screen.findByRole("heading", { name: /good day, casey cashier/i }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /preview role/i }));
     await user.click(screen.getByRole("menuitemradio", { name: /accounting/i }));
 
-    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+    expect(screen.getByLabelText("Current path")).toHaveTextContent(/^\/$/);
     expect(
       await screen.findByRole("heading", { name: /good day, avery accounting/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /void approvals/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /preview role/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: /registrar/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent(/^\/$/);
+    expect(
+      await screen.findByRole("heading", { name: /good day, riley registrar/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/search for a student/i)).toBeInTheDocument();
+    expect(screen.queryByText(/collections/i)).not.toBeInTheDocument();
   });
 
   it("signs out and returns to the login page", async () => {

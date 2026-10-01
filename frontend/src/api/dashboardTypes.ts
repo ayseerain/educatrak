@@ -2,7 +2,7 @@ import type { Centavos } from "@/lib/money";
 import type { Role } from "@/lib/types";
 
 export type PaymentStatus = "posted" | "void_pending" | "voided";
-export type PaymentMethod = "cash" | "bank_transfer" | "check";
+export type PaymentMethod = "cash";
 export type DashboardRange = "today" | "last_7_days" | "last_30_days" | "school_year";
 
 export interface DashboardRangeOption {

@@ -12,6 +12,7 @@ export function useDashboard(user: AuthenticatedUser, range: DashboardRange) {
   return useQuery({
     queryKey: ["dashboard", user.id, user.role, range],
     queryFn: () => fetchDashboardSummary(user, range),
+    enabled: user.role !== "registrar",
     staleTime: 30_000,
   });
 }

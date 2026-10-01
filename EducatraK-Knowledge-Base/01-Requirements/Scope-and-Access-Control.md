@@ -9,7 +9,7 @@ Everything described in Sections 8–22 (Modules M0–M14), built against the ro
 
 ### 2.2 Explicitly out of scope (do not build)
 - Parent or student login/portal, or any public-facing page.
-- Online payment gateway or card/bank integration — a cashier may **record** a bank or check reference as text only; nothing is processed online.
+- Online payment gateway, card, bank, or check payment recording. Transactions are recorded as cash only.
 - Mobile app or mobile-first layouts.
 - SMS, push notifications, or Messenger integration.
 - LMS (Quipper) integration, grading, class scheduling, attendance, the enrollment workflow itself (only billing and clearance), payroll, or a general ledger/full accounting system.

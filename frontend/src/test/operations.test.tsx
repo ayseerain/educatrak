@@ -185,7 +185,13 @@ describe("operational page navigation", () => {
       screen.queryByRole("menuitemradio", { name: /gcash/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("menuitemradio", { name: "Bank deposit" }),
+      screen.queryByRole("menuitemradio", { name: /bank deposit/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitemradio", { name: /^check$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitemradio", { name: "Cash" }),
     ).toBeInTheDocument();
   });
 
