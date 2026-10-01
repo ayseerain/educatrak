@@ -100,18 +100,20 @@ export function RecentActivity({
       : []),
   ];
 
-  if (payments.length === 0) {
-    const message =
-      range === "today"
-        ? en.states.emptyActivity
-        : en.states.emptyActivityInRange.replace("{range}", dashboardRangeLabel(range));
-
-    return <EmptyState message={message} />;
-  }
+  const emptyMessage =
+    range === "today"
+      ? en.states.emptyActivity
+      : en.states.emptyActivityInRange.replace("{range}", dashboardRangeLabel(range));
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2
+          id="recent-activity-heading"
+          className="text-lg font-semibold text-text-primary"
+        >
+          {en.dashboard.recentActivity}
+        </h2>
         <label className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-text-secondary">
           <span>{en.dashboard.activityRows}</span>
           <DropdownSelect
@@ -124,11 +126,15 @@ export function RecentActivity({
           />
         </label>
       </div>
-      <DataTable
-        columns={columns}
-        data={visiblePayments}
-        caption={en.dashboard.recentActivity}
-      />
+      {payments.length === 0 ? (
+        <EmptyState message={emptyMessage} />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={visiblePayments}
+          caption={en.dashboard.recentActivity}
+        />
+      )}
     </div>
   );
 }

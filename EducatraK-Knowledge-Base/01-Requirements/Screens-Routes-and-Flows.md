@@ -31,7 +31,7 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/payments` | M4 Transaction history | `payment.view` |
 | `/payments/:id` | M4 Payment detail | `payment.view` |
 | `/receipts/:id/print` | M4 Receipt print view | `payment.view` |
-| `/voids` | M5 Void approval queue | `payment.void.approve` |
+| `/voids` | M5 Void approval queue | `payment.void.view` |
 | `/followup` | M11 Overdue follow-up | `followup.view` |
 | `/clearance` | M10 Clearance lookup | `clearance.view` |
 | `/permits/:studentId/:period/print` | M10 Exam permit print view | `permit.print` |

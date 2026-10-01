@@ -212,7 +212,7 @@ For each screen below:
 - **Documented access:** CSH / ACC / AUD
 - **Build scope:** Due-soon/overdue list, filters, print list, and reminder-batch flow for permitted roles.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/followup` as `FollowupPage` with overdue/due-soon sample rows, selectable reminder batch behavior, print-list-ready table structure, and send action gated by permission. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/followup` as `FollowupPage` with overdue/due-soon sample rows, individual and select-all account checkboxes, and a send action shown only when one or more accounts are selected and the user has `followup.send`. The focused operations test and frontend production build pass; formal Phase 2 audit remains pending.
 
 ### B20. Clearance Lookup — M10
 

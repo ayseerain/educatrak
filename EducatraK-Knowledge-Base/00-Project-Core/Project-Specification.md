@@ -30,7 +30,7 @@ Everything described in Sections 8–22 (Modules M0–M14), built against the ro
 
 ### 2.2 Explicitly out of scope (do not build)
 - Parent or student login/portal, or any public-facing page.
-- Online payment gateway, GCash/card/bank integration — a cashier may **record** a GCash or bank reference as text only; nothing is processed online.
+- Online payment gateway or card/bank integration — a cashier may **record** a bank or check reference as text only; nothing is processed online.
 - Mobile app or mobile-first layouts.
 - SMS, push notifications, or Messenger integration.
 - LMS (Quipper) integration, grading, class scheduling, attendance, the enrollment workflow itself (only billing and clearance), payroll, or a general ledger/full accounting system.
@@ -363,6 +363,7 @@ This is the authoritative, implementation-level list for `src/auth/permissions.t
 | `payment.record` | | F | | | |
 | `payment.view` | F | F (own by default) | F | F | |
 | `payment.void.request` | | F | | | |
+| `payment.void.view` | F | | F | F | |
 | `payment.void.approve` | | | F | | |
 | `receipt.reprint` (logged) | R (view only) | F | F | R (view only) | |
 | `statement.print` (student statement of account) `NEW` | | F | F | | |
@@ -590,7 +591,7 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Search student | Type name or number; Enter picks the first match | CSH |
 | View balance and next due installment | Shown before entry | CSH |
 | Enter amount | "Pay next installment" shortcut fills the amount | CSH |
-| Choose method | From the configured list (default: Cash, Check, Bank deposit, GCash reference) | CSH |
+| Choose method | From the configured list (default: Cash, Check, Bank deposit) | CSH |
 | Enter reference number | Required for any method except Cash | CSH |
 | Set payment date | Defaults to today; back-dating requires a reason; future dates blocked | CSH |
 | Add note | Optional free text | CSH |
@@ -635,7 +636,7 @@ See Section 31 for the open question on whether large adjustments need Accountin
 
 **Rule:** a user cannot approve a void of a payment they recorded (Section 6.2, rule 3).
 
-**Route:** `/voids` (`payment.void.approve`). See also Flow F3, Section 23.
+**Route:** `/voids` (`payment.void.view`; approval actions require `payment.void.approve`). See also Flow F3, Section 23.
 
 ---
 
@@ -945,7 +946,7 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/payments` | M4 Transaction history | `payment.view` |
 | `/payments/:id` | M4 Payment detail | `payment.view` |
 | `/receipts/:id/print` | M4 Receipt print view | `payment.view` |
-| `/voids` | M5 Void approval queue | `payment.void.approve` |
+| `/voids` | M5 Void approval queue | `payment.void.view` |
 | `/followup` | M11 Overdue follow-up | `followup.view` |
 | `/clearance` | M10 Clearance lookup | `clearance.view` |
 | `/permits/:studentId/:period/print` | M10 Exam permit print view | `permit.print` |
@@ -1247,7 +1248,7 @@ These were flagged in the original handoff as assumptions to be treated as confi
 2. Fee types, payment plans, discounts, and scholarships — configurable by Accounting (M9.1–M9.2).
 3. What counts as "cleared" for enrollment and exams — configurable rules (M9.3).
 4. Receipt title ("Official Receipt" vs. "Acknowledgment Receipt") and paper size (Letter vs. A4) (M9.5).
-5. Payment methods list — default: Cash, Check, Bank deposit, GCash reference, all recorded manually.
+5. Payment methods list — default: Cash, Check, Bank deposit, all recorded manually.
 6. The role/capability permission matrix itself (Section 6.4) — proposal awaiting client confirmation.
 7. Who may add or edit student records — assumed: Admin and Cashier (M2.1).
 8. Due-soon window (default 7 days) and the duplicate-payment time window (default 10 minutes) (Section 25, rules 4–5).

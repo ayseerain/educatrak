@@ -23,7 +23,7 @@ These were flagged in the original handoff as assumptions to be treated as confi
 2. Fee types, payment plans, discounts, and scholarships — configurable by Accounting (M9.1–M9.2).
 3. What counts as "cleared" for enrollment and exams — configurable rules (M9.3).
 4. Receipt title ("Official Receipt" vs. "Acknowledgment Receipt") and paper size (Letter vs. A4) (M9.5).
-5. Payment methods list — default: Cash, Check, Bank deposit, GCash reference, all recorded manually.
+5. Payment methods list — default: Cash, Check, Bank deposit, all recorded manually.
 6. The role/capability permission matrix itself (Section 6.4) — proposal awaiting client confirmation.
 7. Who may add or edit student records — assumed: Admin and Cashier (M2.1).
 8. Due-soon window (default 7 days) and the duplicate-payment time window (default 10 minutes) (Section 25, rules 4–5).

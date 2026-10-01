@@ -40,12 +40,6 @@ export function AccountingDashboard({ summary, range }: AccountingDashboardProps
       <CollectionTrend points={summary.collectionTrend} range={range} />
 
       <section aria-labelledby="recent-activity-heading">
-        <h2
-          id="recent-activity-heading"
-          className="mb-3 text-lg font-semibold text-text-primary"
-        >
-          {en.dashboard.recentActivity}
-        </h2>
         <RecentActivity payments={summary.recentActivity} range={range} />
       </section>
     </div>

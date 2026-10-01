@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
-import type { AuthenticatedUser } from "@/lib/types";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import type { AuthenticatedUser, Role } from "@/lib/types";
 import { en } from "@/i18n/en";
 
-const ROLE_LABEL: Record<AuthenticatedUser["role"], string> = {
+const ROLE_LABEL: Record<Role, string> = {
   cashier: "Cashier",
   accounting: "Accounting",
   administrator: "Administrator",
@@ -12,19 +14,34 @@ const ROLE_LABEL: Record<AuthenticatedUser["role"], string> = {
   registrar: "Registrar",
 };
 
+const ROLE_OPTIONS: { value: Role; label: string }[] = [
+  { value: "administrator", label: ROLE_LABEL.administrator },
+  { value: "cashier", label: ROLE_LABEL.cashier },
+  { value: "accounting", label: ROLE_LABEL.accounting },
+  { value: "auditor", label: ROLE_LABEL.auditor },
+  { value: "registrar", label: ROLE_LABEL.registrar },
+];
+
 interface HeaderProps {
   user: AuthenticatedUser;
   onLogout: () => void;
+  onRoleChange: (role: Role) => void;
 }
 
-export function Header({ user, onLogout }: HeaderProps) {
+export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
   const [query, setQuery] = useState("");
+  const navigate = useNavigate();
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  function handleRoleChange(role: Role) {
+    onRoleChange(role);
+    navigate("/");
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-6">
@@ -41,6 +58,14 @@ export function Header({ user, onLogout }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <DropdownSelect
+          aria-label={en.header.previewRole}
+          value={user.role}
+          options={ROLE_OPTIONS}
+          onChange={handleRoleChange}
+          className="h-9 min-w-44 border-dashed bg-surface"
+          contentClassName="min-w-44"
+        />
         <button
           type="button"
           aria-label={en.header.profileMenu}

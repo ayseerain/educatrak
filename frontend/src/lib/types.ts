@@ -19,7 +19,7 @@ export type Capability =
   | "dashboard.view"
   | "student.view" | "student.edit"
   | "account.view" | "account.create"
-  | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.approve" | "receipt.reprint"
+  | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.view" | "payment.void.approve" | "receipt.reprint" | "receipt.pdf"
   | "followup.view" | "followup.send"
   | "clearance.view" | "permit.print"
   | "report.view" | "statement.print"

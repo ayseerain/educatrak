@@ -14,7 +14,7 @@ function renderWithProviders(user: AuthenticatedUser) {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <DashboardPage user={user} />
         <LocationPath />
       </MemoryRouter>

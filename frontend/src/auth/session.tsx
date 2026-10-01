@@ -33,6 +33,11 @@ const MOCK_USERS: Record<string, { password: string; user: AuthenticatedUser }> 
   },
 };
 
+const MOCK_USERS_BY_ROLE: Record<Role, AuthenticatedUser> = Object.values(MOCK_USERS).reduce(
+  (usersByRole, { user }) => ({ ...usersByRole, [user.role]: user }),
+  {} as Record<Role, AuthenticatedUser>,
+);
+
 interface LoginResult {
   ok: boolean;
   lockedUntil?: number;
@@ -45,6 +50,7 @@ interface SessionContextValue {
   login: (username: string, password: string) => LoginResult;
   logout: () => void;
   renewSession: () => void;
+  switchRole: (role: Role) => void;
 }
 
 interface SessionProviderProps extends PropsWithChildren {
@@ -126,6 +132,14 @@ export function SessionProvider({
     [failedAttempts, lockedUntil, sessionDurationMs],
   );
 
+  const switchRole = useCallback(
+    (role: Role) => {
+      setUser(MOCK_USERS_BY_ROLE[role]);
+      renewSession();
+    },
+    [renewSession],
+  );
+
   useEffect(() => {
     if (!user || !expiresAt) return;
 
@@ -184,8 +198,9 @@ export function SessionProvider({
       login,
       logout,
       renewSession,
+      switchRole,
     }),
-    [expiresAt, isExpirationWarningOpen, login, logout, renewSession, user],
+    [expiresAt, isExpirationWarningOpen, login, logout, renewSession, switchRole, user],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

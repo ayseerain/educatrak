@@ -188,7 +188,7 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Search student | Type name or number; Enter picks the first match | CSH |
 | View balance and next due installment | Shown before entry | CSH |
 | Enter amount | "Pay next installment" shortcut fills the amount | CSH |
-| Choose method | From the configured list (default: Cash, Check, Bank deposit, GCash reference) | CSH |
+| Choose method | From the configured list (default: Cash, Check, Bank deposit) | CSH |
 | Enter reference number | Required for any method except Cash | CSH |
 | Set payment date | Defaults to today; back-dating requires a reason; future dates blocked | CSH |
 | Add note | Optional free text | CSH |
@@ -234,7 +234,7 @@ See Section 31 for the open question on whether large adjustments need Accountin
 
 **Rule:** a user cannot approve a void of a payment they recorded (Section 6.2, rule 3).
 
-**Route:** `/voids` (`payment.void.approve`). See also Flow F3, Section 23.
+**Route:** `/voids` (`payment.void.view`; approval actions require `payment.void.approve`). See also Flow F3, Section 23.
 
 ---
 ---

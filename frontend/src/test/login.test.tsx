@@ -18,7 +18,7 @@ function renderApp(initialPath = "/login", options: RenderAppOptions = {}) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialPath]}>
+      <MemoryRouter initialEntries={[initialPath]} future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <SessionProvider
           sessionDurationMs={options.sessionDurationMs}
           warningDurationMs={options.warningDurationMs}
@@ -99,6 +99,25 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("switches mock roles from the header and returns to the role dashboard", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await fillLogin("sample.cashier", "SamplePass123!", user);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
+    );
+
+    await user.click(screen.getByRole("button", { name: /preview role/i }));
+    await user.click(screen.getByRole("menuitemradio", { name: /accounting/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+    expect(
+      await screen.findByRole("heading", { name: /good day, avery accounting/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /void approvals/i })).toBeInTheDocument();
+  });
+
   it("signs out and returns to the login page", async () => {
     const user = userEvent.setup();
     renderApp();
@@ -108,7 +127,7 @@ describe("LoginPage", () => {
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
     );
 
-    await user.click(screen.getByRole("button", { name: /sign out/i }));
+    await user.click(await screen.findByRole("button", { name: /sign out/i }));
 
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/login"),

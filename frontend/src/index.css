@@ -90,3 +90,35 @@
     @apply flex min-h-10 cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none transition-colors hover:bg-surface focus:bg-surface data-[state=checked]:bg-[#e8f5e9] data-[state=checked]:font-medium data-[state=checked]:text-brand-green-dark;
   }
 }
+
+@media print {
+  @page {
+    size: var(--educatrak-paper-size, letter);
+    margin: 0.5in;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  nav[aria-label="Primary"],
+  header,
+  a[href="#main-content"],
+  .no-print {
+    display: none !important;
+  }
+
+  #main-content {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .print-page {
+    max-width: none !important;
+    color: #000000;
+  }
+
+  .print-page > :first-child {
+    display: none !important;
+  }
+}

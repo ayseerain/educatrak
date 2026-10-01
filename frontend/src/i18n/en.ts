@@ -37,6 +37,7 @@ export const en = {
   header: {
     searchPlaceholder: "Search students, receipts...",
     profileMenu: "Account menu",
+    previewRole: "Preview role",
     signOut: "Sign out",
   },
   nav: {

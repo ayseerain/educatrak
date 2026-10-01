@@ -1,7 +1,9 @@
-import { useId } from "react";
+import { useId, type KeyboardEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { getStudentSearchMatches } from "@/features/students/studentSearch";
+import { getStudentSearchMatches, normalizeStudentSearchQuery } from "@/features/students/studentSearch";
+import type { Student } from "@/features/students/mockStudents";
 
 interface StudentSearchFieldProps {
   id?: string;
@@ -34,6 +36,7 @@ export function StudentSearchField({
   describedBy,
   "aria-invalid": ariaInvalid,
 }: StudentSearchFieldProps) {
+  const navigate = useNavigate();
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const suggestionsId = `${inputId}-suggestions`;
@@ -42,6 +45,34 @@ export function StudentSearchField({
   const inputDescribedBy = [describedBy, errorMessage ? `${inputId}-error` : undefined, hasSuggestions ? suggestionsId : undefined]
     .filter(Boolean)
     .join(" ") || undefined;
+
+  function getStudentToOpen() {
+    const normalizedValue = normalizeStudentSearchQuery(value);
+
+    return (
+      matches.find((student) => {
+        const normalizedName = normalizeStudentSearchQuery(student.name);
+        const normalizedNumber = normalizeStudentSearchQuery(student.number);
+
+        return normalizedName === normalizedValue || normalizedNumber === normalizedValue;
+      }) ?? matches[0]
+    );
+  }
+
+  function openStudent(student: Student) {
+    onChange(student.name);
+    navigate(`/students/${student.id}`);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+
+    const student = getStudentToOpen();
+    if (!student) return;
+
+    event.preventDefault();
+    openStudent(student);
+  }
 
   return (
     <div className={cn("relative", wrapperClassName)}>
@@ -60,6 +91,7 @@ export function StudentSearchField({
           type="search"
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
           autoFocus={autoFocus}
           disabled={disabled}
           placeholder={placeholder}
@@ -83,7 +115,7 @@ export function StudentSearchField({
               role="option"
               className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface focus:bg-surface focus:outline-none"
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => onChange(student.name)}
+              onClick={() => openStudent(student)}
             >
               <span className="block font-medium text-text-primary">{student.name}</span>
               <span className="block text-xs text-text-secondary">{student.number}</span>

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { NotificationsPage, StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
+import { FollowupPage, NotificationsPage, ReceiptPage, StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
 import type { AuthenticatedUser } from "@/lib/types";
 
 const cashier: AuthenticatedUser = {
@@ -11,17 +11,45 @@ const cashier: AuthenticatedUser = {
   role: "cashier",
 };
 
+const auditor: AuthenticatedUser = {
+  id: "user-auditor",
+  name: "Avery Auditor (sample)",
+  role: "auditor",
+};
+
 function LocationPath() {
   const { pathname, search } = useLocation();
   return <output aria-label="Current path">{pathname}{search}</output>;
 }
 
 describe("operational page navigation", () => {
+  it("shows the reminder action for individual and all-account selections", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+        <FollowupPage user={cashier} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: "Send reminder emails" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader")).toHaveLength(5);
+    expect(screen.queryByRole("columnheader", { name: "Select" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /select cora navarro/i }));
+    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
+
+    await user.click(screen.getByRole("checkbox", { name: "Select all listed accounts" }));
+    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeChecked();
+  });
+
   it("opens a student profile from the whole student table row", async () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/students"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students"]}>
         <Routes>
           <Route path="/students" element={<StudentsPage user={cashier} />} />
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
@@ -38,7 +66,7 @@ describe("operational page navigation", () => {
 
   it("separates student status from billing status on the students page", () => {
     render(
-      <MemoryRouter initialEntries={["/students"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students"]}>
         <Routes>
           <Route path="/students" element={<StudentsPage user={cashier} />} />
         </Routes>
@@ -57,7 +85,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/students"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students"]}>
         <Routes>
           <Route path="/students" element={<StudentsPage user={cashier} />} />
         </Routes>
@@ -72,11 +100,50 @@ describe("operational page navigation", () => {
     expect(screen.queryByRole("cell", { name: /cora navarro/i })).not.toBeInTheDocument();
   });
 
+  it("opens a student profile from a clicked search suggestion", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students"]}>
+        <Routes>
+          <Route path="/students" element={<StudentsPage user={cashier} />} />
+          <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/search students/i), "B");
+    await user.click(screen.getByRole("option", { name: /basil mercado/i }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1002");
+    expect(screen.getByRole("heading", { name: /basil mercado/i })).toBeInTheDocument();
+  });
+
+  it("opens the matching student profile when Enter is pressed in search", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students"]}>
+        <Routes>
+          <Route path="/students" element={<StudentsPage user={cashier} />} />
+          <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/search students/i), "S-1003{Enter}");
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1003");
+    expect(screen.getByRole("heading", { name: /cora navarro/i })).toBeInTheDocument();
+  });
+
   it("takes the Back button to the previous history entry", async () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/payments", "/students/sample-1001"]} initialIndex={1}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/payments", "/students/sample-1001"]} initialIndex={1}>
         <Routes>
           <Route path="/payments" element={<h1>Transaction history</h1>} />
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
@@ -95,7 +162,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/students/sample-1001"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes>
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
         </Routes>
@@ -118,7 +185,7 @@ describe("operational page navigation", () => {
       screen.queryByRole("menuitemradio", { name: /gcash/i }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("menuitemradio", { name: "Bank transfer" }),
+      screen.getByRole("menuitemradio", { name: "Bank deposit" }),
     ).toBeInTheDocument();
   });
 
@@ -126,7 +193,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/students/sample-1003"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1003"]}>
         <Routes>
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
         </Routes>
@@ -150,7 +217,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/students/sample-1001"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes>
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
         </Routes>
@@ -167,7 +234,7 @@ describe("operational page navigation", () => {
 
   it("filters notification status from the URL query", () => {
     render(
-      <MemoryRouter initialEntries={["/notifications?status=failed"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications?status=failed"]}>
         <Routes>
           <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
         </Routes>
@@ -182,7 +249,7 @@ describe("operational page navigation", () => {
 
   it("shows queued, sent, and failed notification delivery statuses", () => {
     render(
-      <MemoryRouter initialEntries={["/notifications"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications"]}>
         <Routes>
           <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
         </Routes>
@@ -198,7 +265,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/notifications"]}>
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications"]}>
         <Routes>
           <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
         </Routes>
@@ -212,5 +279,24 @@ describe("operational page navigation", () => {
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
     expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps shareable receipt PDF downloads to permitted staff roles", () => {
+    const { rerender } = render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/receipts/mock-payment-0/print"]}>
+        <ReceiptPage user={cashier} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("button", { name: /download pdf/i })).toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/receipts/mock-payment-0/print"]}>
+        <ReceiptPage user={auditor} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: /download pdf/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/pdf downloads are logged by the backend/i)).toBeInTheDocument();
   });
 });

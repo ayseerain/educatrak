@@ -8,6 +8,8 @@ interface NavItem {
   label: string;
   to: string;
   capability: Capability;
+  end?: boolean;
+  nested?: boolean;
 }
 
 interface NavGroup {
@@ -34,9 +36,9 @@ const NAV_GROUPS: NavGroup[] = [
     label: en.nav.reportsControls,
     items: [
       { label: en.nav.reports, to: "/reports", capability: "report.view" },
-      { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.approve" },
-      { label: en.nav.closeOut, to: "/closeout", capability: "closeout.submit" },
-      { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view" },
+      { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
+      { label: en.nav.closeOut, to: "/closeout", capability: "closeout.submit", end: true },
+      { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view", nested: true },
     ],
   },
   {
@@ -90,23 +92,28 @@ export function Sidebar({ user }: SidebarProps) {
               {group.label}
             </h2>
             <ul className="space-y-0.5">
-              {group.items.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.to === "/"}
-                    className={({ isActive }) =>
-                      cn(
-                        "block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
-                        isActive &&
-                          "bg-[#E7F5EA] text-brand-green-dark hover:bg-[#E7F5EA]",
-                      )
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                </li>
-              ))}
+              {group.items.map((item) => {
+                const showNestedStyle = item.nested && group.items.some((groupItem) => groupItem.to === "/closeout");
+
+                return (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      end={item.end ?? item.to === "/"}
+                      className={({ isActive }) =>
+                        cn(
+                          "block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
+                          showNestedStyle && "ml-4 border-l border-border pl-4 text-[13px]",
+                          isActive &&
+                            "bg-[#E7F5EA] text-brand-green-dark hover:bg-[#E7F5EA]",
+                        )
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </li>
         ))}

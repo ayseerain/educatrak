@@ -30,39 +30,41 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
     range === "today"
       ? en.dashboard.todaysTotals
       : en.dashboard.collectionTrendRange.replace("{range}", dashboardRangeLabel(range));
+  const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+  const chart = (
+    <BarChart data={data} width={760} height={224} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+      <CartesianGrid vertical={false} stroke="#E0E0E0" />
+      <XAxis
+        dataKey="label"
+        tick={{ fontSize: 12, fill: "#757575" }}
+        axisLine={{ stroke: "#E0E0E0" }}
+        tickLine={false}
+      />
+      <YAxis
+        tick={{ fontSize: 12, fill: "#757575" }}
+        axisLine={false}
+        tickLine={false}
+        width={40}
+      />
+      <Tooltip
+        formatter={(value: number) =>
+          format((Math.round(value * 100)) as Centavos)
+        }
+        contentStyle={{
+          borderRadius: 6,
+          borderColor: "#E0E0E0",
+          fontSize: 12,
+        }}
+      />
+      <Bar dataKey="total" fill="#039935" radius={[4, 4, 0, 0]} />
+    </BarChart>
+  );
 
   return (
     <Card>
       <CardLabel>{label}</CardLabel>
-      <div className="mt-3 h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#E0E0E0" />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 12, fill: "#757575" }}
-              axisLine={{ stroke: "#E0E0E0" }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 12, fill: "#757575" }}
-              axisLine={false}
-              tickLine={false}
-              width={40}
-            />
-            <Tooltip
-              formatter={(value: number) =>
-                format((Math.round(value * 100)) as Centavos)
-              }
-              contentStyle={{
-                borderRadius: 6,
-                borderColor: "#E0E0E0",
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="total" fill="#039935" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="mt-3 h-56 min-h-56 min-w-0">
+        {isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
       </div>
     </Card>
   );
