@@ -10,4 +10,6 @@ class Installment extends Model
 {
     /** @use HasFactory<InstallmentFactory> */
     use HasFactory;
+
+    protected $guarded = [];
 }

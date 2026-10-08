@@ -10,4 +10,6 @@ class PaymentAllocation extends Model
 {
     /** @use HasFactory<PaymentAllocationFactory> */
     use HasFactory;
+
+    protected $guarded = [];
 }

@@ -10,4 +10,6 @@ class Receipt extends Model
 {
     /** @use HasFactory<ReceiptFactory> */
     use HasFactory;
+
+    protected $guarded = [];
 }
