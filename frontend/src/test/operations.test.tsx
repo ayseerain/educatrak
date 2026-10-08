@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { FollowupPage, NotificationsPage, ReceiptPage, StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
+import { FollowupPage, NotificationsPage, PaymentEntryPage, ReceiptPage, StudentProfilePage, StudentsPage } from "@/features/operations/OperationalPages";
 import type { AuthenticatedUser } from "@/lib/types";
 
 const cashier: AuthenticatedUser = {
@@ -32,13 +32,9 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("button", { name: "Send reminder emails" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeDisabled();
     expect(screen.getAllByRole("columnheader")).toHaveLength(5);
     expect(screen.queryByRole("columnheader", { name: "Select" })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("checkbox", { name: /select cora navarro/i }));
-    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
 
     await user.click(screen.getByRole("checkbox", { name: "Select all listed accounts" }));
     expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeInTheDocument();
@@ -170,7 +166,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: /record payment/i }));
+    await user.click(screen.getByRole("tab", { name: /payments/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("The current student is selected");
@@ -193,6 +189,45 @@ describe("operational page navigation", () => {
     expect(
       screen.getByRole("menuitemradio", { name: "Cash" }),
     ).toBeInTheDocument();
+  });
+
+  it("opens the shared payment workflow route with student search", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/payments/new"]}>
+        <Routes>
+          <Route path="/payments/new" element={<PaymentEntryPage />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/student search/i), "S-1001");
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
+    expect(screen.getAllByText("Amara Villanueva (sample)").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/fee name/i)).toHaveValue("SY 2026-2027 tuition");
+  });
+
+  it("guards the shared payment workflow against duplicate save clicks", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/payments/new?student=sample-1001"]}>
+        <Routes>
+          <Route path="/payments/new" element={<PaymentEntryPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /review payment/i }));
+    const confirmButton = screen.getByRole("button", { name: /confirm and save/i });
+
+    await user.dblClick(confirmButton);
+
+    expect(confirmButton).toBeDisabled();
+    expect(await screen.findByText(/payment saved/i)).toBeInTheDocument();
   });
 
   it("toggles follow-up in the student activity widget without leaving the profile", async () => {
@@ -231,7 +266,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: /statement of account/i }));
+    await user.click(screen.getByRole("tab", { name: /billing/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
     expect(screen.getByRole("heading", { name: /statement of account/i })).toBeInTheDocument();

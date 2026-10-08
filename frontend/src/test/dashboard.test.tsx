@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -183,49 +183,14 @@ describe("DashboardPage", () => {
     expect(screen.getAllByText(/, \d{1,2}:\d{2}/).length).toBeGreaterThan(1);
   });
 
-  it("records a payment from the dashboard modal and adds it to recent activity", async () => {
+  it("opens the shared payment workflow from the dashboard action", async () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);
 
     await user.click(await screen.findByRole("button", { name: /record payment/i }));
 
-    const dialog = await screen.findByRole("dialog", {
-      name: /record payment/i,
-    });
-    await user.type(
-      within(dialog).getByLabelText(/^student$/i),
-      "Bianca Cruz (sample)",
-    );
-    await user.type(within(dialog).getByLabelText(/amount received/i), "2500");
-    await user.click(within(dialog).getByRole("button", { name: /payment method/i }));
-    expect(
-      screen.queryByRole("menuitemradio", { name: /gcash/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitemradio", { name: /bank deposit/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitemradio", { name: /^check$/i }),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("menuitemradio", { name: "Cash" }));
-    expect(within(dialog).queryByLabelText(/reference number/i)).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: /review payment/i }));
-
-    expect(
-      within(dialog).getByRole("heading", { name: /confirm payment/i }),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText(/Bianca Cruz \(sample\)/i)).toBeInTheDocument();
-
-    await user.click(
-      within(dialog).getByRole("button", { name: /confirm and save/i }),
-    );
-
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: /record payment/i })).not.toBeInTheDocument(),
-    );
-    expect(screen.getByText("Bianca Cruz (sample)")).toBeInTheDocument();
-    expect(screen.getByText("OR-2026-002000")).toBeInTheDocument();
-    expect(screen.getByText(/2,500\.00/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
+    expect(screen.queryByRole("dialog", { name: /record payment/i })).not.toBeInTheDocument();
   });
 
   it("does not show Record Payment for Administrator", async () => {
