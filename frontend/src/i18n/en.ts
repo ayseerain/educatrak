@@ -50,6 +50,7 @@ export const en = {
     accounts: "Accounts",
     payments: "Payments",
     followUp: "Follow-up",
+    remindersNotifications: "Reminders & notifications",
     clearance: "Clearance",
     reports: "Reports",
     notifications: "Notifications",

@@ -12,7 +12,7 @@ interface ShellProps extends PropsWithChildren {
 
 export function Shell({ user, onLogout, onRoleChange, children }: ShellProps) {
   return (
-    <div className="flex h-screen min-w-[1024px] bg-surface">
+    <div className="fixed inset-0 flex min-w-[1024px] overflow-hidden bg-surface">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow-card"
@@ -20,9 +20,9 @@ export function Shell({ user, onLogout, onRoleChange, children }: ShellProps) {
         {en.a11y.skipToContent}
       </a>
       <Sidebar user={user} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Header user={user} onLogout={onLogout} onRoleChange={onRoleChange} />
-        <main id="main-content" className="flex-1 overflow-y-auto p-6">
+        <main id="main-content" className="min-h-0 flex-1 overflow-y-auto p-6">
           {children}
         </main>
       </div>

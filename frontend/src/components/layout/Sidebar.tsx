@@ -28,7 +28,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: en.nav.students, to: "/students", capability: "student.view" },
       { label: en.nav.accounts, to: "/accounts", capability: "account.view" },
       { label: en.nav.payments, to: "/payments", capability: "payment.view" },
-      { label: en.nav.followUp, to: "/followup", capability: "followup.view" },
       { label: en.nav.clearance, to: "/clearance", capability: "clearance.view" },
     ],
   },
@@ -37,6 +36,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: en.nav.reports, to: "/reports", capability: "report.view" },
       { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
+      { label: en.nav.remindersNotifications, to: "/followup", capability: "followup.view", end: true },
+      { label: en.nav.notifications, to: "/notifications", capability: "notification.view", nested: true },
       { label: en.nav.closeOut, to: "/closeout", capability: "closeout.submit", end: true },
       { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view", nested: true },
     ],
@@ -48,7 +49,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: en.nav.administration, to: "/admin/users", capability: "user.manage" },
       { label: en.nav.backup, to: "/admin/backup", capability: "backup.manage" },
       { label: en.nav.auditLog, to: "/admin/audit-log", capability: "audit.view" },
-      { label: en.nav.notifications, to: "/notifications", capability: "notification.view" },
       { label: en.nav.settings, to: "/settings/fees", capability: "settings.finance" },
     ],
   },
@@ -93,7 +93,7 @@ export function Sidebar({ user }: SidebarProps) {
             </h2>
             <ul className="space-y-0.5">
               {group.items.map((item) => {
-                const showNestedStyle = item.nested && group.items.some((groupItem) => groupItem.to === "/closeout");
+                const showNestedStyle = item.nested && group.items.some((groupItem) => groupItem.to === "/closeout" || groupItem.to === "/followup");
 
                 return (
                   <li key={item.to}>
