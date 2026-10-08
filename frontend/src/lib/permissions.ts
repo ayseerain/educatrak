@@ -1,5 +1,7 @@
 import type { AuthenticatedUser, Capability, Role } from "./types";
 
+export type ReportKind = "daily" | "monthly" | "outstanding" | "statement";
+
 /**
  * Capability matrix, derived from the navigation lists in
  * EducatraK_Frontend_Context_Brief.md section 8. This is the single
@@ -61,4 +63,10 @@ export function can(user: AuthenticatedUser, capability: Capability): boolean {
 /** Convenience guard used by dashboard components to hide financial data. */
 export function canSeeFinancials(user: AuthenticatedUser): boolean {
   return can(user, "finance.amounts.view");
+}
+
+/** Cashiers are limited to their daily report and student statements. */
+export function canViewReport(user: AuthenticatedUser, report: ReportKind): boolean {
+  if (!can(user, "report.view")) return false;
+  return user.role !== "cashier" || report === "daily" || report === "statement";
 }

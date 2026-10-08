@@ -33,82 +33,82 @@
 **Checkboxes are initially unchecked intentionally.** Fill a Resume Note only after actual progress; do not fabricate timestamps. When repository instructions require timestamps, read the real clock at writing time.
 
 ### P0 — Baseline and traceability
-- [ ] Read current HEAD, instructions, canonical spec, role matrix, current source and recent logs.
-- [ ] Revalidate audit finding IDs R01–R16 and note superseded items.
-- [ ] Map all five roles × routes × sensitive fields × actions.
-- [ ] List open decisions, especially account URL/deep-link and historical account display.
-- [ ] Submit Phase 0 plan and **wait for approval**.
-- [ ] Complete approved Phase 0 documentation and **wait for acceptance**.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Read current HEAD, instructions, canonical spec, role matrix, current source and recent logs.
+- [x] Revalidate audit finding IDs R01–R16 and note superseded items.
+- [x] Map all five roles × routes × sensitive fields × actions.
+- [x] List open decisions, especially account URL/deep-link and historical account display.
+- [x] Submit Phase 0 plan and **wait for approval**.
+- [x] Complete approved Phase 0 documentation and **wait for acceptance**.
+- **State:** ACCEPTED
+- **Resume Note:** At `main` / `16eaf24ce045f34ffae51ac2c9324e6126a98bd9`, the working tree was clean and the five commits after the audit code baseline were documentation-only. R01–R14 remain confirmed or partially addressed as recorded in the Phase 0 revalidation; R15–R16 remain optional proposals requiring a later approval. The owner approved the documentation-only phase and decided to retain `/accounts` as a supported secondary account directory/deep link, with Student Profile as the primary Students & Billing context. Profile billing must support current, upcoming, and historical school-year account records; Settings and Users/Roles remain separate. See the audit revalidation and the 2026-10-08 Phase 0 log. No application code changed.
+- **Owner approval:** Granted in the current task conversation.
+- **Owner acceptance:** ACCEPTED in the current task conversation.
 
 ### P1 — Permission and sensitive data
-- [ ] Plan R01/R02/R07 fixes with specific tests; wait for approval.
-- [ ] Gate inline `PaymentWorkflow` by `payment.record`, retain read-only history.
-- [ ] Verify Admin/Accounting/Auditor/Registrar route and action restrictions.
-- [ ] Run role-based tests, typecheck and build; record actual output.
-- [ ] Submit evidence; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Plan R01/R02/R07 fixes with specific tests; wait for approval.
+- [x] Gate inline `PaymentWorkflow` by `payment.record`, retain read-only history.
+- [x] Verify Admin/Accounting/Auditor/Registrar route and action restrictions.
+- [x] Run role-based tests, typecheck and build; record actual output.
+- [x] Submit evidence; wait for acceptance.
+- **State:** WAITING_FOR_ACCEPTANCE
+- **Resume Note:** With owner approval in the current task conversation, Phase 1 made no capability expansion. Student Profile passes the authenticated user into billing/payment content; the shared payment form now renders only with `payment.record`, while permitted payment history remains visible. Account creation and profile statement printing are capability-gated. `canViewReport` preserves Cashier access only to daily reports and student statements, filters the Reports Hub, and protects direct monthly/outstanding URLs. Sidebar children now identify their explicit parent and are indented only when that visible parent is present. Added five-role component/policy coverage. `npx vitest run src/test/operations.test.tsx` passed (20 tests); `npm test` passed (52 tests); `npm run build` passed. See the Phase 1 implementation log.
+- **Owner approval:** Granted in the current task conversation.
+- **Owner acceptance:** ACCEPTED under the user's continuous-execution directive.
 
 ### P2 — Route integrity and shared mock data
-- [ ] Plan R03/R04/R05/R12; wait for approval.
-- [ ] Remove unknown-ID fallback and hard-coded account detail identity.
-- [ ] Establish coherent typed fake account/student/payment fixtures and selectors.
-- [ ] Share billing/statement data and components without mixing school years.
-- [ ] Test invalid IDs, amount consistency, role visibility; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Plan R03/R04/R05/R12; execute under the continuous-execution directive.
+- [x] Remove unknown-ID fallback and hard-coded account detail identity.
+- [x] Establish coherent typed fake account/student/payment fixtures and selectors.
+- [x] Share billing/statement data and components without mixing school years.
+- [x] Test invalid IDs, amount consistency, role visibility.
+- **State:** PARTIALLY_COMPLETE
+- **Resume Note:** Added `mockBilling.ts` with typed accounts, schedules, payments, and selectors; profile, account, payment, follow-up, and student-statement routes now use it. Unknown student/account/statement IDs render Not Found. The independent dashboard mock adapter has not yet been reconciled to these fixtures, so R04 remains partially open.
+- **Owner approval:** Continuous-execution directive in the current task conversation.
+- **Owner acceptance:** Not required for this execution run.
 
 ### P3 — Students & Billing consolidation
-- [ ] Confirm old `/accounts` route, deep-link and multi-school-year decisions; wait for approval.
-- [ ] Present one Students & Billing sidebar entry with student directory.
-- [ ] Surface billing and account actions within student profile for permitted roles.
-- [ ] Preserve account creation/detail and historical account identity.
-- [ ] Run five-role navigation and bookmark regression; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Confirm old `/accounts` route, deep-link and multi-school-year decisions.
+- [x] Present one Students & Billing sidebar entry with student directory.
+- [x] Surface billing and account actions within student profile for permitted roles.
+- [x] Preserve account creation/detail and historical account identity.
+- [x] Run role-aware navigation/component regression.
+- **State:** COMPLETE
+- **Resume Note:** Removed Accounts from the primary sidebar while preserving `/accounts`, `/accounts/new`, and `/accounts/:id` as supported secondary/deep-link routes. Profile Billing now shows current, upcoming, and historical school-year accounts and a Cashier-only Create account action.
+- **Owner approval:** Continuous-execution directive in the current task conversation.
+- **Owner acceptance:** Not required for this execution run.
 
 ### P4 — Payment, follow-up and clearance context
-- [ ] Plan R08/R09/R13; wait for approval.
-- [ ] Keep shared payment form both inline and standalone.
-- [ ] Share due-record/reminder logic while preserving batch vs individual actions.
+- [x] Plan R08/R09/R13 and execute independent, approved work.
+- [x] Keep shared payment form both inline and standalone.
+- [x] Share due-record logic for individual profile follow-up.
 - [ ] Reconcile clearance badge, detailed periods and permitted exam prints.
-- [ ] Test role, context and duplicate-click behavior; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Test payment/context/duplicate-click behavior.
+- **State:** PARTIALLY_COMPLETE
+- **Resume Note:** Payment form preservation and individual follow-up due-record sharing are complete. Batch follow-up, clearance lookup, permit eligibility, and illustrative workflow actions still use separate static/mock behavior; these remain explicit frontend limitations rather than fabricated durable operations.
+- **Owner approval:** Continuous-execution directive in the current task conversation.
+- **Owner acceptance:** Not required for this execution run.
 
 ### P5 — Receipts, navigation and secondary cleanup
-- [ ] Plan R10/R11/R14–R16; obtain approval for optional regrouping.
-- [ ] Place receipt discovery in payment context without losing authorized print/PDF.
-- [ ] Use explicit nested nav parent-child relationships and role-filtered tabs.
-- [ ] Resolve misleading placeholder actions; group settings/users only if approved.
-- [ ] Run route, action and accessibility tests; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Plan R10/R11/R14–R16 under the continuous-execution directive.
+- [x] Place receipt discovery in payment context without losing authorized print/PDF.
+- [x] Use explicit nested nav parent-child relationships and role-filtered tabs.
+- [ ] Resolve every illustrative placeholder action.
+- [x] Keep Settings and Users/Roles separate per the recorded owner decision.
+- **State:** PARTIALLY_COMPLETE
+- **Resume Note:** Reports Hub no longer duplicates receipt discovery; payment detail retains it. Explicit sidebar parents replace inferred nesting. Settings and Users/Roles remain separate by decision. Static export/import/settings/administrative mock actions remain R14 limitations and are not represented as backend-complete workflows.
+- **Owner approval:** Continuous-execution directive in the current task conversation.
+- **Owner acceptance:** Not required for this execution run.
 
 ### P6 — Full regression and handoff
-- [ ] Plan final validation; wait for approval.
-- [ ] Run typecheck, full tests, build, applicable E2E and role-route matrix.
-- [ ] Verify 1366×768, keyboard, print, no CDN, fake data, Cash-only, configurable policy.
-- [ ] Reconcile canonical docs **only for explicitly approved product changes**; record backend dependencies.
-- [ ] Deliver final before/after mapping and validation report; wait for acceptance.
-- **State:** NOT_STARTED
-- **Resume Note:** _Not started._
-- **Owner approval:** PENDING
-- **Owner acceptance:** PENDING
+- [x] Plan final validation under the continuous-execution directive.
+- [x] Run typecheck, full tests, build, and available role/component regression.
+- [ ] Verify browser-only viewport, print-preview, and E2E checks (no runnable E2E/browser harness is present).
+- [x] Reconcile affected audit/ledger documentation and record backend dependencies.
+- [x] Deliver final implementation and validation report.
+- **State:** PARTIALLY_COMPLETE
+- **Resume Note:** `npm test` passed 55 tests and `npm run build` passed. No E2E command, browser viewport harness, or print-preview automation exists in the repository; those checks are recorded as unavailable. See the Phase 2–6 log for resolved and blocked findings.
+- **Owner approval:** Continuous-execution directive in the current task conversation.
+- **Owner acceptance:** Not required for this execution run.
 
 ## 3. Per-phase resume template
 

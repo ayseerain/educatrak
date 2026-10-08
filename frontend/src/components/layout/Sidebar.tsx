@@ -9,7 +9,7 @@ interface NavItem {
   to: string;
   capability: Capability;
   end?: boolean;
-  nested?: boolean;
+  parentTo?: string;
 }
 
 interface NavGroup {
@@ -26,7 +26,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: en.nav.studentBilling,
     items: [
       { label: en.nav.students, to: "/students", capability: "student.view" },
-      { label: en.nav.accounts, to: "/accounts", capability: "account.view" },
       { label: en.nav.payments, to: "/payments", capability: "payment.view" },
       { label: en.nav.clearance, to: "/clearance", capability: "clearance.view" },
     ],
@@ -37,9 +36,9 @@ const NAV_GROUPS: NavGroup[] = [
       { label: en.nav.reports, to: "/reports", capability: "report.view" },
       { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
       { label: en.nav.remindersNotifications, to: "/followup", capability: "followup.view", end: true },
-      { label: en.nav.notifications, to: "/notifications", capability: "notification.view", nested: true },
+      { label: en.nav.notifications, to: "/notifications", capability: "notification.view", parentTo: "/followup" },
       { label: en.nav.closeOut, to: "/closeout", capability: "closeout.submit", end: true },
-      { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view", nested: true },
+      { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view", parentTo: "/closeout" },
     ],
   },
   {
@@ -93,7 +92,7 @@ export function Sidebar({ user }: SidebarProps) {
             </h2>
             <ul className="space-y-0.5">
               {group.items.map((item) => {
-                const showNestedStyle = item.nested && group.items.some((groupItem) => groupItem.to === "/closeout" || groupItem.to === "/followup");
+                const showNestedStyle = Boolean(item.parentTo && group.items.some((groupItem) => groupItem.to === item.parentTo));
 
                 return (
                   <li key={item.to}>

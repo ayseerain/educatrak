@@ -71,3 +71,33 @@ Students are identity/guardian records; billing accounts are per-student/per-sch
 Review was static, with no browser walkthrough, test execution or backend test. `R01` and `R03` are supported by code structure; role exposure should still be verified by tests. Other recommendations must be revalidated against fresh HEAD and actual usage. No code or permission changes are authorized by this document alone.
 
 **Execution guide:** `../07-AI-Agents/Redundancy-Refactor-Loop-Engineering-Manual.md`. **Phases:** `Redundancy-Refactoring-Roadmap.md`.
+
+## Phase 0 revalidation — `16eaf24` (2026-10-08)
+
+The current branch was rechecked at `main` / `16eaf24ce045f34ffae51ac2c9324e6126a98bd9`. The five commits after the original code baseline (`ecb2fd0`) only added or indexed the redundancy-refactor documentation; no frontend implementation files changed. The working tree was clean. `npm test` passed all 48 tests and `npm run build` passed.
+
+| Finding status | IDs | Current-source conclusion |
+|---|---|---|
+| Confirmed | R01, R03, R04, R06, R07, R11, R12, R13, R14 | The inline profile payment form remains ungated; unknown student IDs fall back to the first record; account detail is fixed rather than ID-specific; mock financial rows and several action controls remain independent/static; Students and Accounts remain separate primary links; nested navigation is inferred; and report route context is not used. |
+| Partially addressed | R05, R08, R09, R10 | The shared statement table and the profile payment workflow are retained, but account summaries, follow-up data, clearance data, and receipt discovery are not yet consistently shared or contextual. |
+| Requires later approval | R15, R16 | Settings grouping and a Users/Roles regrouping remain optional proposals; neither is a defect that authorizes a navigation change. |
+
+No finding was superseded. Source review also confirmed an R02 child-action gap: `AccountsPage` always shows Create account to account viewers, `StudentStatementWidget` always exposes Print, and the Reports Hub is not role-filtered. Registrar profile/list financial and guardian isolation is source-supported, and all application routes retain top-level capability guards; the role-by-route/action regression suite is still required before access claims are treated as complete.
+
+### Approved Phase 0 decisions
+
+1. **`/accounts` strategy:** Keep `/accounts`, `/accounts/new`, and `/accounts/:id` as supported secondary account-management routes and bookmark targets. Remove neither route nor capability. In the eventual Students & Billing navigation, Student Profile is the primary context; the account directory remains an available secondary view rather than a competing top-level sidebar destination.
+2. **Account history and future records:** Student Profile billing will present the current account first and allow authorized users to read historical and upcoming school-year account records. Account adjustments remain attached to their specific account and retain their audit context. Cashier account creation will remain available in the student context for the appropriate school year.
+3. **Breadcrumbs:** Use `Students & Billing > [Student] > Billing` for profile context and `Students & Billing > Accounts > [account or action]` for retained account URLs. A retained account deep link must resolve its actual account identity; it must never substitute a different student's record.
+4. **Canonical reconciliation:** The owner authorized reconciling the canonical route/navigation inventory when Phase 3 implements the approved Students & Billing model. Until then, the existing canonical routes remain supported.
+5. **Settings and Users/Roles:** Keep them separate. Their current screens serve distinct permission boundaries and workflows; no redundancy reduction presently justifies regrouping.
+
+## Phase 1 implementation — `16eaf24` worktree (2026-10-08)
+
+Phase 1 implemented the approved R01/R02/R07 scope without adding roles, capabilities, routes, payment methods, or backend behavior.
+
+- **R01 — resolved in the frontend:** `StudentPaymentsPanel` now receives the authenticated user and mounts the shared `PaymentWorkflow` only for `payment.record`. Users with `payment.view` retain the payment-history table.
+- **R02 — partially addressed:** Account creation and profile statement printing are hidden unless the respective existing capability permits them. Cashier report discovery and direct monthly/outstanding navigation now respect the canonical limited-report scope. Broader sensitive-child/action auditing remains necessary in later phases.
+- **R07 — partially addressed:** Report route policy is applied in addition to the existing route capability guard, and sidebar nesting now uses explicit parent metadata after role filtering. Full cross-role regression remains a Phase 6 release gate.
+
+Validation: `npx vitest run src/test/operations.test.tsx` passed (20 tests); `npm test` passed (52 tests); `npm run build` passed.
