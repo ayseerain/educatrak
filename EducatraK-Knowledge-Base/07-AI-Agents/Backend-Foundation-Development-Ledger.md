@@ -10,9 +10,9 @@ remain authoritative.
 | Phase | Scope | Status | Notes |
 | --- | --- | --- | --- |
 | 0 | Reconnaissance and planning | Complete | Existing frontend is mock-driven; backend starts from an empty placeholder. |
-| 1 | Laravel and local environment foundation | In progress | Laravel 13.35 scaffolded; MySQL deployment configuration and SQLite test configuration are next. |
-| 2 | Relational schema, models, factories, seeders | Not started | |
-| 3 | Authentication, authorization, audit foundation | Not started | |
+| 1 | Laravel and local environment foundation | Complete | Laravel 13.35 scaffold, MySQL deployment template, SQLite test configuration, and API session setup are in place. |
+| 2 | Relational schema, models, factories, seeders | In progress | Dependency-ordered schema migrations and generated model/factory surface are present; domain relationships and seed data remain. |
+| 3 | Authentication, authorization, audit foundation | In progress | Session login/profile/password endpoints, role capability middleware, login throttling, and audit writer are implemented. |
 | 4 | Settings and academic/billing configuration | Not started | |
 | 5 | Student and account lifecycle | Not started | |
 | 6 | Payments, allocations, receipts, voids, close-out | Not started | |
@@ -41,3 +41,13 @@ remain authoritative.
   generated backend instructions require.
 - Read the generated Laravel guidance and activated its Laravel and testing
   practices for the work that follows.
+
+## Entry — Friday, October 09, 2026 — 06:48:32 +08:00
+
+- Replaced generated placeholder migrations with three ordered domain schema
+  migrations covering reference data, people, billing, operations, and audit
+  records. Fresh SQLite migration validation passed.
+- Added server-enforced role capability checks, session-based auth endpoints,
+  login throttling, and request audit recording.
+- Added feature coverage for successful session login/profile responses and
+  rejection of inactive fictional users. The focused test suite passed.

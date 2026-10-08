@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\LoginRequest;
+use App\Models\User;
+use App\Services\AuditLogger;
+use App\Support\CapabilityMap;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthController extends Controller
+{
+    public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
+    {
+        if (! Auth::attempt($request->validated())) {
+            return response()->json(['message' => 'The supplied credentials are invalid.'], 422);
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (! $user->active) {
+            Auth::logout();
+
+            return response()->json(['message' => 'This account is inactive.'], 403);
+        }
+
+        $request->session()->regenerate();
+        $user->forceFill(['last_login_at' => now()])->save();
+        $auditLogger->record($request, 'auth.login', $user);
+
+        return response()->json(['data' => $this->profile($user)]);
+    }
+
+    public function logout(Request $request, AuditLogger $auditLogger): JsonResponse
+    {
+        $auditLogger->record($request, 'auth.logout', $request->user());
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json(status: 204);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json(['data' => $this->profile($user)]);
+    }
+
+    public function changePassword(ChangePasswordRequest $request, AuditLogger $auditLogger): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $user->forceFill([
+            'password' => $request->string('password')->value(),
+            'must_change_password' => false,
+        ])->save();
+        $auditLogger->record($request, 'auth.change_password', $user);
+
+        return response()->json(['data' => $this->profile($user)]);
+    }
+
+    /** @return array<string, mixed> */
+    private function profile(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'username' => $user->username,
+            'fullName' => $user->full_name,
+            'role' => $user->role->value,
+            'active' => $user->active,
+            'mustChangePassword' => $user->must_change_password,
+            'lastLoginAt' => $user->last_login_at?->toISOString(),
+            'capabilities' => CapabilityMap::for($user->role),
+        ];
+    }
+}
