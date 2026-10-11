@@ -1,0 +1,12 @@
+{
+    "name": "educatrak",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "git pull origin main && cd frontend && npm run dev"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
