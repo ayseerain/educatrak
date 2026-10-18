@@ -1,6 +1,6 @@
 import { DashboardStatCard } from "./DashboardStatCard";
 import { DashboardWorkPanel } from "./DashboardWorkPanel";
-import { Database, History, MailSearch, Settings, ShieldCheck, UserCog, Users } from "lucide-react";
+import { Database, History, Settings, ShieldCheck, UserCog } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { en } from "@/i18n/en";
 import { formatDateTime } from "@/lib/dates";
@@ -13,12 +13,7 @@ interface AdminDashboardProps {
 export function AdminDashboard({ summary }: AdminDashboardProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4">
-        <DashboardStatCard
-          label={en.dashboard.overallEnrolledStudents}
-          value={String(summary.overallEnrolledStudents)}
-          icon={Users}
-        />
+      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.lastBackup}
           value={formatDateTime(summary.lastBackupAt)}
@@ -29,10 +24,10 @@ export function AdminDashboard({ summary }: AdminDashboardProps) {
           value={String(summary.activeUserCount)}
         />
         <DashboardStatCard
-          label={en.dashboard.failedEmails}
-          value={String(summary.failedEmailCount)}
-          icon={MailSearch}
-          action={{ to: "/notifications?status=failed", label: en.dashboard.viewFailedEmails }}
+          label={en.dashboard.failedLoginAttempts}
+          value={String(summary.failedLoginCount)}
+          icon={ShieldCheck}
+          action={{ to: "/admin/audit-log", label: en.dashboard.viewSecurityEvents }}
         />
       </div>
 
@@ -58,6 +53,12 @@ export function AdminDashboard({ summary }: AdminDashboardProps) {
               detail: en.dashboard.backupRecoveryHelp,
               to: "/admin/backup",
               icon: Database,
+            },
+            {
+              label: en.dashboard.securityEvents,
+              detail: en.dashboard.securityEventsHelp,
+              to: "/admin/audit-log",
+              icon: ShieldCheck,
             },
           ]}
         />

@@ -209,11 +209,10 @@ export async function fetchDashboardSummary(
     case "administrator":
       return {
         role: "administrator",
-        overallEnrolledStudents: 60,
         lastBackupAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
         lastBackupSucceeded: true,
         activeUserCount: 14,
-        failedEmailCount: 2,
+        failedLoginCount: 2,
       };
     case "auditor":
       return {

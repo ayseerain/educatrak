@@ -123,7 +123,7 @@ describe("DashboardPage", () => {
     renderWithProviders(cashier);
 
     expect(await screen.findByRole("link", { name: /view students/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /view reports/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /review close-out/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view payments/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /view payments/i }));
@@ -203,13 +203,13 @@ describe("DashboardPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens the notification log from the failed emails widget", async () => {
+  it("opens security events from the failed-login widget", async () => {
     const user = userEvent.setup();
     renderWithProviders(administrator);
 
-    await user.click(await screen.findByRole("link", { name: /view failed emails/i }));
+    await user.click(await screen.findByRole("link", { name: /view security events/i }));
 
-    expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/admin/audit-log");
   });
 
   it("Registrar dashboard exposes no financial information", () => {

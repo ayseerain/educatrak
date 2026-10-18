@@ -67,7 +67,21 @@ describe("LoginPage", () => {
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toHaveFocus();
     expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
-    expect(screen.queryByText(/forgot password/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
+  });
+
+  it("explains the administrator-led password reset path", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
+    expect(forgotPassword).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/contact an administrator to reset your password/i)).not.toBeInTheDocument();
+
+    await user.click(forgotPassword);
+
+    expect(forgotPassword).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/contact an administrator to reset your password/i)).toBeInTheDocument();
   });
 
   it("toggles password visibility from the login form", async () => {

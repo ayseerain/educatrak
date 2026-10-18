@@ -7,6 +7,9 @@ frontend can run without the Laravel backend. Credentials are not stored in
 
 The real backend will replace this with the documented cookie-session API.
 
+The sign-in page includes a "Forgot password?" control that directs staff to
+contact an administrator. It does not provide self-service password recovery.
+
 The mock session expires after 30 minutes of inactivity and shows the required
 warning 1 minute before expiry. The warning lets the user stay signed in or
 sign out immediately; expired sessions return to `/login`.

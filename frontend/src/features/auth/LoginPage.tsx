@@ -45,6 +45,7 @@ export function LoginPage() {
   const [authError, setAuthError] = useState("");
   const [lockedUntil, setLockedUntil] = useState<number>();
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPasswordHelpOpen, setIsForgotPasswordHelpOpen] = useState(false);
 
   useEffect(() => {
     usernameRef.current?.focus();
@@ -196,6 +197,23 @@ export function LoginPage() {
               {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
               <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
             </form>
+
+            <div className="mt-5 text-center lg:text-left">
+              <button
+                type="button"
+                className="text-sm font-medium text-brand-green-dark underline underline-offset-4 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+                aria-expanded={isForgotPasswordHelpOpen}
+                aria-controls="forgot-password-help"
+                onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
+              >
+                {en.login.forgotPassword}
+              </button>
+              {isForgotPasswordHelpOpen && (
+                <p id="forgot-password-help" role="status" className="mt-2 text-sm text-text-secondary">
+                  {en.login.forgotPasswordHelp}
+                </p>
+              )}
+            </div>
 
             <p className="mt-6 text-xs leading-5 text-text-muted-readable lg:hidden">{en.login.mockHint}</p>
           </div>

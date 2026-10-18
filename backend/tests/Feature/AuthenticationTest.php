@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEntry;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -27,7 +28,7 @@ class AuthenticationTest extends TestCase
         $this->actingAs($user)->getJson('/api/auth/me')
             ->assertOk()
             ->assertJsonPath('data.role', 'cashier')
-            ->assertJsonPath('data.capabilities.0', 'students.view');
+            ->assertJsonPath('data.capabilities.0', 'students.manage');
     }
 
     public function test_inactive_user_cannot_log_in(): void
@@ -41,5 +42,19 @@ class AuthenticationTest extends TestCase
             'username' => 'fictional.inactive',
             'password' => 'FictionalPass123!',
         ])->assertForbidden();
+    }
+
+    public function test_failed_login_is_audited_without_a_password(): void
+    {
+        $this->postJson('/api/auth/login', [
+            'username' => 'fictional.unknown',
+            'password' => 'IncorrectPass123!',
+        ])->assertUnprocessable();
+
+        $entry = AuditEntry::query()->where('action', 'auth.login_failed')->sole();
+
+        $this->assertSame('fictional.unknown', $entry->after['username']);
+        $this->assertSame('invalid_credentials', $entry->after['outcome']);
+        $this->assertArrayNotHasKey('password', $entry->after);
     }
 }

@@ -1,7 +1,7 @@
 import { DashboardStatCard } from "./DashboardStatCard";
 import { DashboardWorkPanel } from "./DashboardWorkPanel";
 import { RecentActivity } from "./RecentActivity";
-import { Banknote, FileSearch, ReceiptText, ShieldCheck, Users } from "lucide-react";
+import { Banknote, ShieldCheck, ReceiptText, Users } from "lucide-react";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import type { AuditorDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
@@ -40,14 +40,8 @@ export function AuditorDashboard({ summary, range }: AuditorDashboardProps) {
         description={en.dashboard.auditorWorkspaceHelp}
         items={[
           {
-            label: en.dashboard.goToReports,
-            detail: en.dashboard.goToReportsHelp,
-            to: "/reports",
-            icon: FileSearch,
-          },
-          {
-            label: en.dashboard.goToAuditLog,
-            detail: en.dashboard.goToAuditLogHelp,
+            label: en.dashboard.openAuditReview,
+            detail: en.dashboard.openAuditReviewHelp,
             to: "/admin/audit-log",
             icon: ShieldCheck,
           },

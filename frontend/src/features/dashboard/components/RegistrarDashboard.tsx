@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardCheck, SearchCheck, Users } from "lucide-react";
+import { ClipboardCheck, SearchCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
 import { en } from "@/i18n/en";
@@ -54,12 +54,6 @@ export function RegistrarDashboard() {
             icon={ClipboardCheck}
             label={en.dashboard.openClearanceLookup}
             detail={en.dashboard.openClearanceLookupHelp}
-          />
-          <RegistrarLink
-            to="/students"
-            icon={Users}
-            label={en.dashboard.viewLimitedStudentList}
-            detail={en.dashboard.viewLimitedStudentListHelp}
           />
         </div>
       </Card>

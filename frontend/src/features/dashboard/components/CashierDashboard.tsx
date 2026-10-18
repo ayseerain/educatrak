@@ -42,7 +42,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
               label={statLabels.collections}
               value={format(summary.todayCollectionsTotal)}
               icon={Banknote}
-              action={{ to: "/reports", label: en.dashboard.viewReports }}
+              action={{ to: "/closeout", label: en.dashboard.reviewCloseout }}
             />
             <DashboardStatCard
               label={statLabels.payments}
@@ -54,7 +54,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
               label={en.dashboard.failedEmails}
               value={String(summary.failedEmailCount)}
               icon={MailSearch}
-              action={{ to: "/notifications?status=failed", label: en.dashboard.viewFailedEmails }}
+              action={{ to: "/followup", label: en.dashboard.reviewFollowups }}
             />
           </div>
           <CloseoutStatus done={summary.closeoutDone} className="min-h-[116px]" />

@@ -73,11 +73,10 @@ export interface AccountingDashboardSummary {
 
 export interface AdministratorDashboardSummary {
   role: "administrator";
-  overallEnrolledStudents: number;
   lastBackupAt: string; // ISO timestamp
   lastBackupSucceeded: boolean;
   activeUserCount: number;
-  failedEmailCount: number;
+  failedLoginCount: number;
 }
 
 export interface AuditorDashboardSummary {

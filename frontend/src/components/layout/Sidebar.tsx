@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { can } from "@/lib/permissions";
-import type { AuthenticatedUser, Capability } from "@/lib/types";
+import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 import { en } from "@/i18n/en";
 import { cn } from "@/lib/cn";
 
@@ -17,48 +17,80 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: en.nav.overview,
-    items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
-  },
-  {
-    label: en.nav.studentBilling,
-    items: [
-      { label: en.nav.students, to: "/students", capability: "student.view" },
-      { label: en.nav.payments, to: "/payments", capability: "payment.view" },
-      { label: en.nav.clearance, to: "/clearance", capability: "clearance.view" },
-    ],
-  },
-  {
-    label: en.nav.reportsControls,
-    items: [
-      { label: en.nav.reports, to: "/reports", capability: "report.view" },
-      { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
-      { label: en.nav.remindersNotifications, to: "/followup", capability: "followup.view", end: true },
-      { label: en.nav.notifications, to: "/notifications", capability: "notification.view", parentTo: "/followup" },
-      { label: en.nav.closeOut, to: "/closeout", capability: "closeout.submit", end: true },
-      { label: en.nav.closeOutHistory, to: "/closeout/history", capability: "closeout.view", parentTo: "/closeout" },
-    ],
-  },
-  {
-    label: en.nav.administrationGroup,
-    items: [
-      { label: en.nav.import, to: "/import", capability: "import.run" },
-      { label: en.nav.administration, to: "/admin/users", capability: "user.manage" },
-      { label: en.nav.backup, to: "/admin/backup", capability: "backup.manage" },
-      { label: en.nav.auditLog, to: "/admin/audit-log", capability: "audit.view" },
-      { label: en.nav.settings, to: "/settings/fees", capability: "settings.finance" },
-    ],
-  },
-];
+const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
+  cashier: [
+    {
+      label: en.nav.overview,
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+    },
+    {
+      label: en.nav.dailyBilling,
+      items: [
+        { label: en.nav.studentsBilling, to: "/students", capability: "student.view" },
+        { label: en.nav.cashPaymentsReceipts, to: "/payments", capability: "payment.view" },
+        { label: en.nav.installmentsFollowups, to: "/followup", capability: "followup.view" },
+        { label: en.nav.dailyCloseout, to: "/closeout", capability: "closeout.submit" },
+      ],
+    },
+  ],
+  accounting: [
+    {
+      label: en.nav.overview,
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+    },
+    {
+      label: en.nav.financialOversight,
+      items: [
+        { label: en.nav.financialPolicies, to: "/settings/fees", capability: "settings.finance" },
+        { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
+        { label: en.nav.closeoutReview, to: "/closeout/history", capability: "closeout.view" },
+        { label: en.nav.financialReports, to: "/reports", capability: "report.view" },
+      ],
+    },
+  ],
+  administrator: [
+    {
+      label: en.nav.overview,
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+    },
+    {
+      label: en.nav.systemAdministration,
+      items: [
+        { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage" },
+        { label: en.nav.systemConfiguration, to: "/settings/school", capability: "settings.system" },
+        { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.manage" },
+        { label: en.nav.securityEvents, to: "/admin/audit-log", capability: "audit.view" },
+      ],
+    },
+  ],
+  auditor: [
+    {
+      label: en.nav.overview,
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+    },
+    {
+      label: en.nav.independentReview,
+      items: [{ label: en.nav.auditReview, to: "/admin/audit-log", capability: "audit.view" }],
+    },
+  ],
+  registrar: [
+    {
+      label: en.nav.overview,
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+    },
+    {
+      label: en.nav.clearancePermits,
+      items: [{ label: en.nav.clearanceVerification, to: "/clearance", capability: "clearance.view" }],
+    },
+  ],
+};
 
 interface SidebarProps {
   user: AuthenticatedUser;
 }
 
 export function Sidebar({ user }: SidebarProps) {
-  const visibleGroups = NAV_GROUPS.map((group) => ({
+  const visibleGroups = ROLE_NAV_GROUPS[user.role].map((group) => ({
     ...group,
     items: group.items.filter((item) => can(user, item.capability)),
   })).filter((group) => group.items.length > 0);

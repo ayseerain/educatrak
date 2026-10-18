@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditEntry;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -21,5 +22,23 @@ class AuditLogger
             'user_agent' => $request->userAgent(),
             'occurred_at' => now(),
         ]);
+    }
+
+    public function recordAuthenticationFailure(
+        Request $request,
+        string $username,
+        string $outcome,
+        ?User $user = null,
+    ): void {
+        $this->record(
+            $request,
+            'auth.login_failed',
+            $user,
+            null,
+            [
+                'username' => $username,
+                'outcome' => $outcome,
+            ],
+        );
     }
 }

@@ -16,7 +16,15 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        if (! Auth::attempt($request->validated())) {
+        $credentials = $request->validated();
+
+        if (! Auth::attempt($credentials)) {
+            $auditLogger->recordAuthenticationFailure(
+                $request,
+                $credentials['username'],
+                'invalid_credentials',
+            );
+
             return response()->json(['message' => 'The supplied credentials are invalid.'], 422);
         }
 
@@ -25,6 +33,12 @@ class AuthController extends Controller
 
         if (! $user->active) {
             Auth::logout();
+            $auditLogger->recordAuthenticationFailure(
+                $request,
+                $user->username,
+                'inactive_account',
+                $user,
+            );
 
             return response()->json(['message' => 'This account is inactive.'], 403);
         }
