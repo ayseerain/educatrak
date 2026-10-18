@@ -96,9 +96,9 @@ export function LoginPage() {
   const disabled = Boolean(lockedUntil && lockedUntil > Date.now()) || isSubmitting;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-10 sm:px-8">
       <section
-        className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-border bg-white shadow-[0_18px_50px_rgba(0,0,0,0.12)] lg:min-h-[600px] lg:grid-cols-[1.08fr_0.92fr]"
+        className="grid w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-white shadow-[0_18px_50px_rgba(0,0,0,0.12)] lg:min-h-[680px] lg:grid-cols-[1.1fr_0.9fr]"
         aria-labelledby="login-title"
       >
         <div className="relative hidden overflow-hidden border-r border-white/15 bg-brand-green-dark/90 p-10 text-white backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
@@ -110,36 +110,38 @@ export function LoginPage() {
             aria-hidden="true"
             className="absolute inset-x-[-12%] top-52 h-28 rotate-6 bg-brand-green-light/65"
           />
-          <div className="relative flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark font-bold text-white ring-1 ring-white/30"
-            >
-              EK
-            </span>
-            <span className="text-xl font-semibold">{en.app.name}</span>
+          <div className="relative flex items-center gap-5 text-left">
+            <img
+              src="/mendez-christian-academy-seal.png"
+              alt="Mendez Christian Academy seal"
+              className="h-20 w-20 shrink-0 object-contain"
+            />
+            <div className="min-w-0">
+              <p className="text-[44px] font-semibold leading-none tracking-[-0.025em]">{en.app.name}</p>
+              <p className="ml-[2px] mt-0.5 text-xs leading-4 text-white/85">{en.app.tagline}</p>
+            </div>
           </div>
 
           <div className="relative max-w-sm">
-            <div className="mb-4 h-1 w-16 rounded bg-brand-yellow" />
             <p className="text-lg font-semibold leading-7">{en.login.mockHint}</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center px-6 py-12 sm:px-10 lg:px-14">
-          <div className="w-full max-w-lg">
-            <div className="mb-8 text-center lg:text-left">
-              <div className="mb-5 flex items-center justify-center gap-3 lg:hidden">
-                <span
-                  aria-hidden="true"
-                  className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark font-bold text-white"
-                >
-                  EK
-                </span>
-                <span className="text-xl font-semibold text-brand-green-dark">{en.app.name}</span>
+        <div className="flex items-center justify-center px-6 py-12 sm:px-12 lg:px-16">
+          <div className="w-full max-w-xl">
+            <div className="mb-6 text-center lg:text-left">
+              <div className="mb-5 flex items-center justify-center gap-4 lg:hidden">
+                <img
+                  src="/mendez-christian-academy-seal.png"
+                  alt="Mendez Christian Academy seal"
+                  className="h-20 w-20 shrink-0 object-contain"
+                />
+                <div className="text-left">
+                  <p className="text-[44px] font-semibold leading-none tracking-[-0.025em] text-brand-green-dark">{en.app.name}</p>
+                  <p className="ml-[2px] mt-0.5 text-xs leading-4 text-text-secondary">{en.app.tagline}</p>
+                </div>
               </div>
               <h1 id="login-title" className="text-2xl font-semibold text-text-primary">{en.login.title}</h1>
-              <p className="mt-2 text-sm text-text-secondary">{en.login.subtitle}</p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>

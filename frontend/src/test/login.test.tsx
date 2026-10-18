@@ -65,6 +65,14 @@ describe("LoginPage", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByText(/use your educatrak account to continue/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Simplifying School Billing & Payments")).toHaveLength(2);
+    const logos = screen.getAllByRole("img", { name: "Mendez Christian Academy seal" });
+    expect(logos).toHaveLength(2);
+    expect(logos.map((logo) => logo.getAttribute("src"))).toEqual([
+      "/mendez-christian-academy-seal.png",
+      "/mendez-christian-academy-seal.png",
+    ]);
     expect(screen.getByLabelText(/username/i)).toHaveFocus();
     expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();

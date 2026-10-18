@@ -2,12 +2,12 @@
 // Do not write UI copy directly inside components.
 export const en = {
   app: {
-    name: "EducatraK",
+    name: "EducaTrak",
+    tagline: "Simplifying School Billing & Payments",
     navbarName: "Mendez Christian Academy",
   },
   login: {
     title: "Sign in",
-    subtitle: "Use your EducatraK account to continue.",
     username: "Username",
     password: "Password",
     usernameRequired: "Enter your username.",
@@ -27,7 +27,7 @@ export const en = {
   },
   session: {
     title: "Session expiring soon",
-    description: "For security, EducatraK will sign you out in {time}.",
+    description: "For security, EducaTrak will sign you out in {time}.",
     confirmation: "Would you like to stay signed in?",
     minuteRemaining: "{minutes} minute",
     minutesRemaining: "{minutes} minutes",
