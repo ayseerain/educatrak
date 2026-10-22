@@ -16,7 +16,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, ChevronsUpDown, CircleDashed } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, CircleDashed, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
@@ -1559,7 +1559,7 @@ export function PaymentEntryPage() {
         }
         backTo="/payments"
       />
-      <Card className="max-w-4xl">
+      <Card>
         <PaymentWorkflow preselectedStudent={selectedStudent} />
       </Card>
     </>
@@ -1940,7 +1940,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
         description="Review today's totals and history from one close-out area."
       />
       <CloseoutTabs user={user} active="today" />
-      <Card className="max-w-2xl">
+      <Card>
         <h2 className="font-semibold">Today's close-out</h2>
         <Metric label="System cash total" value="₱1,250.00" />
         <label className="mt-4 block text-sm font-medium">
@@ -2544,6 +2544,11 @@ export function SettingsPage({
           className="mt-4"
           headers={[...current.headers]}
           rows={current.rows.map((row) => [...row])}
+          centeredColumns={
+            section === "school" || section === "receipt" || section === "email"
+              ? [current.headers.length - 1]
+              : []
+          }
         />
       </Card>
     </>
@@ -2552,32 +2557,133 @@ export function SettingsPage({
 export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState([
+    {
+      id: "user-administrator",
+      name: "Alex Administrator (sample)",
+      username: "sample.admin",
+      role: "Administrator",
+      active: true,
+      isCurrentAdministrator: true,
+    },
+    {
+      id: "user-cashier",
+      name: "Casey Cashier (sample)",
+      username: "sample.cashier",
+      role: "Cashier",
+      active: true,
+      isCurrentAdministrator: false,
+    },
+    {
+      id: "user-registrar",
+      name: "Riley Registrar (sample)",
+      username: "sample.registrar",
+      role: "Registrar",
+      active: false,
+      isCurrentAdministrator: false,
+    },
+  ]);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
+  const editingUser = users.find((user) => user.id === editingUserId) ?? null;
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
+  const visibleUsers = users.filter((user) => (
+    !normalizedSearchQuery
+    || user.name.toLocaleLowerCase().includes(normalizedSearchQuery)
+    || user.username.toLocaleLowerCase().includes(normalizedSearchQuery)
+  ));
+
+  function closeEditDialog() {
+    setEditingUserId(null);
+    setTemporaryPassword(null);
+    setStatusConfirmationOpen(false);
+  }
+
+  function saveUserDetails(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingUser) return;
+    const formData = new FormData(event.currentTarget);
+    setUsers((currentUsers) => currentUsers.map((user) => (
+      user.id === editingUser.id
+        ? {
+            ...user,
+            name: String(formData.get("fullName") ?? user.name),
+            role: String(formData.get("role") ?? user.role),
+          }
+        : user
+    )));
+  }
+
+  function resetPassword() {
+    setTemporaryPassword("SampleReset123!");
+  }
+
+  function updateAccountState() {
+    if (!editingUser) return;
+    setUsers((currentUsers) => currentUsers.map((user) => (
+      user.id === editingUser.id ? { ...user, active: !user.active } : user
+    )));
+    setStatusConfirmationOpen(false);
+  }
+
   return (
     <>
       <PageHeader
         title="User administration"
         description="Create, search, edit, deactivate, reactivate, or reset user accounts."
-        action={<Button onClick={() => setCreateOpen(true)}>Create user</Button>}
+        action={
+          <>
+            <label className="sr-only" htmlFor="user-search">Search users</label>
+            <div className="relative w-full sm:w-80">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted-readable"
+              />
+              <input
+                id="user-search"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by name or username"
+                className={cn(inputClass, "m-0 w-full pl-9")}
+              />
+            </div>
+            <Button onClick={() => setCreateOpen(true)}>Create user</Button>
+          </>
+        }
       />
-      <ListCard
-        headers={["Name", "Username", "Role", "State", "Action"]}
-        rows={[
-          [
-            "Alex Administrator (sample)",
-            "sample.admin",
-            "Administrator",
-            "Active",
-            "Edit",
-          ],
-          [
-            "Casey Cashier (sample)",
-            "sample.cashier",
-            "Cashier",
-            "Active",
-            "Reset password",
-          ],
-        ]}
-      />
+      {visibleUsers.length > 0 ? (
+        <ListCard
+          headers={["Name", "Username", "Role", "State", "Action"]}
+          centeredColumns={[3]}
+          rows={visibleUsers.map((user) => [
+            user.name,
+            user.username,
+            user.role,
+            <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
+            <Button
+              key={`${user.id}-edit`}
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setEditingUserId(user.id);
+                setTemporaryPassword(null);
+              }}
+            >
+              Edit
+            </Button>,
+          ])}
+        />
+      ) : (
+        <Card>
+          <p role="status" className="text-sm text-text-secondary">
+            No users match that name or username.
+          </p>
+        </Card>
+      )}
       <Card className="mt-5">
         <p className="text-sm text-text-secondary">
           Temporary passwords are shown once after creation or reset. An
@@ -2600,6 +2706,95 @@ export function UsersPage() {
             <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button>Create user</Button></div>
           </form>
         )}
+      </MockDialog>
+      <MockDialog
+        open={editingUser !== null}
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+        title="Edit user account"
+      >
+        {editingUser && (
+          <div className="mt-3 space-y-5">
+            <form key={editingUser.id} className="space-y-3" onSubmit={saveUserDetails}>
+              <label className="block text-sm font-medium">
+                Full name
+                <input name="fullName" required defaultValue={editingUser.name} className={inputClass} />
+              </label>
+              <label className="block text-sm font-medium">
+                Primary role
+                <select name="role" defaultValue={editingUser.role} className={inputClass}>
+                  {[
+                    "Administrator",
+                    "Cashier",
+                    "Accounting Officer",
+                    "Auditor",
+                    "Registrar",
+                  ].map((role) => <option key={role}>{role}</option>)}
+                </select>
+              </label>
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="secondary" onClick={closeEditDialog}>Cancel</Button>
+                <Button>Save changes</Button>
+              </div>
+            </form>
+
+            <div className="border-t border-border pt-5">
+              <h2 className="font-semibold">Account management</h2>
+              <p className="mt-1 text-sm text-text-secondary">
+                Resetting the password forces a change at the account's next sign-in.
+              </p>
+              {temporaryPassword ? (
+                <div className="mt-3 rounded-md border border-brand-green-light bg-surface p-3">
+                  <p role="status" className="font-medium text-brand-green-dark">Password reset complete.</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Temporary password (shown once): <span className="font-medium text-text-primary">{temporaryPassword}</span>
+                  </p>
+                </div>
+              ) : (
+                <Button className="mt-3" type="button" variant="secondary" onClick={resetPassword}>
+                  Reset password
+                </Button>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                {editingUser.active ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={editingUser.isCurrentAdministrator}
+                      onClick={() => setStatusConfirmationOpen(true)}
+                    >
+                      Deactivate account
+                    </Button>
+                    {editingUser.isCurrentAdministrator && (
+                      <p className="text-sm text-text-secondary">You cannot deactivate your own administrator account.</p>
+                    )}
+                  </>
+                ) : (
+                  <Button type="button" variant="secondary" onClick={updateAccountState}>
+                    Reactivate account
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </MockDialog>
+      <MockDialog
+        open={statusConfirmationOpen}
+        onOpenChange={setStatusConfirmationOpen}
+        title="Deactivate account?"
+      >
+        <div className="mt-3">
+          <p className="text-sm text-text-secondary">
+            {editingUser?.name} will no longer be able to sign in. Their account history will remain available.
+          </p>
+          <div className="mt-5 flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={() => setStatusConfirmationOpen(false)}>Cancel</Button>
+            <Button type="button" variant="destructive" onClick={updateAccountState}>Deactivate account</Button>
+          </div>
+        </div>
       </MockDialog>
     </>
   );
@@ -2805,10 +3000,12 @@ function ListCard({
   headers,
   rows,
   className,
+  centeredColumns = [],
 }: {
   headers: string[];
   rows: ReactNode[][];
   className?: string;
+  centeredColumns?: number[];
 }) {
   return (
     <Card className={cn("overflow-hidden p-0", className)}>
@@ -2816,9 +3013,12 @@ function ListCard({
         <table className="w-full min-w-[560px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b bg-surface">
-              {headers.map((header) => (
+              {headers.map((header, index) => (
                 <th
-                  className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary"
+                  className={cn(
+                    "px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary",
+                    centeredColumns.includes(index) && "text-center",
+                  )}
                   key={header}
                 >
                   {header}
@@ -2834,7 +3034,10 @@ function ListCard({
               >
                 {row.map((cell, itemIndex) => (
                   <td
-                    className="px-4 py-3 align-middle text-text-primary"
+                    className={cn(
+                      "px-4 py-3 align-middle text-text-primary",
+                      centeredColumns.includes(itemIndex) && "text-center",
+                    )}
                     key={itemIndex}
                   >
                     {renderTableCell(cell)}

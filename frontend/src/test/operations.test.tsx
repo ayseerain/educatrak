@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { AccountDetailPage, AccountsPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, NotificationsPage, PaymentEntryPage, ReceiptPage, ReportsHubPage, RequireCapability, StudentProfilePage, StudentStatementPage, StudentsPage } from "@/features/operations/OperationalPages";
+import { AccountDetailPage, AccountsPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, NotificationsPage, PaymentEntryPage, ReceiptPage, ReportsHubPage, RequireCapability, SettingsPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
 import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/features/students/mockBilling";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
 import { can, canViewReport } from "@/lib/permissions";
 import type { AuthenticatedUser } from "@/lib/types";
 
@@ -44,6 +45,104 @@ function LocationPath() {
 }
 
 describe("operational page navigation", () => {
+  it("aligns user state labels with the State column header", () => {
+    render(<MemoryRouter><UsersPage /></MemoryRouter>);
+
+    const stateHeader = screen.getByRole("columnheader", { name: "State" });
+    const administratorRow = screen.getByRole("row", {
+      name: /Alex Administrator \(sample\)/,
+    });
+
+    expect(stateHeader).toHaveClass("text-center");
+    expect(within(administratorRow).getAllByRole("cell")[3]).toHaveClass("text-center");
+  });
+
+  it("aligns status heading and values on Administrator system configuration pages", () => {
+    for (const section of ["school", "receipt", "email"] as const) {
+      const { unmount } = render(<MemoryRouter><SettingsPage section={section} editable /></MemoryRouter>);
+
+      const statusHeader = screen.getByRole("columnheader", { name: "Status" });
+      expect(statusHeader).toHaveClass("text-center");
+      const dataRows = screen.getAllByRole("row").slice(1);
+      expect(dataRows.length).toBeGreaterThan(0);
+      expect(dataRows.every((row) => {
+        const cells = within(row).getAllByRole("cell");
+        const statusCell = cells[cells.length - 1];
+        return statusCell?.classList.contains("text-center");
+      })).toBe(true);
+      unmount();
+    }
+  });
+
+  it("filters user administration rows by name or username", async () => {
+    const user = userEvent.setup();
+
+    render(<MemoryRouter><UsersPage /></MemoryRouter>);
+
+    const search = screen.getByRole("searchbox", { name: "Search users" });
+    await user.type(search, "sample.cashier");
+    expect(screen.getByText("Casey Cashier (sample)")).toBeInTheDocument();
+    expect(screen.queryByText("Alex Administrator (sample)")).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "riley");
+    expect(screen.getByText("Riley Registrar (sample)")).toBeInTheDocument();
+    expect(screen.queryByText("Casey Cashier (sample)")).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "no matching user");
+    expect(screen.getByRole("status")).toHaveTextContent("No users match that name or username.");
+  });
+
+  it("hides the global student search for administrators", () => {
+    const administratorHeader = render(
+      <MemoryRouter>
+        <Header user={administrator} onLogout={() => undefined} onRoleChange={() => undefined} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("searchbox", { name: /search students, receipts/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("md:ml-auto");
+    administratorHeader.unmount();
+
+    render(
+      <MemoryRouter>
+        <Header user={cashier} onLogout={() => undefined} onRoleChange={() => undefined} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("searchbox", { name: /search students, receipts/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("md:ml-0");
+  });
+
+  it("provides administrator account actions from each user row's Edit button", async () => {
+    const user = userEvent.setup();
+
+    render(<MemoryRouter><UsersPage /></MemoryRouter>);
+
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[1]!);
+    expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Reset password" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Password reset complete.");
+    expect(screen.getByText(/temporary password \(shown once\):/i)).toBeInTheDocument();
+    expect(screen.getByText("SampleReset123!")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Deactivate account" }));
+    expect(screen.getByRole("heading", { name: "Deactivate account?" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("dialog", { name: "Deactivate account?" })).getByRole("button", { name: "Deactivate account" }));
+    expect(screen.getByRole("button", { name: "Reactivate account" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Reactivate account" }));
+    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[0]!);
+    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeDisabled();
+    expect(screen.getByText(/cannot deactivate your own administrator account/i)).toBeInTheDocument();
+  });
+
   it("renders clearance verification for registrars", () => {
     render(<MemoryRouter><ClearancePage user={registrar} /></MemoryRouter>);
 

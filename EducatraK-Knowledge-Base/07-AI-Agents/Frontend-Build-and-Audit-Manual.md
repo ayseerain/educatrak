@@ -356,7 +356,7 @@ For each screen below:
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/admin/users` as `UsersPage` with user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, and an Edit action that opens account editing plus password reset, confirmed deactivation, and reactivation controls. The mock preserves account history messaging, shows the reset temporary password once, and disables an administrator's self-deactivation action. Covered by `frontend/src/test/operations.test.tsx`; `npm test -- --run` and `npm run build` pass. Formal Phase 2 audit remains pending.
 
 ### B38. Role Matrix — M1
 
@@ -870,7 +870,7 @@ A screen is never marked audited merely because it was previously built.
 - [x] B36 — **Email Settings** (`/settings/email`)
   - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 - [x] B37 — **User Administration** (`/admin/users`)
-  - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+  - **Resume Note:** Implemented and validated. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 - [x] B38 — **Role Matrix** (`/admin/roles`)
   - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 - [x] B39 — **Audit Log** (`/admin/audit-log`)

@@ -356,7 +356,7 @@ For each screen below:
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/admin/users` as `UsersPage` with user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
 
 ### B38. Role Matrix — M1
 

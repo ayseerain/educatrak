@@ -84,6 +84,7 @@ describe("LoginPage", () => {
 
     const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
     expect(forgotPassword).toHaveAttribute("aria-expanded", "false");
+    expect(forgotPassword.parentElement).toHaveClass("min-h-28");
     expect(screen.queryByText(/contact an administrator to reset your password/i)).not.toBeInTheDocument();
 
     await user.click(forgotPassword);
@@ -97,11 +98,13 @@ describe("LoginPage", () => {
     renderApp();
 
     const passwordInput = screen.getByLabelText("Password", { selector: "input" });
+    const visibilityButton = screen.getByRole("button", { name: /show password/i });
 
     expect(passwordInput).toHaveAttribute("type", "password");
+    expect(visibilityButton).toHaveClass("rounded-full", "focus-visible:outline-offset-[-2px]");
     expect(screen.queryByText(/show password/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /show password/i }));
+    await user.click(visibilityButton);
 
     expect(passwordInput).toHaveAttribute("type", "text");
     expect(screen.getByRole("button", { name: /hide password/i })).toBeInTheDocument();

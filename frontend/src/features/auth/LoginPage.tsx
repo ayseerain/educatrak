@@ -181,7 +181,7 @@ export function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
+                    className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
                     disabled={disabled}
                     onClick={() => setShowPassword((current) => !current)}
                     aria-pressed={showPassword}
@@ -200,7 +200,7 @@ export function LoginPage() {
               <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
             </form>
 
-            <div className="mt-5 text-center lg:text-left">
+            <div className="mt-5 min-h-28 text-center lg:text-left">
               <button
                 type="button"
                 className="inline-flex min-h-control items-center text-sm font-medium text-brand-green-dark underline underline-offset-4 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"

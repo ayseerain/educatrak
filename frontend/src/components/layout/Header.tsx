@@ -45,19 +45,25 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
 
   return (
     <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-border bg-white px-4 py-2 md:flex-nowrap md:justify-between md:px-6">
-      <div className="order-2 w-full md:order-1 md:w-80 md:max-w-full">
-        <StudentSearchField
-          id="global-search"
-          label={en.header.searchPlaceholder}
-          value={query}
-          onChange={setQuery}
-          placeholder={en.header.searchPlaceholder}
-          labelClassName="sr-only"
-          inputClassName="h-11 rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
-        />
-      </div>
+      {user.role !== "administrator" && (
+        <div className="order-2 w-full md:order-1 md:w-80 md:max-w-full">
+          <StudentSearchField
+            id="global-search"
+            label={en.header.searchPlaceholder}
+            value={query}
+            onChange={setQuery}
+            placeholder={en.header.searchPlaceholder}
+            labelClassName="sr-only"
+            inputClassName="h-11 rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
+          />
+        </div>
+      )}
 
-      <div className="order-1 ml-auto flex items-center gap-2 md:order-2 md:ml-0 md:gap-4">
+      <div
+        className={`order-1 ml-auto flex items-center gap-2 md:order-2 md:gap-4 ${
+          user.role === "administrator" ? "md:ml-auto" : "md:ml-0"
+        }`}
+      >
         <DropdownSelect
           aria-label={en.header.previewRole}
           value={user.role}
