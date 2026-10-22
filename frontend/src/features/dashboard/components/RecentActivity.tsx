@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/Table";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -88,12 +89,12 @@ export function RecentActivity({
             id: "actions",
             header: en.table.actions,
             cell: () => (
-              <button
-                type="button"
-                className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
+              <Link
+                to="/receipts/mock-payment-0/print"
+                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
               >
                 {en.table.viewReceipt}
-              </button>
+              </Link>
             ),
           } as ColumnDef<RecentPayment>,
         ]

@@ -44,8 +44,8 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-6">
-      <div className="w-80 max-w-full">
+    <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-border bg-white px-4 py-2 md:flex-nowrap md:justify-between md:px-6">
+      <div className="order-2 w-full md:order-1 md:w-80 md:max-w-full">
         <StudentSearchField
           id="global-search"
           label={en.header.searchPlaceholder}
@@ -53,23 +53,23 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
           onChange={setQuery}
           placeholder={en.header.searchPlaceholder}
           labelClassName="sr-only"
-          inputClassName="h-9 rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
+          inputClassName="h-11 rounded-md border border-border bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"
         />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="order-1 ml-auto flex items-center gap-2 md:order-2 md:ml-0 md:gap-4">
         <DropdownSelect
           aria-label={en.header.previewRole}
           value={user.role}
           options={ROLE_OPTIONS}
           onChange={handleRoleChange}
-          className="h-9 min-w-44 border-dashed bg-surface"
+          className="!h-11 min-w-36 border-dashed bg-surface"
           contentClassName="min-w-44"
         />
         <button
           type="button"
           aria-label={en.header.profileMenu}
-          className="flex items-center gap-3 rounded-md px-2 py-1 hover:bg-surface"
+          className="flex min-h-control items-center gap-3 rounded-md px-2 py-1 hover:bg-surface"
         >
           <span
             aria-hidden="true"
@@ -77,7 +77,7 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
           >
             {initials}
           </span>
-          <span className="text-left">
+          <span className="hidden text-left sm:block">
             <span className="block text-sm font-medium text-text-primary">
               {user.name}
             </span>

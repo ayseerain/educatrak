@@ -9,6 +9,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import type { AuthenticatedUser, Role } from "@/lib/types";
+import { isLiveCashierApiEnabled, signInWithLiveApi, signOutFromLiveApi } from "@/api/cashierApi";
 
 const MOCK_USERS: Record<string, { password: string; user: AuthenticatedUser }> = {
   "sample.cashier": {
@@ -47,7 +48,7 @@ interface SessionContextValue {
   expiresAt: number | null;
   isExpirationWarningOpen: boolean;
   user: AuthenticatedUser | null;
-  login: (username: string, password: string) => LoginResult;
+  login: (username: string, password: string) => LoginResult | Promise<LoginResult>;
   logout: () => void;
   renewSession: () => void;
   switchRole: (role: Role) => void;
@@ -95,6 +96,9 @@ export function SessionProvider({
   }, [sessionDurationMs]);
 
   const logout = useCallback(() => {
+    if (isLiveCashierApiEnabled()) {
+      void signOutFromLiveApi();
+    }
     lastActivityRenewalAt.current = 0;
     setUser(null);
     setExpiresAt(null);
@@ -102,7 +106,20 @@ export function SessionProvider({
   }, []);
 
   const login = useCallback(
-    (username: string, password: string): LoginResult => {
+    (username: string, password: string): LoginResult | Promise<LoginResult> => {
+      if (isLiveCashierApiEnabled()) {
+        return signInWithLiveApi(username, password)
+          .then((liveUser) => {
+            const now = Date.now();
+            setUser(liveUser);
+            lastActivityRenewalAt.current = now;
+            setExpiresAt(now + sessionDurationMs);
+            setExpirationWarningOpen(false);
+
+            return { ok: true };
+          })
+          .catch(() => ({ ok: false }));
+      }
       const normalizedUsername = username.trim().toLowerCase();
       const now = Date.now();
       const currentLock = lockedUntil[normalizedUsername] ?? 0;

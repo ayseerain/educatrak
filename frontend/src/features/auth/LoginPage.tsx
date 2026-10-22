@@ -69,7 +69,7 @@ export function LoginPage() {
     return () => window.clearInterval(timer);
   }, [lockedUntil]);
 
-  function submit(values: LoginFormValues) {
+  async function submit(values: LoginFormValues) {
     setAuthError("");
     const parsed = loginSchema.safeParse(values);
 
@@ -83,7 +83,7 @@ export function LoginPage() {
       return;
     }
 
-    const result = login(parsed.data.username, parsed.data.password);
+    const result = await login(parsed.data.username, parsed.data.password);
     if (result.ok) return;
     if (result.lockedUntil) {
       setLockedUntil(result.lockedUntil);
@@ -181,7 +181,7 @@ export function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
+                    className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
                     disabled={disabled}
                     onClick={() => setShowPassword((current) => !current)}
                     aria-pressed={showPassword}
@@ -203,7 +203,7 @@ export function LoginPage() {
             <div className="mt-5 text-center lg:text-left">
               <button
                 type="button"
-                className="text-sm font-medium text-brand-green-dark underline underline-offset-4 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+                className="inline-flex min-h-control items-center text-sm font-medium text-brand-green-dark underline underline-offset-4 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
                 aria-expanded={isForgotPasswordHelpOpen}
                 aria-controls="forgot-password-help"
                 onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}

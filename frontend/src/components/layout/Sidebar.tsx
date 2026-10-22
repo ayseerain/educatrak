@@ -98,13 +98,13 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <nav
       aria-label="Primary"
-      className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-white"
+      className="flex w-full shrink-0 flex-col border-b border-border bg-white md:h-full md:w-56 md:border-b-0 md:border-r"
     >
-      <div className="flex h-20 items-center border-b border-border px-3">
+      <div className="flex h-16 items-center border-b border-border px-3 md:h-20">
         <span className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green text-base font-extrabold text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark text-base font-extrabold text-white"
           >
             EK
           </span>
@@ -116,13 +116,13 @@ export function Sidebar({ user }: SidebarProps) {
           </span>
         </span>
       </div>
-      <ul className="flex-1 space-y-4 overflow-y-auto p-3">
+      <ul className="flex gap-4 overflow-x-auto p-3 md:flex-1 md:flex-col md:space-y-4 md:overflow-y-auto">
         {visibleGroups.map((group) => (
-          <li key={group.label}>
-            <h2 className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted-readable">
+          <li key={group.label} className="shrink-0">
+            <h2 className="hidden px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted-readable md:block">
               {group.label}
             </h2>
-            <ul className="space-y-0.5">
+            <ul className="flex gap-1 md:block md:space-y-0.5">
               {group.items.map((item) => {
                 const showNestedStyle = Boolean(item.parentTo && group.items.some((groupItem) => groupItem.to === item.parentTo));
 
@@ -133,7 +133,7 @@ export function Sidebar({ user }: SidebarProps) {
                       end={item.end ?? item.to === "/"}
                       className={({ isActive }) =>
                         cn(
-                          "block rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
+                          "block whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
                           showNestedStyle && "ml-4 border-l border-border pl-4 text-[13px]",
                           isActive &&
                             "bg-[#E7F5EA] text-brand-green-dark hover:bg-[#E7F5EA]",

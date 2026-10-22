@@ -11,5 +11,20 @@ class Installment extends Model
     /** @use HasFactory<InstallmentFactory> */
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'billing_account_id',
+        'label',
+        'sequence',
+        'due_date',
+        'amount_cents',
+        'paid_cents',
+        'status',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+        ];
+    }
 }

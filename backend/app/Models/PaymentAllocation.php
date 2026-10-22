@@ -5,11 +5,17 @@ namespace App\Models;
 use Database\Factories\PaymentAllocationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PaymentAllocation extends Model
 {
     /** @use HasFactory<PaymentAllocationFactory> */
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = ['payment_id', 'installment_id', 'amount_cents'];
+
+    public function installment(): BelongsTo
+    {
+        return $this->belongsTo(Installment::class);
+    }
 }

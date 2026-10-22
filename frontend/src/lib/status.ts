@@ -19,7 +19,7 @@ export const STATUS_TONE_STYLES: Record<
   { badge: string; text: string; soft: string; bar: string; borderLeft: string; surface: string }
 > = {
   success: {
-    badge: "bg-[#EAF6EC] text-status-success",
+    badge: "bg-white text-status-success",
     text: "text-status-success",
     soft: "bg-[#E0F2E4]",
     bar: "bg-status-success",
@@ -27,7 +27,7 @@ export const STATUS_TONE_STYLES: Record<
     surface: "bg-[#F4FAF5]",
   },
   warning: {
-    badge: "bg-[#FBF0E1] text-status-warning",
+    badge: "bg-white text-status-warning",
     text: "text-status-warning",
     soft: "bg-[#FBEEDC]",
     bar: "bg-status-warning",
@@ -35,7 +35,7 @@ export const STATUS_TONE_STYLES: Record<
     surface: "bg-[#FFF9F0]",
   },
   error: {
-    badge: "bg-[#FBEAEA] text-status-error",
+    badge: "bg-white text-status-error",
     text: "text-status-error",
     soft: "bg-[#FDE7E7]",
     bar: "bg-status-error",

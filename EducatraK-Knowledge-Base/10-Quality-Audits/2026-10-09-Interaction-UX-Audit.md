@@ -122,3 +122,20 @@ The original Frontend Build-and-Audit manual's audit checkboxes were already unc
 ## Changelog
 
 - 2026-10-09: Added live-browser interaction audit findings, evidence locations, role/privacy verification, and validation outcome.
+
+## Re-verification — Monday, October 19, 2026
+
+**Method:** Fresh Chromium/Playwright runs against `http://localhost:5173`, with `@axe-core/playwright`. Audit scripts and their result JSON remain outside the repository in `D:\school\SEII\development\audit-tools`.
+
+**Coverage:** Revisited all 45 currently reachable authenticated route/role combinations at 1440px, 1280×720, 1024px, and 375px; checked public routes at the same widths; tested direct URLs across all five mock roles; and rechecked Registrar privacy. The direct-URL matrix and Registrar privacy checks passed. No mobile shell clipping remained after remediation.
+
+### Disposition of prior findings
+
+- **Fixed and browser-retested:** IUX-01 through IUX-06, IUX-08 through IUX-11. Payment, void, reminder, close-out, and user-creation actions now present keyboard-dismissible confirmation dialogs or visible completion feedback; account creation navigates to its mock account detail; responsive navigation renders without the former 1024px mobile shell; controls meet the 44px floor; payment headings are sequential; and the post-fix targeted axe scans have no violations.
+- **Still unresolved — IUX-07 / IUX-12:** The canonical route inventory assigns `/import` to Cashier (`import.run`), but the current exclusive-role capability matrix denies that route to every mock role. The October 18 exclusive-role audit explicitly says Cashier import access was removed. This conflicts with `01-Requirements/Screens-Routes-and-Flows.md` and blocks a truthful re-test or frontend-only repair of the import confirmation/download flow. Per the source hierarchy, this needs an approved requirements reconciliation before implementation.
+
+### Decision required
+
+1. Reconcile the canonical `import.run` route/role requirement with the exclusive-role access model, then either restore an authorized import workflow or formally remove the route and its F7 flow from the inventory.
+
+**Re-verification outcome:** 10 findings fixed, 1 logged for a source conflict, no new privacy or direct-route authorization exposure found.
