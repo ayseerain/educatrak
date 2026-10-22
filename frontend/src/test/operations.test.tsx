@@ -269,8 +269,8 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Send reminder emails" }));
-    expect(screen.getByText("No selected accounts have a guardian email.")).toBeInTheDocument();
-    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no guardian email/i)).toBeInTheDocument();
+    expect(screen.getByText("No selected accounts have the chosen notification contact.")).toBeInTheDocument();
+    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send 0 reminders" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -280,11 +280,11 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("button", { name: "Send reminder emails" }));
     expect(screen.getByText(/Basil Mercado.*guardian@example\.test/)).toBeInTheDocument();
     expect(screen.getByText(/₱4,200\.00 overdue for 3 days/)).toBeInTheDocument();
-    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no guardian email/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Send 1 reminder" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Reminder sent today to 1 guardian. 1 account was skipped because it has no guardian email.",
+      "Reminder sent today to 1 guardian. 1 account was skipped because it has no selected notification contact.",
     );
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeDisabled();
   });
@@ -304,6 +304,21 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Basil Mercado/ })).not.toBeChecked();
+  });
+
+  it("offers SMS reminders and discloses the SMS load fee before sending", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
+
+    await user.click(screen.getByRole("checkbox", { name: "SMS" }));
+    await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
+
+    expect(screen.getByText(/SMS load fee: not configured/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Review reminder notifications" }));
+
+    expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("SMS: 0917 555 0103");
+    expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("not configured");
+    expect(screen.getByRole("button", { name: "Send 1 reminder" })).toBeEnabled();
   });
 
   it("opens a student profile from the whole student table row", async () => {
@@ -472,12 +487,34 @@ describe("operational page navigation", () => {
     );
 
     await user.type(screen.getByLabelText(/student search/i), "S-1001");
+    expect(screen.getByRole("listbox", { name: "Matching students" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close suggestions" }));
+    expect(screen.queryByRole("listbox", { name: "Matching students" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
+
+    await user.type(screen.getByLabelText(/student search/i), " ");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox", { name: "Matching students" })).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/student search/i), " ");
+    await user.click(screen.getByRole("option", { name: /Amara Villanueva.*S-1001/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
     expect(screen.getAllByText("Amara Villanueva (sample)").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/student search/i)).toHaveValue("Amara Villanueva (sample)");
+    expect(screen.getByLabelText(/amount received/i)).toHaveValue("1250.00");
     expect(screen.getByLabelText(/fee name/i))
       .toHaveAttribute("placeholder", "SY 2026-2027 Tuition");
     expect(screen.getByLabelText(/fee name/i)).toHaveValue("SY 2026-2027 tuition");
+    const installmentButton = screen.getByRole("button", { name: /pay next installment/i });
+    const paymentActions = installmentButton.parentElement;
+    expect(paymentActions).toHaveClass("flex", "items-center");
+    expect(within(paymentActions!).getByRole("button", { name: "Review payment" }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Review payment" }));
+    expect(screen.getByRole("dialog", { name: "Confirm payment" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
   });
 
   it("guards the shared payment workflow against duplicate save clicks", async () => {
@@ -520,6 +557,18 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: /follow-up reminder/i })).toBeInTheDocument();
     expect(screen.getByRole("tabpanel")).toHaveTextContent("guardian@example.test");
     expect(screen.getByRole("columnheader", { name: /payment for/i })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Status" })).toHaveClass("text-center");
+    const followupRows = within(screen.getByRole("tabpanel")).getAllByRole("row").slice(1);
+    const statusCells = followupRows.map((row) => {
+      const statusCell = within(row).getAllByRole("cell")[3];
+      expect(statusCell).toHaveClass("text-center");
+      return statusCell;
+    });
+    expect(statusCells.some((cell) => cell?.textContent?.trim() === "Overdue")).toBe(true);
+    expect(statusCells.every((cell) => {
+      const status = cell?.textContent?.trim();
+      return status ? status[0] === status[0]?.toUpperCase() : false;
+    })).toBe(true);
     expect(screen.getByRole("cell", { name: /installment 1/i })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: /installment 2/i })).toBeInTheDocument();
   });
@@ -739,6 +788,31 @@ describe("operational page navigation", () => {
     render(<MemoryRouter><CloseoutHistoryPage user={accounting} /></MemoryRouter>);
     expect(screen.getByRole("tab", { name: "History" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
+  });
+
+  it("uses the close-out reconciliation row and requires a reason for a variance", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><CloseoutPage user={cashier} /></MemoryRouter>);
+
+    const review = screen.getByRole("button", { name: "Review close-out" });
+    expect(screen.getByText("Waiting for count")).toBeInTheDocument();
+    expect(review).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Counted cash"), "1250");
+    expect(screen.getByText("Balanced")).toBeInTheDocument();
+    expect(review).toBeEnabled();
+
+    await user.clear(screen.getByLabelText("Counted cash"));
+    await user.type(screen.getByLabelText("Counted cash"), "1200");
+    expect(screen.getByLabelText(/Variance explanation/)).toBeInTheDocument();
+    expect(review).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/Variance explanation/), "Drawer count was corrected after recounting.");
+    expect(review).toBeEnabled();
+    await user.click(review);
+    const confirmation = screen.getByRole("dialog", { name: "Confirm daily close-out" });
+    expect(confirmation).toBeInTheDocument();
+    expect(within(confirmation).getByText("Drawer count was corrected after recounting.")).toBeInTheDocument();
   });
 
   it("enforces allowed and forbidden primary capabilities for all five roles", () => {

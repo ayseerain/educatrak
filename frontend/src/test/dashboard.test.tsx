@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { CollectionTrend } from "@/features/dashboard/components/CollectionTrend";
 import type { AuthenticatedUser } from "@/lib/types";
 import * as mockAdapter from "@/api/mockAdapter";
 import { centavos } from "@/lib/money";
@@ -65,6 +66,32 @@ beforeAll(() => {
 });
 
 describe("DashboardPage", () => {
+  it("uses the same collection-trend bar sizing for all filter ranges", () => {
+    const points = [
+      { date: "2026-10-20", totalCollected: centavos(12500) },
+      { date: "2026-10-21", totalCollected: centavos(24000) },
+      { date: "2026-10-22", totalCollected: centavos(18000) },
+    ];
+    const { container, rerender } = render(
+      <CollectionTrend points={points} range="today" />,
+    );
+    const barPaths = () =>
+      Array.from(container.querySelectorAll(".recharts-bar-rectangle")).map((bar) =>
+        bar.getAttribute("d"),
+      );
+    const todayBars = barPaths();
+
+    rerender(<CollectionTrend points={points} range="last_7_days" />);
+    const last7DayBars = barPaths();
+
+    rerender(<CollectionTrend points={points} range="last_30_days" />);
+    const last30DayBars = barPaths();
+
+    expect(todayBars).toHaveLength(points.length);
+    expect(todayBars).toEqual(last7DayBars);
+    expect(todayBars).toEqual(last30DayBars);
+  });
+
   it("renders the dashboard for Cashier", async () => {
     renderWithProviders(cashier);
     await waitFor(() =>

@@ -62,6 +62,37 @@ class CashierOperationsTest extends TestCase
         $this->assertSame(20_000, $account->fresh()->balance_cents);
     }
 
+    public function test_cashier_can_queue_email_and_sms_receipts_without_charging_the_student_balance(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        config()->set('services.sms.load_fee_cents', 75);
+
+        $response = $this->actingAs($cashier)->postJson('/api/payments', [
+            'billing_account_id' => $account->id,
+            'amount_cents' => 12_500,
+            'paid_on' => today('Asia/Manila')->toDateString(),
+            'notification_channels' => ['email', 'sms'],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.email_queued', true)
+            ->assertJsonPath('data.sms_queued', true)
+            ->assertJsonPath('data.sms_load_fee_cents', 75);
+
+        $this->assertDatabaseHas('notification_logs', [
+            'channel' => 'email',
+            'guardian_email' => 'gale.guardian@example.test',
+            'status' => 'queued',
+        ]);
+        $this->assertDatabaseHas('notification_logs', [
+            'channel' => 'sms',
+            'guardian_mobile' => '09175550100',
+            'load_fee_cents' => 75,
+            'status' => 'queued',
+        ]);
+        $this->assertSame(7_500, $account->fresh()->balance_cents);
+    }
+
     public function test_same_student_and_amount_within_ten_minutes_requires_an_override_reason(): void
     {
         [$cashier, $account] = $this->createBillingContext();
@@ -148,6 +179,7 @@ class CashierOperationsTest extends TestCase
             'relationship' => 'Parent',
             'email' => 'gale.guardian@example.test',
             'email_status' => 'verified',
+            'mobile' => '09175550100',
         ]);
         $student->guardians()->attach($guardian->id, ['is_primary' => true]);
         $account = BillingAccount::query()->create([

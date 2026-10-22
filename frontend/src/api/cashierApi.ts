@@ -27,7 +27,11 @@ export interface SavedCashPayment {
   receiptNo: string;
   balanceAfter: ReturnType<typeof centavos>;
   emailQueued: boolean;
+  smsQueued: boolean;
+  smsLoadFeeCents: ReturnType<typeof centavos> | null;
 }
+
+export type NotificationChannel = "email" | "sms";
 
 export function isLiveCashierApiEnabled(): boolean {
   return import.meta.env.VITE_USE_LIVE_API === "true";
@@ -85,6 +89,7 @@ export async function recordCashPaymentForStudent(input: {
   studentNumber: string;
   amount: ReturnType<typeof centavos>;
   paidOn: string;
+  notificationChannels: NotificationChannel[];
 }): Promise<SavedCashPayment> {
   if (!isLiveCashierApiEnabled()) {
     // Keep mock-mode pages on one mutable billing dataset instead of creating
@@ -99,7 +104,9 @@ export async function recordCashPaymentForStudent(input: {
       id: payment.id,
       receiptNo: payment.receiptNo,
       balanceAfter: centavos(payment.balanceAfter),
-      emailQueued: true,
+      emailQueued: input.notificationChannels.includes("email"),
+      smsQueued: input.notificationChannels.includes("sms"),
+      smsLoadFeeCents: null,
     };
   }
 
@@ -115,12 +122,13 @@ export async function recordCashPaymentForStudent(input: {
   const context = await request<{ data: { billing_account_id: string } }>(
     `/payment-students/${student.id}/context`,
   );
-  const result = await request<{ data: { id: string; receipt_no: string; balance_after_cents: number; email_queued: boolean } }>("/payments", {
+  const result = await request<{ data: { id: string; receipt_no: string; balance_after_cents: number; email_queued: boolean; sms_queued: boolean; sms_load_fee_cents: number | null } }>("/payments", {
     method: "POST",
     body: JSON.stringify({
       billing_account_id: context.data.billing_account_id,
       amount_cents: input.amount,
       paid_on: input.paidOn,
+      notification_channels: input.notificationChannels,
     }),
   });
 
@@ -129,5 +137,9 @@ export async function recordCashPaymentForStudent(input: {
     receiptNo: result.data.receipt_no,
     balanceAfter: centavos(result.data.balance_after_cents),
     emailQueued: result.data.email_queued,
+    smsQueued: result.data.sms_queued,
+    smsLoadFeeCents: result.data.sms_load_fee_cents === null
+      ? null
+      : centavos(result.data.sms_load_fee_cents),
   };
 }

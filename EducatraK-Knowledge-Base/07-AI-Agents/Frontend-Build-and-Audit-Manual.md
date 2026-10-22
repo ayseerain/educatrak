@@ -172,7 +172,7 @@ For each screen below:
 - **Documented access:** CSH
 - **Build scope:** Fast-path payment flow with balance/next due, validation, confirmation, receipt preview and post-save feedback.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/payments/new` as `PaymentEntryPage` with student search, preselected-student context from `?student=:id`, balance display, and dashboard-linked mock payment entry flow with validation/confirmation/receipt behavior. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/payments/new` as `PaymentEntryPage` with student search, balance display, and receipt delivery options for email and SMS. The confirmation discloses the unconfigured SMS load fee, which is never added to the student balance. Formal Phase 2 audit remains pending.
 
 ### B15. Transaction History — M4
 
@@ -212,7 +212,7 @@ For each screen below:
 - **Documented access:** CSH / ACC / AUD
 - **Build scope:** Due-soon/overdue list, filters, print list, and reminder-batch flow for permitted roles.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/followup` as `FollowupPage` with overdue/due-soon sample rows, individual and select-all account checkboxes, and a send action shown only when one or more accounts are selected and the user has `followup.send`. The focused operations test and frontend production build pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/followup` as `FollowupPage` with selectable reminder batches, email/SMS delivery choices, SMS load-fee disclosure, print-list-ready table structure, and permission-gated sending. Formal Phase 2 audit remains pending.
 
 ### B20. Clearance Lookup — M10
 
@@ -236,7 +236,7 @@ For each screen below:
 - **Documented access:** CSH
 - **Build scope:** System totals, counted cash, variance/reason, confirmation, lock and printable summary.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/closeout` as `CloseoutPage` with system cash total, counted-cash entry, variance calculation, variance reason field, and review action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/closeout` as `CloseoutPage` with a responsive reconciliation row for the system total, counted-cash entry, and live variance state. A non-zero variance now requires an explanation before review, and the confirmation repeats that explanation. Focused close-out coverage is in `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B23. Close-out History — M13
 
@@ -292,7 +292,7 @@ For each screen below:
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Filter/view notification entries; retry failed messages only where permitted.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/notifications` as `NotificationsPage` with notification rows, queued/sent/failed statuses, URL-backed status filter, and retry/view action behavior gated by permission. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/notifications` as `NotificationsPage` with email and SMS notification rows, SMS load-fee context, queued/sent/failed statuses, URL-backed status filter, and permission-gated retry/view behavior. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B30. Ledger Import Wizard — M12
 

@@ -28,3 +28,8 @@ These were flagged in the original handoff as assumptions to be treated as confi
 7. Who may add or edit student records — assumed: Admin and Cashier (M2.1).
 8. Due-soon window (default 7 days) and the duplicate-payment time window (default 10 minutes) (Section 25, rules 4–5).
 9. Whether the backend uses Inertia.js or a separate REST API — default assumed here: SPA + REST (Section 28.2); components should stay presentational so either works.
+
+### 31.4 SMS notifications and load cost
+- **Issue:** Receipt and reminder notifications can now be sent by email, SMS, or both, but no carrier, gateway, price, or party responsible for the SMS load cost has been approved.
+- **Current interpretation:** SMS is an optional notification channel. `SMS_LOAD_FEE_CENTS` is an optional server setting; when configured, its value is recorded with the SMS notification and is never added to a student's billing balance. When it is not configured, the UI states that no fee is configured rather than inventing an amount.
+- **What needs confirmation:** Select an SMS gateway, define consent and mobile-number verification rules, identify the party that bears the load cost, approve the configured rate and effective date, and specify delivery/retry handling.

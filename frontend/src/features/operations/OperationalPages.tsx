@@ -42,7 +42,7 @@ import { format, centavos } from "@/lib/money";
 import { roleLabel } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
-import { recordCashPaymentForStudent, type SavedCashPayment } from "@/api/cashierApi";
+import { recordCashPaymentForStudent, type NotificationChannel, type SavedCashPayment } from "@/api/cashierApi";
 import type { AuthenticatedUser, Capability } from "@/lib/types";
 
 const firstStudent = students[0]!;
@@ -123,21 +123,27 @@ const notificationRows = [
   {
     student: students[0].name,
     type: "Payment confirmation",
+    channel: "Email",
     recipient: "guardian@example.test",
+    loadFee: "—",
     status: "Queued",
     attempts: "1",
   },
   {
     student: students[1].name,
     type: "Payment confirmation",
-    recipient: "guardian@example.test",
+    channel: "SMS",
+    recipient: "0917 555 0101",
+    loadFee: "Not configured",
     status: "Sent",
     attempts: "1",
   },
   {
     student: students[2].name,
     type: "Reminder",
-    recipient: "No guardian email",
+    channel: "SMS",
+    recipient: "No guardian mobile number",
+    loadFee: "—",
     status: "Failed",
     attempts: "0",
   },
@@ -868,7 +874,9 @@ function StudentFollowupWidget({
       account: `${account.schoolYear} tuition`,
       installment: installment.label,
       dueDate: installment.dueDate,
-      status: installment.status.replace("_", " "),
+      status: installment.status
+        .replace("_", " ")
+        .replace(/^./, (firstLetter) => firstLetter.toUpperCase()),
       amountDue,
     }),
   );
@@ -920,7 +928,7 @@ function StudentFollowupWidget({
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
                 Due date
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+              <th className="px-4 py-3 text-center text-xs font-medium uppercase text-text-secondary">
                 Status
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium uppercase text-text-secondary">
@@ -943,7 +951,7 @@ function StudentFollowupWidget({
                 <td className="px-4 py-3 align-middle text-text-primary">
                   {record.dueDate}
                 </td>
-                <td className="px-4 py-3 align-middle text-text-primary">
+                <td className="px-4 py-3 align-middle text-center text-text-primary">
                   {renderTableCell(record.status)}
                 </td>
                 <td className="px-4 py-3 text-right align-middle font-semibold text-text-primary">
@@ -1320,6 +1328,7 @@ function PaymentWorkflow({
     initialStudent ? (initialSuggestedAmount / 100).toFixed(2) : "",
   );
   const [method, setMethod] = useState("Cash");
+  const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>(["email"]);
   const [feeName, setFeeName] = useState(initialDueRecord?.account ?? "");
   const [stage, setStage] = useState<"entry" | "confirm" | "saved">("entry");
   const [error, setError] = useState("");
@@ -1353,6 +1362,10 @@ function PaymentWorkflow({
       setError("Select a student before reviewing the payment.");
       return;
     }
+    if (notificationChannels.length === 0) {
+      setError("Select email, SMS, or both for the receipt notification.");
+      return;
+    }
     if (!amount || !Number.isFinite(amountNumber) || amountNumber <= 0) {
       setError("Enter an amount received that is more than zero.");
       return;
@@ -1376,6 +1389,7 @@ function PaymentWorkflow({
     setAmount("");
     setFeeName(getNextDueRecord(preselectedStudent?.id ?? "")?.account ?? "");
     setMethod("Cash");
+    setNotificationChannels(["email"]);
     setStage("entry");
     setError("");
     setIsSaving(false);
@@ -1390,6 +1404,7 @@ function PaymentWorkflow({
         studentNumber: selectedStudent!.number,
         amount: enteredCentavos,
         paidOn: manilaDateInput(),
+        notificationChannels,
       });
       setSavedPayment(payment);
       setStage("saved");
@@ -1419,6 +1434,16 @@ function PaymentWorkflow({
           onChange={(value) => {
             setStudentQuery(value);
             setStage("entry");
+            setIsSaving(false);
+          }}
+          onSelect={(student) => {
+            setStudentQuery(student.name);
+            const dueRecord = getNextDueRecord(student.id);
+            setAmount(
+              ((dueRecord?.amountDue ?? student.balance) / 100).toFixed(2),
+            );
+            setStage("entry");
+            setError("");
             setIsSaving(false);
           }}
           autoFocus
@@ -1528,20 +1553,46 @@ function PaymentWorkflow({
           </span>
         </label>
       </div>
-      {selectedStudent && (
-        <button
-          type="button"
-          className={cn(inlineLinkClass, "px-1")}
-          onClick={() => {
-            setAmount((suggestedAmount / 100).toFixed(2));
-            setStage("entry");
-            setIsSaving(false);
-          }}
-          disabled={isSaving}
-        >
-          Pay next installment: {format(suggestedAmount)}
-        </button>
-      )}
+      <fieldset className="rounded-md border border-border bg-surface p-4">
+        <legend className="px-1 text-sm font-medium">Receipt notification</legend>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex items-start gap-3 rounded-md border border-border bg-white p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={notificationChannels.includes("email")}
+              disabled={isSaving}
+              onChange={(event) => setNotificationChannels((channels) => (
+                event.target.checked
+                  ? [...channels, "email"]
+                  : channels.filter((channel) => channel !== "email")
+              ))}
+            />
+            <span>
+              <span className="block font-medium text-text-primary">Email receipt</span>
+              <span className="mt-1 block text-text-secondary">Send the receipt to the guardian's recorded email address.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 rounded-md border border-border bg-white p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={notificationChannels.includes("sms")}
+              disabled={isSaving}
+              onChange={(event) => setNotificationChannels((channels) => (
+                event.target.checked
+                  ? [...channels, "sms"]
+                  : channels.filter((channel) => channel !== "sms")
+              ))}
+            />
+            <span>
+              <span className="block font-medium text-text-primary">SMS receipt</span>
+              <span className="mt-1 block text-text-secondary">Send a receipt notice to the guardian's recorded mobile number.</span>
+            </span>
+          </label>
+        </div>
+        <p className="mt-3 rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm text-text-primary">
+          <span className="font-medium">SMS load fee:</span> Not configured. Any configured carrier/load cost is recorded with the SMS notification and is not added to this payment or the student's balance.
+        </p>
+      </fieldset>
       {error && (
         <p
           role="alert"
@@ -1556,7 +1607,7 @@ function PaymentWorkflow({
           onOpenChange={(open) => !open && setStage("entry")}
           title="Confirm payment"
         >
-          <dl className="mt-3 grid gap-3 text-sm md:grid-cols-5">
+          <dl className="mt-3 grid gap-3 text-sm md:grid-cols-3">
             <div>
               <dt className="text-text-secondary">Student</dt>
               <dd className="font-medium">{selectedStudent.name}</dd>
@@ -1577,6 +1628,16 @@ function PaymentWorkflow({
               <dt className="text-text-secondary">Balance left</dt>
               <dd className="font-medium">{format(balanceAfterPayment)}</dd>
             </div>
+            <div>
+              <dt className="text-text-secondary">Receipt notification</dt>
+              <dd className="font-medium">{notificationChannels.map((channel) => channel === "sms" ? "SMS" : "Email").join(" and ")}</dd>
+            </div>
+            {notificationChannels.includes("sms") && (
+              <div>
+                <dt className="text-text-secondary">SMS load fee</dt>
+                <dd className="font-medium">Not configured; not added to the student balance</dd>
+              </div>
+            )}
           </dl>
           <div className="mt-4 flex justify-end gap-3">
             <Button
@@ -1602,8 +1663,13 @@ function PaymentWorkflow({
             Payment saved
           </h2>
           <p className="mt-1 text-sm text-text-primary">
-            Receipt {savedPayment?.receiptNo} is ready. {savedPayment?.emailQueued ? "A payment email has been queued for the guardian." : "No guardian email is available."}
+            Receipt {savedPayment?.receiptNo} is ready. {savedPayment?.emailQueued ? "A payment email has been queued for the guardian." : notificationChannels.includes("email") ? "No guardian email is available." : "Email was not selected."} {savedPayment?.smsQueued ? "An SMS receipt has been queued for the guardian." : notificationChannels.includes("sms") ? "No guardian mobile number is available." : "SMS was not selected."}
           </p>
+          {savedPayment?.smsQueued && (
+            <p className="mt-2 text-sm text-text-secondary">
+              SMS load fee: {savedPayment.smsLoadFeeCents === null ? "not configured; no fee was added to the student balance." : `${format(savedPayment.smsLoadFeeCents)} recorded outside the student balance.`}
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               className={secondaryLinkClass}
@@ -1617,7 +1683,21 @@ function PaymentWorkflow({
           </div>
         </div>
       )}
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {selectedStudent && (
+          <button
+            type="button"
+            className={cn(inlineLinkClass, "px-1")}
+            onClick={() => {
+              setAmount((suggestedAmount / 100).toFixed(2));
+              setStage("entry");
+              setIsSaving(false);
+            }}
+            disabled={isSaving}
+          >
+            Pay next installment: {format(suggestedAmount)}
+          </button>
+        )}
         <Button disabled={!selectedStudent || stage === "saved" || isSaving}>
           Review payment
         </Button>
@@ -1875,6 +1955,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
       id: students[2].id,
       student: students[2].name,
       guardianEmail: null,
+      guardianMobile: "0917 555 0103",
       amountOverdue: "₱8,500.00",
       daysOverdue: "12",
       lastReminder: "Never",
@@ -1883,19 +1964,24 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
       id: students[1].id,
       student: students[1].name,
       guardianEmail: "guardian@example.test",
+      guardianMobile: "0917 555 0102",
       amountOverdue: "₱4,200.00",
       daysOverdue: "3",
       lastReminder: "Sep 20, 2026",
     },
   ];
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>(["email"]);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const selectedAccounts = followupAccounts.filter((account) =>
     selectedAccountIds.includes(account.id),
   );
-  const recipientAccounts = selectedAccounts.filter((account) => account.guardianEmail);
-  const skippedAccounts = selectedAccounts.filter((account) => !account.guardianEmail);
+  const recipientAccounts = selectedAccounts.filter((account) => (
+    (notificationChannels.includes("email") && account.guardianEmail)
+    || (notificationChannels.includes("sms") && account.guardianMobile)
+  ));
+  const skippedAccounts = selectedAccounts.filter((account) => !recipientAccounts.includes(account));
   const allAccountsSelected = selectedAccountIds.length === followupAccounts.length;
 
   function toggleAccountSelection(accountId: string, checked: boolean) {
@@ -1913,8 +1999,8 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
         description="Review due follow-ups and notification history without merging their records."
         action={
           can(user, "followup.send") ? (
-            <Button disabled={selectedAccounts.length === 0 || sent} onClick={() => setReviewOpen(true)}>
-              {sent ? "Reminders sent" : "Send reminder emails"}
+            <Button disabled={selectedAccounts.length === 0 || notificationChannels.length === 0 || sent} onClick={() => setReviewOpen(true)}>
+              {sent ? "Reminders sent" : notificationChannels.includes("sms") ? "Review reminder notifications" : "Send reminder emails"}
             </Button>
           ) : undefined
         }
@@ -1926,10 +2012,42 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
           <p role="status" className="mt-2 text-sm font-medium text-brand-green-dark">
             {`Reminder${recipientAccounts.length === 1 ? "" : "s"} sent today to ${recipientAccounts.length} guardian${recipientAccounts.length === 1 ? "" : "s"}.`}
             {skippedAccounts.length > 0
-              ? ` ${skippedAccounts.length} account${skippedAccounts.length === 1 ? " was" : "s were"} skipped because ${skippedAccounts.length === 1 ? "it has" : "they have"} no guardian email.`
+              ? ` ${skippedAccounts.length} account${skippedAccounts.length === 1 ? " was" : "s were"} skipped because ${skippedAccounts.length === 1 ? "it has" : "they have"} no selected notification contact.`
               : ""}
           </p>
         )}
+        <fieldset className="mt-3 rounded-md border border-border bg-surface p-3">
+          <legend className="px-1 text-sm font-medium">Reminder delivery</legend>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={notificationChannels.includes("email")}
+                disabled={sent}
+                onChange={(event) => setNotificationChannels((channels) => (
+                  event.target.checked ? [...channels, "email"] : channels.filter((channel) => channel !== "email")
+                ))}
+              />
+              Email
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={notificationChannels.includes("sms")}
+                disabled={sent}
+                onChange={(event) => setNotificationChannels((channels) => (
+                  event.target.checked ? [...channels, "sms"] : channels.filter((channel) => channel !== "sms")
+                ))}
+              />
+              SMS
+            </label>
+          </div>
+          {notificationChannels.includes("sms") && (
+            <p className="mt-2 text-sm text-text-secondary">
+              SMS load fee: not configured. Any configured carrier/load cost is recorded with the notification and is not added to a student's balance.
+            </p>
+          )}
+        </fieldset>
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -1978,35 +2096,40 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
           </Button>
         </div>
       )}
-      <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title="Review reminder emails">
+      <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title={notificationChannels.includes("sms") ? "Review reminder notifications" : "Review reminder emails"}>
         <div className="mt-2 space-y-3 text-sm text-text-secondary">
           <div>
             <p className="font-medium text-text-primary">
-              {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"} will be sent:
+              {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"} will be sent by {notificationChannels.includes("email") && notificationChannels.includes("sms") ? "email and SMS" : notificationChannels.includes("sms") ? "SMS" : "email"}:
             </p>
             {recipientAccounts.length > 0 ? (
               <ul className="mt-1 list-disc pl-5">
                 {recipientAccounts.map((account) => (
                   <li key={account.id}>
-                    {account.student} — {account.guardianEmail}; {account.amountOverdue} overdue
+                    {account.student} — {notificationChannels.includes("email") && account.guardianEmail ? `Email: ${account.guardianEmail}` : ""}{notificationChannels.includes("email") && account.guardianEmail && notificationChannels.includes("sms") && account.guardianMobile ? "; " : ""}{notificationChannels.includes("sms") && account.guardianMobile ? `SMS: ${account.guardianMobile}` : ""}; {account.amountOverdue} overdue
                     {" "}for {account.daysOverdue} days
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-1">No selected accounts have a guardian email.</p>
+              <p className="mt-1">No selected accounts have the chosen notification contact.</p>
             )}
           </div>
           {skippedAccounts.length > 0 && (
             <p>
               {skippedAccounts.map((account) => account.student).join(", ")} will be skipped because
-              {" "}there is no guardian email.
+              {" "}there is no selected notification contact.
             </p>
           )}
         </div>
         <p className="mt-3 rounded-md border border-border bg-surface p-3 text-sm">
           Message preview: Your student has an overdue installment. Please contact the billing office for assistance.
         </p>
+        {notificationChannels.includes("sms") && (
+          <p className="mt-3 rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm">
+            <span className="font-medium">SMS load fee:</span> not configured. It will not be added to a student balance.
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>
             Cancel
@@ -2085,9 +2208,24 @@ export function PermitPage() {
 }
 export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   const [counted, setCounted] = useState("");
+  const [varianceReason, setVarianceReason] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [closed, setClosed] = useState(false);
-  const variance = Number(counted || 0) - 1250;
+  const systemCashTotal = centavos(125000);
+  const enteredCount = Number(counted);
+  const hasCountedCash = counted.trim() !== "" && Number.isFinite(enteredCount) && enteredCount >= 0;
+  const countedCash = hasCountedCash ? centavos(Math.round(enteredCount * 100)) : null;
+  const variance = countedCash === null ? null : centavos(countedCash - systemCashTotal);
+  const requiresVarianceReason = variance !== null && variance !== 0;
+  const canReview = !closed && countedCash !== null && (!requiresVarianceReason || varianceReason.trim().length > 0);
+
+  const varianceSummary = variance === null
+    ? { label: "Waiting for count", detail: "Enter the drawer count to compare it with the system total.", className: "border-border bg-surface" }
+    : variance === 0
+      ? { label: "Balanced", detail: "The counted cash matches the system total.", className: "border-status-success bg-[#F4FAF5]" }
+      : variance > 0
+        ? { label: "Over", detail: "Explain why the drawer count is higher than the system total.", className: "border-status-warning bg-[#FFF8E8]" }
+        : { label: "Short", detail: "Explain why the drawer count is lower than the system total.", className: "border-status-error bg-[#FFF5F5]" };
   return (
     <>
       <PageHeader
@@ -2095,28 +2233,82 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
         description="Review today's totals and history from one close-out area."
       />
       <CloseoutTabs user={user} active="today" />
-      <Card>
-        <h2 className="font-semibold">Today's close-out</h2>
-        <Metric label="System cash total" value="₱1,250.00" />
-        <label className="mt-4 block text-sm font-medium">
-          Counted cash
-          <input
-            value={counted}
-            onChange={(e) => setCounted(e.target.value)}
-            inputMode="decimal"
-            className={inputClass}
-          />
-        </label>
-        <p className="mt-3 text-sm font-medium">
-          Variance: {format(centavos(Math.round(variance * 100)))}
-        </p>
-        {variance !== 0 && (
-          <textarea
-            className={textareaClass}
-            placeholder="Explain the variance"
-            required
-          />
-        )}
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <div>
+            <h2 className="font-semibold">Today's close-out</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Count the cash in the drawer, then review the difference before locking today.
+            </p>
+          </div>
+          <p className="text-sm text-text-secondary">Cash payments only</p>
+        </div>
+        <form
+          className="mt-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canReview) setReviewOpen(true);
+          }}
+        >
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Metric label="System cash total" value="₱1,250.00" />
+            <label className="block rounded-md border border-border bg-white p-4 text-sm font-medium shadow-card">
+              Counted cash
+              <input
+                autoFocus
+                type="number"
+                min="0"
+                step="0.01"
+                aria-label="Counted cash"
+                value={counted}
+                onChange={(e) => setCounted(e.target.value)}
+                disabled={closed}
+                inputMode="decimal"
+                placeholder="0.00"
+                className={inputClass}
+              />
+              <span className="mt-2 block text-sm font-normal text-text-secondary">
+                Enter the amount counted in the cash drawer.
+              </span>
+            </label>
+            <section className={cn("rounded-md border p-4 shadow-card", varianceSummary.className)} aria-live="polite">
+              <p className="text-sm font-medium text-text-secondary">Variance</p>
+              <p className="mt-1 text-xl font-semibold text-text-primary">
+                {variance === null ? "—" : format(variance)}
+              </p>
+              <p className="mt-2 text-sm font-medium text-text-primary">{varianceSummary.label}</p>
+              <p className="mt-1 text-sm text-text-secondary">{varianceSummary.detail}</p>
+            </section>
+          </div>
+          {requiresVarianceReason && (
+            <label className="mt-4 block text-sm font-medium">
+              Variance explanation <span aria-hidden="true">*</span>
+              <textarea
+                className={textareaClass}
+                value={varianceReason}
+                onChange={(event) => setVarianceReason(event.target.value)}
+                disabled={closed}
+                placeholder="Explain the variance"
+                required
+              />
+              <span className="mt-2 block text-sm font-normal text-text-secondary">
+                A reason is required because the counted cash does not match the system total.
+              </span>
+            </label>
+          )}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-text-secondary">
+              {countedCash === null
+                ? "The review step becomes available after a cash count is entered."
+                : requiresVarianceReason
+                  ? "Add a variance explanation before reviewing."
+                  : "The drawer is balanced and ready for review."}
+            </p>
+            <Button type="submit" disabled={!canReview}>
+              Review close-out
+            </Button>
+          </div>
+        </form>
         {closed ? (
           <div className="mt-4 rounded-md border border-status-success bg-[#F4FAF5] p-4">
             <p role="status" className="font-medium text-brand-green-dark">Close-out locked for today.</p>
@@ -2124,18 +2316,19 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
               Print summary
             </Button>
           </div>
-        ) : (
-          <Button className="mt-4" type="button" disabled={!counted} onClick={() => setReviewOpen(true)}>
-            Review close-out
-          </Button>
-        )}
+        ) : null}
       </Card>
       <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title="Confirm daily close-out">
         <dl className="mt-3 grid gap-2 text-sm">
           <div className="flex justify-between gap-4"><dt>System cash total</dt><dd className="font-medium">₱1,250.00</dd></div>
-          <div className="flex justify-between gap-4"><dt>Counted cash</dt><dd className="font-medium">{format(centavos(Math.round(Number(counted || 0) * 100)))}</dd></div>
-          <div className="flex justify-between gap-4"><dt>Variance</dt><dd className="font-medium">{format(centavos(Math.round(variance * 100)))}</dd></div>
+          <div className="flex justify-between gap-4"><dt>Counted cash</dt><dd className="font-medium">{countedCash === null ? "—" : format(countedCash)}</dd></div>
+          <div className="flex justify-between gap-4"><dt>Variance</dt><dd className="font-medium">{variance === null ? "—" : format(variance)}</dd></div>
         </dl>
+        {requiresVarianceReason && (
+          <p className="mt-3 rounded-md border border-border bg-surface p-3 text-sm text-text-secondary">
+            <span className="font-medium text-text-primary">Variance explanation:</span> {varianceReason}
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>Edit</Button>
           <Button type="button" onClick={() => { setClosed(true); setReviewOpen(false); }}>Confirm and lock</Button>
@@ -2412,7 +2605,7 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
     <>
       <PageHeader
         title="Reminders & notifications"
-        description="View notification attempts and retry failed email where permitted."
+        description="View email and SMS notification attempts, including any configured SMS load fee."
       />
       <RemindersNotificationsTabs user={user} active="notifications" />
       <Card className="overflow-hidden p-0">
@@ -2430,7 +2623,13 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
                   Type
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+                  Channel
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
                   Recipient
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+                  SMS load fee
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
                   <DropdownMenu.Root>
@@ -2495,7 +2694,13 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
                     {row.type}
                   </td>
                   <td className="px-4 py-3 align-middle text-text-primary">
+                    {row.channel}
+                  </td>
+                  <td className="px-4 py-3 align-middle text-text-primary">
                     {row.recipient}
+                  </td>
+                  <td className="px-4 py-3 align-middle text-text-primary">
+                    {row.loadFee}
                   </td>
                   <td className="px-4 py-3 align-middle text-text-primary">
                     {renderTableCell(row.status)}
@@ -2676,14 +2881,16 @@ export function SettingsPage({
       ],
     },
     email: {
-      title: "Email settings",
+      title: "Notification settings",
       description:
-        "Configure sender details, daily send limit, and a test email.",
-      action: "Edit email settings",
+        "Configure email delivery, SMS notifications, and any SMS load fee recorded outside student balances.",
+      action: "Edit notification settings",
       headers: ["Setting", "Current value", "Status"],
       rows: [
         ["Sender", "Mendez Christian Academy Billing", "Active"],
         ["Daily send limit", "100 messages", "Active"],
+        ["SMS delivery", "Optional for receipts and reminders", "Active"],
+        ["SMS load fee", "Not configured; never added to student balances", "Needs review"],
         ["Test email", "Available for administrators", "Ready"],
       ],
     },

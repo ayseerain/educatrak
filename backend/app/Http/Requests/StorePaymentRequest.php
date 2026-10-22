@@ -30,6 +30,8 @@ class StorePaymentRequest extends FormRequest
             'backdate_reason' => ['nullable', 'string', 'min:10', 'max:1000', 'required_unless:paid_on,'.today('Asia/Manila')->toDateString()],
             'duplicate_override_reason' => ['nullable', 'string', 'min:10', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'notification_channels' => ['nullable', 'array', 'min:1'],
+            'notification_channels.*' => ['string', 'distinct', Rule::in(['email', 'sms'])],
         ];
     }
 }

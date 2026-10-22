@@ -120,15 +120,27 @@ class PaymentController extends Controller
         );
         $payment->loadMissing(['billingAccount', 'receipt', 'student.guardians']);
         $guardian = $payment->student->guardians->firstWhere('pivot.is_primary', true) ?? $payment->student->guardians->first();
+        $notificationChannels = $validated['notification_channels'] ?? ['email'];
+        $smsLoadFeeCents = $this->smsLoadFeeCents();
+        $notificationLogs = [];
 
-        $notificationLog = NotificationLog::query()->create([
-            'student_id' => $payment->student_id,
-            'payment_id' => $payment->id,
-            'guardian_email' => $guardian?->email,
-            'kind' => 'payment_confirmation',
-            'status' => $guardian?->email === null ? 'not_sent' : 'queued',
-            'failure_reason' => $guardian?->email === null ? 'No guardian email is available.' : null,
-        ]);
+        foreach ($notificationChannels as $channel) {
+            $isSms = $channel === 'sms';
+            $recipient = $isSms ? $guardian?->mobile : $guardian?->email;
+            $notificationLogs[$channel] = NotificationLog::query()->create([
+                'student_id' => $payment->student_id,
+                'payment_id' => $payment->id,
+                'guardian_email' => $isSms ? null : $recipient,
+                'guardian_mobile' => $isSms ? $recipient : null,
+                'channel' => $channel,
+                'load_fee_cents' => $isSms && $recipient !== null ? $smsLoadFeeCents : null,
+                'kind' => 'payment_confirmation',
+                'status' => $recipient === null ? 'not_sent' : 'queued',
+                'failure_reason' => $recipient === null
+                    ? ($isSms ? 'No guardian mobile number is available.' : 'No guardian email is available.')
+                    : null,
+            ]);
+        }
         $auditLogger->record($request, 'payment.recorded', $payment, null, [
             'amount_cents' => $payment->amount_cents,
             'receipt_no' => $payment->receipt->receipt_no,
@@ -137,7 +149,9 @@ class PaymentController extends Controller
         return response()->json([
             'data' => [
                 ...$this->paymentData($payment),
-                'email_queued' => $notificationLog->status === 'queued',
+                'email_queued' => ($notificationLogs['email'] ?? null)?->status === 'queued',
+                'sms_queued' => ($notificationLogs['sms'] ?? null)?->status === 'queued',
+                'sms_load_fee_cents' => ($notificationLogs['sms'] ?? null)?->load_fee_cents,
             ],
         ], 201);
     }
@@ -197,5 +211,13 @@ class PaymentController extends Controller
         }
 
         return $data;
+    }
+
+    private function smsLoadFeeCents(): ?int
+    {
+        $configuredFee = config('services.sms.load_fee_cents');
+        $fee = filter_var($configuredFee, FILTER_VALIDATE_INT);
+
+        return $fee === false || $fee < 0 ? null : $fee;
     }
 }
