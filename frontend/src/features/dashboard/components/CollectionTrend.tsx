@@ -30,6 +30,7 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
     range === "today"
       ? en.dashboard.todaysTotals
       : en.dashboard.collectionTrendRange.replace("{range}", dashboardRangeLabel(range));
+  const compactBarSize = range === "today" || range === "last_7_days" ? 24 : undefined;
   const isJsdom = typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
   const chart = (
     <BarChart data={data} width={760} height={224} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -56,7 +57,12 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
           fontSize: 12,
         }}
       />
-      <Bar dataKey="total" fill="#039935" radius={[4, 4, 0, 0]} />
+      <Bar
+        dataKey="total"
+        fill="#039935"
+        radius={[4, 4, 0, 0]}
+        maxBarSize={compactBarSize}
+      />
     </BarChart>
   );
 

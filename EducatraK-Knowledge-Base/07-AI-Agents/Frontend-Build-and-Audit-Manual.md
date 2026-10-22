@@ -124,7 +124,7 @@ For each screen below:
 - **Documented access:** ADM / CSH
 - **Build scope:** Create student and guardian information with duplicate-number handling.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/students/new` as `StudentFormPage` with student and guardian fields, grade selector, duplicate-number handling, and post-create navigation. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/students/new` as `StudentFormPage` with student and guardian fields, Kindergarten through Grade 12 grade selector, grade-dependent section selector, Grade 11/12 strand selector (STEM, ABM, HUMSS, TVL), duplicate-number handling, and post-create navigation. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B09. Edit Student — M2
 
@@ -132,7 +132,7 @@ For each screen below:
 - **Documented access:** ADM / CSH
 - **Build scope:** Edit permitted student/guardian links and status; no hard delete.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/students/:id/edit` as `StudentFormPage edit` with editable student/guardian fields, existing sample values, and no hard-delete action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/students/:id/edit` as `StudentFormPage edit` with editable student/guardian fields, the same grade-dependent academic selectors as New Student, existing sample values, and no hard-delete action. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B10. Student Profile — M2
 
@@ -308,7 +308,7 @@ For each screen below:
 - **Documented access:** ACC write; ADM/AUD read
 - **Build scope:** Fee schedules/items and documented lifecycle; edits affect new accounts only.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/settings/fees` as `SettingsPage section="fees"` with Accounting edit access, read-only variants, active fee-schedule sample data, and note that edits affect new accounts only. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/settings/fees` as `SettingsPage section="fees"` with Accounting edit access, read-only variants, active fee-schedule sample data, and an Add fee item dialog for school year, grade level, name, category, amount, and required/optional status. Submitted mock items appear in the active schedule and apply to new accounts only. Formal Phase 2 audit remains pending.
 
 ### B32. Payment Plans — M9
 
@@ -332,7 +332,7 @@ For each screen below:
 - **Documented access:** ADM write; ACC/AUD read
 - **Build scope:** School year, terms/exam periods, grade levels, sections and payment methods.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/settings/school` as `SettingsPage section="school"` with Administrator edit access, read-only variants, and school-year/term/grade/section/payment-method configuration context. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/settings/school` as `SettingsPage section="school"` with Administrator edit access, read-only variants, and school-year/term/grade/section/payment-method configuration context. The Administrator-only Add list item dialog now adds school years, terms, exam periods, grade levels, and sections to the in-memory table; its current-school-year selection identifies the entered school year and setting it clears the previous current marker. Payment methods remain Cash only under the current policy. Focused operations tests and the production build pass; formal Phase 2 audit remains pending.
 
 ### B35. Receipt Settings — M9
 

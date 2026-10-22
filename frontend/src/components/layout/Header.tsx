@@ -22,6 +22,13 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "registrar", label: ROLE_LABEL.registrar },
 ];
 
+const ROLES_WITHOUT_GLOBAL_STUDENT_SEARCH = new Set<Role>([
+  "administrator",
+  "accounting",
+  "auditor",
+  "registrar",
+]);
+
 interface HeaderProps {
   user: AuthenticatedUser;
   onLogout: () => void;
@@ -31,6 +38,7 @@ interface HeaderProps {
 export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const showGlobalStudentSearch = !ROLES_WITHOUT_GLOBAL_STUDENT_SEARCH.has(user.role);
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
@@ -45,7 +53,7 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
 
   return (
     <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-border bg-white px-4 py-2 md:flex-nowrap md:justify-between md:px-6">
-      {user.role !== "administrator" && (
+      {showGlobalStudentSearch && (
         <div className="order-2 w-full md:order-1 md:w-80 md:max-w-full">
           <StudentSearchField
             id="global-search"
@@ -61,7 +69,7 @@ export function Header({ user, onLogout, onRoleChange }: HeaderProps) {
 
       <div
         className={`order-1 ml-auto flex items-center gap-2 md:order-2 md:gap-4 ${
-          user.role === "administrator" ? "md:ml-auto" : "md:ml-0"
+          showGlobalStudentSearch ? "md:ml-0" : "md:ml-auto"
         }`}
       >
         <DropdownSelect

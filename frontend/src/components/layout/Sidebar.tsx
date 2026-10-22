@@ -100,14 +100,13 @@ export function Sidebar({ user }: SidebarProps) {
       aria-label="Primary"
       className="flex w-full shrink-0 flex-col border-b border-border bg-white md:h-full md:w-56 md:border-b-0 md:border-r"
     >
-      <div className="flex h-16 items-center border-b border-border px-3 md:h-20">
+      <div className="flex h-16 items-center border-b border-border px-3">
         <span className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-dark text-base font-extrabold text-white"
-          >
-            EK
-          </span>
+          <img
+            src="/mendez-christian-academy-seal.png"
+            alt="Mendez Christian Academy seal"
+            className="h-12 w-12 shrink-0 object-contain"
+          />
           <span className="flex flex-col leading-none text-brand-green-dark">
             <span className="text-[18px] font-black tracking-tight">EdukaTrak</span>
             <span className="mt-1 text-[12px] font-semibold tracking-tight text-text-muted-readable">

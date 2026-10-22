@@ -2,6 +2,7 @@
 // Route and role behavior is covered at the component boundary until API types land.
 // @ts-nocheck
 import {
+  useEffect,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -82,10 +83,42 @@ const dueRecordsByStudentId = {
   ],
 };
 const gradeOptions = [
-  { value: "Grade 7", label: "Grade 7" },
-  { value: "Grade 8", label: "Grade 8" },
-  { value: "Grade 9", label: "Grade 9" },
-];
+  "Kinder",
+  ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`),
+].map((grade) => ({ value: grade, label: grade }));
+
+function asDropdownOptions(values: string[]) {
+  return values.map((value) => ({ value, label: value }));
+}
+
+const sectionOptionsByGrade: Record<string, { value: string; label: string }[]> = {
+  Kinder: asDropdownOptions(["Section A", "Section B"]),
+  "Grade 1": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 2": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 3": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 4": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 5": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 6": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 7": asDropdownOptions(["Olive", "Section B"]),
+  "Grade 8": asDropdownOptions(["Maple", "Section B"]),
+  "Grade 9": asDropdownOptions(["Pine", "Section B"]),
+  "Grade 10": asDropdownOptions(["Section A", "Section B"]),
+  "Grade 11": asDropdownOptions(["Exodus", "Section B"]),
+  "Grade 12": asDropdownOptions(["Exodus", "Section B"]),
+};
+
+const strandOptions = ["STEM", "ABM", "HUMSS", "TVL"].map((strand) => ({
+  value: strand,
+  label: strand,
+}));
+
+function isSeniorHighGrade(grade: string) {
+  return grade === "Grade 11" || grade === "Grade 12";
+}
+
+function getSectionOptions(grade: string) {
+  return sectionOptionsByGrade[grade] ?? [];
+}
 const notificationRows = [
   {
     student: students[0].name,
@@ -460,7 +493,20 @@ function StudentTable({
 export function StudentFormPage({ edit }: { edit?: boolean }) {
   const navigate = useNavigate();
   const [duplicate, setDuplicate] = useState(false);
-  const [grade, setGrade] = useState(edit ? "Grade 7" : gradeOptions[0].value);
+  const initialGrade = edit ? students[0].grade : gradeOptions[0].value;
+  const [grade, setGrade] = useState(initialGrade);
+  const [section, setSection] = useState(
+    edit ? students[0].section : getSectionOptions(initialGrade)[0]?.value ?? "",
+  );
+  const [strand, setStrand] = useState("");
+  const seniorHigh = isSeniorHighGrade(grade);
+
+  function selectGrade(nextGrade: string) {
+    setGrade(nextGrade);
+    setSection(getSectionOptions(nextGrade)[0]?.value ?? "");
+    setStrand(isSeniorHighGrade(nextGrade) ? strandOptions[0].value : "");
+  }
+
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const number = new FormData(e.currentTarget).get("number");
@@ -501,21 +547,51 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
                 aria-label="Grade level"
                 value={grade}
                 options={gradeOptions}
-                onChange={setGrade}
+                onChange={selectGrade}
                 className="w-full"
                 contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
                 align="start"
               />
             </span>
+            <input name="grade" type="hidden" value={grade} />
           </label>
           <label className="text-sm font-medium">
             Section
-            <input
-              required
-              defaultValue={edit ? "Olive" : ""}
-              className={inputClass}
-            />
+            <span className="mt-1 block">
+              <DropdownSelect
+                aria-label="Section"
+                value={section}
+                options={getSectionOptions(grade)}
+                onChange={setSection}
+                className="w-full"
+                contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                align="start"
+              />
+            </span>
+            <input name="section" type="hidden" value={section} />
           </label>
+          {seniorHigh && (
+            <label className="text-sm font-medium">
+              Strand
+              <span className="mt-1 block">
+                <DropdownSelect
+                  aria-label="Strand"
+                  value={strand}
+                  options={strandOptions}
+                  onChange={setStrand}
+                  className="w-full"
+                  contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+                  align="start"
+                />
+              </span>
+              <input name="strand" type="hidden" value={strand} />
+            </label>
+          )}
+          {seniorHigh && (
+            <p className="text-sm text-text-secondary md:col-span-2">
+              Student will be listed as {grade} - {strand} {section}.
+            </p>
+          )}
         </Card>
         <Card>
           <h2 className="font-semibold">Guardian</h2>
@@ -721,14 +797,6 @@ function StudentBillingPanel({
             Current, upcoming, and historical school-year records.
           </p>
         </div>
-        {can(user, "account.create") && (
-          <Link
-            className={secondaryLinkClass}
-            to={`/accounts/new?student=${student.id}`}
-          >
-            Create account
-          </Link>
-        )}
       </div>
       <ListCard
         headers={["School year", "Balance", "Status", "Open"]}
@@ -1252,6 +1320,7 @@ function PaymentWorkflow({
     initialStudent ? (initialSuggestedAmount / 100).toFixed(2) : "",
   );
   const [method, setMethod] = useState("Cash");
+  const [feeName, setFeeName] = useState(initialDueRecord?.account ?? "");
   const [stage, setStage] = useState<"entry" | "confirm" | "saved">("entry");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1273,6 +1342,10 @@ function PaymentWorkflow({
   const balanceAfterPayment = selectedStudent
     ? centavos(Math.max(0, selectedStudent.balance - enteredCentavos))
     : centavos(0);
+
+  useEffect(() => {
+    setFeeName(nextDueRecord?.account ?? "");
+  }, [selectedStudent?.id]);
 
   function reviewPayment(event: FormEvent) {
     event.preventDefault();
@@ -1301,6 +1374,7 @@ function PaymentWorkflow({
         : "",
     );
     setAmount("");
+    setFeeName(getNextDueRecord(preselectedStudent?.id ?? "")?.account ?? "");
     setMethod("Cash");
     setStage("entry");
     setError("");
@@ -1409,9 +1483,13 @@ function PaymentWorkflow({
           Fee name
           <input
             className={inputClass}
-            value={nextDueRecord?.account ?? ""}
-            placeholder="Enter fee name"
-            readOnly
+            value={feeName}
+            placeholder="SY 2026-2027 Tuition"
+            onChange={(event) => {
+              setFeeName(event.target.value);
+              setStage("entry");
+              setIsSaving(false);
+            }}
             disabled={isSaving}
           />
         </label>
@@ -1478,10 +1556,14 @@ function PaymentWorkflow({
           onOpenChange={(open) => !open && setStage("entry")}
           title="Confirm payment"
         >
-          <dl className="mt-3 grid gap-3 text-sm md:grid-cols-4">
+          <dl className="mt-3 grid gap-3 text-sm md:grid-cols-5">
             <div>
               <dt className="text-text-secondary">Student</dt>
               <dd className="font-medium">{selectedStudent.name}</dd>
+            </div>
+            <div>
+              <dt className="text-text-secondary">Fee name</dt>
+              <dd className="font-medium">{feeName || "Not specified"}</dd>
             </div>
             <div>
               <dt className="text-text-secondary">Amount</dt>
@@ -1732,27 +1814,27 @@ function RemindersNotificationsTabs({
   user: AuthenticatedUser;
   active: "followup" | "notifications";
 }) {
+  const items = [
+    can(user, "followup.view")
+      ? {
+          label: "Due follow-ups",
+          to: "/followup",
+          active: active === "followup",
+        }
+      : null,
+    can(user, "notification.view")
+      ? {
+          label: "Notification log",
+          to: "/notifications",
+          active: active === "notifications",
+        }
+      : null,
+  ].filter(Boolean) as { label: string; to: string; active: boolean }[];
+
+  if (active === "followup" && items.length === 1) return null;
+
   return (
-    <SectionTabs
-      items={
-        [
-          can(user, "followup.view")
-            ? {
-                label: "Due follow-ups",
-                to: "/followup",
-                active: active === "followup",
-              }
-            : null,
-          can(user, "notification.view")
-            ? {
-                label: "Notification log",
-                to: "/notifications",
-                active: active === "notifications",
-              }
-            : null,
-        ].filter(Boolean) as { label: string; to: string; active: boolean }[]
-      }
-    />
+    <SectionTabs items={items} />
   );
 }
 
@@ -1763,34 +1845,67 @@ function CloseoutTabs({
   user: AuthenticatedUser;
   active: "today" | "history";
 }) {
+  const items = [
+    can(user, "closeout.submit")
+      ? {
+          label: "Today's close-out",
+          to: "/closeout",
+          active: active === "today",
+        }
+      : null,
+    can(user, "closeout.view")
+      ? {
+          label: "History",
+          to: "/closeout/history",
+          active: active === "history",
+        }
+      : null,
+  ].filter(Boolean) as { label: string; to: string; active: boolean }[];
+
+  if (active === "today" && items.length === 1) return null;
+
   return (
-    <SectionTabs
-      items={
-        [
-          can(user, "closeout.submit")
-            ? {
-                label: "Today's close-out",
-                to: "/closeout",
-                active: active === "today",
-              }
-            : null,
-          can(user, "closeout.view")
-            ? {
-                label: "History",
-                to: "/closeout/history",
-                active: active === "history",
-              }
-            : null,
-        ].filter(Boolean) as { label: string; to: string; active: boolean }[]
-      }
-    />
+    <SectionTabs items={items} />
   );
 }
 
 export function FollowupPage({ user }: { user: AuthenticatedUser }) {
-  const [selected, setSelected] = useState(false);
+  const followupAccounts = [
+    {
+      id: students[2].id,
+      student: students[2].name,
+      guardianEmail: null,
+      amountOverdue: "₱8,500.00",
+      daysOverdue: "12",
+      lastReminder: "Never",
+    },
+    {
+      id: students[1].id,
+      student: students[1].name,
+      guardianEmail: "guardian@example.test",
+      amountOverdue: "₱4,200.00",
+      daysOverdue: "3",
+      lastReminder: "Sep 20, 2026",
+    },
+  ];
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  const selectedAccounts = followupAccounts.filter((account) =>
+    selectedAccountIds.includes(account.id),
+  );
+  const recipientAccounts = selectedAccounts.filter((account) => account.guardianEmail);
+  const skippedAccounts = selectedAccounts.filter((account) => !account.guardianEmail);
+  const allAccountsSelected = selectedAccountIds.length === followupAccounts.length;
+
+  function toggleAccountSelection(accountId: string, checked: boolean) {
+    setSelectedAccountIds((current) => (
+      checked
+        ? [...current, accountId]
+        : current.filter((selectedId) => selectedId !== accountId)
+    ));
+  }
+
   return (
     <>
       <PageHeader
@@ -1798,7 +1913,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
         description="Review due follow-ups and notification history without merging their records."
         action={
           can(user, "followup.send") ? (
-            <Button disabled={!selected || sent} onClick={() => setReviewOpen(true)}>
+            <Button disabled={selectedAccounts.length === 0 || sent} onClick={() => setReviewOpen(true)}>
               {sent ? "Reminders sent" : "Send reminder emails"}
             </Button>
           ) : undefined
@@ -1809,14 +1924,20 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
         <h2 className="font-semibold">Due follow-ups</h2>
         {sent && (
           <p role="status" className="mt-2 text-sm font-medium text-brand-green-dark">
-            Reminder sent today to 1 guardian. One account was skipped because it has no guardian email.
+            {`Reminder${recipientAccounts.length === 1 ? "" : "s"} sent today to ${recipientAccounts.length} guardian${recipientAccounts.length === 1 ? "" : "s"}.`}
+            {skippedAccounts.length > 0
+              ? ` ${skippedAccounts.length} account${skippedAccounts.length === 1 ? " was" : "s were"} skipped because ${skippedAccounts.length === 1 ? "it has" : "they have"} no guardian email.`
+              : ""}
           </p>
         )}
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
-            checked={selected}
-            onChange={(e) => setSelected(e.target.checked)}
+            checked={allAccountsSelected}
+            disabled={sent}
+            onChange={(event) => setSelectedAccountIds(
+              event.target.checked ? followupAccounts.map((account) => account.id) : [],
+            )}
           />{" "}
           Select all listed accounts
         </label>
@@ -1829,16 +1950,24 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
               "Days overdue",
               "Last reminder",
             ]}
-            rows={[
-              [students[2].name, "missing email", "₱8,500.00", "12", "Never"],
-              [
-                students[1].name,
-                "guardian@example.test",
-                "₱4,200.00",
-                "3",
-                "Sep 20, 2026",
-              ],
-            ]}
+            rows={followupAccounts.map((account) => [
+              can(user, "followup.send") ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select reminder for ${account.student}`}
+                    checked={selectedAccountIds.includes(account.id)}
+                    disabled={sent}
+                    onChange={(event) => toggleAccountSelection(account.id, event.target.checked)}
+                  />
+                  <span>{account.student}</span>
+                </div>
+              ) : account.student,
+              account.guardianEmail ?? "missing email",
+              account.amountOverdue,
+              account.daysOverdue,
+              account.lastReminder,
+            ])}
           />
         </div>
       </Card>
@@ -1850,9 +1979,31 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
         </div>
       )}
       <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title="Review reminder emails">
-        <p className="mt-2 text-sm text-text-secondary">
-          One reminder will be sent to guardian@example.test. The selected account without a guardian email will be skipped.
-        </p>
+        <div className="mt-2 space-y-3 text-sm text-text-secondary">
+          <div>
+            <p className="font-medium text-text-primary">
+              {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"} will be sent:
+            </p>
+            {recipientAccounts.length > 0 ? (
+              <ul className="mt-1 list-disc pl-5">
+                {recipientAccounts.map((account) => (
+                  <li key={account.id}>
+                    {account.student} — {account.guardianEmail}; {account.amountOverdue} overdue
+                    {" "}for {account.daysOverdue} days
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1">No selected accounts have a guardian email.</p>
+            )}
+          </div>
+          {skippedAccounts.length > 0 && (
+            <p>
+              {skippedAccounts.map((account) => account.student).join(", ")} will be skipped because
+              {" "}there is no guardian email.
+            </p>
+          )}
+        </div>
         <p className="mt-3 rounded-md border border-border bg-surface p-3 text-sm">
           Message preview: Your student has an overdue installment. Please contact the billing office for assistance.
         </p>
@@ -1860,8 +2011,12 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
           <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={() => { setSent(true); setReviewOpen(false); }}>
-            Send 1 reminder
+          <Button
+            type="button"
+            disabled={recipientAccounts.length === 0}
+            onClick={() => { setSent(true); setReviewOpen(false); }}
+          >
+            Send {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"}
           </Button>
         </div>
       </MockDialog>
@@ -2055,15 +2210,16 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
         {reports
           .filter((report) => canViewReport(user, report.kind))
           .map((report) => (
-            <Card className="border-l-4 border-l-brand-green" key={report.name}>
+            <Link
+              className="block rounded-md border border-border border-l-4 border-l-brand-green bg-white p-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+              key={report.name}
+              to={report.route}
+            >
               <h2 className="font-semibold">{report.name}</h2>
               <p className="mt-1 text-sm text-text-secondary">
                 {report.detail}
               </p>
-              <Link className={cn(inlineLinkClass, "mt-3")} to={report.route}>
-                Open
-              </Link>
-            </Card>
+            </Link>
           ))}
       </div>
     </>
@@ -2445,6 +2601,19 @@ export function SettingsPage({
   section: "fees" | "plans" | "clearance" | "school" | "receipt" | "email";
   editable: boolean;
 }) {
+  const [addFeeOpen, setAddFeeOpen] = useState(false);
+  const [addListItemOpen, setAddListItemOpen] = useState(false);
+  const [listItemType, setListItemType] = useState<"schoolYear" | "term" | "examPeriod" | "gradeLevel" | "section">("schoolYear");
+  const [listItemName, setListItemName] = useState("");
+  const [feeRows, setFeeRows] = useState([
+    ["SY 2026-2027", "Grade 7", "Tuition - ₱12,500.00", "Active"],
+    ["SY 2026-2027", "Grade 8", "Miscellaneous - optional", "Active"],
+  ]);
+  const [schoolRows, setSchoolRows] = useState([
+    ["School year", "SY 2026-2027 current", "Active"],
+    ["Exam period", "Midterm starts Oct 15, 2026", "Active"],
+    ["Payment method", "Cash only", "Active"],
+  ]);
   const settings = {
     fees: {
       title: "Fee schedules",
@@ -2452,10 +2621,7 @@ export function SettingsPage({
         "School year and grade-level fee items apply to new accounts only.",
       action: "Add fee item",
       headers: ["School year", "Grade level", "Fee item", "Status"],
-      rows: [
-        ["SY 2026-2027", "Grade 7", "Tuition - ₱12,500.00", "Active"],
-        ["SY 2026-2027", "Grade 8", "Miscellaneous - optional", "Active"],
-      ],
+      rows: feeRows,
     },
     plans: {
       title: "Payment plans",
@@ -2495,11 +2661,7 @@ export function SettingsPage({
         "Manage school year, terms, exam periods, grades, sections, and payment methods.",
       action: "Add list item",
       headers: ["List", "Current value", "Status"],
-      rows: [
-        ["School year", "SY 2026-2027 current", "Active"],
-        ["Exam period", "Midterm starts Oct 15, 2026", "Active"],
-        ["Payment method", "Cash only", "Active"],
-      ],
+      rows: schoolRows,
     },
     receipt: {
       title: "Receipt settings",
@@ -2527,12 +2689,72 @@ export function SettingsPage({
     },
   } as const;
   const current = settings[section];
+
+  function addFeeItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const amount = Number(formData.get("amount"));
+    const requirement = formData.get("requirement") === "required" ? "Required" : "Optional";
+
+    setFeeRows((rows) => [
+      ...rows,
+      [
+        String(formData.get("schoolYear")),
+        String(formData.get("gradeLevel")),
+        `${String(formData.get("name"))} - ${String(formData.get("category"))} - ${format(centavos(Math.round(amount * 100)))} - ${requirement}`,
+        "Active",
+      ],
+    ]);
+    setAddFeeOpen(false);
+  }
+
+  function addListItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const name = listItemName.trim();
+    const startDate = String(formData.get("startDate") ?? "");
+    const gradeLevel = String(formData.get("gradeLevel") ?? "");
+    const isCurrent = formData.get("isCurrent") === "on";
+    const formattedStartDate = startDate
+      ? new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Manila",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }).format(new Date(`${startDate}T00:00:00+08:00`))
+      : "";
+    const listItem = {
+      schoolYear: ["School year", `${name}${isCurrent ? " current" : ""}`, "Active"],
+      term: ["Term", `${name} starts ${formattedStartDate}`, "Active"],
+      examPeriod: ["Exam period", `${name} starts ${formattedStartDate}`, "Active"],
+      gradeLevel: ["Grade level", name, "Active"],
+      section: ["Section", `${gradeLevel} - ${name}`, "Active"],
+    }[listItemType];
+
+    setSchoolRows((rows) => {
+      const updatedRows = listItemType === "schoolYear" && isCurrent
+        ? rows.map((row) => row[0] === "School year" ? [row[0], row[1].replace(" current", ""), row[2]] : row)
+        : rows;
+      return [...updatedRows, listItem];
+    });
+    setListItemType("schoolYear");
+    setListItemName("");
+    setAddListItemOpen(false);
+  }
+
   return (
     <>
       <PageHeader
         title={current.title}
         description={current.description}
-        action={editable ? <Button>{current.action}</Button> : undefined}
+        action={editable ? (
+          <Button type="button" onClick={() => {
+            if (section === "fees") setAddFeeOpen(true);
+            if (section === "school") setAddListItemOpen(true);
+          }}>
+            {current.action}
+          </Button>
+        ) : undefined}
       />
       <Card>
         <p className="text-sm text-text-secondary">
@@ -2545,12 +2767,130 @@ export function SettingsPage({
           headers={[...current.headers]}
           rows={current.rows.map((row) => [...row])}
           centeredColumns={
-            section === "school" || section === "receipt" || section === "email"
+            section === "fees"
+              || section === "plans"
+              || section === "clearance"
+              || section === "school"
+              || section === "receipt"
+              || section === "email"
               ? [current.headers.length - 1]
               : []
           }
         />
       </Card>
+      {section === "fees" && editable && (
+        <MockDialog open={addFeeOpen} onOpenChange={setAddFeeOpen} title="Add fee item">
+          <form className="mt-4 space-y-4" onSubmit={addFeeItem}>
+            <p className="text-sm text-text-secondary">
+              The fee item will be available only to new accounts in the selected schedule.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium" htmlFor="fee-school-year">
+                School year
+                <select id="fee-school-year" name="schoolYear" className={inputClass} defaultValue="SY 2026-2027">
+                  <option>SY 2026-2027</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium" htmlFor="fee-grade-level">
+                Grade level
+                <select id="fee-grade-level" name="gradeLevel" className={inputClass} defaultValue="Grade 7">
+                  <option>Grade 7</option>
+                  <option>Grade 8</option>
+                </select>
+              </label>
+            </div>
+            <label className="block text-sm font-medium" htmlFor="fee-name">
+              Fee item name
+              <input id="fee-name" name="name" required className={inputClass} />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium" htmlFor="fee-category">
+                Category
+                <select id="fee-category" name="category" className={inputClass} defaultValue="Tuition">
+                  <option>Tuition</option>
+                  <option>Miscellaneous</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium" htmlFor="fee-amount">
+                Amount
+                <input id="fee-amount" name="amount" type="number" min="0.01" step="0.01" required className={inputClass} />
+              </label>
+            </div>
+            <fieldset>
+              <legend className="text-sm font-medium">Account requirement</legend>
+              <div className="mt-2 flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="required" defaultChecked />Required</label>
+                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="optional" />Optional</label>
+              </div>
+            </fieldset>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" onClick={() => setAddFeeOpen(false)}>Cancel</Button>
+              <Button>Add fee item</Button>
+            </div>
+          </form>
+        </MockDialog>
+      )}
+      {section === "school" && editable && (
+        <MockDialog open={addListItemOpen} onOpenChange={setAddListItemOpen} title="Add list item">
+          <form className="mt-4 space-y-4" onSubmit={addListItem}>
+            <p className="text-sm text-text-secondary">
+              Add a school or academic list item for future configuration. Payment methods remain Cash only under the current policy.
+            </p>
+            <label className="block text-sm font-medium" htmlFor="list-item-type">
+              List type
+              <select
+                id="list-item-type"
+                className={inputClass}
+                value={listItemType}
+                onChange={(event) => setListItemType(event.target.value as typeof listItemType)}
+              >
+                <option value="schoolYear">School year</option>
+                <option value="term">Term</option>
+                <option value="examPeriod">Exam period</option>
+                <option value="gradeLevel">Grade level</option>
+                <option value="section">Section</option>
+              </select>
+            </label>
+            <label className="block text-sm font-medium" htmlFor="list-item-name">
+              {listItemType === "schoolYear" ? "School year label" : listItemType === "section" ? "Section name" : "Name"}
+              <input
+                id="list-item-name"
+                name="name"
+                required
+                className={inputClass}
+                value={listItemName}
+                onChange={(event) => setListItemName(event.target.value)}
+              />
+            </label>
+            {(listItemType === "term" || listItemType === "examPeriod") && (
+              <label className="block text-sm font-medium" htmlFor="list-item-start-date">
+                Start date
+                <input id="list-item-start-date" name="startDate" type="date" required className={inputClass} />
+              </label>
+            )}
+            {listItemType === "section" && (
+              <label className="block text-sm font-medium" htmlFor="list-item-grade-level">
+                Grade level
+                <select id="list-item-grade-level" name="gradeLevel" className={inputClass} defaultValue="Grade 7">
+                  <option>Grade 7</option>
+                  <option>Grade 8</option>
+                </select>
+              </label>
+            )}
+            {listItemType === "schoolYear" && (
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input name="isCurrent" type="checkbox" />
+                Set {listItemName.trim() || "this school year"} as current school year
+              </label>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" onClick={() => setAddListItemOpen(false)}>Cancel</Button>
+              <Button>Add list item</Button>
+            </div>
+          </form>
+        </MockDialog>
+      )}
     </>
   );
 }
@@ -2852,12 +3192,13 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
     return (
       <>
         <PageHeader
-          title="Security events"
+        title="Admin Log"
           description="Review authentication and account-administration events. Entries cannot be changed or deleted."
         />
         <ListCard
-          headers={["When", "Account", "Event", "Outcome", "Details"]}
-          rows={[
+        headers={["When", "Account", "Event", "Status", "Details"]}
+        centeredColumns={[3]}
+        rows={[
             [
               "Sep 27, 2026, 9:00 AM",
               "sample.cashier",
@@ -2871,6 +3212,34 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
               "Sign-in",
               "Denied",
               "Invalid credentials",
+            ],
+            [
+              "Sep 27, 2026, 9:15 AM",
+              "sample.cashier",
+              "Sign-out",
+              "Succeeded",
+              "Session ended by user",
+            ],
+            [
+              "Sep 27, 2026, 9:20 AM",
+              "sample.admin",
+              "Password reset",
+              "Recorded",
+              "Temporary password issued for sample.cashier",
+            ],
+            [
+              "Sep 27, 2026, 9:25 AM",
+              "sample.admin",
+              "Account deactivated",
+              "Recorded",
+              "sample.cashier: Active -> Inactive",
+            ],
+            [
+              "Sep 27, 2026, 10:00 AM",
+              "sample.admin",
+              "Account reactivated",
+              "Recorded",
+              "sample.cashier: Inactive -> Active",
             ],
           ]}
         />
@@ -3040,7 +3409,7 @@ function ListCard({
                     )}
                     key={itemIndex}
                   >
-                    {renderTableCell(cell)}
+                    {renderTableCell(cell, headers[itemIndex] ?? "")}
                   </td>
                 ))}
               </tr>
@@ -3052,7 +3421,18 @@ function ListCard({
   );
 }
 
-function renderTableCell(cell: ReactNode) {
-  if (typeof cell !== "string" || !getStatusPresentation(cell)) return cell;
-  return <StatusBadge status={cell} />;
+function renderTableCell(cell: ReactNode, header?: string) {
+  if (typeof cell !== "string") return cell;
+  if (isStatusOrStateColumn(header) && isStatusValue(cell)) return <StatusBadge status={cell} />;
+  if (!header && getStatusPresentation(cell)) return <StatusBadge status={cell} />;
+  return cell;
+}
+
+function isStatusOrStateColumn(header?: string) {
+  return Boolean(header && /(?:status|state)$/i.test(header.trim()));
+}
+
+function isStatusValue(value: string) {
+  const normalized = value.trim();
+  return normalized !== "" && normalized !== "—" && !/^OR-\d+/i.test(normalized) && !/^\d+$/.test(normalized);
 }

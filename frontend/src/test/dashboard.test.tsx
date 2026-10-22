@@ -203,11 +203,11 @@ describe("DashboardPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens security events from the failed-login widget", async () => {
+  it("opens Admin Log from the failed-login widget", async () => {
     const user = userEvent.setup();
     renderWithProviders(administrator);
 
-    await user.click(await screen.findByRole("link", { name: /view security events/i }));
+    await user.click(await screen.findByRole("link", { name: /view admin log/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/admin/audit-log");
   });

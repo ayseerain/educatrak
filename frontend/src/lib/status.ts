@@ -56,8 +56,13 @@ const SUCCESS_STATUSES = new Set([
   "active",
   "cleared",
   "current",
+  "paid",
   "posted",
   "ready to import",
+  "available",
+  "complete",
+  "completed",
+  "recorded",
   "sent",
   "succeeded",
   "valid",
@@ -66,7 +71,11 @@ const SUCCESS_STATUSES = new Set([
 const WARNING_STATUSES = new Set([
   "due soon",
   "pending review",
+  "awaiting sign-off",
+  "pending accounting review",
+  "pending decision",
   "queued",
+  "review required",
   "unsigned",
   "void pending",
   "warning",
@@ -74,6 +83,7 @@ const WARNING_STATUSES = new Set([
 
 const ERROR_STATUSES = new Set([
   "error",
+  "denied",
   "failed",
   "not cleared",
   "overdue",
@@ -81,7 +91,9 @@ const ERROR_STATUSES = new Set([
 
 const NEUTRAL_STATUSES = new Set([
   "inactive",
+  "read-only",
   "unavailable",
+  "view only",
   "voided",
 ]);
 
