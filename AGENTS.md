@@ -111,13 +111,36 @@ Do not renumber existing categories simply to insert a new one. Existing paths a
 
 ## Current Structural Direction
 
-The repository is intentionally at the initial setup stage. Do not assume that `frontend/` or `backend/` has already been scaffolded merely because the directories exist.
+The repository already includes a React/TypeScript frontend and a Laravel/PHP backend. Verify current implementation and tests rather than assuming every module is complete.
 
-When those applications are scaffolded later:
+As these applications evolve:
 
 - Frontend should use a modular, feature-based organization, with shared UI/infrastructure separated from domain-specific feature code.
 - Backend should mirror the same domain boundaries as closely as Laravel reasonably allows, using normal PHP namespaces and framework conventions before introducing modularization packages.
 - Deep internal structures are intentionally deferred to dedicated architecture tasks.
+
+
+## Issues and TODOs — Mandatory Maintenance
+
+`EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` is the living, repository-specific tracker for confirmed defects, incomplete work, verification gaps, documentation drift, pending decisions, and intentionally deferred tasks. It is not an approved requirements source and must not override the source-of-truth hierarchy above.
+
+- **Before work:** Read relevant open entries and check whether the task already has an issue; avoid duplicates. Verify observations against the current code and approved project documentation rather than copying items from outside projects.
+- **During work:** Add or revise an entry when discovering a meaningful defect, missing implementation, unresolved question, test gap, or deliberately deferred follow-up. Record a concise title, evidence (file path, route, test or reproduction), expected next action, and owner/decision-maker when known. Distinguish confirmed defects from unverified suspicions and planned features from implemented behavior.
+- **After work:** Mark resolved entries complete only after verifying the fix; include validation evidence and the relevant commit or file reference when available. Update existing entries instead of creating duplicates, and keep the summary accurate. Do not mark something done merely because code was written.
+- **Scope:** Record project-relevant work only. Never copy another group's issues, statistics, personal names, clinical workflows, or unrelated requirements. Do not include secrets or real student information.
+- **Records:** The tracker complements, but does not replace, approved decisions in `06-Decisions/` or task logs in `08-Logs/`. Apply the mandatory real-clock timestamp rule above to new agent-written tracker entries. If a trustworthy clock is unavailable, explicitly state that rather than inventing a time.
+- **No-change case:** If a task reveals no new issues and changes no existing issue status, the tracker need not be edited.
+
+## AI Agent Change Logging — Required for Every Change
+
+The central, append-only changelog is `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+
+- **Every task that changes any repository file MUST also update this changelog in the same task**, regardless of how small the edit is. This includes frontend/backend code, tests, configuration, documentation, `AGENTS.md`, `CLAUDE.md`, issue tracking, and file additions, moves, or deletions.
+- Before editing, read the latest changelog entries and relevant issues in `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`. Do not mistake an old log for a current requirement.
+- After editing, append a real-clock timestamped entry describing exactly what changed, why, affected file paths, actual validation results, relevant commit/PR references when available, and any unresolved follow-ups. Do not invent tests or timestamps. Preserve all earlier entries.
+- **The changelog is the history of actual changes; the issue tracker is for outstanding work.** Continue keeping any applicable task-specific records in `08-Logs/` and decisions in `06-Decisions/`; these complement, not replace, the central changelog.
+- Treat a missing changelog update as an incomplete agent task. If the update fails, explicitly report it.
+- When instructions change, `AGENTS.md` and `CLAUDE.md` must still remain byte-for-byte identical.
 
 ## Final Principle
 
