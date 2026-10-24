@@ -526,7 +526,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
         description="Student numbers must be unique. Guardian contact details are used for payment notifications."
         backTo={edit ? "/students/sample-1001" : "/students"}
       />
-      <form onSubmit={submit} className="max-w-3xl space-y-5">
+      <form onSubmit={submit} className="w-full space-y-5">
         <Card className="grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium">
             Student number
@@ -656,7 +656,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
         }
       />
       {limited ? (
-        <StudentOverviewPanel student={student} limited />
+        <StudentOverviewPanel student={student} user={user} limited />
       ) : (
         <StudentProfileTabs user={user} student={student} />
       )}
@@ -717,7 +717,7 @@ function StudentProfileTabs({
         role="tabpanel"
       >
         {visibleView === "overview" && (
-          <StudentOverviewPanel student={student} />
+          <StudentOverviewPanel student={student} user={user} />
         )}
         {visibleView === "billing" && (
           <StudentBillingPanel student={student} user={user} />
@@ -735,9 +735,11 @@ function StudentProfileTabs({
 
 function StudentOverviewPanel({
   student,
+  user,
   limited = false,
 }: {
   student: typeof firstStudent;
+  user: AuthenticatedUser;
   limited?: boolean;
 }) {
   return (
@@ -761,6 +763,7 @@ function StudentOverviewPanel({
           />
         )}
       </div>
+      <ClearanceSummary student={student} user={user} compact={limited} />
       {!limited && (
         <Card className="bg-white">
           <h3 className="font-semibold">Guardian details</h3>
@@ -776,6 +779,112 @@ function StudentOverviewPanel({
         </Card>
       )}
     </div>
+  );
+}
+
+type ClearanceResult = {
+  period: string;
+  status: string;
+  reason: string;
+  permitPeriod?: string;
+};
+
+function getClearanceResults(
+  student: typeof firstStudent,
+  user: AuthenticatedUser,
+): ClearanceResult[] {
+  const isCleared = student.clearanceStatus === "Cleared";
+  const outstandingReason = user.role === "registrar"
+    ? "Installment overdue"
+    : `Balance due: ${format(student.balance)}`;
+
+  return [
+    {
+      period: "Enrollment",
+      status: student.clearanceStatus,
+      reason: isCleared ? "All requirements met" : outstandingReason,
+    },
+    {
+      period: "Midterm",
+      status: "Cleared",
+      reason: "Requirements met",
+      permitPeriod: "midterm",
+    },
+    {
+      period: "Final",
+      status: student.clearanceStatus,
+      reason: isCleared ? "All requirements met" : outstandingReason,
+      permitPeriod: "final",
+    },
+  ];
+}
+
+function ClearanceSummary({
+  student,
+  user,
+  compact = false,
+  showPermitActions = false,
+}: {
+  student: typeof firstStudent;
+  user: AuthenticatedUser;
+  compact?: boolean;
+  showPermitActions?: boolean;
+}) {
+  const results = getClearanceResults(student, user);
+  const canPrintPermit = can(user, "permit.print");
+
+  return (
+    <section
+      aria-labelledby="clearance-details-heading"
+      className={cn("overflow-hidden rounded-md border border-border bg-white shadow-card", compact && "bg-surface")}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
+        <div>
+          <h3 id="clearance-details-heading" className="font-semibold">Clearance details</h3>
+          <p className="mt-1 text-sm text-text-secondary">
+            {student.name} · {student.grade} - {student.section}
+          </p>
+          <p className="mt-1 text-sm text-text-secondary">
+            {compact
+              ? "Enrollment and exam-period status for this student."
+              : "Enrollment and exam-period status, computed from current requirements."}
+          </p>
+        </div>
+        <StatusBadge status={student.clearanceStatus} />
+      </div>
+      <div className="grid gap-px bg-border md:grid-cols-3">
+        {results.map((result) => (
+          <div key={result.period} className="bg-white p-4">
+            <p className="text-sm font-medium text-text-secondary">{result.period}</p>
+            <StatusBadge className="mt-2" status={result.status} />
+            <p className="mt-3 text-sm text-text-primary">{result.reason}</p>
+            {showPermitActions && result.permitPeriod && (
+              <div className="mt-4">
+                {result.status === "Cleared" && canPrintPermit ? (
+                  <Link
+                    className={inlineLinkClass}
+                    to={`/permits/${student.id}/${result.permitPeriod}/print`}
+                  >
+                    Print exam permit
+                  </Link>
+                ) : canPrintPermit ? (
+                  <>
+                    <Button type="button" variant="secondary" disabled>
+                      Print exam permit
+                    </Button>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      Permit unavailable: {result.reason}.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-text-secondary">View only</p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1942,7 +2051,7 @@ function CloseoutTabs({
       : null,
   ].filter(Boolean) as { label: string; to: string; active: boolean }[];
 
-  if (active === "today" && items.length === 1) return null;
+  if (items.length === 1) return null;
 
   return (
     <SectionTabs items={items} />
@@ -2000,7 +2109,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
         action={
           can(user, "followup.send") ? (
             <Button disabled={selectedAccounts.length === 0 || notificationChannels.length === 0 || sent} onClick={() => setReviewOpen(true)}>
-              {sent ? "Reminders sent" : notificationChannels.includes("sms") ? "Review reminder notifications" : "Send reminder emails"}
+              Send reminder details
             </Button>
           ) : undefined
         }
@@ -2148,44 +2257,32 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
 }
 export function ClearancePage({ user }: { user: AuthenticatedUser }) {
   const [studentQuery, setStudentQuery] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState(firstStudent);
   return (
     <>
       <PageHeader
         title="Clearance verification"
-        description="Search a student to check enrollment and exam-period clearance. Clearance reasons do not expose financial amounts."
+        description="Search a student to review enrollment and exam-period clearance."
       />
-      <Card className="space-y-4">
+      <Card className="mb-4">
+        <h2 className="font-semibold">Find a student</h2>
+        <p className="mt-1 text-sm text-text-secondary">
+          Select a student to review their current clearance status.
+        </p>
         <StudentSearchField
+          label="Search student"
           value={studentQuery}
           onChange={setStudentQuery}
+          onSelect={(student) => {
+            setStudentQuery(student.name);
+            setSelectedStudent(student);
+          }}
           autoFocus
           placeholder="Search student name or number"
-          inputClassName={cn(inputClass, "m-0")}
-        />
-        <h2 className="font-semibold">Amara Villanueva (sample)</h2>
-        <ListCard
-          headers={["Period", "Status", "Reason", "Action"]}
-          rows={[
-            ["Enrollment", "Not cleared", "Installment overdue", "—"],
-            [
-              "Midterm",
-              "Cleared",
-              "Requirements met",
-              can(user, "permit.print") ? (
-                <Link
-                  className={inlineLinkClass}
-                  to="/permits/sample-1001/midterm/print"
-                >
-                  Print exam permit
-                </Link>
-              ) : (
-                "View only"
-              ),
-            ],
-            ["Final", "Not cleared", "Installment overdue", "Unavailable"],
-          ]}
+          inputClassName={cn(inputClass, "m-0 mt-2")}
         />
       </Card>
+      <ClearanceSummary student={selectedStudent} user={user} showPermitActions />
     </>
   );
 }
@@ -2341,7 +2438,7 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Daily close-out"
+        title="Close-out history"
         description="Review close-outs and sign off where authorized."
       />
       <CloseoutTabs user={user} active="history" />

@@ -5,7 +5,7 @@
 ## Scope
 
 Implemented the role-specific dashboard route as the requested stopping point for the frontend task.
-
+[2026-09-27-session-timeout-activity-fix](07-AI-Agents/Backend-Foundation-Development-Ledger)
 ## Changes
 
 - Copied the supplied frontend prototype foundation into `frontend/`.

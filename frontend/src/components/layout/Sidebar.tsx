@@ -1,4 +1,22 @@
 import { NavLink } from "react-router-dom";
+import {
+  BadgeCheck,
+  CalendarClock,
+  ClipboardCheck,
+  DatabaseBackup,
+  FileBarChart,
+  FileSearch,
+  GraduationCap,
+  LayoutDashboard,
+  ReceiptText,
+  ScanSearch,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  UsersRound,
+  WalletCards,
+  type LucideIcon,
+} from "lucide-react";
 import { can } from "@/lib/permissions";
 import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 import { en } from "@/i18n/en";
@@ -8,6 +26,7 @@ interface NavItem {
   label: string;
   to: string;
   capability: Capability;
+  icon: LucideIcon;
   end?: boolean;
   parentTo?: string;
 }
@@ -21,66 +40,66 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
   cashier: [
     {
       label: en.nav.overview,
-      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
       label: en.nav.dailyBilling,
       items: [
-        { label: en.nav.studentsBilling, to: "/students", capability: "student.view" },
-        { label: en.nav.cashPaymentsReceipts, to: "/payments", capability: "payment.view" },
-        { label: en.nav.installmentsFollowups, to: "/followup", capability: "followup.view" },
-        { label: en.nav.dailyCloseout, to: "/closeout", capability: "closeout.submit" },
+        { label: en.nav.studentsBilling, to: "/students", capability: "student.view", icon: GraduationCap },
+        { label: en.nav.cashPaymentsReceipts, to: "/payments", capability: "payment.view", icon: ReceiptText },
+        { label: en.nav.installmentsFollowups, to: "/followup", capability: "followup.view", icon: CalendarClock },
+        { label: en.nav.dailyCloseout, to: "/closeout", capability: "closeout.submit", icon: WalletCards },
       ],
     },
   ],
   accounting: [
     {
       label: en.nav.overview,
-      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
       label: en.nav.financialOversight,
       items: [
-        { label: en.nav.financialPolicies, to: "/settings/fees", capability: "settings.finance" },
-        { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view" },
-        { label: en.nav.closeoutReview, to: "/closeout/history", capability: "closeout.view" },
-        { label: en.nav.financialReports, to: "/reports", capability: "report.view" },
+        { label: en.nav.financialPolicies, to: "/settings/fees", capability: "settings.finance", icon: SlidersHorizontal },
+        { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view", icon: BadgeCheck },
+        { label: en.nav.closeoutReview, to: "/closeout/history", capability: "closeout.view", icon: ClipboardCheck },
+        { label: en.nav.financialReports, to: "/reports", capability: "report.view", icon: FileBarChart },
       ],
     },
   ],
   administrator: [
     {
       label: en.nav.overview,
-      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
       label: en.nav.systemAdministration,
       items: [
-        { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage" },
-        { label: en.nav.systemConfiguration, to: "/settings/school", capability: "settings.system" },
-        { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.manage" },
-        { label: en.nav.securityEvents, to: "/admin/audit-log", capability: "audit.view" },
+        { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage", icon: UsersRound },
+        { label: en.nav.systemConfiguration, to: "/settings/school", capability: "settings.system", icon: Settings },
+        { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.manage", icon: DatabaseBackup },
+        { label: en.nav.securityEvents, to: "/admin/audit-log", capability: "audit.view", icon: ShieldCheck },
       ],
     },
   ],
   auditor: [
     {
       label: en.nav.overview,
-      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
       label: en.nav.independentReview,
-      items: [{ label: en.nav.auditReview, to: "/admin/audit-log", capability: "audit.view" }],
+      items: [{ label: en.nav.auditReview, to: "/admin/audit-log", capability: "audit.view", icon: FileSearch }],
     },
   ],
   registrar: [
     {
       label: en.nav.overview,
-      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view" }],
+      items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
       label: en.nav.clearancePermits,
-      items: [{ label: en.nav.clearanceVerification, to: "/clearance", capability: "clearance.view" }],
+      items: [{ label: en.nav.clearanceVerification, to: "/clearance", capability: "clearance.view", icon: ScanSearch }],
     },
   ],
 };
@@ -124,6 +143,7 @@ export function Sidebar({ user }: SidebarProps) {
             <ul className="flex gap-1 md:block md:space-y-0.5">
               {group.items.map((item) => {
                 const showNestedStyle = Boolean(item.parentTo && group.items.some((groupItem) => groupItem.to === item.parentTo));
+                const Icon = item.icon;
 
                 return (
                   <li key={item.to}>
@@ -132,13 +152,14 @@ export function Sidebar({ user }: SidebarProps) {
                       end={item.end ?? item.to === "/"}
                       className={({ isActive }) =>
                         cn(
-                          "block whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
+                          "flex items-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary",
                           showNestedStyle && "ml-4 border-l border-border pl-4 text-[13px]",
                           isActive &&
                             "bg-[#E7F5EA] text-brand-green-dark hover:bg-[#E7F5EA]",
                         )
                       }
                     >
+                      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={1.8} />
                       {item.label}
                     </NavLink>
                   </li>

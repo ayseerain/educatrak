@@ -45,6 +45,14 @@ function LocationPath() {
 }
 
 describe("operational page navigation", () => {
+  it("uses the available workflow width for the student form", () => {
+    render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
+
+    const form = screen.getByRole("button", { name: "Create student" }).closest("form");
+    expect(form).toHaveClass("w-full");
+    expect(form).not.toHaveClass("max-w-3xl");
+  });
+
   it("limits student grade, section, and Senior High strand choices", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
@@ -189,8 +197,8 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No users match that name or username.");
   });
 
-  it("hides the global student search for non-cashier roles", () => {
-    for (const user of [administrator, accounting, auditor, registrar]) {
+  it("hides the global student search and right-aligns account actions for every role", () => {
+    for (const user of [cashier, administrator, accounting, auditor, registrar]) {
       const header = render(
         <MemoryRouter>
           <Header user={user} onLogout={() => undefined} onRoleChange={() => undefined} />
@@ -198,18 +206,10 @@ describe("operational page navigation", () => {
       );
 
       expect(screen.queryByRole("searchbox", { name: /search students, receipts/i })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("md:ml-auto");
+      expect(screen.getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("ml-auto");
       header.unmount();
     }
-
-    render(
-      <MemoryRouter>
-        <Header user={cashier} onLogout={() => undefined} onRoleChange={() => undefined} />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole("searchbox", { name: /search students, receipts/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("md:ml-0");
   });
 
   it("provides administrator account actions from each user row's Edit button", async () => {
@@ -240,11 +240,25 @@ describe("operational page navigation", () => {
     expect(screen.getByText(/cannot deactivate your own administrator account/i)).toBeInTheDocument();
   });
 
-  it("renders clearance verification for registrars", () => {
+  it("renders clearance verification for registrars", async () => {
+    const user = userEvent.setup();
     render(<MemoryRouter><ClearancePage user={registrar} /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: /clearance verification/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
+    expect(screen.getByText("Enrollment")).toBeInTheDocument();
+    expect(screen.getByText("Midterm")).toBeInTheDocument();
+    expect(screen.getByText("Final")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /print exam permit/i })).toHaveAttribute("href", "/permits/sample-1001/midterm/print");
+    expect(screen.getByRole("button", { name: /print exam permit/i })).toBeDisabled();
+    expect(screen.getAllByText("Installment overdue")).toHaveLength(2);
+    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole("searchbox", { name: "Search student" }), "Basil");
+    await user.click(screen.getByRole("option", { name: /Basil Mercado.*S-1002/i }));
+
+    expect(screen.getByRole("searchbox", { name: "Search student" })).toHaveValue("Basil Mercado (sample)");
+    expect(screen.getByText(/Basil Mercado \(sample\).*Grade 8.*Maple/)).toBeInTheDocument();
   });
 
   it("selects follow-up accounts individually and reviews selected reminder details", async () => {
@@ -256,7 +270,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send reminder details" })).toBeDisabled();
     expect(screen.getAllByRole("columnheader")).toHaveLength(5);
     expect(screen.queryByRole("columnheader", { name: "Select" })).not.toBeInTheDocument();
     const coraRow = screen.getByRole("row", { name: /Cora Navarro/ });
@@ -265,10 +279,10 @@ describe("operational page navigation", () => {
     );
 
     await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
-    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Send reminder details" })).toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
 
-    await user.click(screen.getByRole("button", { name: "Send reminder emails" }));
+    await user.click(screen.getByRole("button", { name: "Send reminder details" }));
     expect(screen.getByText("No selected accounts have the chosen notification contact.")).toBeInTheDocument();
     expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send 0 reminders" })).toBeDisabled();
@@ -277,7 +291,7 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("checkbox", { name: /Basil Mercado/ }));
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeChecked();
 
-    await user.click(screen.getByRole("button", { name: "Send reminder emails" }));
+    await user.click(screen.getByRole("button", { name: "Send reminder details" }));
     expect(screen.getByText(/Basil Mercado.*guardian@example\.test/)).toBeInTheDocument();
     expect(screen.getByText(/₱4,200\.00 overdue for 3 days/)).toBeInTheDocument();
     expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
@@ -295,7 +309,7 @@ describe("operational page navigation", () => {
     render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
 
     await user.click(screen.getByRole("checkbox", { name: "Select all listed accounts" }));
-    expect(screen.getByRole("button", { name: "Send reminder emails" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reminder details" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Basil Mercado/ })).toBeChecked();
@@ -314,7 +328,7 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
 
     expect(screen.getByText(/SMS load fee: not configured/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Review reminder notifications" }));
+    await user.click(screen.getByRole("button", { name: "Send reminder details" }));
 
     expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("SMS: 0917 555 0103");
     expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("not configured");
@@ -765,7 +779,9 @@ describe("operational page navigation", () => {
 
     for (const [user, links] of expectedLinks) {
       const navigation = render(<MemoryRouter><Sidebar user={user} /></MemoryRouter>);
-      expect(screen.getAllByRole("link").map((link) => link.textContent)).toEqual(links);
+      const navigationLinks = screen.getAllByRole("link");
+      expect(navigationLinks.map((link) => link.textContent)).toEqual(links);
+      expect(navigationLinks.every((link) => link.querySelector("svg[aria-hidden='true']"))).toBe(true);
       expect(screen.getByRole("img", { name: "Mendez Christian Academy seal" })).toHaveClass(
         "h-12",
         "w-12",
@@ -786,7 +802,8 @@ describe("operational page navigation", () => {
     closeout.unmount();
 
     render(<MemoryRouter><CloseoutHistoryPage user={accounting} /></MemoryRouter>);
-    expect(screen.getByRole("tab", { name: "History" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Close-out history" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
   });
 
@@ -857,7 +874,12 @@ describe("operational page navigation", () => {
     );
 
     expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
-    expect(screen.getByText(/clearance/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/clearance/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
+    expect(screen.getByText("Enrollment")).toBeInTheDocument();
+    expect(screen.getByText("Midterm")).toBeInTheDocument();
+    expect(screen.getByText("Final")).toBeInTheDocument();
+    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/account balance/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/guardian details/i)).not.toBeInTheDocument();
   });
