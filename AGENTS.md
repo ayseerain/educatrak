@@ -119,6 +119,18 @@ When those applications are scaffolded later:
 - Backend should mirror the same domain boundaries as closely as Laravel reasonably allows, using normal PHP namespaces and framework conventions before introducing modularization packages.
 - Deep internal structures are intentionally deferred to dedicated architecture tasks.
 
+
+## Issues and TODOs — Mandatory Maintenance
+
+The root `Issues-and-TODOs.md` is the living, repository-specific tracker for confirmed defects, incomplete work, verification gaps, documentation drift, pending decisions, and intentionally deferred tasks. It is not an approved requirements source and must not override the source-of-truth hierarchy above.
+
+- **Before work:** Read relevant open entries and check whether the task already has an issue; avoid duplicates. Verify observations against the current code and approved project documentation rather than copying items from outside projects.
+- **During work:** Add or revise an entry when discovering a meaningful defect, missing implementation, unresolved question, test gap, or deliberately deferred follow-up. Record a concise title, evidence (file path, route, test or reproduction), expected next action, and owner/decision-maker when known. Distinguish confirmed defects from unverified suspicions and planned features from implemented behavior.
+- **After work:** Mark resolved entries complete only after verifying the fix; include validation evidence and the relevant commit or file reference when available. Update existing entries instead of creating duplicates, and keep the summary accurate. Do not mark something done merely because code was written.
+- **Scope:** Record project-relevant work only. Never copy another group's issues, statistics, personal names, clinical workflows, or unrelated requirements. Do not include secrets or real student information.
+- **Records:** The tracker complements, but does not replace, approved decisions in `06-Decisions/` or task logs in `08-Logs/`. Apply the mandatory real-clock timestamp rule above to new agent-written tracker entries. If a trustworthy clock is unavailable, explicitly state that rather than inventing a time.
+- **No-change case:** If a task reveals no new issues and changes no existing issue status, the tracker need not be edited.
+
 ## Final Principle
 
 Prefer verified project requirements over assumptions, explicit boundaries over accidental coupling, small auditable changes over broad rewrites, and documented uncertainty over invented certainty.
