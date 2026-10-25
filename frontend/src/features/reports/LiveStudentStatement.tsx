@@ -10,9 +10,11 @@ import { useClientPagination } from "@/components/ui/useClientPagination";
 import { downloadCsv } from "@/lib/csv";
 import { can } from "@/lib/permissions";
 import type { AuthenticatedUser } from "@/lib/types";
-import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { PrintDocumentFooter, PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
 import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
 import { printDocumentWhenReady } from "@/lib/printing";
+import { formatDate } from "@/lib/dates";
+import { PrintSurface } from "@/components/printing/PrintSurface";
 import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 
 export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedUser; studentId: string }) {
@@ -24,13 +26,14 @@ export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedU
     catch (error) { setPrintError(error instanceof Error ? error.message : "The statement could not be prepared for printing."); }
   }
   return <>
-    {statement.data && <section aria-hidden="true" className="print-root report-print-root student-statement-print">
-      <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${statement.data.schoolYear}`} />
+    {statement.data && <PrintSurface className="report-print-root student-statement-print">
+      <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${statement.data.schoolYear}`} details={[`Prepared by: ${user.name}`]} />
       <div className="report-print-summary"><strong>Student:</strong> {statement.data.studentName} · {statement.data.studentNo}<br /><strong>Total due:</strong> {money(statement.data.totalDueCents)} · <strong>Total paid:</strong> {money(statement.data.totalPaidCents)} · <strong>Balance:</strong> {money(statement.data.balanceCents)}</div>
       <PrintDocumentTable title="Fees" headings={["Item", "Category", "Amount"]} rightAlignColumns={[2]} rows={statement.data.items.map((item) => [item.name, item.category, money(item.amountCents)])} />
-      <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid", "Status"]} rightAlignColumns={[2, 3]} rows={statement.data.installments.map((item) => [item.label, item.dueDate, money(item.amountCents), money(item.paidCents), item.status.replace(/_/g, " ")])} />
-      <PrintDocumentTable title="Payments" headings={["Paid on", "Receipt", "Amount", "Status"]} rightAlignColumns={[2]} rows={statement.data.payments.map((item) => [item.paidOn, item.receiptNo ?? "Unavailable", money(item.amountCents), item.status.replace(/_/g, " ")])} />
-    </section>}
+      <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid", "Status"]} rightAlignColumns={[2, 3]} rows={statement.data.installments.map((item) => [item.label, formatDate(item.dueDate), money(item.amountCents), money(item.paidCents), item.status.replace(/_/g, " ")])} />
+      <PrintDocumentTable title="Payments" headings={["Paid on", "Receipt", "Amount", "Status"]} rightAlignColumns={[2]} rows={statement.data.payments.map((item) => [formatDate(item.paidOn), item.receiptNo ?? "Unavailable", money(item.amountCents), item.status.replace(/_/g, " ")])} />
+      <PrintDocumentFooter preparedBy={user.name} />
+    </PrintSurface>}
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div><Link to="/reports" className="text-sm text-brand-green-dark underline">Back to reports</Link><h1 className="mt-2 text-2xl font-semibold">Statement</h1><p className="mt-1 text-sm text-text-secondary">Current school-year fees, schedule, payments, and balance.</p></div>
       {statement.data && <div className="flex gap-2">

@@ -1075,7 +1075,7 @@ describe("operational page navigation", () => {
     render(
       <MemoryRouter initialEntries={["/reports/student/sample-1003"]}><Routes><Route path="/reports/student/:id" element={<StudentStatementPage user={cashier} />} /></Routes></MemoryRouter>,
     );
-    expect(screen.getByText(/cora navarro/i)).toBeInTheDocument();
-    expect(screen.getByText("₱8,500.00")).toBeInTheDocument();
+    expect(screen.getByText(/cora navarro/i, { ignore: ".print-root *, script, style" })).toBeInTheDocument();
+    expect(screen.getByText("₱8,500.00", { ignore: ".print-root *, script, style" })).toBeInTheDocument();
   });
 });

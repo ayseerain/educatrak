@@ -9,15 +9,17 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { TableFilters, activeTableFilters, useTableFilters } from "@/components/ui/TableFilters";
 import { downloadCsv } from "@/lib/csv";
-import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { PrintDocumentFooter, PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import type { AuthenticatedUser } from "@/lib/types";
 import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
 import type { OutstandingAccount } from "@/api/reportApi";
 import { printDocumentWhenReady } from "@/lib/printing";
+import { PrintSurface } from "@/components/printing/PrintSurface";
 import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 
 const outstandingFilterDefaults = { grade: "", section: "", minimumBalance: "", maximumBalance: "", overdueOnly: "" };
 
-export function LiveOutstandingReport() {
+export function LiveOutstandingReport({ user }: { user?: AuthenticatedUser }) {
   const tableFilters = useTableFilters(outstandingFilterDefaults);
   const [validationError, setValidationError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
@@ -101,11 +103,12 @@ export function LiveOutstandingReport() {
   }
 
   return <>
-    {printAccounts && <section aria-hidden="true" className="print-root report-print-root">
-      <PrintDocumentHeader title="OUTSTANDING BALANCE REPORT" subtitle={["All school years", active.grade && `Grade: ${active.grade}`, active.section && `Section: ${active.section}`, active.minimumBalance && `Minimum: ₱${active.minimumBalance}`, active.maximumBalance && `Maximum: ₱${active.maximumBalance}`, active.overdueOnly === "true" && "Overdue only"].filter(Boolean).join(" · ")} />
+    {printAccounts && <PrintSurface className="report-print-root">
+      <PrintDocumentHeader title="OUTSTANDING BALANCE REPORT" subtitle={["All school years", active.grade && `Grade: ${active.grade}`, active.section && `Section: ${active.section}`, active.minimumBalance && `Minimum: ₱${active.minimumBalance}`, active.maximumBalance && `Maximum: ₱${active.maximumBalance}`, active.overdueOnly === "true" && "Overdue only"].filter(Boolean).join(" · ")} details={[user && `Prepared by: ${user.name}`]} />
       <p className="report-print-summary"><strong>Accounts:</strong> {printAccounts.length} <span>·</span> <strong>Total outstanding:</strong> {money(printAccounts.reduce((sum, account) => sum + account.balanceCents, 0))}</p>
-      <PrintDocumentTable title="Outstanding billing accounts" headings={["Student", "Student no.", "Grade", "Section", "School year", "Balance", "Status"]} rightAlignColumns={[5]} rows={printAccounts.map((account) => [account.studentName, account.studentNo, account.gradeLevel ?? "", account.section ?? "", account.schoolYear, money(account.balanceCents), account.status.replace(/_/g, " ")])} />
-    </section>}
+      <PrintDocumentTable title="Outstanding billing accounts" headings={["Student", "Student no.", "Grade", "Section", "School year", "Balance", "Status"]} rightAlignColumns={[5]} rows={printAccounts.map((account) => [account.studentName, account.studentNo, account.gradeLevel ?? "", account.section ?? "", account.schoolYear, money(account.balanceCents), account.status.replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase())])} />
+      <PrintDocumentFooter preparedBy={user?.name} />
+    </PrintSurface>}
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">Outstanding</h1><p className="mt-1 text-sm text-text-secondary">Billing accounts with an unpaid balance across school years.</p></div><div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" disabled={!report.data || isPreparingPrint} onClick={() => void printReport()}><span className="inline-flex items-center gap-2"><PrinterIcon />{isPreparingPrint ? "Preparing report…" : "Print Report"}</span></Button></div></div>
     {exportError && <p className="mb-4 text-sm text-error" role="alert">{exportError}</p>}
     {printError && <p className="mb-4 text-sm text-error" role="alert">{printError}</p>}

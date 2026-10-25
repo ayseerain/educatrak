@@ -597,7 +597,10 @@ class CashierOperationsTest extends TestCase
 
         $firstPrint = $this->actingAs($cashier)->postJson("/api/payments/{$paymentId}/reprint")
             ->assertOk()
-            ->assertJsonPath('data.reprint_count', 0);
+            ->assertJsonPath('data.reprint_count', 0)
+            ->assertJsonPath('data.allocations.0.amount_cents', 5_000)
+            ->assertJsonPath('data.school_year', $account->schoolYear->label)
+            ->assertJsonStructure(['data' => ['student_grade', 'student_section']]);
         $this->assertNotNull($firstPrint->json('data.first_printed_at'));
         $this->assertDatabaseHas('audit_entries', ['action' => 'receipt.printed', 'entity_id' => $paymentId]);
 

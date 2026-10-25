@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { getPayment, reprintPayment, type PaymentRecord } from "@/api/cashierApi";
-import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { ReceiptDocument } from "@/components/printing/ReceiptDocument";
 import { Button } from "@/components/ui/Button";
-import { centavos, format } from "@/lib/money";
 import { printDocumentWhenReady } from "@/lib/printing";
+import { PrintSurface } from "@/components/printing/PrintSurface";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function PrinterIcon() {
@@ -22,7 +22,8 @@ export function ReceiptPrintAction({ paymentId, label, disabled = false }: { pay
     setError("");
     try {
       const persisted = await getPayment(paymentId);
-      const printAttempt = await reprintPayment(persisted.id);
+      // The print-attempt response carries the updated reprint count; keep detail fields from the persisted record as a fallback.
+      const printAttempt = { ...persisted, ...(await reprintPayment(persisted.id)) };
       queryClient.setQueryData(["payment", paymentId], printAttempt);
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
       setPayment(printAttempt);
@@ -40,18 +41,6 @@ export function ReceiptPrintAction({ paymentId, label, disabled = false }: { pay
       <span className="inline-flex items-center gap-2"><PrinterIcon />{busy ? "Preparing receipt…" : payment?.firstPrintedAt ? "Reprint Receipt" : label}</span>
     </Button>
     {error && <p className="mt-2 text-sm text-status-error" role="alert">{error}</p>}
-    {payment && <section aria-hidden="true" className="print-root receipt-print-root" aria-label="Receipt print document">
-      <article className="receipt-document">
-        <PrintDocumentHeader title="ACKNOWLEDGMENT RECEIPT" />
-        <div className="receipt-status-row"><span>Receipt No. <strong>{payment.receiptNo ?? "Unavailable"}</strong></span><strong>{payment.status === "voided" ? "VOID" : payment.reprintCount > 0 ? `REPRINT ${payment.reprintCount}` : "ORIGINAL"}</strong></div>
-        <section className="receipt-section"><h2>Student information</h2><dl className="receipt-grid"><div><dt>Student name</dt><dd>{payment.studentName ?? "Unavailable"}</dd></div><div><dt>Student number</dt><dd>{payment.studentNo ?? "Unavailable"}</dd></div></dl></section>
-        <section className="receipt-section"><h2>Payment details</h2><dl className="receipt-grid"><div><dt>Transaction date</dt><dd>{payment.paidOn}</dd></div><div><dt>Amount received</dt><dd className="receipt-amount">{format(centavos(payment.amountCents))}</dd></div><div><dt>Payment method</dt><dd>{payment.method}</dd></div><div><dt>Recorded by</dt><dd>{payment.recordedBy ?? "Unavailable"}</dd></div></dl></section>
-        <section className="receipt-section"><h2>Payment allocation</h2>{payment.allocations?.length ? <table><thead><tr><th scope="col">Fee or installment</th><th scope="col">Amount</th></tr></thead><tbody>{payment.allocations.map((allocation, index) => <tr key={`${allocation.installmentLabel}-${index}`}><td>{allocation.installmentLabel}</td><td>{format(centavos(allocation.amountCents))}</td></tr>)}</tbody></table> : <p>Allocation detail is unavailable for this receipt.</p>}
-          <dl className="receipt-grid receipt-balance"><div><dt>Balance after payment</dt><dd>{payment.balanceAfterCents === null ? "Historical snapshot unavailable" : format(centavos(payment.balanceAfterCents))}</dd></div></dl>
-        </section>
-        <p className="receipt-acknowledgment">Received with thanks. This acknowledgment reflects the payment recorded in the school's system.</p>
-        <footer className="receipt-footer">Transaction reference: {payment.id}</footer>
-      </article>
-    </section>}
+    {payment && <PrintSurface className="receipt-print-root"><ReceiptDocument payment={payment} /></PrintSurface>}
   </>;
 }

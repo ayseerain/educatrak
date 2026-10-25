@@ -198,13 +198,16 @@ describe("live cashier payment entry", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/receipts/payment-1/print"]}><Routes><Route path="/receipts/:id/print" element={<LivePaymentReceiptPage user={cashier} />} /></Routes></MemoryRouter></QueryClientProvider>);
 
-    const printButton = await screen.findByRole("button", { name: "Print receipt" });
+    const printButton = await screen.findByRole("button", { name: "Print Receipt" });
     await user.click(printButton);
     await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
     expect(reprintPayment).toHaveBeenNthCalledWith(1, "payment-1", expect.anything());
-    await user.click(screen.getByRole("button", { name: "Reprint receipt" }));
+    await user.click(screen.getByRole("button", { name: "Reprint Receipt" }));
     await waitFor(() => expect(print).toHaveBeenCalledTimes(2));
     expect(reprintPayment).toHaveBeenNthCalledWith(2, "payment-1", expect.anything());
+    const printSurface = document.body.querySelector(":scope > .print-root");
+    expect(printSurface?.querySelector(".receipt-number")?.textContent).toBe("OR-2026-000001");
+    expect(printSurface?.querySelector(".receipt-copy-label")?.textContent).toBe("REPRINT 1");
   });
 });
 

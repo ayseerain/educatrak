@@ -21,6 +21,11 @@ use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
+    /** Relations needed to render a full receipt without lazy loading. */
+    private const RECEIPT_RELATIONS = [
+        'allocations.installment', 'billingAccount.schoolYear', 'receipt', 'recordedBy', 'student.gradeLevel', 'student.section',
+    ];
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -240,7 +245,7 @@ class PaymentController extends Controller
             abort(404);
         }
 
-        $payment->load(['allocations.installment', 'billingAccount', 'receipt', 'recordedBy', 'student', 'voidRequest']);
+        $payment->load([...self::RECEIPT_RELATIONS, 'voidRequest']);
         $data = $this->paymentData($payment, true);
         $data['notifications'] = NotificationLog::query()
             ->where('payment_id', $payment->id)
@@ -285,7 +290,7 @@ class PaymentController extends Controller
                 $payment->increment('reprint_count');
             }
 
-            $payment->refresh()->load(['receipt', 'student', 'billingAccount']);
+            $payment->refresh()->load(self::RECEIPT_RELATIONS);
             $auditLogger->record(
                 $request,
                 $firstPrint ? 'receipt.printed' : 'receipt.reprinted',
@@ -298,7 +303,8 @@ class PaymentController extends Controller
             );
         });
 
-        return response()->json(['data' => $this->paymentData($payment)]);
+        // The print surface renders this response, so it carries the same receipt detail as show().
+        return response()->json(['data' => $this->paymentData($payment, true)]);
     }
 
     /** @return array<string, mixed> */
@@ -323,7 +329,10 @@ class PaymentController extends Controller
         ];
 
         if ($includeAllocations) {
-            $data['allocations'] = $payment->allocations->map(fn ($allocation): array => [
+            $data['student_grade'] = $payment->student?->gradeLevel?->name;
+            $data['student_section'] = $payment->student?->section?->name;
+            $data['school_year'] = $payment->billingAccount?->schoolYear?->label;
+            $data['allocations'] =$payment->allocations->map(fn ($allocation): array => [
                 'installment_label' => $allocation->installment->label,
                 'amount_cents' => $allocation->amount_cents,
             ])->all();

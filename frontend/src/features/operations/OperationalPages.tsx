@@ -41,10 +41,17 @@ import { format, centavos } from "@/lib/money";
 import { roleLabel, useSession } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
-import { isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type SavedCashPayment } from "@/api/cashierApi";
+import { isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type PaymentRecord, type SavedCashPayment } from "@/api/cashierApi";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import { LivePaymentEntryPage } from "@/features/operations/LivePaymentEntryPage";
 import { LivePaymentReceiptPage, LivePaymentsPage } from "@/features/operations/LivePaymentsPage";
+import { ReceiptDocument } from "@/components/printing/ReceiptDocument";
+import { PrintSurface } from "@/components/printing/PrintSurface";
+import { PrintDocumentFooter, PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
+import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
+import { printDocumentWhenReady } from "@/lib/printing";
+import { formatDate } from "@/lib/dates";
 import { LiveVoidsPage } from "@/features/operations/LiveVoidsPage";
 import { LiveCloseOutHistory, LiveDailyCloseOut } from "@/features/operations/LiveCloseouts";
 import { LiveAdminLog } from "@/features/operations/LiveAdminLog";
@@ -1082,7 +1089,7 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
               to={`/receipts/${payment.id}/print`}
             >
               {can(user, "receipt.reprint")
-                ? "Reprint receipt"
+                ? "Reprint Receipt"
                 : "View receipt"}
             </Link>
             {can(user, "payment.void.approve") && (
@@ -1580,45 +1587,29 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
   const account = payment && getBillingAccount(payment.accountId);
 
   if (!payment || !student) return <NotFoundPage />;
+  const receipt: PaymentRecord = {
+    id: payment.id, studentId: student.id, studentName: student.name, studentNo: student.number,
+    studentGrade: student.grade, studentSection: student.section, schoolYear: account?.schoolYear ?? null,
+    billingAccountId: payment.accountId, amountCents: payment.amount, method: "Cash", paidOn: payment.paidOn,
+    status: payment.status === "Voided" ? "voided" : payment.status === "Void pending" ? "void_pending" : "valid",
+    receiptNo: payment.receiptNo, firstPrintedAt: null, recordedAt: null, recordedBy: "Casey Cashier (sample)",
+    reprintCount: 0, balanceAfterCents: payment.balanceAfter,
+    allocations: payment.allocations.map((allocation) => ({
+      installmentLabel: account?.schedule.find((installment) => installment.id === allocation.installmentId)?.label ?? "Installment",
+      amountCents: allocation.amount,
+    })),
+  };
 
   return (
-    <div className="print-page mx-auto max-w-2xl">
+    <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Acknowledgment Receipt"
         description="EducaTrak · Mendez Christian Academy"
         backTo={`/payments/${payment.id}`}
-        action={
-          canPrint ? (
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => window.print()}>Print receipt</Button>
-            </div>
-          ) : undefined
-        }
+        action={canPrint ? <Button onClick={() => void printDocumentWhenReady()}><span className="inline-flex items-center gap-2"><PrinterIcon />Print Receipt</span></Button> : undefined}
       />
-      <Card className="border-2 border-black">
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-sm">Receipt No. {payment.receiptNo}</p>
-          <p className="text-sm font-semibold">REPRINT count: 0</p>
-        </div>
-        <h2 className="mt-4 text-xl font-semibold">
-          {student.name}
-        </h2>
-        <p className="mt-2">Payment received: {format(payment.amount)}</p>
-        <p className="mt-1">Method: Cash · Date: {payment.paidOn}</p>
-        <div className="mt-5 border-t border-black pt-3 text-sm">
-          {payment.allocations.map((allocation) => (
-            <p key={allocation.installmentId}>
-              Applied to: {account?.schedule.find((installment) => installment.id === allocation.installmentId)?.label ?? "Installment"} · {format(allocation.amount)}
-            </p>
-          ))}
-          <p>Balance after payment: {format(payment.balanceAfter)}</p>
-          <p>Void mark: {payment.status === "Voided" ? "VOID" : "none"}</p>
-        </div>
-        <p className="mt-6 text-sm">
-          This is a half-page receipt block. Receipt title and paper size are
-          controlled in settings.
-        </p>
-      </Card>
+      <div className="overflow-x-auto rounded-md border border-border bg-white p-4"><ReceiptDocument payment={receipt} /></div>
+      <PrintSurface className="receipt-print-root"><ReceiptDocument payment={receipt} /></PrintSurface>
     </div>
   );
 }
@@ -2250,21 +2241,19 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
   const student = getStudentById(id);
   const account = student && getCurrentBillingAccount(student.id);
   if (!student || !account) return <NotFoundPage />;
-  const rows = [
-    ...account.schedule.map((installment) => [
-      installment.label,
-      installment.dueDate,
-      format(installment.amount),
-      format(installment.paid),
-    ]),
-    ...getPaymentsForStudent(student.id).map((payment) => [
-      `Payment ${payment.receiptNo}`,
-      payment.paidOn,
-      format(payment.amount),
-      format(payment.amount),
-    ]),
-    ["Balance", "Current", format(account.balance), "—"],
-  ];
+  const scheduleRows = account.schedule.map((installment) => [
+    installment.label,
+    installment.dueDate,
+    format(installment.amount),
+    format(installment.paid),
+  ]);
+  const paymentRows = getPaymentsForStudent(student.id).map((payment) => [
+    `Payment ${payment.receiptNo}`,
+    formatDate(payment.paidOn),
+    format(payment.amount),
+    format(payment.amount),
+  ]);
+  const rows = [...scheduleRows, ...paymentRows, ["Balance", "Current", format(account.balance), "—"]];
   return (
     <>
       <PageHeader
@@ -2273,13 +2262,20 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
         backTo="/reports"
         action={
           can(user, "statement.print") ? (
-            <Button variant="secondary" onClick={() => window.print()}>
-              Print
+            <Button variant="secondary" onClick={() => void printDocumentWhenReady()}>
+              <span className="inline-flex items-center gap-2"><PrinterIcon />Print Report</span>
             </Button>
           ) : undefined
         }
       />
       <ListCard headers={["Item", "Due date", "Amount", "Paid"]} rows={rows} />
+      <PrintSurface className="report-print-root student-statement-print">
+        <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${account.schoolYear}`} details={["Development sample data", `Prepared by: ${user.name}`]} />
+        <div className="report-print-summary"><strong>Student:</strong> {student.name} · {student.number} · {student.grade} {student.section}<br /><strong>Total due:</strong> {format(account.totalDue)} · <strong>Total paid:</strong> {format(account.totalPaid)} · <strong>Balance:</strong> {format(account.balance)}</div>
+        <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid"]} rightAlignColumns={[2, 3]} rows={scheduleRows} />
+        <PrintDocumentTable title="Payments" headings={["Receipt", "Paid on", "Amount", "Applied"]} rightAlignColumns={[2, 3]} rows={paymentRows} />
+        <PrintDocumentFooter preparedBy={user.name} />
+      </PrintSurface>
     </>
   );
 }
@@ -2292,20 +2288,25 @@ export function ReportPage({
 }) {
   if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
     if (type === "daily") return <LiveDailyReport user={user} />;
-    if (type === "outstanding") return <LiveOutstandingReport />;
+    if (type === "outstanding") return <LiveOutstandingReport user={user} />;
     return <Card><p className="text-sm text-text-secondary">This report is unavailable until its live data source is connected.</p></Card>;
   }
-  return <MockReportPage type={type} />;
+  return <MockReportPage type={type} preparedBy={user.name} />;
 }
 
 function MockReportPage({
   type,
+  preparedBy,
 }: {
   type: "daily" | "monthly" | "outstanding" | "statement";
+  preparedBy: string;
 }) {
   const filters = useTableFilters({ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" });
   const reports = {
     daily: {
+      printTitle: "DAILY COLLECTION REPORT",
+      period: "Reporting date: Sep 27, 2026",
+      moneyColumns: [2, 3],
       title: "Daily report",
       description:
         "Totals by method and cashier, with payments and voids separated.",
@@ -2318,6 +2319,9 @@ function MockReportPage({
       ],
     },
     monthly: {
+      printTitle: "MONTHLY FINANCIAL REPORT",
+      period: "Reporting month: September 2026",
+      moneyColumns: [2, 3],
       title: "Monthly report",
       description:
         "Collections by fee category and grade level, compared with billed amounts.",
@@ -2329,6 +2333,9 @@ function MockReportPage({
       ],
     },
     outstanding: {
+      printTitle: "OUTSTANDING BALANCE REPORT",
+      period: "All school years",
+      moneyColumns: [2],
       title: "Outstanding",
       description:
         "Filter balances by grade, section, minimum balance, and overdue state.",
@@ -2340,6 +2347,9 @@ function MockReportPage({
       ],
     },
     statement: {
+      printTitle: "STUDENT STATEMENT OF ACCOUNT",
+      period: "School year: SY 2026-2027",
+      moneyColumns: [],
       title: "Student statement",
       description:
         "One student's fees, schedule, payments, and remaining balance.",
@@ -2368,8 +2378,8 @@ function MockReportPage({
         description={report.description}
         backTo="/reports"
         action={
-          <Button variant="secondary" onClick={() => window.print()}>
-            Print
+          <Button variant="secondary" onClick={() => void printDocumentWhenReady()}>
+            <span className="inline-flex items-center gap-2"><PrinterIcon />Print Report</span>
           </Button>
         }
       />
@@ -2388,6 +2398,13 @@ function MockReportPage({
           />
         )}
       </Card>
+      <PrintSurface className="report-print-root">
+        <PrintDocumentHeader title={report.printTitle} subtitle={report.period} details={["Development sample data", `Prepared by: ${preparedBy}`]} />
+        {type === "statement"
+          ? <section className="report-print-section"><StudentStatementTable query={filters.applied.query} item={filters.applied.category} /></section>
+          : <PrintDocumentTable title={`${report.title} (${reportRows.length} rows)`} headings={[...report.headers]} rightAlignColumns={[...report.moneyColumns]} rows={reportRows.map((row) => [...row])} />}
+        <PrintDocumentFooter preparedBy={preparedBy} />
+      </PrintSurface>
     </>
   );
 }

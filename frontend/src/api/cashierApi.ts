@@ -62,6 +62,9 @@ export interface PaymentRecord {
   studentId: string;
   studentName: string | null;
   studentNo: string | null;
+  studentGrade?: string | null;
+  studentSection?: string | null;
+  schoolYear?: string | null;
   billingAccountId: string;
   amountCents: number;
   method: string;
@@ -88,6 +91,7 @@ export interface PaymentPage {
 
 function mapPayment(payment: {
   id: string; student_id: string; student_name: string | null; student_no: string | null; billing_account_id: string;
+  student_grade?: string | null; student_section?: string | null; school_year?: string | null;
   amount_cents: number; method: string; paid_on: string; status: string; receipt_no: string | null;
   first_printed_at?: string | null;
   recorded_at: string | null; recorded_by: string | null; reprint_count: number; balance_after_cents: number | null;
@@ -100,6 +104,9 @@ function mapPayment(payment: {
     studentId: payment.student_id,
     studentName: payment.student_name,
     studentNo: payment.student_no,
+    studentGrade: payment.student_grade ?? null,
+    studentSection: payment.student_section ?? null,
+    schoolYear: payment.school_year ?? null,
     billingAccountId: payment.billing_account_id,
     amountCents: payment.amount_cents,
     method: payment.method,

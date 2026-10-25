@@ -16,7 +16,8 @@ import { can } from "@/lib/permissions";
 import { centavos, format } from "@/lib/money";
 import { downloadCsv } from "@/lib/csv";
 import { ReceiptPrintAction } from "@/components/printing/ReceiptPrintAction";
-import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { ReceiptDocument } from "@/components/printing/ReceiptDocument";
+import { PrintSurface } from "@/components/printing/PrintSurface";
 import { printDocumentWhenReady } from "@/lib/printing";
 
 const statusFilters = [
@@ -60,21 +61,14 @@ export function LivePaymentReceiptPage({ user }: { user: AuthenticatedUser }) {
   const payment = paymentQuery.data;
 
   return (
-    <div className="print-page mx-auto max-w-2xl">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4 print:hidden">
         <div><h1 className="text-2xl font-semibold">Acknowledgment Receipt</h1><p className="mt-1 text-sm text-text-secondary">EducaTrak · Mendez Christian Academy</p></div>
-        <div className="flex gap-2">{can(user, "payment.record") ? <Link className={secondaryLinkClass} to="/payments/new">Done</Link> : <Link className={secondaryLinkClass} to={`/payments/${payment.id}`}>Back to payment</Link>}{can(user, "receipt.reprint") && <Button disabled={printMutation.isPending} onClick={() => printMutation.mutate(payment.id)}>{printMutation.isPending ? "Preparing…" : payment.firstPrintedAt ? "Reprint receipt" : "Print receipt"}</Button>}</div>
+        <div className="flex gap-2">{can(user, "payment.record") ? <Link className={secondaryLinkClass} to="/payments/new">Done</Link> : <Link className={secondaryLinkClass} to={`/payments/${payment.id}`}>Back to payment</Link>}{can(user, "receipt.reprint") && <Button disabled={printMutation.isPending} onClick={() => printMutation.mutate(payment.id)}>{printMutation.isPending ? "Preparing receipt…" : payment.firstPrintedAt ? "Reprint Receipt" : "Print Receipt"}</Button>}</div>
       </div>
       {printMutation.isError && <p role="alert" className="mb-3 rounded-md border border-status-error p-3 text-sm text-status-error">{printMutation.error.message}</p>}
-      <Card className="print-document border-2 border-text-primary">
-        <PrintDocumentHeader title="ACKNOWLEDGMENT RECEIPT" />
-        <div className="receipt-status-row"><p>Receipt No. <strong className="font-mono">{payment.receiptNo ?? "Unavailable"}</strong></p><p className="font-semibold">{payment.status === "voided" ? "VOID" : payment.reprintCount > 0 ? `REPRINT ${payment.reprintCount}` : "ORIGINAL"}</p></div>
-        <section className="receipt-section"><h2>Student information</h2><dl className="receipt-grid"><div><dt>Student name</dt><dd>{payment.studentName ?? "Student record unavailable"}</dd></div><div><dt>Student number</dt><dd>{payment.studentNo ?? "Unavailable"}</dd></div></dl></section>
-        <section className="receipt-section"><h2>Payment details</h2><dl className="receipt-grid"><div><dt>Transaction date</dt><dd>{payment.paidOn}</dd></div><div><dt>Amount received</dt><dd className="receipt-amount">{format(centavos(payment.amountCents))}</dd></div><div><dt>Payment method</dt><dd>{payment.method}</dd></div><div><dt>Recorded by</dt><dd>{payment.recordedBy ?? "Unavailable"}</dd></div></dl></section>
-        <section className="receipt-section"><h2>Payment allocation</h2>{payment.allocations?.length ? <table><thead><tr><th>Fee or installment</th><th>Amount</th></tr></thead><tbody>{payment.allocations.map((allocation, index) => <tr key={`${allocation.installmentLabel}-${index}`}><td>{allocation.installmentLabel}</td><td>{format(centavos(allocation.amountCents))}</td></tr>)}</tbody></table> : <p>Allocation detail is unavailable for this receipt.</p>}<p className="receipt-footer">Balance after payment: {payment.balanceAfterCents === null ? "Historical snapshot unavailable" : format(centavos(payment.balanceAfterCents))}</p></section>
-        <p className="receipt-acknowledgment">Received with thanks. This acknowledgment reflects the payment recorded in the school's system.</p>
-        <p className="receipt-footer">Transaction reference: {payment.id}. Receipt number remains unchanged on reprints.</p>
-      </Card>
+      <div className="overflow-x-auto rounded-md border border-border bg-white p-4"><ReceiptDocument payment={payment} /></div>
+      <PrintSurface className="receipt-print-root"><ReceiptDocument payment={payment} /></PrintSurface>
     </div>
   );
 }

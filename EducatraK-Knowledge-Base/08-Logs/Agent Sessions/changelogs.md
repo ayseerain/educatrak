@@ -950,3 +950,43 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - No lint script exists.
 - **Commit/PR:** Not committed.
 - **Follow-ups:** See section 2 of the findings file. Audit scripts are kept outside the repository.
+
+### Sunday, October 25, 2026 — 17:29:26 +08:00 | Formal receipt and report print documents
+
+- **Agent:** Claude Code
+- **Summary:** Redesigned printed receipts and reports as formal Mendez Christian Academy documents built from shared print components.
+  - **Receipt (`ReceiptDocument`):** used by direct printing, the receipt route and the development preview. It has a seal header, receipt number, transaction date and an ORIGINAL / REPRINT n / VOID copy label. It shows student grade, section and school year when the API provides them, an allocation table with total, a highlighted amount received, balance after payment, and a VOID watermark. It fits the Letter half-page block.
+  - **Reports (daily, outstanding, statement, development monthly):** scope and prepared-by lines, right-aligned money headings and values, a non-approval footer, and `Page n of N` page numbers.
+  - **Print surfaces:** now render through a body-level `PrintSurface` portal, so multi-page reports paginate outside the fixed app shell.
+  - **Fixes:**
+    - The invalid `@page size: var(...)` is replaced by explicit Letter.
+    - The `print-report-section` / `report-print-section` class mismatch left report tables unstyled.
+    - `POST /api/payments/{id}/reprint` omitted allocations, so printed receipts said allocation detail was unavailable.
+  - **Development mock:** the receipt page no longer shows developer text, and mock reports now print the formal document.
+- **Files:**
+  - Added `frontend/src/components/printing/ReceiptDocument.tsx` and `frontend/src/components/printing/PrintSurface.tsx`.
+  - Updated:
+    - `frontend/src/components/printing/PrintDocumentHeader.tsx`, `PrintDocumentTable.tsx` and `ReceiptPrintAction.tsx`
+    - `frontend/src/api/cashierApi.ts`
+    - `frontend/src/features/operations/LivePaymentsPage.tsx` and `OperationalPages.tsx`
+    - `frontend/src/features/reports/LiveDailyReport.tsx`, `LiveOutstandingReport.tsx` and `LiveStudentStatement.tsx`
+    - `frontend/src/index.css`
+    - `frontend/src/test/livePayments.test.tsx`, `liveOutstandingReport.test.tsx` and `operations.test.tsx`
+    - `backend/app/Http/Controllers/Api/PaymentController.php` and `backend/tests/Feature/CashierOperationsTest.php`
+    - `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` and this changelog.
+- **Validation:**
+  - `npx tsc -b` passed.
+  - `npx vitest run`: 183/184 passed. The single failure (`operations.test.tsx` mock user-creation "Name" label) is pre-existing.
+  - `npm run build` and `npm run verify:production-assets` (74 markers) passed.
+  - Full Laravel PHPUnit suite: 143 tests, 941 assertions, all passed. Run after `composer install` with a temporary `APP_KEY` environment value; no `.env` was written.
+  - `git diff --check` passed.
+  - Headless Chrome print-to-PDF inspection covered:
+    - Development-mock receipt and reports.
+    - Live components against a stubbed API: original, reprint and void receipts; a 120-row outstanding report across 4 pages with repeated headers and complete rows.
+    - Letter half-page fit and A4 width.
+    - A double-click on Print sends one print request.
+- **Commit/PR:** Not committed.
+- **Follow-ups:**
+  - Physical printer output and the interactive browser print dialog are not verified.
+  - The A4 paper-size setting is not wired; tracked as a LATER item.
+  - The receipt preview route and its navigation were left unchanged, per the requested scope.

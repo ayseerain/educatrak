@@ -62,10 +62,10 @@ describe("live outstanding report", () => {
     }));
     const { default: userEvent } = await import("@testing-library/user-event");
     const user = userEvent.setup();
-    const { container } = render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><LiveOutstandingReport /></MemoryRouter></QueryClientProvider>);
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><LiveOutstandingReport /></MemoryRouter></QueryClientProvider>);
     await screen.findByText("Sample Student 1");
     await user.click(screen.getByRole("button", { name: "Print Report" }));
-    await waitFor(() => expect(container.querySelector(".print-root")?.textContent).toContain("Sample Student 2"));
+    await waitFor(() => expect(document.body.querySelector(":scope > .print-root")?.textContent).toContain("Sample Student 2"));
     expect(getOutstandingReport).toHaveBeenCalledWith({ page: 2, perPage: 50 });
   });
 });
