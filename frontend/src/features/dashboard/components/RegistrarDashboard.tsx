@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SearchCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
@@ -11,6 +12,7 @@ import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 // of any kind belongs on this screen.
 export function RegistrarDashboard() {
   const [query, setQuery] = useState("");
+  const navigate = useNavigate();
 
   return (
     <div className="mt-4">
@@ -33,6 +35,7 @@ export function RegistrarDashboard() {
               id="registrar-student-search"
               value={query}
               onChange={setQuery}
+              onSelect={(student) => navigate(`/clearance?studentId=${encodeURIComponent(student.id)}`)}
               placeholder={en.dashboard.studentSearchPlaceholder}
               wrapperClassName="mt-4"
               inputClassName="h-14 rounded-md border border-border bg-white px-4 text-lg text-text-primary placeholder:text-text-muted focus-visible:border-brand-green"

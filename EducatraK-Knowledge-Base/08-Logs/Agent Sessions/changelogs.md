@@ -928,3 +928,25 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm run build` passed with a 4GB Node heap; `git diff --check` passed for the frontend changes. Browser print-layout review remains open under U12.
 - **Commit/PR:** Not available.
 - **Follow-ups:** Check printed receipt clipping and report pagination/page breaks in browser print preview.
+
+### Sunday, October 25, 2026 — 16:58:33 +08:00 | Interaction-based UI/UX audit and mock UI fixes
+
+- **Agent:** Claude Code
+- **Summary:** Ran a live Playwright/axe audit of every route, all six roles, and four viewports. Recorded 77 findings and 12 decision items in a new findings file. Fixed six unambiguous defects:
+  - Record payment silently preselected the first student when the search was empty.
+  - Selecting a student in the account wizard navigated away from the wizard.
+  - The Registrar dashboard search led to Access denied.
+  - The mock Edit user dialog allowed promotion to Accounting Officer or Administrator.
+  - The role-matrix scroll region was not keyboard-focusable.
+  - The live Users warning used "EducatraK" instead of "EducaTrak".
+- **Files:**
+  - Added `EducatraK-Knowledge-Base/10-Quality-Audits/findings-2026-10-25.md`, `EducatraK-Knowledge-Base/10-Quality-Audits/findings-2026-10-25-assets/` (42 PNGs), and `EducatraK-Knowledge-Base/08-Logs/2026-10-25-interaction-ux-audit.md`.
+  - Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/dashboard/components/RegistrarDashboard.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:**
+  - Browser re-test of each fix passed.
+  - `npx tsc -b` passed.
+  - `npx vitest run`: 181/182 passed. The remaining failure (`operations.test.tsx` mock user-creation "Name" label) is pre-existing and reproduced on the untouched tree.
+  - `npm run build`, `npm run verify:production-assets` (74 markers) and `git diff --check` passed.
+  - No lint script exists.
+- **Commit/PR:** Not committed.
+- **Follow-ups:** See section 2 of the findings file. Audit scripts are kept outside the repository.
