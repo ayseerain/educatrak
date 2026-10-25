@@ -1034,3 +1034,21 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npx vitest run src/test/login.test.tsx` passed (20 tests), including Super Admin, Cashier, Accounting Officer, Administrator, Auditor, and Registrar login. `npm run build`, `npm run verify:production-assets`, and `git diff --check` passed; Git reported only existing LF-to-CRLF warnings.
 - **Commit/PR:** Not available.
 - **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 21:14:09 +08:00 | Return sample student creation to the student list
+
+- **Agent:** Codex
+- **Summary:** Removed the development new-student form's hard-coded redirect to `sample-1001`. A non-duplicate sample submission now returns to `/students`; duplicate-number handling remains unchanged. Added a regression test that fills the required fictional student and guardian fields and verifies the resulting route.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** The focused redirect regression passed: `npm test -- --run src/test/operations.test.tsx -t "returns to the student list"` (1 passed, 48 skipped). `npm run build` passed. `git diff --check` passed. The complete `operations.test.tsx` run has 46 passes and three unrelated assertion failures, recorded in the issue tracker: an exact required-label query, an ambiguous Grade 7 cell query, and an ambiguous `Due soon` text query.
+- **Commit/PR:** Not available.
+- **Follow-ups:** The development form remains a non-persistent sample workflow; live student creation stays unavailable until its authority and API contract are approved.
+
+### Sunday, October 25, 2026 — 21:35:03 +08:00 | Display backup history for administrators
+
+- **Agent:** Codex
+- **Summary:** Replaced `/admin/backup`'s intentionally unavailable state with a real backup-history display. The screen now renders loading, error, empty, and record states, using the live API in production and the existing synthetic backup seed in local development. It honestly reports that restore-test information and recovery instructions are not recorded. Added an Administrator-only `GET /api/backups` endpoint over `backup_records` and corrected the backend capability spelling to the approved `backup.manage`.
+- **Files:** Added `backend/app/Http/Controllers/Api/BackupController.php`, `backend/tests/Feature/BackupReadTest.php`, `frontend/src/api/backupApi.ts`, and `frontend/src/test/backupPage.test.tsx`. Updated `backend/app/Support/CapabilityMap.php`, `backend/routes/api.php`, `frontend/src/api/mockAdapter.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/productionUnavailable.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm test -- --run src/test/backupPage.test.tsx src/test/productionUnavailable.test.tsx` passed (8 tests). `php artisan test --filter=BackupReadTest` passed (2 tests, 6 assertions); `php artisan test --filter=CapabilityMapTest` passed (62 tests, 222 assertions); `vendor/bin/pint --test app/Http/Controllers/Api/BackupController.php tests/Feature/BackupReadTest.php` passed; `npm run build` passed; and `git diff --check` passed. The repository-wide Pint check still reports pre-existing formatting violations in unrelated files.
+- **Commit/PR:** Not committed.
+- **Follow-ups:** Implement manual backup execution and restore instructions only after the deployment owner approves the server-side executor and recovery procedure.

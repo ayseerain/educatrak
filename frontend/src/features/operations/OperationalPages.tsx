@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Navigate,
@@ -22,6 +23,8 @@ import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
 import { students } from "@/features/students/mockStudents";
@@ -42,6 +45,8 @@ import { roleLabel, useSession } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
 import { isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type PaymentRecord, type SavedCashPayment } from "@/api/cashierApi";
+import { listBackupRecords as listLiveBackupRecords } from "@/api/backupApi";
+import { listBackupRecords as listMockBackupRecords } from "@/api/mockAdapter";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import { LivePaymentEntryPage } from "@/features/operations/LivePaymentEntryPage";
 import { LivePaymentReceiptPage, LivePaymentsPage } from "@/features/operations/LivePaymentsPage";
@@ -51,7 +56,7 @@ import { PrintDocumentFooter, PrintDocumentHeader } from "@/components/printing/
 import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
 import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 import { printDocumentWhenReady } from "@/lib/printing";
-import { formatDate } from "@/lib/dates";
+import { formatDate, formatDateTime } from "@/lib/dates";
 import { LiveVoidsPage } from "@/features/operations/LiveVoidsPage";
 import { LiveCloseOutHistory, LiveDailyCloseOut } from "@/features/operations/LiveCloseouts";
 import { LiveAdminLog } from "@/features/operations/LiveAdminLog";
@@ -518,7 +523,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
     e.preventDefault();
     const number = new FormData(e.currentTarget).get("number");
     setDuplicate(number === "S-1001");
-    if (number !== "S-1001") navigate("/students/sample-1001");
+    if (number !== "S-1001") navigate("/students");
   }
   return (
     <>
@@ -3318,20 +3323,63 @@ export function RolesPage() {
   );
 }
 export function BackupPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Backups" feature="Backup and restore operations" />;
+  const backups = useQuery({
+    queryKey: ["backups"],
+    queryFn: () => isLiveCashierApiEnabled() ? listLiveBackupRecords() : listMockBackupRecords(),
+  });
   return (
     <>
       <PageHeader
         title="Backups"
-        description="Backup and recovery are not connected in this preview."
+        description="Review the latest recorded backups and their results."
       />
-      <Card>
-        <p className="text-sm text-text-secondary">
-          Backup history, execution, and recovery instructions are unavailable until a deployment owner and approved recovery procedure are in place.
-        </p>
-      </Card>
+      {backups.isPending && <LoadingState message="Loading backup history…" />}
+      {backups.isError && <ErrorState message={backups.error.message} onRetry={() => void backups.refetch()} />}
+      {backups.data && (
+        <div className="space-y-5">
+          <Card>
+            <h2 className="font-semibold">Recovery readiness</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              No restore-test date or recovery procedure has been recorded. Restore operations are performed outside this application.
+            </p>
+          </Card>
+          <Card className="overflow-x-auto p-0">
+            <h2 className="px-4 pb-0 pt-4 font-semibold">Recent backups</h2>
+            {backups.data.length === 0 ? (
+              <p className="px-4 pb-4 pt-3 text-sm text-text-secondary">No backup has been recorded.</p>
+            ) : (
+              <table className="mt-3 w-full min-w-[640px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-y bg-surface text-xs uppercase text-text-secondary">
+                    <th scope="col" className="px-4 py-3">Completed</th>
+                    <th scope="col" className="px-4 py-3">Result</th>
+                    <th scope="col" className="px-4 py-3 text-right">Size</th>
+                    <th scope="col" className="px-4 py-3">Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {backups.data.map((backup) => (
+                    <tr key={backup.id} className="border-b last:border-0">
+                      <td className="px-4 py-3">{formatDateTime(backup.completedAt)}</td>
+                      <td className="px-4 py-3 capitalize">{backup.result}</td>
+                      <td className="px-4 py-3 text-right font-mono">{backup.sizeBytes === null ? "Not recorded" : formatBackupSize(backup.sizeBytes)}</td>
+                      <td className="px-4 py-3">{backup.error ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Card>
+        </div>
+      )}
     </>
   );
+}
+
+function formatBackupSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 }
 
 function Metric({ label, value }: { label: string; value: ReactNode }) {

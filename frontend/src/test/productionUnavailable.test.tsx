@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import {
   AccountWizardPage,
-  BackupPage,
   ClearancePage,
   FollowupPage,
   ImportPage,
@@ -33,7 +32,6 @@ describe("production unavailable workflows", () => {
     ["student import", <ImportPage />, /ledger import is not available in the live system/i],
     ["school configuration", <SettingsPage section="school" editable={false} />, /system configuration is not available in the live system/i],
     ["monthly reporting", <ReportPage type="monthly" user={accounting} />, /report is unavailable until its live data source is connected/i],
-    ["backup operations", <BackupPage />, /backup and restore operations is not available in the live system/i],
   ] as [string, ReactNode, RegExp][]) (
     "does not present a mock success path for %s",
     (_name, page, message) => {

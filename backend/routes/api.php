@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\BillingAccountController;
 use App\Http\Controllers\Api\CloseOutController;
 use App\Http\Controllers\Api\DailyReportController;
@@ -47,6 +48,8 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:security.events.view');
             Route::get('/audit-log', [AuditLogController::class, 'index'])
                 ->middleware('capability:audit.view');
+            Route::get('/backups', [BackupController::class, 'index'])
+                ->middleware('capability:backup.manage');
             Route::get('/notifications', [NotificationLogController::class, 'index'])
                 ->middleware('capability:notification.view');
             Route::get('/follow-up', [FollowUpController::class, 'index'])
