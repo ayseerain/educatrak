@@ -1106,3 +1106,84 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- --run` passed (31 files, 195 tests); `npm.cmd run build` passed; `git diff --check` reported no whitespace errors (with Git line-ending warnings). `npm.cmd run verify:production-assets` was run but reported MockDB fixture markers in the production bundle, an accepted consequence of the requested MockDB-default behavior rather than a pass.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Browser viewport and axe acceptance were explicitly skipped by the user. Live API/backend verification remains outside the frontend-only scope. Before a live deployment, switch to live data and require a clean production asset scan.
+
+### Monday, October 26, 2026 — 04:43:29 +08:00 | Prevent create actions from submitting enclosing forms
+
+- **Agent:** Codex
+- **Summary:** Set explicit HTML button types for student and billing-account creation. Student creation remains the intended form submit; billing-account wizard navigation and creation are now explicitly non-submit actions, preventing an enclosing form from triggering a page reload that clears the in-memory session and returns the user to login.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm test -- --run src/test/operations.test.tsx` passed (50 tests). `npm run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, October 26, 2026 — 04:47:42 Asia/Manila | Prevent unintended submit behavior across shared actions
+
+- **Agent:** Codex
+- **Summary:** Confirmed dashboard and sidebar actions use React Router links rather than full-page redirects. The login-page redirect was caused by action buttons implicitly submitting enclosing forms and reloading the single-page app. The shared `Button` now defaults to `type="button"`; every audited form submission remains explicitly `type="submit"`.
+- **Files:** Updated `frontend/src/components/ui/Button.tsx`, `frontend/src/features/auth/FirstLoginPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, and this changelog.
+- **Validation:** `npm.cmd run test -- src/test/operations.test.tsx src/test/firstLogin.test.tsx` passed (53 tests across 2 files). `npm.cmd run build` passed. `git diff --check` passed (Git emitted only existing line-ending warnings).
+- **Commit/PR:** Not created.
+- **Follow-ups:** Live-server session persistence was not exercised; this repair covers the observed frontend form-submit reload path.
+
+### Monday, October 26, 2026 — 04:57:30 +08:00 | Renew Student Billing Account in persistent MockDB
+
+- **Agent:** Codex
+- **Summary:** Extended the existing four-step account wizard for renewal mode. Cashiers can enter from a Student Profile with the student preselected, choose an available school year and account-grade snapshot, select configured required/optional fees and an active plan, review an exact-centavo schedule, confirm creation, and open the new account. The shared MockDB now snapshots selected fees, grade, plan, schedule, and audit actor; it rejects duplicate student/year accounts and non-Cashier creators. Historical accounts are shown separately on the profile and remain untouched. Payment recording now accepts a selected account ID so it can remain scoped to the intended school-year account.
+- **Files:** Updated `frontend/src/App.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/api/mock/mock-db.json`, `frontend/src/api/mock/selectors.ts`, `frontend/src/api/mock/integrity.ts`, `frontend/src/api/cashierApi.ts`, and `frontend/src/test/mockDatabase.test.ts`; updated this changelog and `Issues-and-TODOs.md`.
+- **Validation:** `npm.cmd test -- --run src/test/mockDatabase.test.ts src/test/mockBilling.test.ts src/test/operations.test.tsx` passed (61 tests across 3 files). `npm.cmd run build` passed. `git diff --check` passed with only pre-existing Git line-ending warnings. Backend files were not changed. Browser acceptance was not run in this environment.
+- **Commit/PR:** Not created.
+- **Follow-ups:** School-year calendar anchors/terms are not represented in the current MockDB, so configured plan offsets currently start from the mock business date; the tracked decision is required before deriving calendar-specific due dates.
+
+### Monday, October 26, 2026 — 04:58:52 +08:00 | Complete renewal confirmation feedback
+
+- **Agent:** Codex
+- **Summary:** Added the required account-creation success notice on the destination account detail page and a direct link to an existing billing account when duplicate validation blocks the selected student/year.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/mockDatabase.test.ts src/test/operations.test.tsx` passed (59 tests across 2 files). `npm.cmd run build` passed. `git diff --check` passed with only pre-existing Git line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The school-year calendar-anchor decision remains open in `Issues-and-TODOs.md`.
+
+### Monday, October 26, 2026 — 05:09:09 +08:00 | Use configured grades for MockDB fee items
+
+- **Agent:** Codex
+- **Summary:** Replaced the mock Financial Policies Add fee item dialog's hardcoded Grade 7/Grade 8 list and local-only rows with the shared persistent MockDB configuration. The dialog uses `DropdownSelect` with a `Select grade level` placeholder, naturally orders and de-duplicates configured grade labels, validates the selected school year and grade, stores amounts as integer centavos, refreshes its schedule table, and confirms a successful save. School Settings now persists newly added grade levels and school years to the same source. Student forms, account renewal, and School Settings' section selector use the shared grade selector rather than separate grade-option arrays. Existing MockDB billing-account snapshots remain immutable; new accounts receive only the selected grade schedule.
+- **Files:** Updated `frontend/src/App.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/api/mock/selectors.ts`, `frontend/src/test/operations.test.tsx`, `frontend/src/test/mockDatabase.test.ts`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog. The pre-existing MockDB fee schedules, payment-plan data, and integrity checks were retained; no Laravel/backend file was changed.
+- **Validation:** `npm.cmd test` passed (31 files, 200 tests); `npm.cmd run build` passed; `git diff --check` passed. Focused coverage proves configured Kinder–Grade 12 order, a Grade 11 fee persisted only to its selected schedule, School Settings synchronization, and later billing-account snapshot isolation.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Mock demonstration mode models configured grades as active string entries; its existing School Settings UI does not yet expose rename/deactivate operations. The live API's existing edit dialog targets an already selected schedule and has no grade selector; it was not modified because the backend is frozen.
+
+### Monday, October 26, 2026 — 05:15:09 +08:00 | Show paginated Kinder–Grade 12 MockDB fees
+
+- **Agent:** Codex
+- **Summary:** Added complete synthetic current-year fee schedules for the school’s configured Kinder–Grade 12 sequence. The Financial Policies fee table now sorts rows by the shared configured grade order and uses a fixed ten-row client page size, retaining accessible previous/next navigation and its existing Add fee item refresh behavior.
+- **Files:** Updated `frontend/src/api/mock/mock-db.json`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/components/ui/useClientPagination.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npx.cmd vitest run src/test/operations.test.tsx src/test/mockDatabase.test.ts` passed (62 tests). `npm.cmd test` passed (31 files, 201 tests). `npm.cmd run build` passed. `git diff --check` found no whitespace errors; Git emitted only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The displayed schedules and amounts remain development-only MockDB data, not official school fees. No Laravel/backend files were changed.
+
+### Monday, October 26, 2026 — 05:20:12 +08:00 | Add MockDB void-request lifecycle samples
+
+- **Agent:** Codex
+- **Summary:** Added four synthetic void-request seed records: a second pending request plus approved and rejected history. The development MockDB now covers more of the M5 request lifecycle without changing application behavior.
+- **Files:** Updated `frontend/src/api/mock/mock-db.json` and this changelog.
+- **Validation:** `npm.cmd test -- mockDatabase.test.ts` passed (10 tests).
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, October 26, 2026 — 05:31:10 +08:00 | Separate live user-account actions
+
+- **Agent:** Codex
+- **Summary:** Changed the live `/admin/users` table to show separate Edit, Reset password, and Deactivate/Reactivate actions. Archive remains within the Edit dialog, while the pre-existing Archived users workspace remains the sole place to inspect restore eligibility, retention timing, and archive history. Both deactivation and reactivation now use the existing confirmation-dialog pattern directly from the table; the dialog keeps failures visible and does not open an editor after a table-originated update. Table action controls retain a 44px minimum touch target.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd run test -- --run src/test/liveUsersFilters.test.tsx` passed (5 tests); `npm.cmd run build` passed; `git diff --check` passed. Browser visual review was not available in this environment.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No new issue recorded. Existing browser/keyboard/contrast acceptance for User Administration remains open in the frontend audit ledger.
+
+### Monday, October 26, 2026 — 05:40:00 +08:00 | Add MockDB user-account archive lifecycle
+
+- **Agent:** Codex
+- **Summary:** Implemented shared MockDB archive and restore operations for staff accounts. Archived mock accounts lose sign-in access, receive a 30-day anonymization date, and write `user.archived`/`user.restored` audit records. The MockDB `/admin/users` page now mirrors the live page with separate Edit, Reset password, and confirmed Deactivate/Reactivate actions; Archive is inside Edit, and Archived users provides lifecycle dates and confirmed restore.
+- **Files:** Updated `frontend/src/api/mock/selectors.ts`, `frontend/src/production/mockDatabase.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/mockDatabase.test.ts`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** The focused MockDB user-action test passed (1 test); `mockDatabase.test.ts` passed (11 tests); `liveUsersFilters.test.tsx` passed (5 tests); `npm.cmd run build` and `git diff --check` passed. The full `operations.test.tsx` run has two existing balance/statement assertion failures, recorded in the issue tracker above.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual review remains unavailable in this environment. Reconcile the two tracked `operations.test.tsx` assertions with the current fixture before claiming the whole operations suite passes.

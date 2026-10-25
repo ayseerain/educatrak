@@ -358,6 +358,10 @@ For each screen below:
 - **Build status:** [x] Built
 - **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, and an Edit action that opens account editing plus password reset, confirmed deactivation, and reactivation controls. The mock preserves account history messaging, shows the reset temporary password once, and disables an administrator's self-deactivation action. Mock creation mirrors live role-assignment choices, adds the new fictional account to the local sample list, and rejects duplicate usernames. Focused `operations.test.tsx` passes (49 tests), the TypeScript/Vite production build passes, and production asset verification excludes all 74 checked markers. Formal Phase 2 audit remains pending. Updated Sunday, October 25, 2026 — 15:04:28 Asia/Manila.
 
+Updated: Monday, October 26, 2026 — 05:31:10 +08:00. The live user table now presents distinct Edit, Reset password, and state-change actions; state changes use an explicit confirmation dialog from the table. Archive remains inside Edit, and the existing Archived users view remains the single archive workspace, including restore and lifecycle information. `liveUsersFilters.test.tsx` passes (5 tests) and the production build passes.
+
+Updated: Monday, October 26, 2026 — 05:40:00 +08:00. MockDB now persists archive and restore lifecycle dates for staff accounts, adds archive/restore audit entries, and presents the same separate Edit, Reset password, and confirmed Deactivate/Reactivate controls as the live page. The existing Archived users tab exposes restore and the stored archive lifecycle dates. Focused MockDB/UI coverage and the production build pass; the broader operations suite has two existing balance/statement assertion failures tracked in the issue ledger.
+
 ### B38. Role Matrix — M1
 
 - **Route:** `/admin/roles`

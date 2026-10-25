@@ -24,6 +24,7 @@ const ROLE_LABELS: Record<StaffRole, string> = {
 const ADMIN_CREATE_ROLES: StaffRole[] = ["cashier", "auditor", "registrar"];
 const SUPER_ADMIN_CREATE_ROLES: StaffRole[] = ["admin", "cashier", "auditor", "registrar"];
 const userFilterDefaults = { search: "", role: "", status: "all", sort: "name:asc", createdFrom: "", createdTo: "" };
+type UserUpdate = { id: string; patch: Parameters<typeof updateStaffUser>[1]; keepEditing?: boolean };
 
 export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
   const queryClient = useQueryClient();
@@ -36,7 +37,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
   const [restoreTarget, setRestoreTarget] = useState<StaffUser | null>(null);
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
   const [resetPassword, setResetPassword] = useState<string | null>(null);
-  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<StaffUser | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const { search, role, status, sort: sortChoice, createdFrom, createdTo } = tableFilters.applied;
   const statusFilter = archivedView ? "archived" : status;
@@ -52,9 +53,9 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
     onError: (error: Error) => setErrorMessage(error.message),
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Parameters<typeof updateStaffUser>[1] }) => updateStaffUser(id, patch),
-    onSuccess: async (updatedUser) => {
-      setEditing(updatedUser);
+    mutationFn: ({ id, patch }: UserUpdate) => updateStaffUser(id, patch),
+    onSuccess: async (updatedUser, { keepEditing }) => {
+      if (keepEditing) setEditing(updatedUser);
       setErrorMessage("");
       await refreshUsers();
     },
@@ -91,6 +92,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
     setErrorMessage("");
     updateMutation.mutate({
       id: editing.id,
+      keepEditing: true,
       patch: {
         full_name: String(form.get("fullName") ?? "").trim(),
         email: String(form.get("email") ?? "").trim() || undefined,
@@ -125,11 +127,11 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-left text-sm">
               <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">
-                <th scope="col" className="px-4 py-3">Name</th><th scope="col" className="px-4 py-3">Username</th><th scope="col" className="px-4 py-3">Role</th>{statusFilter === "archived" ? <><th scope="col" className="px-4 py-3">Archived</th><th scope="col" className="px-4 py-3">Scheduled anonymization</th><th scope="col" className="px-4 py-3">Archived by</th></> : <th scope="col" className="px-4 py-3">Last sign-in</th>}<th scope="col" className="px-4 py-3">State</th><th scope="col" className="px-4 py-3">Actions</th>
+                <th scope="col" className="px-4 py-3">Name</th><th scope="col" className="px-4 py-3">Username</th><th scope="col" className="px-4 py-3">Role</th>{statusFilter === "archived" ? <><th scope="col" className="px-4 py-3">Archived</th><th scope="col" className="px-4 py-3">Scheduled anonymization</th><th scope="col" className="px-4 py-3">Archived by</th></> : <th scope="col" className="px-4 py-3">Last sign-in</th>}<th scope="col" className="px-4 py-3">State</th><th scope="col" className="px-4 py-3 text-center">Actions</th>
               </tr></thead>
               <tbody>{usersQuery.data.data.map((item) => <tr key={item.id} className="border-b last:border-0">
                 <td className="px-4 py-3 font-medium">{item.fullName}</td><td className="px-4 py-3 font-mono">{item.username}</td><td className="px-4 py-3">{ROLE_LABELS[item.role]}{item.isProtected && <span className="ml-2 rounded bg-surface px-2 py-1 text-xs">Protected</span>}</td>{statusFilter === "archived" ? <><td className="px-4 py-3">{formatTimestamp(item.archivedAt)}</td><td className="px-4 py-3">{formatDate(item.anonymizeAt)}</td><td className="px-4 py-3">{item.archivedBy ?? "Unavailable"}</td></> : <td className="px-4 py-3">{item.lastLoginAt ? formatTimestamp(item.lastLoginAt) : "Never"}</td>}<td className="px-4 py-3"><StatusBadge status={item.archivedAt ? "Archived" : item.active ? "Active" : "Inactive"} /></td>
-                <td className="px-4 py-3"><div className="flex flex-wrap gap-2">{statusFilter === "archived" ? <Button type="button" variant="secondary" size="sm" disabled={item.isProtected || restoreMutation.isPending || !item.anonymizeAt || new Date(item.anonymizeAt).getTime() <= Date.now()} onClick={() => setRestoreTarget(item)}>Restore</Button> : <><Button type="button" variant="secondary" size="sm" disabled={item.isProtected} onClick={() => { setEditing(item); setRoleChoice(item.role); setResetPassword(null); setErrorMessage(""); }}>Edit</Button><Button type="button" variant="secondary" size="sm" disabled={item.isProtected || resetMutation.isPending} onClick={() => { setEditing(item); setRoleChoice(item.role); setResetPassword(null); resetMutation.mutate(item.id); }}>{resetMutation.isPending ? "Resetting…" : "Reset password"}</Button><Button type="button" variant="secondary" size="sm" disabled={item.isProtected || archiveMutation.isPending || item.id === user.id} onClick={() => setArchiveTarget(item)}>Archive</Button></>}</div></td>
+                <td className="px-4 py-3"><div className="flex flex-wrap gap-2">{statusFilter === "archived" ? <Button type="button" variant="secondary" size="sm" className="min-h-control" disabled={item.isProtected || restoreMutation.isPending || !item.anonymizeAt || new Date(item.anonymizeAt).getTime() <= Date.now()} onClick={() => setRestoreTarget(item)}>Restore</Button> : <><Button type="button" variant="secondary" size="sm" className="min-h-control" disabled={item.isProtected} onClick={() => { setEditing(item); setRoleChoice(item.role); setResetPassword(null); setErrorMessage(""); }}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" disabled={item.isProtected || resetMutation.isPending} onClick={() => { setEditing(item); setRoleChoice(item.role); setResetPassword(null); resetMutation.mutate(item.id); }}>{resetMutation.isPending ? "Resetting…" : "Reset password"}</Button><Button type="button" variant={item.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={item.isProtected || updateMutation.isPending || (item.active && item.id === user.id)} onClick={() => { setErrorMessage(""); setStatusTarget(item); }}>{item.active ? "Deactivate account" : "Reactivate account"}</Button></>}</div></td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -147,7 +149,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
             <label className="block text-sm font-medium">Email, if available<input name="email" type="email" className={inputClass} /></label>
             <label className="block text-sm font-medium">Role<select name="role" className={inputClass} defaultValue={user.role === "super_admin" ? "admin" : "cashier"}>{(user.role === "super_admin" ? SUPER_ADMIN_CREATE_ROLES : ADMIN_CREATE_ROLES).map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>
             <p className="text-xs text-text-secondary">Accounting Officer assignment remains restricted pending the approved access policy. Only Super Admin can create an Administrator account; no user can create a Super Admin from this screen.</p>
-            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={createMutation.isPending}>{createMutation.isPending ? "Creating…" : "Create user"}</Button></div>
+            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button type="submit" disabled={createMutation.isPending}>{createMutation.isPending ? "Creating…" : "Create user"}</Button></div>
           </form>}
         </Dialog.Content></Dialog.Portal>
       </Dialog.Root>
@@ -161,12 +163,12 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
                 <section aria-labelledby="edit-account-heading"><h3 id="edit-account-heading" className="font-semibold">Account information</h3><div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="block text-sm font-medium">Full name<input key={`${editing.id}-name`} name="fullName" required maxLength={255} defaultValue={editing.fullName} className={inputClass} /></label><label className="block text-sm font-medium">Email<input key={`${editing.id}-email`} name="email" type="email" defaultValue={editing.email ?? ""} className={inputClass} /></label></div></section>
                 <section aria-labelledby="edit-role-heading" className="border-t border-border pt-4"><h3 id="edit-role-heading" className="font-semibold">Role and access</h3><label className="mt-3 block text-sm font-medium">Role<select key={`${editing.id}-role`} name="role" value={roleChoice || editing.role} onChange={(event) => setRoleChoice(event.target.value as StaffRole)} className={inputClass}>{Object.entries(ROLE_LABELS).filter(([role]) => role !== "super_admin" && (role !== "accounting" || editing.role === "accounting") && (user.role === "super_admin" || role !== "admin" || editing.role === "admin")).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></label>{roleChoice && roleChoice !== editing.role && <p role="status" className="mt-3 rounded-md border border-status-warning bg-surface p-3 text-sm text-text-primary">Changing this role changes the account's access to EducaTrak. Confirm the new responsibilities before saving.</p>}</section>
                 <section aria-labelledby="edit-status-heading" className="border-t border-border pt-4"><h3 id="edit-status-heading" className="font-semibold">Account status</h3><div className="mt-3 flex flex-wrap items-center gap-3"><StatusBadge status={editing.archivedAt ? "Archived" : editing.active ? "Active" : "Inactive"} />{editing.mustChangePassword && <p className="text-sm text-status-warning">Password change required at next sign-in.</p>}</div></section>
-              <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-white p-4"><Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button><Button disabled={updateMutation.isPending || resetMutation.isPending}>{updateMutation.isPending ? "Saving changes…" : "Save changes"}</Button></div>
+              <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-white p-4"><Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" disabled={updateMutation.isPending || resetMutation.isPending}>{updateMutation.isPending ? "Saving changes…" : "Save changes"}</Button></div>
             </form>
             <div className="border-t border-border p-6">
               {resetPassword ? <><p role="status" className="text-sm text-status-success">Temporary password (shown once):</p><p className="mt-2 rounded-md bg-surface p-3 font-mono">{resetPassword}</p></> : <Button type="button" variant="secondary" disabled={resetMutation.isPending} onClick={() => { setErrorMessage(""); resetMutation.mutate(editing.id); }}>{resetMutation.isPending ? "Resetting…" : "Reset password"}</Button>}
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button type="button" variant={editing.active ? "destructive" : "secondary"} disabled={updateMutation.isPending || (editing.active && editing.id === user.id)} onClick={() => setStatusConfirmOpen(true)}>{editing.active ? "Deactivate account" : "Reactivate account"}</Button>
+                <Button type="button" variant={editing.active ? "destructive" : "secondary"} disabled={updateMutation.isPending || (editing.active && editing.id === user.id)} onClick={() => { setErrorMessage(""); setStatusTarget(editing); }}>{editing.active ? "Deactivate account" : "Reactivate account"}</Button>
                 <Button type="button" variant="destructive" disabled={editing.isProtected || editing.id === user.id || archiveMutation.isPending} onClick={() => setArchiveTarget(editing)}>Archive account</Button>
               </div>
               {editing.id === user.id && editing.active && <p className="mt-2 text-xs text-text-secondary">You cannot deactivate your own account.</p>}
@@ -175,11 +177,12 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
         </Dialog.Content></Dialog.Portal>
       </Dialog.Root>
 
-      <Dialog.Root open={statusConfirmOpen} onOpenChange={setStatusConfirmOpen}>
+      <Dialog.Root open={statusTarget !== null} onOpenChange={(open) => { if (!open) setStatusTarget(null); }}>
         <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[61] w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-border bg-white p-8 shadow-2xl">
-          <Dialog.Title className="text-lg font-semibold">{editing?.active ? "Deactivate account?" : "Reactivate account?"}</Dialog.Title>
-          <p className="mt-3 text-sm text-text-secondary">{editing?.active ? `${editing.fullName} will no longer be able to sign in. Account history will remain available.` : `${editing?.fullName} will be able to sign in again.`}</p>
-          <div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setStatusConfirmOpen(false)}>Cancel</Button><Button type="button" variant={editing?.active ? "destructive" : "primary"} disabled={!editing || updateMutation.isPending} onClick={() => { if (!editing) return; updateMutation.mutate({ id: editing.id, patch: { active: !editing.active } }); setStatusConfirmOpen(false); }}>{editing?.active ? "Deactivate" : "Reactivate"}</Button></div>
+          <Dialog.Title className="text-lg font-semibold">{statusTarget?.active ? "Deactivate account?" : "Reactivate account?"}</Dialog.Title>
+          <p className="mt-3 text-sm text-text-secondary">{statusTarget?.active ? `${statusTarget.fullName} will no longer be able to sign in. Account history will remain available.` : `${statusTarget?.fullName} will be able to sign in again.`}</p>
+          {errorMessage && <p role="alert" className="mt-3 text-sm text-status-error">{errorMessage}</p>}
+          <div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setStatusTarget(null)}>Cancel</Button><Button type="button" variant={statusTarget?.active ? "destructive" : "primary"} disabled={!statusTarget || updateMutation.isPending} onClick={() => statusTarget && updateMutation.mutate({ id: statusTarget.id, patch: { active: !statusTarget.active }, keepEditing: editing?.id === statusTarget.id }, { onSuccess: () => setStatusTarget(null) })}>{statusTarget?.active ? "Deactivate" : "Reactivate"}</Button></div>
         </Dialog.Content></Dialog.Portal>
       </Dialog.Root>
 

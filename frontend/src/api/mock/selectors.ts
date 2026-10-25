@@ -24,10 +24,29 @@ export interface MockInstallment {
   status: "paid" | "current" | "due_soon" | "overdue";
 }
 
+export interface MockFeeItem {
+  id: string;
+  name: string;
+  category: string;
+  amount: Centavos;
+  required: boolean;
+}
+
+export interface MockPaymentPlan {
+  id: string;
+  name: string;
+  downPayment: Centavos;
+  installmentCount: number;
+}
+
 export interface MockBillingAccount {
   id: string;
   studentId: string;
+  schoolYearId: string;
   schoolYear: string;
+  gradeLevel: string;
+  feeItems: MockFeeItem[];
+  planName: string | null;
   totalDue: Centavos;
   totalPaid: Centavos;
   balance: Centavos;
@@ -63,6 +82,8 @@ export interface MockStaffUser {
   username: string;
   role: "super_admin" | "cashier" | "accounting" | "administrator" | "auditor" | "registrar";
   active: boolean;
+  archivedAt: string | null;
+  anonymizeAt: string | null;
 }
 
 export interface MockCloseOut {
@@ -88,10 +109,53 @@ export interface MockStudentInput {
   guardianMobile?: string;
 }
 
+export interface MockBillingAccountInput {
+  schoolYearId: string;
+  gradeLevel: string;
+  feeItemIds: string[];
+  paymentPlanId: string;
+}
+
+export interface MockFeeItemInput {
+  schoolYearId: string;
+  gradeLevel: string;
+  name: string;
+  category: string;
+  amountCents: number;
+  required: boolean;
+}
+
 function nextId(prefix: string, rows: ReadonlyArray<{ id: string }>): string {
   let value = rows.length + 1;
   while (rows.some((row) => row.id === `${prefix}-${value}`)) value += 1;
   return `${prefix}-${value}`;
+}
+
+function gradeLevelOrder(label: string): number | undefined {
+  if (label.trim().toLocaleLowerCase() === "kinder") return 0;
+  const grade = /^grade\s+(\d+)$/i.exec(label.trim());
+  return grade ? Number(grade[1]) : undefined;
+}
+
+/** Returns the configured active grade labels once, in the school's natural grade order. */
+export function getMockGradeLevels(): string[] {
+  const seen = new Set<string>();
+  return getMockState().config.grades
+    .map((grade) => grade.trim())
+    .filter((grade) => {
+      const key = grade.toLocaleLowerCase();
+      if (!grade || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => {
+      const leftOrder = gradeLevelOrder(left);
+      const rightOrder = gradeLevelOrder(right);
+      if (leftOrder !== undefined && rightOrder !== undefined) return leftOrder - rightOrder;
+      if (leftOrder !== undefined) return -1;
+      if (rightOrder !== undefined) return 1;
+      return left.localeCompare(right);
+    });
 }
 
 function appendAudit(action: string, entityId: string, actorId: string): void {
@@ -110,7 +174,8 @@ function day(value: string): string {
 }
 
 function dateWithDays(value: string, days: number): string {
-  const next = new Date(`${value}T00:00:00+08:00`);
+  const [year, month, day] = value.split("-").map(Number);
+  const next = new Date(Date.UTC(year!, month! - 1, day!));
   next.setUTCDate(next.getUTCDate() + days);
   return next.toISOString().slice(0, 10);
 }
@@ -161,8 +226,19 @@ export function selectBillingAccounts(): MockBillingAccount[] {
     const totalPaid = schedule.reduce((sum, installment) => sum + installment.paid, 0);
     const balance = account.totalDueCents - totalPaid;
     const status = balance === 0 ? "Current" : schedule.some((item) => item.status === "overdue") ? "Overdue" : schedule.some((item) => item.status === "due_soon") ? "Due soon" : "Current";
+    const stored = account as typeof account & { gradeLevel?: string; feeItems?: Array<{ id: string; name: string; category: string; amountCents: number; required: boolean }>; paymentPlanName?: string };
     const schoolYear = state.schoolYears.find((item) => item.id === account.schoolYearId)?.label ?? "Unavailable school year";
-    return { id: account.id, studentId: account.studentId, schoolYear, totalDue: centavos(account.totalDueCents), totalPaid: centavos(totalPaid), balance: centavos(balance), status, schedule };
+    const student = state.students.find((item) => item.id === account.studentId);
+    return {
+      id: account.id,
+      studentId: account.studentId,
+      schoolYearId: account.schoolYearId,
+      schoolYear,
+      gradeLevel: stored.gradeLevel ?? student?.grade ?? "Unavailable grade",
+      feeItems: (stored.feeItems ?? []).map((item) => ({ ...item, amount: centavos(item.amountCents) })),
+      planName: stored.paymentPlanName ?? null,
+      totalDue: centavos(account.totalDueCents), totalPaid: centavos(totalPaid), balance: centavos(balance), status, schedule,
+    };
   });
 }
 
@@ -229,6 +305,128 @@ export function getCurrentBillingAccount(studentId: string): MockBillingAccount 
   return getStudentBillingAccounts(studentId).find((account) => account.schoolYear === label);
 }
 
+export function getRenewalSchoolYears(studentId: string) {
+  const accountYearIds = new Set(getMockState().billingAccounts
+    .filter((account) => account.studentId === studentId)
+    .map((account) => account.schoolYearId));
+  return [...getMockState().schoolYears]
+    .filter((year) => !accountYearIds.has(year.id))
+    .sort((left, right) => left.label.localeCompare(right.label));
+}
+
+export function getSuggestedRenewalSchoolYear(studentId: string) {
+  const existing = getStudentBillingAccounts(studentId)
+    .map((account) => account.schoolYear)
+    .sort();
+  return getRenewalSchoolYears(studentId).find((year) => !existing.length || year.label > existing[existing.length - 1]!)
+    ?? getRenewalSchoolYears(studentId)[0];
+}
+
+export function getMockFeeSchedule(schoolYearId: string, gradeLevel: string): MockFeeItem[] | undefined {
+  const schedule = getMockState().feeSchedules.find((item) => item.schoolYearId === schoolYearId && item.gradeLevel === gradeLevel);
+  return schedule?.items.map((item) => ({ ...item, amount: centavos(item.amountCents) }));
+}
+
+export function createMockFeeItem(input: MockFeeItemInput, actorId = "user-accounting"): MockFeeItem {
+  const name = input.name.trim();
+  const category = input.category.trim();
+  const gradeLevel = input.gradeLevel.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "accounting") throw new Error("Only an active Accounting Officer can manage fee items.");
+  if (!getMockState().schoolYears.some((year) => year.id === input.schoolYearId)) throw new Error("Select a configured school year.");
+  if (!getMockGradeLevels().includes(gradeLevel)) throw new Error("Select a configured grade level.");
+  if (!name || !category || !Number.isInteger(input.amountCents) || input.amountCents < 1) throw new Error("Enter a fee name, category, and amount greater than zero.");
+
+  let created: MockFeeItem | undefined;
+  updateMockState((state) => {
+    let schedule = state.feeSchedules.find((item) => item.schoolYearId === input.schoolYearId && item.gradeLevel === gradeLevel);
+    if (!schedule) {
+      schedule = {
+        id: nextId("mock-fee-schedule", state.feeSchedules),
+        schoolYearId: input.schoolYearId,
+        gradeLevel,
+        items: [],
+      };
+      state.feeSchedules.push(schedule);
+    }
+    if (schedule.items.some((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("A fee item with this name is already configured for the selected schedule.");
+    created = {
+      id: nextId("mock-fee-item", schedule.items),
+      name,
+      category,
+      amount: centavos(input.amountCents),
+      required: input.required,
+    };
+    schedule.items.push({ ...created, amountCents: created.amount });
+    appendAudit("fee_item.created", created.id, actorId);
+  });
+  return created!;
+}
+
+export function createMockGradeLevel(label: string, actorId = "user-admin"): string {
+  const name = label.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
+  if (!name) throw new Error("Enter a grade-level name.");
+  if (getMockGradeLevels().some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already configured.");
+  updateMockState((state) => {
+    state.config.grades.push(name);
+    appendAudit("grade_level.created", name, actorId);
+  });
+  return name;
+}
+
+export function createMockSchoolYear(label: string, current: boolean, actorId = "user-admin"): { id: string; label: string; current: boolean } {
+  const name = label.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage school years.");
+  if (!name) throw new Error("Enter a school-year label.");
+  if (getMockState().schoolYears.some((year) => year.label.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That school year is already configured.");
+  const year = { id: nextId("mock-school-year", getMockState().schoolYears), label: name, current };
+  updateMockState((state) => {
+    year.current = current || state.schoolYears.length === 0;
+    if (year.current) {
+      state.schoolYears.forEach((item) => { item.current = false; });
+      state.config.currentSchoolYearId = year.id;
+    }
+    state.schoolYears.push(year);
+    appendAudit("school_year.created", year.id, actorId);
+  });
+  return year;
+}
+
+export function getMockPaymentPlans(): MockPaymentPlan[] {
+  return getMockState().paymentPlans
+    .filter((plan) => plan.active)
+    .map((plan) => ({ id: plan.id, name: plan.name, downPayment: centavos(plan.downPaymentCents), installmentCount: plan.installmentCount }));
+}
+
+function scheduleForPlan(totalDueCents: number, planId: string): Array<Omit<MockInstallment, "id" | "paid" | "status">> {
+  const plan = getMockState().paymentPlans.find((item) => item.id === planId && item.active);
+  if (!plan) throw new Error("Select an active installment plan.");
+  if (!Number.isInteger(totalDueCents) || totalDueCents < 1 || !Number.isInteger(plan.downPaymentCents) || plan.downPaymentCents < 0 || plan.downPaymentCents > totalDueCents || !Number.isInteger(plan.installmentCount) || plan.installmentCount < 1) {
+    throw new Error("The selected installment plan is not configured correctly.");
+  }
+  const remaining = totalDueCents - plan.downPaymentCents;
+  const baseInstallment = Math.floor(remaining / plan.installmentCount);
+  const remainder = remaining % plan.installmentCount;
+  const schedule: Array<Omit<MockInstallment, "id" | "paid" | "status">> = [];
+  if (plan.downPaymentCents > 0) schedule.push({ label: "Down payment", dueDate: getMockToday(), amount: centavos(plan.downPaymentCents) });
+  for (let index = 0; index < plan.installmentCount; index += 1) {
+    schedule.push({
+      label: plan.installmentCount === 1 ? "Full payment" : `Installment ${index + 1}`,
+      dueDate: dateWithDays(getMockToday(), plan.firstDueDays + (index * plan.intervalDays)),
+      amount: centavos(baseInstallment + (index < remainder ? 1 : 0)),
+    });
+  }
+  if (schedule.reduce((sum, installment) => sum + installment.amount, 0) !== totalDueCents) throw new Error("The installment schedule does not equal the billing total.");
+  return schedule;
+}
+
+export function previewMockInstallmentSchedule(totalDueCents: number, paymentPlanId: string): MockInstallment[] {
+  return scheduleForPlan(totalDueCents, paymentPlanId).map((installment, index) => ({ ...installment, id: `preview-installment-${index + 1}`, paid: centavos(0), status: "current" }));
+}
+
 export function getPaymentsForStudent(studentId: string): MockPayment[] {
   return selectPayments().filter((payment) => payment.studentId === studentId);
 }
@@ -272,10 +470,12 @@ export function selectMockStaffUsers(): MockStaffUser[] {
   return getMockState().staffUsers.map((user) => ({
     ...user,
     role: user.role as MockStaffUser["role"],
+    archivedAt: (user as Partial<MockStaffUser>).archivedAt ?? null,
+    anonymizeAt: (user as Partial<MockStaffUser>).anonymizeAt ?? null,
   }));
 }
 
-export function createMockStaffUser(input: Omit<MockStaffUser, "id" | "active">): MockStaffUser {
+export function createMockStaffUser(input: Omit<MockStaffUser, "id" | "active" | "archivedAt" | "anonymizeAt">): MockStaffUser {
   const username = input.username.trim();
   if (!username) throw new Error("A username is required.");
   if (getMockState().staffUsers.some((user) => user.username.toLocaleLowerCase() === username.toLocaleLowerCase())) {
@@ -287,6 +487,8 @@ export function createMockStaffUser(input: Omit<MockStaffUser, "id" | "active">)
     username,
     role: input.role,
     active: true,
+    archivedAt: null,
+    anonymizeAt: null,
   };
   updateMockState((state) => {
     state.staffUsers.push(user);
@@ -297,8 +499,9 @@ export function createMockStaffUser(input: Omit<MockStaffUser, "id" | "active">)
 export function updateMockStaffUser(userId: string, updates: Partial<Pick<MockStaffUser, "name" | "role" | "active">>): MockStaffUser {
   let updated: MockStaffUser | undefined;
   updateMockState((state) => {
-    const user = state.staffUsers.find((candidate) => candidate.id === userId);
+    const user = state.staffUsers.find((candidate) => candidate.id === userId) as MockStaffUser | undefined;
     if (!user) return;
+    if (user.archivedAt) throw new Error("Restore an archived user before changing the account.");
     if (updates.name !== undefined) user.name = updates.name.trim();
     if (updates.role !== undefined) user.role = updates.role;
     if (updates.active !== undefined) user.active = updates.active;
@@ -306,6 +509,39 @@ export function updateMockStaffUser(userId: string, updates: Partial<Pick<MockSt
   });
   if (!updated) throw new Error("This sample user is no longer available.");
   return updated as MockStaffUser;
+}
+
+export function archiveMockStaffUser(userId: string, actorId = "user-admin"): MockStaffUser {
+  let archived: MockStaffUser | undefined;
+  updateMockState((state) => {
+    const user = state.staffUsers.find((candidate) => candidate.id === userId) as MockStaffUser | undefined;
+    if (!user) throw new Error("This sample user is no longer available.");
+    if (user.archivedAt) throw new Error("This sample user is already archived.");
+    if (user.id === actorId) throw new Error("You cannot archive your own account.");
+    if (user.role === "administrator" && user.active && state.staffUsers.filter((candidate) => candidate.role === "administrator" && candidate.active && !(candidate as Partial<MockStaffUser>).archivedAt).length <= 1) {
+      throw new Error("The last active administrator cannot be archived.");
+    }
+    user.active = false;
+    user.archivedAt = `${getMockToday()}T12:00:00+08:00`;
+    user.anonymizeAt = `${dateWithDays(getMockToday(), 30)}T12:00:00+08:00`;
+    archived = { ...user };
+    appendAudit("user.archived", user.id, actorId);
+  });
+  return archived!;
+}
+
+export function restoreMockStaffUser(userId: string, actorId = "user-admin"): MockStaffUser {
+  let restored: MockStaffUser | undefined;
+  updateMockState((state) => {
+    const user = state.staffUsers.find((candidate) => candidate.id === userId) as MockStaffUser | undefined;
+    if (!user || !user.archivedAt) throw new Error("This sample user is not archived.");
+    user.active = true;
+    user.archivedAt = null;
+    user.anonymizeAt = null;
+    restored = { ...user };
+    appendAudit("user.restored", user.id, actorId);
+  });
+  return restored!;
 }
 
 export function createMockStudent(input: MockStudentInput, actorId = "user-cashier"): Student {
@@ -345,19 +581,45 @@ export function updateMockStudent(studentId: string, input: MockStudentInput, ac
   return getStudentById(studentId)!;
 }
 
-export function createMockBillingAccount(studentId: string, actorId = "user-cashier"): MockBillingAccount {
+export function createMockBillingAccount(studentId: string, inputOrActor: MockBillingAccountInput | string = "user-cashier", actorId = "user-cashier"): MockBillingAccount {
   const student = getStudentById(studentId);
   if (!student) throw new Error("Select a student before creating an account.");
-  if (getCurrentBillingAccount(studentId)) throw new Error("This student already has a current school-year billing account.");
   const state = getMockState();
-  const id = nextId("mock-account", state.billingAccounts);
-  const totalDueCents = 500_000;
-  updateMockState((current) => {
-    current.billingAccounts.push({ id, studentId, schoolYearId: current.config.currentSchoolYearId, totalDueCents });
-    for (let index = 0; index < 4; index += 1) {
-      current.installments.push({ id: `${id}-installment-${index + 1}`, accountId: id, label: index === 0 ? "Down payment" : `Installment ${index}`, dueDate: dateWithDays(getMockToday(), index * 30), amountCents: 125_000 });
+  const input = typeof inputOrActor === "string"
+    ? {
+      schoolYearId: state.config.currentSchoolYearId,
+      gradeLevel: student.grade,
+      feeItemIds: getMockFeeSchedule(state.config.currentSchoolYearId, student.grade)?.map((item) => item.id) ?? [],
+      paymentPlanId: getMockPaymentPlans()[0]?.id ?? "",
     }
-    appendAudit("billing_account.created", id, actorId);
+    : inputOrActor;
+  const actualActorId = typeof inputOrActor === "string" ? inputOrActor : actorId;
+  const actor = state.staffUsers.find((user) => user.id === actualActorId);
+  if (!actor || !actor.active || actor.role !== "cashier") throw new Error("Only an active Cashier can create a billing account.");
+  if (student.studentStatus !== "Active") throw new Error("Only active students are eligible for a new billing account.");
+  if (!state.schoolYears.some((year) => year.id === input.schoolYearId)) throw new Error("Select a configured school year.");
+  if (!getMockGradeLevels().includes(input.gradeLevel)) throw new Error("Select a configured grade level.");
+  if (state.billingAccounts.some((account) => account.studentId === studentId && account.schoolYearId === input.schoolYearId)) throw new Error("Billing Account Already Exists: this student already has a billing account for the selected school year.");
+  const fees = getMockFeeSchedule(input.schoolYearId, input.gradeLevel);
+  if (!fees?.length) throw new Error("No fee schedule is configured for the selected school year and grade level.");
+  const selectedIds = new Set(input.feeItemIds);
+  if (fees.some((item) => item.required && !selectedIds.has(item.id))) throw new Error("Required fee items cannot be removed.");
+  const selectedFees = fees.filter((item) => selectedIds.has(item.id));
+  if (!selectedFees.length) throw new Error("Select at least one fee item.");
+  const totalDueCents = selectedFees.reduce((sum, item) => sum + item.amount, 0);
+  const schedule = scheduleForPlan(totalDueCents, input.paymentPlanId);
+  const plan = state.paymentPlans.find((item) => item.id === input.paymentPlanId && item.active)!;
+  const id = nextId("mock-account", state.billingAccounts);
+  updateMockState((current) => {
+    (current.billingAccounts as Array<Record<string, unknown>>).push({
+      id, studentId, schoolYearId: input.schoolYearId, totalDueCents,
+      gradeLevel: input.gradeLevel,
+      feeItems: selectedFees.map((item) => ({ id: item.id, name: item.name, category: item.category, amountCents: item.amount, required: item.required })),
+      paymentPlanId: plan.id,
+      paymentPlanName: plan.name,
+    });
+    current.installments.push(...schedule.map((installment, index) => ({ id: `${id}-installment-${index + 1}`, accountId: id, label: installment.label, dueDate: installment.dueDate, amountCents: installment.amount })));
+    appendAudit("billing_account.created", id, actualActorId);
   });
   return getBillingAccount(id)!;
 }
@@ -443,12 +705,13 @@ export function signOffMockCloseOut(closeOutId: string, actorId = "user-accounti
   });
 }
 
-export function recordMockBillingPayment(input: { studentNumber: string; amount: number; paidOn: string }): MockPayment {
+export function recordMockBillingPayment(input: { studentNumber: string; billingAccountId?: string; amount: number; paidOn: string }): MockPayment {
   if (!Number.isInteger(input.amount) || input.amount < 1) throw new Error("Payment amount must be greater than zero.");
   const student = selectStudents().find((candidate) => candidate.number === input.studentNumber);
   if (!student) throw new Error("This student is not available for a payment.");
-  const account = getCurrentBillingAccount(student.id);
+  const account = input.billingAccountId ? getBillingAccount(input.billingAccountId) : getCurrentBillingAccount(student.id);
   if (!account) throw new Error("This student does not have a current billing account.");
+  if (account.studentId !== student.id) throw new Error("Select a billing account that belongs to the selected student.");
   if (input.amount > account.balance) throw new Error(`Payment cannot exceed the current balance of ${(account.balance / 100).toFixed(2)}.`);
 
   let remaining = input.amount;

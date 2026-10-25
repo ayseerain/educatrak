@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import type { AuthenticatedUser } from "@/lib/types";
 
-const { listStaffUsers, archiveStaffUser } = vi.hoisted(() => ({ listStaffUsers: vi.fn(), archiveStaffUser: vi.fn() }));
+const { listStaffUsers, archiveStaffUser, updateStaffUser } = vi.hoisted(() => ({ listStaffUsers: vi.fn(), archiveStaffUser: vi.fn(), updateStaffUser: vi.fn() }));
 vi.mock("@/api/staffApi", () => ({
   listStaffUsers,
-  archiveStaffUser, createStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), restoreStaffUser: vi.fn(), updateStaffUser: vi.fn(),
+  archiveStaffUser, updateStaffUser, createStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), restoreStaffUser: vi.fn(),
 }));
 
 function renderUsers(user: AuthenticatedUser) {
@@ -64,7 +64,7 @@ describe("role scoped user filters", () => {
     await waitFor(() => expect(archiveStaffUser).toHaveBeenCalledWith("cashier-1", expect.anything()));
   });
 
-  it("makes the deactivation confirmation stand out from the edit dialog", async () => {
+  it("keeps account-state changes separate from edit and password-reset actions", async () => {
     const user = userEvent.setup();
     const staffUser = {
       id: "cashier-1", username: "sample.cashier", fullName: "Riley Sample", email: null,
@@ -72,13 +72,34 @@ describe("role scoped user filters", () => {
       archivedBy: null, isProtected: false, mustChangePassword: false, lastLoginAt: null,
     };
     listStaffUsers.mockResolvedValue({ data: [staffUser], currentPage: 1, lastPage: 1, total: 1, perPage: 10 });
+    updateStaffUser.mockResolvedValue({ ...staffUser, active: false });
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
 
-    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    await screen.findByRole("button", { name: "Edit" });
+    expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Deactivate account" }));
 
     const confirmation = screen.getByRole("dialog", { name: "Deactivate account?" });
     expect(confirmation).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-8", "shadow-2xl");
     expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Deactivate" }));
+    await waitFor(() => expect(updateStaffUser).toHaveBeenCalledWith("cashier-1", { active: false }));
+  });
+
+  it("requires confirmation before reactivating an inactive account", async () => {
+    const user = userEvent.setup();
+    const staffUser = {
+      id: "cashier-1", username: "sample.cashier", fullName: "Riley Sample", email: null,
+      role: "cashier" as const, active: false, archivedAt: null, anonymizeAt: null,
+      archivedBy: null, isProtected: false, mustChangePassword: false, lastLoginAt: null,
+    };
+    listStaffUsers.mockResolvedValue({ data: [staffUser], currentPage: 1, lastPage: 1, total: 1, perPage: 10 });
+    updateStaffUser.mockResolvedValue({ ...staffUser, active: true });
+    renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
+
+    await user.click(await screen.findByRole("button", { name: "Reactivate account" }));
+    expect(screen.getByRole("dialog", { name: "Reactivate account?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reactivate" }));
+    await waitFor(() => expect(updateStaffUser).toHaveBeenCalledWith("cashier-1", { active: true }));
   });
 });

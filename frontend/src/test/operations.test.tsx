@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
-import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
-import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/api/mock";
+import { AccountDetailPage, AccountsPage, AccountWizardPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
+import { getBillingAccount, getCurrentBillingAccount, getDueInstallments, getMockFeeSchedule, loadMockSnapshot, mockSnapshot } from "@/api/mock";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Shell } from "@/components/layout/Shell";
 import { can, canViewReport } from "@/lib/permissions";
@@ -147,6 +147,15 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: "Student profile" })).toBeInTheDocument();
   });
 
+  it("uses explicit button types for student and billing-account creation", () => {
+    const studentForm = render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Create student" })).toHaveAttribute("type", "submit");
+    studentForm.unmount();
+
+    render(<MemoryRouter><AccountWizardPage /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Continue" })).toHaveAttribute("type", "button");
+  });
+
   it("limits student grade, section, and Senior High strand choices", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
@@ -190,6 +199,22 @@ describe("operational page navigation", () => {
 
     expect(stateHeader).toHaveClass("text-center");
     expect(within(administratorRow).getAllByRole("cell")[3]).toHaveClass("text-center");
+  });
+
+  it("shows all mock accounts permitted to the signed-in administrator and centers Actions", () => {
+    const administratorUsers = render(<MemoryRouter><UsersPage user={administrator} /></MemoryRouter>);
+
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+    expect(screen.getByText("Avery Accounting (sample)")).toBeInTheDocument();
+    expect(screen.getByText("Arden Auditor (sample)")).toBeInTheDocument();
+    expect(screen.getByText("Riley Registrar (sample)")).toBeInTheDocument();
+    expect(screen.queryByText("Morgan Super Admin (sample)")).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toHaveClass("text-center");
+    administratorUsers.unmount();
+
+    render(<MemoryRouter><UsersPage user={superAdmin} /></MemoryRouter>);
+    expect(screen.getAllByRole("row")).toHaveLength(7);
+    expect(screen.getByText("Morgan Super Admin (sample)")).toBeInTheDocument();
   });
 
   it("shows Security Events with an aligned Status column for administrators", () => {
@@ -237,38 +262,92 @@ describe("operational page navigation", () => {
     }
   });
 
-  it("lets Accounting add a fee item from Finance", async () => {
+  it("lists current-year fee schedules from Kinder through Grade 12 in pages of ten", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><SettingsPage section="fees" editable /></MemoryRouter>);
+
+    expect(screen.getAllByRole("row")).toHaveLength(11);
+    expect(screen.getAllByText("Kinder")).toHaveLength(3);
+    expect(screen.queryAllByText("Grade 12")).toHaveLength(0);
+    expect(screen.getByText("Showing 1–10 of 48 fee items")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+
+    expect(screen.getAllByText("Grade 12")).toHaveLength(3);
+    expect(screen.getAllByRole("row")).toHaveLength(11);
+  });
+
+  it("loads the configured K–12 grades in order and saves a fee only to its selected schedule", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SettingsPage section="fees" editable /></MemoryRouter>);
 
     await user.click(screen.getByRole("button", { name: "Add fee item" }));
     const dialog = screen.getByRole("dialog", { name: "Add fee item" });
 
-    await user.selectOptions(within(dialog).getByLabelText("Grade level"), "Grade 8");
+    await user.click(within(dialog).getByRole("button", { name: "Grade level" }));
+    expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
+      "Select grade level", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+      "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    ]);
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 11" }));
     await user.type(within(dialog).getByLabelText("Fee item name"), "Laboratory fee");
-    await user.selectOptions(within(dialog).getByLabelText("Category"), "Other");
+    await user.click(within(dialog).getByRole("button", { name: "Category" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Other" }));
     await user.type(within(dialog).getByLabelText("Amount"), "500");
     await user.click(within(dialog).getByLabelText("Optional"));
-    await user.click(within(dialog).getByRole("button", { name: "Add fee item" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save fee item" }));
 
     expect(screen.queryByRole("dialog", { name: "Add fee item" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Fee item saved for Grade 11");
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("button", { name: "Next page" }));
     expect(screen.getByRole("cell", { name: /Laboratory fee - Other - ₱500\.00 - Optional/ })).toBeInTheDocument();
+    expect(getMockFeeSchedule("school-year-2026-2027", "Grade 11")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "Laboratory fee", amount: 50_000, required: false }),
+    ]));
+    expect(getMockFeeSchedule("school-year-2026-2027", "Grade 10")?.some((item) => item.name === "Laboratory fee") ?? false).toBe(false);
   });
 
   it("lets an Administrator add a current school year from Settings", async () => {
+    const before = mockSnapshot();
     const user = userEvent.setup();
     render(<MemoryRouter><SettingsPage section="school" editable /></MemoryRouter>);
 
     await user.click(screen.getByRole("button", { name: "Add list item" }));
     const dialog = screen.getByRole("dialog", { name: "Add list item" });
     expect(within(dialog).getByText(/payment methods remain cash only/i)).toBeInTheDocument();
-    await user.type(within(dialog).getByLabelText("School year label"), "SY 2027-2028");
-    await user.click(within(dialog).getByLabelText("Set SY 2027-2028 as current school year"));
+    await user.type(within(dialog).getByLabelText("School year label"), "SY 2028-2029");
+    await user.click(within(dialog).getByLabelText("Set SY 2028-2029 as current school year"));
     await user.click(within(dialog).getByRole("button", { name: "Add list item" }));
 
     expect(screen.queryByRole("dialog", { name: "Add list item" })).not.toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "SY 2027-2028 current" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "SY 2028-2029 current" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "SY 2026-2027" })).toBeInTheDocument();
+    await act(async () => { loadMockSnapshot(before); });
+  });
+
+  it("makes a grade registered in School Settings available to the fee-item dropdown", async () => {
+    const before = mockSnapshot();
+    const user = userEvent.setup();
+    const school = render(<MemoryRouter><SettingsPage section="school" editable /></MemoryRouter>);
+
+    await user.click(screen.getByRole("button", { name: "Add list item" }));
+    const schoolDialog = screen.getByRole("dialog", { name: "Add list item" });
+    await user.selectOptions(within(schoolDialog).getByLabelText("List type"), "gradeLevel");
+    await user.type(within(schoolDialog).getByLabelText("Name"), "Preparatory (sample)");
+    await user.click(within(schoolDialog).getByRole("button", { name: "Add list item" }));
+    expect(screen.getByRole("cell", { name: "Preparatory (sample)" })).toBeInTheDocument();
+    school.unmount();
+
+    render(<MemoryRouter><SettingsPage section="fees" editable /></MemoryRouter>);
+    await user.click(screen.getByRole("button", { name: "Add fee item" }));
+    await user.click(screen.getByRole("dialog", { name: "Add fee item" }).querySelector('[aria-label="Grade level"]')!);
+    expect(screen.getByRole("menuitemradio", { name: "Preparatory (sample)" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await act(async () => { loadMockSnapshot(before); });
   });
 
   it("filters user administration rows by name or username", async () => {
@@ -351,32 +430,42 @@ describe("operational page navigation", () => {
     }
   });
 
-  it("provides administrator account actions from each user row's Edit button", async () => {
+  it("provides separate MockDB user actions with archive and restore", async () => {
     const user = userEvent.setup();
 
     render(<MemoryRouter><UsersPage /></MemoryRouter>);
 
-    await user.click(screen.getAllByRole("button", { name: "Edit" })[1]!);
-    expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Reset password" }));
+    const cashierRow = screen.getByRole("row", { name: /Casey Cashier \(sample\)/ });
+    expect(within(cashierRow).getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(within(cashierRow).getByRole("button", { name: "Reset password" })).toBeInTheDocument();
+    await user.click(within(cashierRow).getByRole("button", { name: "Reset password" }));
     expect(screen.getByRole("status")).toHaveTextContent("Password reset complete.");
     expect(screen.getByText(/temporary password \(shown once\):/i)).toBeInTheDocument();
     expect(screen.getByText("SampleReset123!")).toBeInTheDocument();
+    await user.click(within(screen.getByRole("dialog", { name: "Edit user account" })).getByRole("button", { name: "Cancel" }));
 
-    await user.click(screen.getByRole("button", { name: "Deactivate account" }));
+    await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Deactivate account" }));
     expect(screen.getByRole("heading", { name: "Deactivate account?" })).toBeInTheDocument();
     await user.click(within(screen.getByRole("dialog", { name: "Deactivate account?" })).getByRole("button", { name: "Deactivate account" }));
-    expect(screen.getByRole("button", { name: "Reactivate account" })).toBeInTheDocument();
+    expect(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Reactivate account" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Reactivate account" }));
-    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Reactivate account" }));
+    expect(screen.getByRole("heading", { name: "Reactivate account?" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("dialog", { name: "Reactivate account?" })).getByRole("button", { name: "Reactivate account" }));
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    await user.click(screen.getAllByRole("button", { name: "Edit" })[0]!);
-    expect(screen.getByRole("button", { name: "Deactivate account" })).toBeDisabled();
-    expect(screen.getByText(/cannot deactivate your own administrator account/i)).toBeInTheDocument();
+    await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Archive account" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Archive account?" })).getByRole("button", { name: "Archive account" }));
+    expect(screen.queryByRole("row", { name: /Casey Cashier \(sample\)/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Archived users" }));
+    await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Restore" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Restore account?" })).getByRole("button", { name: "Restore account" }));
+    await user.click(screen.getByRole("tab", { name: "Current users" }));
+    expect(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).toBeInTheDocument();
+
+    const administratorRow = screen.getByRole("row", { name: /Alex Administrator \(sample\)/ });
+    expect(within(administratorRow).getByRole("button", { name: "Deactivate account" })).toBeDisabled();
   });
 
   it("renders Clearance for registrars", async () => {

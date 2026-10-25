@@ -33,4 +33,6 @@ export function selectMockNotificationRows(): never[] { return []; }
 export function selectMockStaffUsers(): never[] { return []; }
 export function createMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
 export function updateMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
+export function archiveMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
+export function restoreMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
 export function recordMockBillingPayment(): never { throw new Error("Mock data is unavailable in production."); }

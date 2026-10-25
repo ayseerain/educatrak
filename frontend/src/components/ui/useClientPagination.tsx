@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 
-export function useClientPagination<T>(items: T[], label: string) {
+export function useClientPagination<T>(items: T[], label: string, fixedPageSize = false) {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const lastPage = Math.max(1, Math.ceil(items.length / perPage));
@@ -17,7 +17,7 @@ export function useClientPagination<T>(items: T[], label: string) {
       total={items.length}
       label={label}
       onPageChange={setCurrentPage}
-      onPerPageChange={(size) => { setPerPage(size); setCurrentPage(1); }}
+      onPerPageChange={fixedPageSize ? undefined : (size) => { setPerPage(size); setCurrentPage(1); }}
     />,
   };
 }

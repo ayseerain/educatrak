@@ -33,19 +33,31 @@ import {
   payments,
   getBillingAccount,
   getCurrentBillingAccount,
+  getMockFeeSchedule,
+  getMockGradeLevels,
   getMockPayment,
+  getMockPaymentPlans,
   getNextDueRecord,
   getPaymentsForStudent,
+  getRenewalSchoolYears,
+  getSuggestedRenewalSchoolYear,
   getStudentById,
+  getStudentBillingAccounts,
   getMockGuardianContact,
   getMockState,
   getMockToday,
   selectMockNotificationRows,
   selectMockStaffUsers,
   createMockStaffUser,
+  archiveMockStaffUser,
+  createMockFeeItem,
+  createMockGradeLevel,
+  createMockSchoolYear,
   createMockStudent,
   createMockBillingAccount,
+  previewMockInstallmentSchedule,
   updateMockStaffUser,
+  restoreMockStaffUser,
   updateMockStudent,
   mockSystemCashTotal,
   recordMockCloseOut,
@@ -54,10 +66,11 @@ import {
   decideMockVoid,
   selectMockCloseOuts,
   signOffMockCloseOut,
+  subscribeToMockState,
 } from "@/api/mock";
 import { studentMatchesSearch } from "@/features/students/studentSearch";
 import { can, canViewReport, type ReportKind } from "@/lib/permissions";
-import { format, centavos } from "@/lib/money";
+import { format, centavos, parse as parseMoney } from "@/lib/money";
 import { roleLabel, useSession } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
@@ -87,11 +100,6 @@ import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billin
 import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 
 const firstStudent = students[0]!;
-const gradeOptions = [
-  "Kinder",
-  ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`),
-].map((grade) => ({ value: grade, label: grade }));
-
 function asDropdownOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
 }
@@ -363,7 +371,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
                 Password changed successfully.
               </p>
             )}
-            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => { setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setError(null); }}>Cancel</Button><Button disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button></div>
+            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => { setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setError(null); }}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button></div>
           </form>
         </Card>
       </div>
@@ -588,7 +596,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
               <DropdownSelect
                 aria-label="Grade level"
                 value={grade}
-                options={[{ value: "", label: "Select grade" }, ...gradeOptions]}
+                options={[{ value: "", label: "Select grade" }, ...asDropdownOptions(getMockGradeLevels())]}
                 onChange={selectGrade}
                 className="w-full"
                 contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -657,7 +665,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
           </div>
         </Card>
         {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
-        <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(student ? `/students/${student.id}` : "/students")}>Cancel</Button><Button>{edit ? "Save changes" : "Create student"}</Button></div>
+        <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(student ? `/students/${student.id}` : "/students")}>Cancel</Button><Button type="submit">{edit ? "Save changes" : "Create student"}</Button></div>
       </form>
     </>
   );
@@ -669,6 +677,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
   const student = getStudentById(id);
   if (!student) return <NotFoundPage />;
   const limited = user.role === "registrar";
+  const renewalYears = getRenewalSchoolYears(student.id);
   return (
     <>
       <PageHeader
@@ -680,6 +689,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
             <div className="flex flex-wrap gap-2">
               {can(user, "payment.record") && <Link to={`/payments/new?student=${student.id}`} className={primaryLinkClass}>Record payment</Link>}
               {can(user, "account.view") && <Link to={`/accounts/${getCurrentBillingAccount(student.id)?.id ?? "new"}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
+              {can(user, "account.create") && (renewalYears.length ? <Link to={`/accounts/new?student=${student.id}&mode=renew`} className={secondaryLinkClass}>Renew Billing Account</Link> : <div><Button type="button" variant="secondary" disabled title="Every configured school year already has an account for this student.">Renew Billing Account</Button><p className="mt-1 max-w-xs text-xs text-text-secondary">No configured school year is available for renewal.</p></div>)}
               {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
             </div>
           ) : undefined
@@ -732,6 +742,23 @@ function StudentOverviewPanel({
             className="mt-3"
             headers={["Guardian", "Relationship", "Email status"]}
             rows={[["Sample Guardian", "Parent", "Queued"]]}
+          />
+        </Card>
+      )}
+      {!limited && (
+        <Card>
+          <h2 className="font-semibold">Billing accounts</h2>
+          <p className="mt-1 text-sm text-text-secondary">Each school year remains a separate billing record. Historical balances and payments are not carried forward.</p>
+          <ListCard
+            className="mt-4"
+            headers={["School year", "Grade", "Status", "Balance", "Action"]}
+            rows={getStudentBillingAccounts(student.id).map((account) => [
+              account.schoolYear,
+              account.gradeLevel,
+              <StatusBadge status={account.status} />,
+              format(account.balance),
+              can(user, "account.view") ? <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>View</Link> : "Unavailable",
+            ])}
           />
         </Card>
       )}
@@ -892,120 +919,98 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
     </>
   );
 }
-export function AccountWizardPage() {
+export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
+  const [searchParams] = useSearchParams();
+  const renewalMode = searchParams.get("mode") === "renew";
+  const queryStudent = getStudentById(searchParams.get("student") ?? undefined);
   const [step, setStep] = useState(1);
-  const [studentQuery, setStudentQuery] = useState("");
-  const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentQuery, setStudentQuery] = useState(queryStudent ? `${queryStudent.name} - ${queryStudent.number}` : "");
+  const [studentId, setStudentId] = useState<string | null>(queryStudent?.id ?? null);
+  const [schoolYearId, setSchoolYearId] = useState(queryStudent && renewalMode ? getSuggestedRenewalSchoolYear(queryStudent.id)?.id ?? "" : getMockState().config.currentSchoolYearId);
+  const [gradeLevel, setGradeLevel] = useState(queryStudent?.grade ?? "");
+  const [feeItemIds, setFeeItemIds] = useState<string[]>([]);
+  const [paymentPlanId, setPaymentPlanId] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const selectedStudent = studentId ? getStudentById(studentId) : undefined;
+  const duplicateAccount = selectedStudent && schoolYearId
+    ? getStudentBillingAccounts(selectedStudent.id).find((account) => account.schoolYearId === schoolYearId)
+    : undefined;
+  const feeItems = schoolYearId && gradeLevel ? getMockFeeSchedule(schoolYearId, gradeLevel) : undefined;
+  const paymentPlans = getMockPaymentPlans();
+  const totalDue = centavos((feeItems ?? []).filter((item) => feeItemIds.includes(item.id)).reduce((sum, item) => sum + item.amount, 0));
+  const schedule = paymentPlanId && totalDue > 0 ? previewMockInstallmentSchedule(totalDue, paymentPlanId) : [];
   const steps = ["Student", "Fees & plan", "Schedule", "Review"];
+
+  useEffect(() => {
+    setFeeItemIds(feeItems?.map((item) => item.id) ?? []);
+    setPaymentPlanId(paymentPlans[0]?.id ?? "");
+    setConfirmed(false);
+  }, [schoolYearId, gradeLevel]);
+
+  function selectStudent(student: typeof firstStudent) {
+    setStudentQuery(`${student.name} - ${student.number}`);
+    setStudentId(student.id);
+    setSchoolYearId(renewalMode ? getSuggestedRenewalSchoolYear(student.id)?.id ?? "" : getMockState().config.currentSchoolYearId);
+    setGradeLevel(student.grade);
+    setError("");
+  }
+
+  function validationError() {
+    if (step === 1) {
+      if (!studentId) return "Select an existing student before continuing.";
+      if (!schoolYearId) return "Select a configured school year before continuing.";
+      if (!gradeLevel) return "Confirm the target grade level before continuing.";
+      if (getStudentBillingAccounts(studentId).some((account) => account.schoolYearId === schoolYearId)) return "Billing Account Already Exists: select a school year without an existing account.";
+    }
+    if (step === 2) {
+      if (!feeItems?.length) return "No fee schedule is configured for the selected school year and grade level. Choose a configured grade or school year.";
+      if (feeItems.some((item) => item.required && !feeItemIds.includes(item.id))) return "Required fee items cannot be removed.";
+      if (!paymentPlanId) return "Select an active installment plan before continuing.";
+    }
+    if (step === 3 && (!schedule.length || schedule.reduce((sum, installment) => sum + installment.amount, 0) !== totalDue)) return "The installment schedule must equal the selected fee total.";
+    if (step === 4 && !confirmed) return "Confirm that you are creating a new, separate billing account before saving.";
+    return "";
+  }
+
+  function continueWizard() {
+    const message = validationError();
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError("");
+    if (step === 4) createAccount(); else setStep((current) => current + 1);
+  }
+
   function createAccount() {
     if (!studentId) return;
     try {
       setCreated(true);
-      const account = createMockBillingAccount(studentId);
+      const account = createMockBillingAccount(studentId, { schoolYearId, gradeLevel, feeItemIds, paymentPlanId }, user?.id ?? "user-cashier");
       navigate(`/accounts/${account.id}?created=1`);
     } catch (cause) {
       setCreated(false);
       setError(cause instanceof Error ? cause.message : "The account could not be created.");
     }
   }
+
   return (
     <>
-      <PageHeader
-        title="New account"
-        description="Set up an account for one student and one school year."
-        backTo="/accounts"
-      />
+      <PageHeader title="New account" description={renewalMode ? "Create a new school-year billing account without changing earlier financial records." : "Set up an account for one student and one school year."} backTo="/accounts" />
       <Card className="max-w-4xl">
-        <ol className="mb-6 flex flex-wrap gap-2 text-sm">
-          {steps.map((label, i) => (
-            <li
-              key={label}
-              className={cn(
-                "rounded-md border px-3 py-2",
-                i + 1 === step
-                  ? "border-brand-green-light bg-[#EAF6EC] font-semibold text-brand-green-dark"
-                  : "border-border bg-white text-text-secondary",
-              )}
-            >
-              {i + 1}. {label}
-            </li>
-          ))}
-        </ol>
+        <ol className="mb-6 flex flex-wrap gap-2 text-sm">{steps.map((label, index) => <li key={label} className={cn("rounded-md border px-3 py-2", index + 1 === step ? "border-brand-green-light bg-[#EAF6EC] font-semibold text-brand-green-dark" : "border-border bg-white text-text-secondary")}>{index + 1}. {label}</li>)}</ol>
         <h2 className="text-lg font-semibold">{steps[step - 1]}</h2>
-        <p className="mt-2 text-sm text-text-secondary">
-          {step === 1
-            ? "Search for a student, or create a student before continuing."
-            : step === 2
-              ? "Configured fee items and payment plans load from school settings."
-              : step === 3
-                ? "Review installment due dates and amounts before saving."
-                : "Confirm the student, fees, plan, and schedule. A duplicate school-year account is blocked."}
-        </p>
-        {step === 1 && (
-          <StudentSearchField
-            value={studentQuery}
-            onChange={(value) => {
-              setStudentQuery(value);
-              if (value !== selectedStudent?.name) setStudentId(null);
-            }}
-            onSelect={(student) => { setStudentQuery(student.name); setStudentId(student.id); setError(""); }}
-            autoFocus
-            placeholder="Search student name or number"
-            wrapperClassName="mt-5"
-            inputClassName={cn(inputClass, "m-0")}
-          />
-        )}
-        {step === 1 && selectedStudent && (
-          <p role="status" className="mt-3 rounded-md border border-brand-green-light bg-[#F4FAF5] p-3 text-sm text-text-primary">
-            Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number})
-          </p>
-        )}
-        {step === 2 && (
-          <div className="mt-5 rounded-md border border-border bg-surface p-4 text-sm">
-            Fee items and the installment plan use the current {selectedStudent?.grade ?? "student"} schedule. They are copied into this account when it is created.
-          </div>
-        )}
-        {step === 3 && (
-          <ListCard
-            className="mt-5"
-            rows={[
-              ["Down payment", "Sep 01, 2026", "₱2,000.00"],
-              ["Installment 1", "Oct 01, 2026", "₱2,500.00"],
-            ]}
-            headers={["Installment", "Due date", "Amount"]}
-          />
-        )}
-        {step === 4 && (
-          <div className="mt-5 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm">
-            Creating the account saves the configured schedule. Existing
-            accounts are never changed by later fee or plan edits.
-          </div>
-        )}
-        {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}</p>}
-        <div className="mt-6 flex justify-end gap-3">
-          <Link className={secondaryLinkClass} to="/accounts">Cancel</Link>
-          {step > 1 && <Button
-            variant="secondary"
-            disabled={created}
-            onClick={() => setStep(step - 1)}
-          >
-            Back
-          </Button>}
-          <Button
-            disabled={created || (step === 1 && !studentId)}
-            onClick={() => (step === 4 ? createAccount() : setStep(step + 1))}
-          >
-            {created
-              ? "Creating account..."
-              : step === 4
-                ? "Create account"
-                : "Continue"}
-          </Button>
-        </div>
+        <p className="mt-2 text-sm text-text-secondary">{step === 1 ? "Confirm the student, target school year, and grade level." : step === 2 ? "Configured fee items and active payment plans load from the shared mock database." : step === 3 ? "Review installment due dates and amounts before saving." : "Confirm the new account. Earlier financial records will remain unchanged."}</p>
+        {step === 1 && <StudentSearchField value={studentQuery} onChange={(value) => { setStudentQuery(value); if (value !== `${selectedStudent?.name} - ${selectedStudent?.number}`) setStudentId(null); }} onSelect={selectStudent} autoFocus={!queryStudent} placeholder="Search student name or number" wrapperClassName="mt-5" inputClassName={cn(inputClass, "m-0")} />}
+        {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
+        {step === 2 && <div className="mt-5 space-y-5">{!feeItems?.length ? <p role="status" className="rounded-md border border-status-warning bg-[#FFF8E8] p-4 text-sm text-text-primary">No fee schedule is configured for {gradeLevel || "this grade"} in the selected school year. Go back and choose a configured grade or year.</p> : <fieldset><legend className="font-medium">Fee items</legend><p className="mt-1 text-sm text-text-secondary">Required fees are locked. Selected amounts are copied into this billing account.</p><div className="mt-3 space-y-2">{feeItems.map((item) => <label key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface p-3 text-sm"><span className="flex items-center gap-3"><input type="checkbox" checked={feeItemIds.includes(item.id)} disabled={item.required} onChange={(event) => setFeeItemIds((selected) => event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><span><span className="font-medium">{item.name}</span><span className="ml-2 text-text-secondary">{item.category} · {item.required ? "Required" : "Optional"}</span></span></span><span className="font-medium">{format(item.amount)}</span></label>)}</div><p className="mt-3 text-sm font-semibold">Selected total: {format(totalDue)}</p></fieldset>}<fieldset><legend className="font-medium">Installment plan</legend><div className="mt-3 grid gap-3 md:grid-cols-3">{paymentPlans.map((plan) => <label key={plan.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-white p-3 text-sm"><input type="radio" name="paymentPlan" checked={paymentPlanId === plan.id} onChange={() => setPaymentPlanId(plan.id)} /><span><span className="block font-medium">{plan.name}</span><span className="mt-1 block text-text-secondary">Down payment: {format(plan.downPayment)} · {plan.installmentCount} scheduled payment{plan.installmentCount === 1 ? "" : "s"}</span></span></label>)}</div></fieldset></div>}
+        {step === 3 && <div className="mt-5"><ListCard rows={schedule.map((installment) => [installment.label, formatDate(installment.dueDate), format(installment.amount)])} headers={["Installment", "Due date", "Amount"]} /><p className="mt-3 text-right text-sm font-semibold">Billing total: {format(totalDue)}</p></div>}
+        {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex items-start gap-3"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
+        {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}{duplicateAccount && <> <Link className={inlineLinkClass} to={`/accounts/${duplicateAccount.id}`}>View existing billing account</Link></>}</p>}
+        <div className="mt-6 flex justify-end gap-3"><Link className={secondaryLinkClass} to="/accounts">Cancel</Link>{step > 1 && <Button type="button" variant="secondary" disabled={created} onClick={() => { setStep((current) => current - 1); setError(""); }}>Back</Button>}<Button type="button" disabled={created} onClick={continueWizard}>{created ? "Creating account..." : step === 4 ? "Create account" : "Continue"}</Button></div>
       </Card>
     </>
   );
@@ -1013,6 +1018,7 @@ export function AccountWizardPage() {
 export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
   if (isLiveCashierApiEnabled()) return <LiveBillingAccountDetail user={user} />;
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const account = getBillingAccount(id);
   const student = account && getStudentById(account.studentId);
   if (!account || !student) return <NotFoundPage />;
@@ -1026,19 +1032,21 @@ export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
           can(user, "payment.record") ? (
             <Link
               className={primaryLinkClass}
-              to={`/payments/new?student=${student.id}`}
+              to={`/payments/new?student=${student.id}&account=${account.id}`}
             >
               Record payment
             </Link>
           ) : undefined
         }
       />
+      {searchParams.get("created") === "1" && <div role="status" className="mb-5 rounded-md border border-status-success bg-[#EAF6EC] p-4 text-sm text-text-primary"><h2 className="font-semibold text-brand-green-dark">Billing Account Created Successfully</h2><p className="mt-1">The student's billing account for the selected school year has been created. You are viewing the new billing account.</p></div>}
       <div className="grid gap-4 md:grid-cols-3">
         <Metric label="Total fees" value={format(account.totalDue)} />
         <Metric label="Paid" value={format(account.totalPaid)} />
         <Metric label="Balance" value={format(account.balance)} />
       </div>
       <div className="mt-5">
+        {account.feeItems.length > 0 && <ListCard className="mb-4" headers={["Fee item", "Category", "Requirement", "Amount"]} rows={account.feeItems.map((item) => [item.name, item.category, item.required ? "Required" : "Optional", format(item.amount)])} />}
         <ListCard
           headers={["Due date", "Amount", "Paid", "Status"]}
           rows={account.schedule.map((installment) => [
@@ -1212,19 +1220,30 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
 
 const paymentMethodOptions = [{ value: "Cash", label: "Cash" }];
 
+function dueRecordForAccount(account: ReturnType<typeof getBillingAccount>) {
+  const installment = account?.schedule.find((item) => item.paid < item.amount);
+  return installment && account
+    ? { account: `${account.schoolYear} tuition`, installment: installment.label, dueDate: installment.dueDate, status: installment.status, amountDue: centavos(installment.amount - installment.paid) }
+    : undefined;
+}
+
 function PaymentWorkflow({
   preselectedStudent,
+  preselectedAccountId,
   compact = false,
 }: {
   preselectedStudent?: typeof firstStudent;
+  preselectedAccountId?: string;
   compact?: boolean;
 }) {
   const [searchParams] = useSearchParams();
   const initialStudent =
     preselectedStudent ??
     students.find((student) => student.id === searchParams.get("student"));
+  const preselectedAccount = getBillingAccount(preselectedAccountId);
+  const accountForInitialStudent = preselectedAccount?.studentId === initialStudent?.id ? preselectedAccount : undefined;
   const initialDueRecord = initialStudent
-    ? getNextDueRecord(initialStudent.id)
+    ? dueRecordForAccount(accountForInitialStudent) ?? getNextDueRecord(initialStudent.id)
     : undefined;
   const initialSuggestedAmount =
     initialDueRecord?.amountDue ?? initialStudent?.balance ?? centavos(0);
@@ -1246,8 +1265,9 @@ function PaymentWorkflow({
     (studentQuery.trim()
       ? students.find((student) => studentMatchesSearch(student, studentQuery))
       : undefined);
+  const selectedAccount = preselectedAccount?.studentId === selectedStudent?.id ? preselectedAccount : undefined;
   const nextDueRecord = selectedStudent
-    ? getNextDueRecord(selectedStudent.id)
+    ? dueRecordForAccount(selectedAccount) ?? (selectedAccount ? undefined : getNextDueRecord(selectedStudent.id))
     : undefined;
   const suggestedAmount =
     nextDueRecord?.amountDue ?? selectedStudent?.balance ?? centavos(0);
@@ -1258,7 +1278,7 @@ function PaymentWorkflow({
       : 0,
   );
   const balanceAfterPayment = selectedStudent
-    ? centavos(Math.max(0, selectedStudent.balance - enteredCentavos))
+    ? centavos(Math.max(0, (selectedAccount?.balance ?? selectedStudent.balance) - enteredCentavos))
     : centavos(0);
 
   useEffect(() => {
@@ -1279,9 +1299,10 @@ function PaymentWorkflow({
       setError("Enter an amount received that is more than zero.");
       return;
     }
-    if (enteredCentavos > selectedStudent.balance) {
+    const paymentBalance = selectedAccount?.balance ?? selectedStudent.balance;
+    if (enteredCentavos > paymentBalance) {
       setError(
-        `Amount is more than the balance of ${format(selectedStudent.balance)}. Enter ${format(selectedStudent.balance)} or less.`,
+        `Amount is more than the balance of ${format(paymentBalance)}. Enter ${format(paymentBalance)} or less.`,
       );
       return;
     }
@@ -1310,7 +1331,7 @@ function PaymentWorkflow({
     setIsSaving(true);
     try {
       const payment = await recordCashPaymentForStudent({
-        billingAccountId: selectedStudent!.id,
+        billingAccountId: selectedAccount?.id ?? getCurrentBillingAccount(selectedStudent!.id)?.id ?? "",
         studentNumber: selectedStudent!.number,
         amount: enteredCentavos,
         paidOn: manilaDateInput(),
@@ -1404,7 +1425,7 @@ function PaymentWorkflow({
             <span className="mt-1 block font-semibold text-text-primary">
               {nextDueRecord
                 ? format(nextDueRecord.amountDue)
-                : format(selectedStudent.balance)}
+                : format(selectedAccount?.balance ?? selectedStudent.balance)}
             </span>
           </div>
         </div>
@@ -1609,7 +1630,7 @@ function PaymentWorkflow({
             Pay next installment: {format(suggestedAmount)}
           </button>
         )}
-        <Button disabled={!selectedStudent || stage === "saved" || isSaving}>
+        <Button type="submit" disabled={!selectedStudent || stage === "saved" || isSaving}>
           Review payment
         </Button>
       </div>
@@ -1634,7 +1655,7 @@ export function PaymentEntryPage() {
         backTo="/payments"
       />
       <Card>
-        <PaymentWorkflow preselectedStudent={selectedStudent} />
+        <PaymentWorkflow preselectedStudent={selectedStudent} preselectedAccountId={searchParams.get("account") ?? undefined} />
       </Card>
     </>
   );
@@ -2624,9 +2645,11 @@ export function ImportPage() {
 export function SettingsPage({
   section,
   editable,
+  actorId,
 }: {
   section: "fees" | "plans" | "clearance" | "school" | "receipt" | "email";
   editable: boolean;
+  actorId?: string;
 }) {
   if (isLiveCashierApiEnabled()) {
     const titles = {
@@ -2650,15 +2673,49 @@ export function SettingsPage({
   const [addListItemOpen, setAddListItemOpen] = useState(false);
   const [listItemType, setListItemType] = useState<"schoolYear" | "term" | "examPeriod" | "gradeLevel" | "section">("schoolYear");
   const [listItemName, setListItemName] = useState("");
-  const [feeRows, setFeeRows] = useState([
-    ["SY 2026-2027", "Grade 7", "Tuition - ₱12,500.00", "Active"],
-    ["SY 2026-2027", "Grade 8", "Miscellaneous - optional", "Active"],
-  ]);
-  const [schoolRows, setSchoolRows] = useState<[string, string, string][]>([
-    ["School year", "SY 2026-2027 current", "Active"],
+  const [schoolSupplementRows, setSchoolSupplementRows] = useState<[string, string, string][]>([
     ["Exam period", "Midterm starts Oct 15, 2026", "Active"],
     ["Payment method", "Cash only", "Active"],
   ]);
+  const [feeSchoolYearId, setFeeSchoolYearId] = useState("");
+  const [feeGradeLevel, setFeeGradeLevel] = useState("");
+  const [feeName, setFeeName] = useState("");
+  const [feeCategory, setFeeCategory] = useState("Tuition");
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeRequired, setFeeRequired] = useState(true);
+  const [feeError, setFeeError] = useState("");
+  const [feeSavedMessage, setFeeSavedMessage] = useState("");
+  const [, setMockRevision] = useState(0);
+  const mockState = getMockState();
+  const gradeLevels = getMockGradeLevels();
+  const schoolYears = mockState.schoolYears;
+  const gradeOrder = new Map(gradeLevels.map((grade, index) => [grade, index]));
+  const feeRows = [...mockState.feeSchedules]
+    .sort((left, right) => {
+      const leftCurrent = schoolYears.find((year) => year.id === left.schoolYearId)?.current ? 0 : 1;
+      const rightCurrent = schoolYears.find((year) => year.id === right.schoolYearId)?.current ? 0 : 1;
+      return leftCurrent - rightCurrent
+        || (gradeOrder.get(left.gradeLevel) ?? Number.MAX_SAFE_INTEGER) - (gradeOrder.get(right.gradeLevel) ?? Number.MAX_SAFE_INTEGER)
+        || left.gradeLevel.localeCompare(right.gradeLevel);
+    })
+    .flatMap((schedule) => {
+    const schoolYear = schoolYears.find((year) => year.id === schedule.schoolYearId)?.label ?? "Unavailable school year";
+    return schedule.items.map((item) => [
+      schoolYear,
+      schedule.gradeLevel,
+      `${item.name} - ${item.category} - ${format(centavos(item.amountCents))} - ${item.required ? "Required" : "Optional"}`,
+      "Active",
+    ]);
+  });
+  const feePagination = useClientPagination(feeRows, "fee items", true);
+  const schoolRows: [string, string, string][] = [
+    ...schoolYears.map((year) => ["School year", `${year.label}${year.current ? " current" : ""}`, "Active"] as [string, string, string]),
+    ...gradeLevels.map((grade) => ["Grade level", grade, "Active"] as [string, string, string]),
+    ...schoolSupplementRows,
+  ];
+  const effectiveActorId = actorId ?? (section === "fees" ? "user-accounting" : "user-admin");
+
+  useEffect(() => subscribeToMockState(() => setMockRevision((revision) => revision + 1)), []);
   const settings = {
     fees: {
       title: "Fees",
@@ -2738,22 +2795,35 @@ export function SettingsPage({
   const current = settings[section];
   const mockActionAvailable = section === "fees" || section === "school";
 
+  function openFeeDialog() {
+    setFeeSchoolYearId(mockState.config.currentSchoolYearId || schoolYears[0]?.id || "");
+    setFeeGradeLevel("");
+    setFeeName("");
+    setFeeCategory("Tuition");
+    setFeeAmount("");
+    setFeeRequired(true);
+    setFeeError("");
+    setFeeSavedMessage("");
+    setAddFeeOpen(true);
+  }
+
   function addFeeItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const amount = Number(formData.get("amount"));
-    const requirement = formData.get("requirement") === "required" ? "Required" : "Optional";
-
-    setFeeRows((rows) => [
-      ...rows,
-      [
-        String(formData.get("schoolYear")),
-        String(formData.get("gradeLevel")),
-        `${String(formData.get("name"))} - ${String(formData.get("category"))} - ${format(centavos(Math.round(amount * 100)))} - ${requirement}`,
-        "Active",
-      ],
-    ]);
-    setAddFeeOpen(false);
+    try {
+      if (!feeGradeLevel) throw new Error("Select a configured grade level.");
+      createMockFeeItem({
+        schoolYearId: feeSchoolYearId,
+        gradeLevel: feeGradeLevel,
+        name: feeName,
+        category: feeCategory,
+        amountCents: parseMoney(feeAmount),
+        required: feeRequired,
+      }, effectiveActorId);
+      setFeeSavedMessage(`Fee item saved for ${feeGradeLevel}. It will apply to new billing accounts only.`);
+      setAddFeeOpen(false);
+    } catch (cause) {
+      setFeeError(cause instanceof Error ? cause.message : "The fee item could not be saved.");
+    }
   }
 
   function addListItem(event: FormEvent<HTMLFormElement>) {
@@ -2779,12 +2849,13 @@ export function SettingsPage({
       section: ["Section", `${gradeLevel} - ${name}`, "Active"],
     }[listItemType]! as [string, string, string];
 
-    setSchoolRows((rows) => {
-      const updatedRows = listItemType === "schoolYear" && isCurrent
-        ? rows.map((row) => row[0] === "School year" ? [row[0], row[1].replace(" current", ""), row[2]] as [string, string, string] : row)
-        : rows;
-      return [...updatedRows, listItem];
-    });
+    try {
+      if (listItemType === "schoolYear") createMockSchoolYear(name, isCurrent, effectiveActorId);
+      else if (listItemType === "gradeLevel") createMockGradeLevel(name, effectiveActorId);
+      else setSchoolSupplementRows((rows) => [...rows, listItem]);
+    } catch {
+      return;
+    }
     setListItemType("schoolYear");
     setListItemName("");
     setAddListItemOpen(false);
@@ -2797,7 +2868,7 @@ export function SettingsPage({
         description={current.description}
         action={editable && mockActionAvailable ? (
           <Button type="button" onClick={() => {
-            if (section === "fees") setAddFeeOpen(true);
+            if (section === "fees") openFeeDialog();
             if (section === "school") setAddListItemOpen(true);
           }}>
             {current.action}
@@ -2824,7 +2895,7 @@ export function SettingsPage({
         <ListCard
           className="mt-4"
           headers={[...current.headers]}
-          rows={current.rows.map((row) => [...row])}
+          rows={(section === "fees" ? feePagination.items : current.rows).map((row) => [...row])}
           centeredColumns={
             section === "fees"
               || section === "plans"
@@ -2836,56 +2907,51 @@ export function SettingsPage({
               : []
           }
         />
+        {section === "fees" && feePagination.controls}
+        {feeSavedMessage && <p role="status" className="mt-4 text-sm text-status-success">{feeSavedMessage}</p>}
       </Card>
       {section === "fees" && editable && (
-        <MockDialog open={addFeeOpen} onOpenChange={setAddFeeOpen} title="Add fee item">
+        <MockDialog open={addFeeOpen} onOpenChange={(open) => { setAddFeeOpen(open); if (!open) setFeeError(""); }} title="Add fee item">
           <form className="mt-4 space-y-4" onSubmit={addFeeItem}>
             <p className="text-sm text-text-secondary">
               The fee item will be available only to new accounts in the selected schedule.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm font-medium" htmlFor="fee-school-year">
+              <label className="block text-sm font-medium">
                 School year
-                <select id="fee-school-year" name="schoolYear" className={inputClass} defaultValue="SY 2026-2027">
-                  <option>SY 2026-2027</option>
-                </select>
+                <span className="mt-1 block"><DropdownSelect aria-label="School year" value={feeSchoolYearId} options={[{ value: "", label: "Select school year" }, ...schoolYears.map((year) => ({ value: year.id, label: year.label }))]} onChange={(value) => { setFeeSchoolYearId(value); setFeeError(""); }} disabled={schoolYears.length === 0} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
               </label>
-              <label className="block text-sm font-medium" htmlFor="fee-grade-level">
+              <label className="block text-sm font-medium">
                 Grade level
-                <select id="fee-grade-level" name="gradeLevel" className={inputClass} defaultValue="Grade 7">
-                  <option>Grade 7</option>
-                  <option>Grade 8</option>
-                </select>
+                <span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={feeGradeLevel} options={[{ value: "", label: "Select grade level" }, ...asDropdownOptions(gradeLevels)]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} disabled={gradeLevels.length === 0} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
               </label>
             </div>
+            {gradeLevels.length === 0 && <p role="status" className="rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm text-text-primary">No grade levels configured. Add grade levels in School Settings before creating fee items.</p>}
             <label className="block text-sm font-medium" htmlFor="fee-name">
               Fee item name
-              <input id="fee-name" name="name" required className={inputClass} />
+              <input id="fee-name" name="name" required className={inputClass} value={feeName} onChange={(event) => { setFeeName(event.target.value); setFeeError(""); }} />
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm font-medium" htmlFor="fee-category">
+              <label className="block text-sm font-medium">
                 Category
-                <select id="fee-category" name="category" className={inputClass} defaultValue="Tuition">
-                  <option>Tuition</option>
-                  <option>Miscellaneous</option>
-                  <option>Other</option>
-                </select>
+                <span className="mt-1 block"><DropdownSelect aria-label="Category" value={feeCategory} options={asDropdownOptions(["Tuition", "Miscellaneous", "Other"])} onChange={(value) => { setFeeCategory(value); setFeeError(""); }} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
               </label>
               <label className="block text-sm font-medium" htmlFor="fee-amount">
                 Amount
-                <input id="fee-amount" name="amount" type="number" min="0.01" step="0.01" required className={inputClass} />
+                <input id="fee-amount" name="amount" type="number" min="0.01" step="0.01" required className={inputClass} value={feeAmount} onChange={(event) => { setFeeAmount(event.target.value); setFeeError(""); }} />
               </label>
             </div>
             <fieldset>
               <legend className="text-sm font-medium">Account requirement</legend>
               <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="required" defaultChecked />Required</label>
-                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="optional" />Optional</label>
+                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="required" checked={feeRequired} onChange={() => setFeeRequired(true)} />Required</label>
+                <label className="flex items-center gap-2"><input name="requirement" type="radio" value="optional" checked={!feeRequired} onChange={() => setFeeRequired(false)} />Optional</label>
               </div>
             </fieldset>
+            {feeError && <p role="alert" className="text-sm text-status-error">{feeError}</p>}
             <div className="flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={() => setAddFeeOpen(false)}>Cancel</Button>
-              <Button>Add fee item</Button>
+              <Button type="submit" disabled={schoolYears.length === 0 || gradeLevels.length === 0}>Save fee item</Button>
             </div>
           </form>
         </MockDialog>
@@ -2931,9 +2997,9 @@ export function SettingsPage({
             {listItemType === "section" && (
               <label className="block text-sm font-medium" htmlFor="list-item-grade-level">
                 Grade level
-                <select id="list-item-grade-level" name="gradeLevel" className={inputClass} defaultValue="Grade 7">
-                  <option>Grade 7</option>
-                  <option>Grade 8</option>
+                <select id="list-item-grade-level" name="gradeLevel" className={inputClass} defaultValue={gradeLevels[0] ?? ""}>
+                  <option value="">Select grade level</option>
+                  {gradeLevels.map((grade) => <option key={grade} value={grade}>{grade}</option>)}
                 </select>
               </label>
             )}
@@ -2945,7 +3011,7 @@ export function SettingsPage({
             )}
             <div className="flex justify-end gap-3">
               <Button type="button" variant="secondary" onClick={() => setAddListItemOpen(false)}>Cancel</Button>
-              <Button>Add list item</Button>
+              <Button type="submit">Add list item</Button>
             </div>
           </form>
         </MockDialog>
@@ -2965,8 +3031,8 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   const [createRole, setCreateRole] = useState<Role>(defaultCreateRole);
   const filters = useTableFilters({ query: "", role: "", status: "" });
   const [users, setUsers] = useState(() => selectMockStaffUsers()
-    .filter((staff) => ["administrator", "cashier", "registrar"].includes(staff.role))
-    .sort((left, right) => ["administrator", "cashier", "registrar"].indexOf(left.role) - ["administrator", "cashier", "registrar"].indexOf(right.role))
+    .filter((staff) => staff.role !== "super_admin" || user?.role === "super_admin")
+    .sort((left, right) => ["administrator", "cashier", "accounting", "auditor", "registrar", "super_admin"].indexOf(left.role) - ["administrator", "cashier", "accounting", "auditor", "registrar", "super_admin"].indexOf(right.role))
     .map((staff) => ({
       ...staff,
       role: roleLabel(staff.role),
@@ -2975,7 +3041,10 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<Role>("cashier");
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
-  const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<(typeof users)[number] | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<(typeof users)[number] | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<(typeof users)[number] | null>(null);
+  const [archivedView, setArchivedView] = useState(false);
   const editingUser = users.find((user) => user.id === editingUserId) ?? null;
   const normalizedSearchQuery = filters.applied.query.trim().toLocaleLowerCase();
   const visibleUsers = users.filter((user) => (
@@ -2984,6 +3053,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     || user.username.toLocaleLowerCase().includes(normalizedSearchQuery))
     && (!filters.applied.role || user.role === filters.applied.role)
     && (!filters.applied.status || (user.active ? "Active" : "Inactive") === filters.applied.status)
+    && (archivedView ? Boolean(user.archivedAt) : !user.archivedAt)
   ));
   const userPagination = useClientPagination(visibleUsers, "users");
 
@@ -2991,7 +3061,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     setEditingUserId(null);
     setEditRole("cashier");
     setTemporaryPassword(null);
-    setStatusConfirmationOpen(false);
+    setStatusTarget(null);
   }
 
   function createMockUser(event: FormEvent<HTMLFormElement>) {
@@ -3037,65 +3107,88 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     )));
   }
 
+  function openEdit(user: (typeof users)[number]) {
+    setEditingUserId(user.id);
+    setEditRole((Object.entries({ administrator: "Administrator", cashier: "Cashier", accounting: "Accounting Officer", auditor: "Auditor", registrar: "Registrar", super_admin: "Super Admin" }) as Array<[Role, string]>).find(([, label]) => label === user.role)?.[0] ?? "cashier");
+    setTemporaryPassword(null);
+  }
+
   function resetPassword() {
     setTemporaryPassword("SampleReset123!");
   }
 
   function updateAccountState() {
-    if (!editingUser) return;
-    if (editingUser.isCurrentAdministrator) return;
-    if (editingUser.role === "Administrator" && editingUser.active && users.filter((item) => item.role === "Administrator" && item.active).length <= 1) {
+    if (!statusTarget) return;
+    if (statusTarget.isCurrentAdministrator) return;
+    if (statusTarget.role === "Administrator" && statusTarget.active && users.filter((item) => item.role === "Administrator" && item.active && !item.archivedAt).length <= 1) {
       setCreateError("The last active administrator cannot be deactivated.");
       return;
     }
-    const updated = updateMockStaffUser(editingUser.id, { active: !editingUser.active });
+    const updated = updateMockStaffUser(statusTarget.id, { active: !statusTarget.active });
     setUsers((currentUsers) => currentUsers.map((currentUser) => (
       currentUser.id === updated.id ? { ...currentUser, active: updated.active } : currentUser
     )));
-    setStatusConfirmationOpen(false);
+    setStatusTarget(null);
+  }
+
+  function archiveUser() {
+    if (!archiveTarget) return;
+    try {
+      const archived = archiveMockStaffUser(archiveTarget.id, user?.id ?? "user-admin");
+      setUsers((currentUsers) => currentUsers.map((currentUser) => currentUser.id === archived.id ? { ...currentUser, active: archived.active, archivedAt: archived.archivedAt, anonymizeAt: archived.anonymizeAt } : currentUser));
+      setArchiveTarget(null);
+      closeEditDialog();
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "The account could not be archived.");
+    }
+  }
+
+  function restoreUser() {
+    if (!restoreTarget) return;
+    const restored = restoreMockStaffUser(restoreTarget.id, user?.id ?? "user-admin");
+    setUsers((currentUsers) => currentUsers.map((currentUser) => currentUser.id === restored.id ? { ...currentUser, active: restored.active, archivedAt: restored.archivedAt, anonymizeAt: restored.anonymizeAt } : currentUser));
+    setRestoreTarget(null);
   }
 
   return (
     <>
       <PageHeader
         title="Users"
-        description="Create, search, edit, deactivate, reactivate, or reset user accounts."
+        description="Create, search, edit, archive, deactivate, reactivate, or reset user accounts."
         action={
           <Button onClick={() => { setCreated(false); setCreateError(""); setCreateRole(defaultCreateRole); setCreateOpen(true); }}>Create user</Button>
         }
       />
+      <div role="tablist" aria-label="User account view" className="mb-4 flex gap-2">
+        <Button type="button" role="tab" aria-selected={!archivedView} variant={archivedView ? "secondary" : "primary"} onClick={() => setArchivedView(false)}>Current users</Button>
+        <Button type="button" role="tab" aria-selected={archivedView} variant={archivedView ? "primary" : "secondary"} onClick={() => setArchivedView(true)}>Archived users</Button>
+      </div>
       <TableFilters scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
-        { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Registrar", label: "Registrar" }] },
-        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] },
+        { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Accounting Officer", label: "Accounting Officer" }, { value: "Auditor", label: "Auditor" }, { value: "Registrar", label: "Registrar" }, ...(user?.role === "super_admin" ? [{ value: "Super Admin", label: "Super Admin" }] : [])] },
+        ...(archivedView ? [] : [{ key: "status" as const, label: "Status", type: "select" as const, options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]),
       ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
       {visibleUsers.length > 0 ? (
         <ListCard
-          headers={["Name", "Username", "Role", "State", "Action"]}
-          centeredColumns={[3]}
+          headers={archivedView ? ["Name", "Username", "Role", "Archived", "Scheduled anonymization", "Action"] : ["Name", "Username", "Role", "State", "Actions"]}
+          centeredColumns={archivedView ? [3, 4, 5] : [3, 4]}
           rows={userPagination.items.map((user) => [
             user.name,
             user.username,
             user.role,
-            <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
-            <Button
-              key={`${user.id}-edit`}
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setEditingUserId(user.id);
-                setEditRole((Object.entries({ administrator: "Administrator", cashier: "Cashier", accounting: "Accounting Officer", auditor: "Auditor", registrar: "Registrar", super_admin: "Super Admin" }) as Array<[Role, string]>).find(([, label]) => label === user.role)?.[0] ?? "cashier");
-                setTemporaryPassword(null);
-              }}
-            >
-              Edit
-            </Button>,
+            ...(archivedView ? [
+              user.archivedAt?.slice(0, 10) ?? "Unavailable",
+              user.anonymizeAt?.slice(0, 10) ?? "Unavailable",
+              <Button key={`${user.id}-restore`} type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => setRestoreTarget(user)}>Restore</Button>,
+            ] : [
+              <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
+              <div key={`${user.id}-actions`} className="flex flex-wrap gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => { openEdit(user); resetPassword(); }}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
+            ]),
           ])}
         />
       ) : (
         <Card>
           <p role="status" className="text-sm text-text-secondary">
-            No users match that name or username.
+            {archivedView ? "No archived users match that search." : "No users match that name or username."}
           </p>
         </Card>
       )}
@@ -3120,7 +3213,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
             <label className="block text-sm font-medium">Username <span aria-hidden="true" className="text-status-error">*</span><input aria-label="Username" name="username" required maxLength={100} autoCapitalize="none" className={inputClass} /></label>
             <label className="block text-sm font-medium">Primary role<DropdownSelect aria-label="Primary role" value={createRole} options={createRoles.map((role) => ({ value: role, label: roleLabel(role) }))} onChange={setCreateRole} className="mt-1 w-full" align="start" /></label>
             {createError && <p role="alert" className="text-sm text-status-error">{createError}</p>}
-            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button>Create user</Button></div>
+            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button type="submit">Create user</Button></div>
           </form>
         )}
       </MockDialog>
@@ -3145,7 +3238,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               </label>
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="neutral" onClick={closeEditDialog}>Cancel</Button>
-                <Button>Save changes</Button>
+                <Button type="submit">Save changes</Button>
               </div>
             </form>
 
@@ -3173,7 +3266,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
                       type="button"
                       variant="destructive"
                       disabled={editingUser.isCurrentAdministrator}
-                      onClick={() => setStatusConfirmationOpen(true)}
+                      onClick={() => setStatusTarget(editingUser)}
                     >
                       Deactivate account
                     </Button>
@@ -3182,29 +3275,36 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
                     )}
                   </>
                 ) : (
-                  <Button type="button" variant="secondary" onClick={updateAccountState}>
+                  <Button type="button" variant="secondary" onClick={() => setStatusTarget(editingUser)}>
                     Reactivate account
                   </Button>
                 )}
+                <Button type="button" variant="destructive" disabled={editingUser.isCurrentAdministrator} onClick={() => setArchiveTarget(editingUser)}>Archive account</Button>
               </div>
             </div>
           </div>
         )}
       </MockDialog>
       <MockDialog
-        open={statusConfirmationOpen}
-        onOpenChange={setStatusConfirmationOpen}
-        title="Deactivate account?"
+        open={statusTarget !== null}
+        onOpenChange={(open) => { if (!open) setStatusTarget(null); }}
+        title={statusTarget?.active ? "Deactivate account?" : "Reactivate account?"}
       >
         <div className="mt-3">
           <p className="text-sm text-text-secondary">
-            {editingUser?.name} will no longer be able to sign in. Their account history will remain available.
+            {statusTarget?.active ? `${statusTarget.name} will no longer be able to sign in. Their account history will remain available.` : `${statusTarget?.name} will be able to sign in again.`}
           </p>
           <div className="mt-5 flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => setStatusConfirmationOpen(false)}>Cancel</Button>
-            <Button type="button" variant="destructive" onClick={updateAccountState}>Deactivate account</Button>
+            <Button type="button" variant="secondary" onClick={() => setStatusTarget(null)}>Cancel</Button>
+            <Button type="button" variant={statusTarget?.active ? "destructive" : "primary"} onClick={updateAccountState}>{statusTarget?.active ? "Deactivate account" : "Reactivate account"}</Button>
           </div>
         </div>
+      </MockDialog>
+      <MockDialog open={archiveTarget !== null} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }} title="Archive account?">
+        <div className="mt-3"><p className="text-sm text-text-secondary">{archiveTarget?.name} will lose sign-in access immediately. This MockDB account can be restored for 30 days before its identifying details are anonymized.</p><div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setArchiveTarget(null)}>Cancel</Button><Button type="button" variant="destructive" onClick={archiveUser}>Archive account</Button></div></div>
+      </MockDialog>
+      <MockDialog open={restoreTarget !== null} onOpenChange={(open) => { if (!open) setRestoreTarget(null); }} title="Restore account?">
+        <div className="mt-3"><p className="text-sm text-text-secondary">{restoreTarget?.name} will be reactivated and can sign in again.</p><div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setRestoreTarget(null)}>Cancel</Button><Button type="button" onClick={restoreUser}>Restore account</Button></div></div>
       </MockDialog>
     </>
   );

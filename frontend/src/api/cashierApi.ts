@@ -515,6 +515,7 @@ export async function recordCashPaymentForStudent(input: {
     // Keep mock-mode pages on one mutable billing dataset instead of creating
     // a detached success response that account and receipt views cannot see.
     const payment = recordMockBillingPayment({
+      billingAccountId: input.billingAccountId,
       studentNumber: input.studentNumber ?? "",
       amount: input.amount,
       paidOn: input.paidOn,

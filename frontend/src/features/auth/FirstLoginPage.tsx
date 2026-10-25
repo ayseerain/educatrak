@@ -52,7 +52,7 @@ export function FirstLoginPage() {
           </label>
           <ul className="space-y-1 text-sm">{rules.map(([rule, met]) => <li key={rule} className={met ? "text-brand-green-dark" : "text-text-secondary"}>{met ? "✓" : "○"} {rule}</li>)}</ul>
           {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
-          <Button disabled={saving}>{saving ? "Saving…" : "Save new password"}</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save new password"}</Button>
         </form>
       </section>
     </main>

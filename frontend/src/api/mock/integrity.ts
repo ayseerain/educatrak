@@ -25,7 +25,7 @@ export function mockIntegrityErrors(data: typeof rawMockDatabase = rawMockDataba
   if (!data.meta.notice.toLowerCase().includes("synthetic")) errors.push("meta.notice must state that all data is synthetic");
   if (!Number.isInteger(data.config.dueSoonDays) || data.config.dueSoonDays < 0) errors.push("config.dueSoonDays must be a non-negative integer");
 
-  const collections = ["staffUsers", "schoolYears", "students", "guardians", "studentGuardianLinks", "billingAccounts", "installments", "payments", "paymentAllocations", "voidRequests", "notificationAttempts"] as const;
+  const collections = ["staffUsers", "schoolYears", "feeSchedules", "paymentPlans", "students", "guardians", "studentGuardianLinks", "billingAccounts", "installments", "payments", "paymentAllocations", "voidRequests", "notificationAttempts"] as const;
   for (const collection of collections) errors.push(...duplicateErrors(collection, data[collection]));
 
   const ids = {
@@ -38,6 +38,16 @@ export function mockIntegrityErrors(data: typeof rawMockDatabase = rawMockDataba
     payments: new Set(data.payments.map((item) => item.id)),
   };
   if (!ids.years.has(data.config.currentSchoolYearId)) errors.push("config.currentSchoolYearId references no schoolYears.id");
+  for (const schedule of data.feeSchedules) {
+    if (!ids.years.has(schedule.schoolYearId)) errors.push(`feeSchedules.schoolYearId ${schedule.schoolYearId} does not exist`);
+    if (!data.config.grades.includes(schedule.gradeLevel)) errors.push(`feeSchedules.gradeLevel ${schedule.gradeLevel} is not configured`);
+    for (const item of schedule.items) {
+      if (!item.id || !item.name || !Number.isInteger(item.amountCents) || item.amountCents < 0 || typeof item.required !== "boolean") errors.push(`feeSchedules.${schedule.id} has an invalid fee item`);
+    }
+  }
+  for (const plan of data.paymentPlans) {
+    if (typeof plan.active !== "boolean" || !Number.isInteger(plan.downPaymentCents) || plan.downPaymentCents < 0 || !Number.isInteger(plan.installmentCount) || plan.installmentCount < 1 || !Number.isInteger(plan.firstDueDays) || plan.firstDueDays < 0 || !Number.isInteger(plan.intervalDays) || plan.intervalDays < 0) errors.push(`paymentPlans.${plan.id} is invalid`);
+  }
   for (const row of data.studentGuardianLinks) {
     if (!ids.students.has(row.studentId)) errors.push(`studentGuardianLinks.studentId ${row.studentId} does not exist`);
     if (!ids.guardians.has(row.guardianId)) errors.push(`studentGuardianLinks.guardianId ${row.guardianId} does not exist`);
