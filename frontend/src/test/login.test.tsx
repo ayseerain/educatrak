@@ -58,6 +58,8 @@ function submitLogin(username: string, password: string) {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("LoginPage", () => {
@@ -76,6 +78,27 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText(/username/i)).toHaveFocus();
     expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
+  });
+
+  it("supports sequential keyboard navigation through login controls", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const username = screen.getByLabelText(/username/i);
+    const password = screen.getByLabelText("Password", { selector: "input" });
+    const visibility = screen.getByRole("button", { name: /show password/i });
+    const submit = screen.getByRole("button", { name: /sign in/i });
+    const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
+
+    expect(username).toHaveFocus();
+    await user.tab();
+    expect(password).toHaveFocus();
+    await user.tab();
+    expect(visibility).toHaveFocus();
+    await user.tab();
+    expect(submit).toHaveFocus();
+    await user.tab();
+    expect(forgotPassword).toHaveFocus();
   });
 
   it("explains the administrator-led password reset path", async () => {
@@ -143,7 +166,7 @@ describe("LoginPage", () => {
     expect(
       await screen.findByRole("heading", { name: /good day, avery accounting/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /void approvals/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /void requests/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /preview role/i }));
     await user.click(screen.getByRole("menuitemradio", { name: /registrar/i }));
@@ -182,6 +205,34 @@ describe("LoginPage", () => {
       await screen.findByRole("alert"),
     ).toHaveTextContent(/we could not sign you in/i);
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/login");
+  });
+
+  it("shows and enforces the server-provided retry interval for a 429 response", async () => {
+    vi.stubEnv("VITE_USE_LIVE_API", "true");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/sanctum/csrf-cookie")) return new Response(null, { status: 204 });
+      if (url.endsWith("/api/auth/me")) {
+        return new Response(JSON.stringify({ message: "Unauthenticated." }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.endsWith("/api/auth/login")) {
+        return new Response(JSON.stringify({ message: "Too many attempts." }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Retry-After": "60" },
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    renderApp();
+    await screen.findByLabelText(/username/i);
+    await fillLogin("sample.cashier", "wrong-password");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/account locked\. try again in 1 minute/i);
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
   });
 
   it("shows the lockout wait time after repeated failed attempts", async () => {

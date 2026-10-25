@@ -12,6 +12,12 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("en-PH", {
   day: "numeric",
 });
 
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-PH", {
+  timeZone: TIME_ZONE,
+  month: "short",
+  day: "numeric",
+});
+
 const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-PH", {
   timeZone: TIME_ZONE,
   year: "numeric",
@@ -32,6 +38,11 @@ const TIME_FORMATTER = new Intl.DateTimeFormat("en-PH", {
 /** e.g. "Sep 21, 2026" */
 export function formatDate(value: Date | string): string {
   return DATE_FORMATTER.format(new Date(value));
+}
+
+/** e.g. "Sep 21"; use for compact chart and timeline labels. */
+export function formatShortDate(value: Date | string): string {
+  return SHORT_DATE_FORMATTER.format(new Date(value));
 }
 
 /** e.g. "Sep 21, 2026, 3:45 PM" */

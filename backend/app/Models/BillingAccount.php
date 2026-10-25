@@ -35,6 +35,16 @@ class BillingAccount extends Model
         return $this->hasMany(Installment::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(BillingAccountItem::class);
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(Adjustment::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
@@ -43,5 +53,10 @@ class BillingAccount extends Model
     public function schoolYear(): BelongsTo
     {
         return $this->belongsTo(SchoolYear::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

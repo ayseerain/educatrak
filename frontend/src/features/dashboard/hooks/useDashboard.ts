@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchDashboardSummary } from "@/api/mockAdapter";
+import { fetchDashboardSummary as fetchMockDashboardSummary } from "@/api/mockAdapter";
+import { fetchDashboardSummary as fetchLiveDashboardSummary } from "@/api/dashboardApi";
+import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 import type { AuthenticatedUser } from "@/lib/types";
 import type { DashboardRange } from "@/api/dashboardTypes";
 
@@ -11,7 +13,9 @@ import type { DashboardRange } from "@/api/dashboardTypes";
 export function useDashboard(user: AuthenticatedUser, range: DashboardRange) {
   return useQuery({
     queryKey: ["dashboard", user.id, user.role, range],
-    queryFn: () => fetchDashboardSummary(user, range),
+    queryFn: () => isLiveCashierApiEnabled()
+      ? fetchLiveDashboardSummary(range)
+      : fetchMockDashboardSummary(user, range),
     enabled: user.role !== "registrar",
     staleTime: 30_000,
   });

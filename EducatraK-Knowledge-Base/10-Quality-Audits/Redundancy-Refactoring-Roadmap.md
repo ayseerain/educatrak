@@ -6,7 +6,7 @@
 
 - One **Students & Billing** area, billing inside Student Profile; retain separate student and account domain entities and account history.
 - Keep **the same reusable payment form** inline in Student Profile and on dedicated `/payments/new` page.
-- Test Administrator, Cashier, Accounting Officer, Auditor, Registrar.
+- Test Super Admin, Administrator, Cashier, Accounting Officer, Auditor, and Registrar.
 - Include redundancy, access control, data consistency, and workflow completeness.
 - Small independent phases, evidence-based tests, owner checkpoints. No guesswork on routes, permissions or client policy.
 
@@ -31,7 +31,7 @@
 **Findings:** R01, R02, R07. **Goal:** Stop read-only roles seeing/using payment entry and inappropriate financial/contact actions.
 **Files:** `OperationalPages.tsx`, `App.tsx`, `permissions.ts`, role-specific dashboard/components, tests.
 **Checks:** inline payment form only for `payment.record`; `payment.view` still sees history; Admin/Accounting/Auditor cannot record; Auditor read-only; Registrar sees no amounts, guardians or payment history; route guards and actions match.
-**Acceptance:** tests for all five roles and denied deep links pass. No capability expansion.
+**Acceptance:** tests for all six roles and denied deep links pass. No capability expansion.
 
 ### Phase 2 — Route-ID integrity and coherent mock records (P1)
 **Findings:** R03, R04, R05, R12. **Goal:** Stop wrong-record fallback and inconsistent data across surfaces.
@@ -44,7 +44,7 @@
 **Files:** `Sidebar.tsx`, `App.tsx`, `OperationalPages.tsx`, labels, tests and approved canonical requirements update.
 **Checks:** Student Profile Billing tab includes authorized account selection, creation/navigation, schedules and historical accounts; Registrar remains limited; old URLs handled per **approved** redirect/deep-link policy.
 **Gate:** obtain decisions on old `/accounts` routes and multi-school-year UI **before** implementing affected changes.
-**Acceptance:** all five role navigation paths and bookmarked URLs tested; no lost account wizard or detail functionality.
+**Acceptance:** all six role navigation paths and bookmarked URLs tested; no lost account wizard or detail functionality.
 
 ### Phase 4 — Shared follow-up, payment and clearance context (P2)
 **Findings:** R08, R09, R13. **Goal:** Reuse logic without merging different business workflows.
@@ -83,7 +83,7 @@
 - Finding IDs:
 - Changed files and routes:
 - Behavior before / after:
-- Five-role checks:
+- Six-role checks:
 - Tests run (commands + actual results):
 - Tests not run / reason:
 - Open decisions and backend dependencies:

@@ -1,7 +1,6 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
-import { RecentActivity } from "./RecentActivity";
-import { Banknote, ShieldCheck, ReceiptText, Users } from "lucide-react";
+import { ArrowRight, Banknote, ReceiptText, ShieldCheck, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
 import type { AuditorDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
@@ -25,33 +24,27 @@ export function AuditorDashboard({ summary, range }: AuditorDashboardProps) {
         />
         <DashboardStatCard
           label={statLabels.collections}
-          value={format(summary.todayCollectionsTotal)}
+          value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)}
           icon={Banknote}
         />
         <DashboardStatCard
           label={statLabels.payments}
-          value={String(summary.paymentsTodayCount)}
+          value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)}
           icon={ReceiptText}
         />
       </div>
 
-      <DashboardWorkPanel
-        title={en.dashboard.auditorWorkspace}
-        description={en.dashboard.auditorWorkspaceHelp}
-        items={[
-          {
-            label: en.dashboard.openAuditReview,
-            detail: en.dashboard.openAuditReviewHelp,
-            to: "/admin/audit-log",
-            icon: ShieldCheck,
-          },
-        ]}
-      />
+      <div className="flex justify-end">
+        <Link
+          to="/admin/audit-log"
+          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-brand-green-light/60 bg-white px-3 text-sm font-semibold text-brand-green-dark transition-colors hover:bg-[#EAF6EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+        >
+          <ShieldCheck aria-hidden="true" className="h-4 w-4" />
+          {en.dashboard.openAuditReview}
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      </div>
 
-      {/* Auditor view is read-only: no showActions, no record/void/approve controls. */}
-      <section aria-labelledby="recent-activity-heading">
-        <RecentActivity payments={summary.recentActivity} range={range} />
-      </section>
     </div>
   );
 }

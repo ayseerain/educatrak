@@ -24,6 +24,7 @@ class StorePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'idempotency_key' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9._:-]+$/'],
             'billing_account_id' => ['required', 'integer', Rule::exists('billing_accounts', 'id')],
             'amount_cents' => ['required', 'integer', 'min:1'],
             'paid_on' => ['required', 'date', 'before_or_equal:today'],
@@ -33,5 +34,13 @@ class StorePaymentRequest extends FormRequest
             'notification_channels' => ['nullable', 'array', 'min:1'],
             'notification_channels.*' => ['string', 'distinct', Rule::in(['email', 'sms'])],
         ];
+    }
+
+    /** @return array<string, mixed> */
+    public function validationData(): array
+    {
+        return array_merge(parent::validationData(), [
+            'idempotency_key' => $this->header('Idempotency-Key'),
+        ]);
     }
 }

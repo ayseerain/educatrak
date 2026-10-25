@@ -29,7 +29,20 @@ These were flagged in the original handoff as assumptions to be treated as confi
 8. Due-soon window (default 7 days) and the duplicate-payment time window (default 10 minutes) (Section 25, rules 4–5).
 9. Whether the backend uses Inertia.js or a separate REST API — default assumed here: SPA + REST (Section 28.2); components should stay presentational so either works.
 
-### 31.4 SMS notifications and load cost
-- **Issue:** Receipt and reminder notifications can now be sent by email, SMS, or both, but no carrier, gateway, price, or party responsible for the SMS load cost has been approved.
-- **Current interpretation:** SMS is an optional notification channel. `SMS_LOAD_FEE_CENTS` is an optional server setting; when configured, its value is recorded with the SMS notification and is never added to a student's billing balance. When it is not configured, the UI states that no fee is configured rather than inventing an amount.
-- **What needs confirmation:** Select an SMS gateway, define consent and mobile-number verification rules, identify the party that bears the load cost, approve the configured rate and effective date, and specify delivery/retry handling.
+### 31.5 Administrator assignment of Accounting Officer accounts
+- **Issue:** The role specification gives Administrator user-management access but does not explicitly say whether an Administrator may create or promote an account into the Accounting Officer role. The mockup-based proposal also calls this out for confirmation.
+- **Current interpretation:** Keep the Accounting Officer role and existing responsibilities. Until MCA confirms the assignment policy, Administrator requests cannot create or promote accounts into that role; this is enforced in the backend validation. Existing Accounting Officer accounts remain manageable, subject to the existing role and last-active-Administrator safeguards.
+- **What needs confirmation:** Confirm which role may create or promote Accounting Officer accounts and whether separate approval is required. If approved, update both the API policy and role-administration UI together.
+
+### 31.6 Administrator account assignment lifecycle
+- **Issue:** The implementation prompt proposes a sixth, privileged Super Admin role and requires a protected bootstrap account, but the school has not confirmed recovery, second-person approval, or long-term account ownership policy. Administrator-to-Administrator promotion and Accounting Officer assignment also require policy boundaries.
+- **Current implementation:** Per the requester's explicit instruction to execute the prompt, Super Admin is implemented as a separate governance role with no payment, student, or finance-operation capabilities. The initial account can only be created through the trusted `educatrak:bootstrap-super-admin` server-console command; it is marked protected, hidden from Administrator listings, and cannot be edited or reset through user-management APIs. Super Admin can create Administrator and non-privileged accounts; Accounting Officer assignment remains blocked for both roles. Administrator cannot create or promote an account into Super Admin or newly assign Administrator. This implementation is not evidence of MCA policy approval.
+- **What needs confirmation:** MCA must still designate who may run bootstrap, approve break-glass recovery and second-person controls, confirm whether multiple Super Admins or later Super Admin assignment will ever be allowed, and confirm Administrator peer-promotion and Accounting Officer assignment policy. Finance/report read access remains denied to Super Admin except the separate audit-review capability. Do not expose a public Super Admin creation path.
+- **Reviewed:** Sunday, October 25, 2026 — 11:53:55 +08:00.
+
+### 31.7 Dashboard school-year range without a current school year
+- **Issue:** The dashboard offers a “This school year” range, but the requirements do not define its behavior when no school year is marked current.
+- **Current implementation:** `DashboardController::schoolYearStart` uses the current date as the range start when no current school year exists, making the range cover only today. This fallback is not approved as school policy.
+- **Current interpretation:** No policy interpretation is approved; leave the behavior tracked and do not treat the one-day fallback as settled.
+- **What needs confirmation:** The MCA finance/system-settings owner must specify whether to reject the range, return an empty result, select another configured period, or require a current school year. Then align API, UI messaging, and focused coverage.
+- **Reviewed:** Sunday, October 25, 2026 — 10:51:18 +08:00.

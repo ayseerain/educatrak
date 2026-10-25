@@ -18,6 +18,7 @@ class Payment extends Model
         'billing_account_id',
         'student_id',
         'amount_cents',
+        'balance_after_cents',
         'method',
         'paid_on',
         'backdate_reason',

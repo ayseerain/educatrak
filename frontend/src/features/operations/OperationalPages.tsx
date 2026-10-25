@@ -1,6 +1,5 @@
 // The static mock fixtures intentionally model incomplete server responses.
 // Route and role behavior is covered at the component boundary until API types land.
-// @ts-nocheck
 import {
   useEffect,
   useState,
@@ -9,16 +8,18 @@ import {
   type ReactNode,
 } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
+  Navigate,
   Link,
   useLocation,
   useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, Check, ChevronsUpDown, CircleDashed, Search } from "lucide-react";
+import { ArrowLeft, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
+import { useClientPagination } from "@/components/ui/useClientPagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
@@ -29,59 +30,35 @@ import {
   payments,
   getBillingAccount,
   getCurrentBillingAccount,
-  getDueInstallments,
   getMockPayment,
   getNextDueRecord,
   getPaymentsForStudent,
-  getStudentBillingAccounts,
   getStudentById,
 } from "@/features/students/mockBilling";
 import { studentMatchesSearch } from "@/features/students/studentSearch";
 import { can, canViewReport, type ReportKind } from "@/lib/permissions";
 import { format, centavos } from "@/lib/money";
-import { roleLabel } from "@/auth/session";
+import { roleLabel, useSession } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
-import { recordCashPaymentForStudent, type NotificationChannel, type SavedCashPayment } from "@/api/cashierApi";
-import type { AuthenticatedUser, Capability } from "@/lib/types";
+import { isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type SavedCashPayment } from "@/api/cashierApi";
+import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
+import { LivePaymentEntryPage } from "@/features/operations/LivePaymentEntryPage";
+import { LivePaymentReceiptPage, LivePaymentsPage } from "@/features/operations/LivePaymentsPage";
+import { LiveVoidsPage } from "@/features/operations/LiveVoidsPage";
+import { LiveCloseOutHistory, LiveDailyCloseOut } from "@/features/operations/LiveCloseouts";
+import { LiveAdminLog } from "@/features/operations/LiveAdminLog";
+import { LiveAuditLog } from "@/features/operations/LiveAuditLog";
+import { notificationRows, notificationStatusOptions, mockGuardianEmail, mockGuardianMobile } from "@/features/operations/mockNotificationData";
+import { LiveDailyReport } from "@/features/reports/LiveDailyReport";
+import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
+import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
+import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettingsPage";
+import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
+import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
+import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 
 const firstStudent = students[0]!;
-const dueRecordsByStudentId = {
-  "sample-1001": [
-    {
-      account: "SY 2026-2027 tuition",
-      installment: "Installment 1",
-      dueDate: "Oct 01, 2026",
-      status: "Due soon",
-      amountDue: centavos(125000),
-    },
-  ],
-  "sample-1002": [
-    {
-      account: "SY 2026-2027 tuition",
-      installment: "Installment 1",
-      dueDate: "Sep 30, 2026",
-      status: "Due soon",
-      amountDue: centavos(420000),
-    },
-  ],
-  "sample-1003": [
-    {
-      account: "SY 2026-2027 tuition",
-      installment: "Installment 1",
-      dueDate: "Sep 15, 2026",
-      status: "Overdue",
-      amountDue: centavos(450000),
-    },
-    {
-      account: "SY 2026-2027 tuition",
-      installment: "Installment 2",
-      dueDate: "Oct 01, 2026",
-      status: "Due soon",
-      amountDue: centavos(400000),
-    },
-  ],
-};
 const gradeOptions = [
   "Kinder",
   ...Array.from({ length: 12 }, (_, index) => `Grade ${index + 1}`),
@@ -119,42 +96,6 @@ function isSeniorHighGrade(grade: string) {
 function getSectionOptions(grade: string) {
   return sectionOptionsByGrade[grade] ?? [];
 }
-const notificationRows = [
-  {
-    student: students[0].name,
-    type: "Payment confirmation",
-    channel: "Email",
-    recipient: "guardian@example.test",
-    loadFee: "—",
-    status: "Queued",
-    attempts: "1",
-  },
-  {
-    student: students[1].name,
-    type: "Payment confirmation",
-    channel: "SMS",
-    recipient: "0917 555 0101",
-    loadFee: "Not configured",
-    status: "Sent",
-    attempts: "1",
-  },
-  {
-    student: students[2].name,
-    type: "Reminder",
-    channel: "SMS",
-    recipient: "No guardian mobile number",
-    loadFee: "—",
-    status: "Failed",
-    attempts: "0",
-  },
-];
-const notificationStatusOptions = [
-  { value: "all", label: "All statuses" },
-  ...Array.from(new Set(notificationRows.map((row) => row.status))).map(
-    (status) => ({ value: status.toLowerCase(), label: status }),
-  ),
-];
-
 const primaryLinkClass =
   "inline-flex min-h-control items-center justify-center gap-2 rounded-md bg-brand-green-dark px-4 text-sm font-medium text-white transition-colors hover:bg-[#023d12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
 const secondaryLinkClass =
@@ -287,6 +228,17 @@ function SystemPage({
   );
 }
 
+function UnavailableFeaturePage({ title, backTo = "/", feature }: { title: string; backTo?: string; feature: string }) {
+  return (
+    <>
+      <PageHeader title={title} description={`${feature} is not available in the live system yet.`} backTo={backTo} backLabel="Return" />
+      <Card>
+        <p className="text-sm text-text-secondary">Contact an administrator for help with this task.</p>
+      </Card>
+    </>
+  );
+}
+
 export function RequireCapability({
   user,
   capability,
@@ -300,11 +252,41 @@ export function RequireCapability({
 }
 
 export function ProfilePage({ user }: { user: AuthenticatedUser }) {
+  const { changeOwnPassword } = useSession();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  function save(event: FormEvent) {
+  const [isSaving, setIsSaving] = useState(false);
+  async function save(event: FormEvent) {
     event.preventDefault();
-    setSaved(true);
+    setError(null);
+    setSaved(false);
+    if (newPassword !== confirmation) {
+      setError("The new password and confirmation do not match.");
+      return;
+    }
+    if (newPassword.length < 12) {
+      setError("Use at least 12 characters for your new password.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await changeOwnPassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmation("");
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The password could not be changed.");
+    } finally {
+      setIsSaving(false);
+    }
   }
+  const lastLogin = user.lastLoginAt
+    ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(user.lastLoginAt))
+    : "Not available";
   return (
     <>
       <PageHeader
@@ -316,12 +298,12 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
         <Card>
           <h2 className="text-lg font-semibold">Change password</h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Role: {roleLabel(user.role)} · Last login: Sep 27, 2026, 9:00 AM
+            Role: {roleLabel(user.role)} · Last login: {lastLogin}
           </p>
           <form className="mt-4 space-y-3" onSubmit={save}>
             <label className="block text-sm font-medium">
               Current password
-              <input required type="password" className={inputClass} />
+              <input required type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className={inputClass} />
             </label>
             <label className="block text-sm font-medium">
               New password
@@ -329,22 +311,29 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
                 required
                 minLength={12}
                 type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
                 className={inputClass}
               />
             </label>
             <p className="text-sm text-text-secondary">
-              Use at least 12 characters with upper- and lowercase letters, a
-              number, and a symbol.
+              Use at least 12 characters.
             </p>
+            <label className="block text-sm font-medium">
+              Confirm new password
+              <input required minLength={12} type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className={inputClass} />
+            </label>
+            {error && <p role="alert" className="text-sm font-medium text-status-danger-text">{error}</p>}
             {saved && (
               <p
                 role="status"
                 className="text-sm font-medium text-brand-green-dark"
               >
-                Password change submitted.
+                Password changed successfully.
               </p>
             )}
-            <Button>Update password</Button>
+            <Button disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button>
           </form>
         </Card>
       </div>
@@ -353,10 +342,14 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
 }
 
 export function StudentsPage({ user }: { user: AuthenticatedUser }) {
-  const [query, setQuery] = useState("");
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentsPage user={user} />;
+  const filters = useTableFilters({ query: "", grade: "", section: "", status: "" });
   const limited = user.role === "registrar";
   const shown = students.filter((student) =>
-    studentMatchesSearch(student, query),
+    studentMatchesSearch(student, filters.applied.query)
+    && (!filters.applied.grade || student.grade.toLowerCase().includes(filters.applied.grade.toLowerCase()))
+    && (!filters.applied.section || student.section.toLowerCase().includes(filters.applied.section.toLowerCase()))
+    && (!filters.applied.status || student.studentStatus === filters.applied.status),
   );
   return (
     <>
@@ -375,20 +368,20 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
-      <Card className="space-y-4 p-0">
-        <div className="border-b border-border p-4">
-          <StudentSearchField
+      <TableFilters scope="Sample students" defaults={{ query: "", grade: "", section: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search students" }} searchSlot={
+        <StudentSearchField
             id="student-search"
             label="Search students"
-            value={query}
-            onChange={setQuery}
+            value={filters.draft.query}
+            onChange={(value) => filters.search("query", value)}
             autoFocus
             placeholder="Search by student name or number"
-            wrapperClassName="max-w-lg"
+            wrapperClassName="min-w-[min(100%,16rem)] flex-1"
             labelClassName="sr-only"
             inputClassName={cn(inputClass, "m-0")}
           />
-        </div>
+      } fields={[{ key: "grade", label: "Grade" }, { key: "section", label: "Section" }, { key: "status", label: "Enrollment status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]} onChange={filters.update} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
+      <Card className="space-y-4 p-0">
         <StudentTable user={user} data={shown} />
       </Card>
     </>
@@ -497,12 +490,13 @@ function StudentTable({
   );
 }
 export function StudentFormPage({ edit }: { edit?: boolean }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title={edit ? "Edit student" : "Add student"} description="Student editing is not available in the live system." backTo={edit ? "/students" : "/students"} /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with student record changes.</p></Card></>;
   const navigate = useNavigate();
   const [duplicate, setDuplicate] = useState(false);
-  const initialGrade = edit ? students[0].grade : gradeOptions[0].value;
+  const initialGrade = edit ? firstStudent.grade : gradeOptions[0]!.value;
   const [grade, setGrade] = useState(initialGrade);
   const [section, setSection] = useState(
-    edit ? students[0].section : getSectionOptions(initialGrade)[0]?.value ?? "",
+    edit ? firstStudent.section : getSectionOptions(initialGrade)[0]?.value ?? "",
   );
   const [strand, setStrand] = useState("");
   const seniorHigh = isSeniorHighGrade(grade);
@@ -510,7 +504,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
   function selectGrade(nextGrade: string) {
     setGrade(nextGrade);
     setSection(getSectionOptions(nextGrade)[0]?.value ?? "");
-    setStrand(isSeniorHighGrade(nextGrade) ? strandOptions[0].value : "");
+    setStrand(isSeniorHighGrade(nextGrade) ? strandOptions[0]!.value : "");
   }
 
   function submit(e: FormEvent<HTMLFormElement>) {
@@ -542,7 +536,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
             <input
               name="name"
               required
-              defaultValue={edit ? students[0].name : ""}
+              defaultValue={edit ? firstStudent.name : ""}
               className={inputClass}
             />
           </label>
@@ -631,9 +625,8 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
   );
 }
 
-type StudentProfileTab = "overview" | "billing" | "payments" | "followup";
-
 export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentProfilePage user={user} />;
   const { id } = useParams();
   const student = getStudentById(id);
   if (!student) return <NotFoundPage />;
@@ -658,78 +651,9 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
       {limited ? (
         <StudentOverviewPanel student={student} user={user} limited />
       ) : (
-        <StudentProfileTabs user={user} student={student} />
+        <StudentOverviewPanel student={student} user={user} />
       )}
     </>
-  );
-}
-
-function StudentProfileTabs({
-  user,
-  student,
-}: {
-  user: AuthenticatedUser;
-  student: typeof firstStudent;
-}) {
-  const options = [
-    { id: "overview", label: "Overview" },
-    can(user, "account.view") ? { id: "billing", label: "Billing" } : null,
-    can(user, "payment.view") || can(user, "payment.record")
-      ? { id: "payments", label: "Payments" }
-      : null,
-    can(user, "followup.view") ? { id: "followup", label: "Follow-up" } : null,
-  ].filter(Boolean) as { id: StudentProfileTab; label: string }[];
-  const preferred = options[0];
-  const [activeView, setActiveView] = useState<StudentProfileTab>(
-    preferred?.id ?? "overview",
-  );
-  const visibleView = options.some((option) => option.id === activeView)
-    ? activeView
-    : preferred?.id;
-
-  if (!preferred || !visibleView) return null;
-
-  return (
-    <Card className="mt-5">
-      <h2 className="font-semibold">Student profile</h2>
-      <div
-        className="mt-3 flex flex-wrap gap-3"
-        role="tablist"
-        aria-label="Student profile sections"
-      >
-        {options.map((option) => (
-          <Button
-            key={option.id}
-            type="button"
-            variant={visibleView === option.id ? "primary" : "secondary"}
-            role="tab"
-            aria-selected={visibleView === option.id}
-            aria-controls={`student-profile-${option.id}`}
-            onClick={() => setActiveView(option.id)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-      <div
-        className="mt-5 rounded-md border border-border bg-surface p-4"
-        id={`student-profile-${visibleView}`}
-        role="tabpanel"
-      >
-        {visibleView === "overview" && (
-          <StudentOverviewPanel student={student} user={user} />
-        )}
-        {visibleView === "billing" && (
-          <StudentBillingPanel student={student} user={user} />
-        )}
-        {visibleView === "payments" && (
-          <StudentPaymentsPanel student={student} user={user} />
-        )}
-        {visibleView === "followup" && (
-          <StudentFollowupWidget student={student} user={user} />
-        )}
-      </div>
-    </Card>
   );
 }
 
@@ -744,11 +668,7 @@ function StudentOverviewPanel({
 }) {
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-4">
-        <Metric
-          label="Clearance"
-          value={<StatusBadge status={student.clearanceStatus} />}
-        />
+      <div className="grid gap-4 md:grid-cols-3">
         {!limited && (
           <Metric label="Account balance" value={format(student.balance)} />
         )}
@@ -888,238 +808,22 @@ function ClearanceSummary({
   );
 }
 
-function StudentBillingPanel({
-  student,
-  user,
-}: {
-  student: typeof firstStudent;
-  user: AuthenticatedUser;
-}) {
-  const accounts = getStudentBillingAccounts(student.id);
-  const current = getCurrentBillingAccount(student.id);
-  if (!current)
-    return (
-      <p className="text-sm text-text-secondary">
-        No billing account is available for this student.
-      </p>
-    );
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">Billing accounts</h3>
-          <p className="text-sm text-text-secondary">
-            Current, upcoming, and historical school-year records.
-          </p>
-        </div>
-      </div>
-      <ListCard
-        headers={["School year", "Balance", "Status", "Open"]}
-        rows={accounts.map((account) => [
-          account.schoolYear,
-          format(account.balance),
-          account.status,
-          "View account",
-        ])}
-      />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Metric label="Current school year" value={current.schoolYear} />
-        <Metric label="Balance" value={format(current.balance)} />
-        <Metric
-          label="Billing status"
-          value={<StatusBadge status={current.status} />}
-        />
-      </div>
-      <ListCard
-        headers={["Due date", "Amount", "Paid", "Status"]}
-        rows={current.schedule.map((installment) => [
-          installment.dueDate,
-          format(installment.amount),
-          format(installment.paid),
-          installment.status.replace("_", " "),
-        ])}
-      />
-      <StudentStatementWidget student={student} user={user} />
-    </div>
-  );
-}
-
-function StudentPaymentsPanel({
-  student,
-  user,
-}: {
-  student: typeof firstStudent;
-  user: AuthenticatedUser;
-}) {
-  const studentPayments = getPaymentsForStudent(student.id);
-  return (
-    <div className="space-y-5">
-      {can(user, "payment.record") && (
-        <PaymentWorkflow preselectedStudent={student} compact />
-      )}
-      <ListCard
-        headers={["Receipt", "Date", "Amount", "Status"]}
-        rows={studentPayments.map((payment) => [
-          payment.receiptNo,
-          payment.paidOn,
-          format(payment.amount),
-          payment.status,
-        ])}
-      />
-    </div>
-  );
-}
-
-function StudentFollowupWidget({
-  student,
-  user,
-}: {
-  student: typeof firstStudent;
-  user: AuthenticatedUser;
-}) {
-  const [selected, setSelected] = useState(true);
-  const dueRecords = getDueInstallments(student.id).map(
-    ({ account, installment, amountDue }) => ({
-      account: `${account.schoolYear} tuition`,
-      installment: installment.label,
-      dueDate: installment.dueDate,
-      status: installment.status
-        .replace("_", " ")
-        .replace(/^./, (firstLetter) => firstLetter.toUpperCase()),
-      amountDue,
-    }),
-  );
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h3 className="text-base font-semibold">Follow-up reminder</h3>
-        <p className="mt-1 text-sm text-text-secondary">
-          Review the due records before preparing a reminder.
-        </p>
-      </div>
-      <div className="grid gap-3 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm md:grid-cols-3">
-        <div>
-          <span className="block text-xs font-medium uppercase text-text-secondary">
-            Student
-          </span>
-          <span className="mt-1 block font-semibold text-text-primary">
-            {student.name}
-          </span>
-        </div>
-        <div>
-          <span className="block text-xs font-medium uppercase text-text-secondary">
-            Guardian email
-          </span>
-          <span className="mt-1 block font-semibold text-text-primary">
-            guardian@example.test
-          </span>
-        </div>
-        <div>
-          <span className="block text-xs font-medium uppercase text-text-secondary">
-            Total due
-          </span>
-          <span className="mt-1 block font-semibold text-text-primary">
-            {format(student.balance)}
-          </span>
-        </div>
-      </div>
-      <div className="overflow-x-auto rounded-md border border-border bg-white">
-        <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b bg-surface">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                Due record
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                Payment for
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                Due date
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium uppercase text-text-secondary">
-                Status
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase text-text-secondary">
-                Amount due
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {dueRecords.map((record) => (
-              <tr
-                className="border-b border-border last:border-0"
-                key={`${record.account}-${record.installment}`}
-              >
-                <td className="px-4 py-3 align-middle text-text-primary">
-                  {record.account}
-                </td>
-                <td className="px-4 py-3 align-middle font-medium text-text-primary">
-                  {record.installment}
-                </td>
-                <td className="px-4 py-3 align-middle text-text-primary">
-                  {record.dueDate}
-                </td>
-                <td className="px-4 py-3 align-middle text-center text-text-primary">
-                  {renderTableCell(record.status)}
-                </td>
-                <td className="px-4 py-3 text-right align-middle font-semibold text-text-primary">
-                  {format(record.amountDue)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(event) => setSelected(event.target.checked)}
-          />{" "}
-          Include this student in the reminder batch
-        </label>
-        {can(user, "followup.send") && (
-          <Button disabled={!selected}>Prepare reminder</Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StudentStatementWidget({
-  student,
-  user,
-}: {
-  student: typeof firstStudent;
-  user: AuthenticatedUser;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-semibold">Statement of account</h3>
-          <p className="mt-1 text-sm text-text-secondary">
-            Fees, payments, and remaining balance for {student.name}.
-          </p>
-        </div>
-        {can(user, "statement.print") && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => window.print()}
-          >
-            Print
-          </Button>
-        )}
-      </div>
-      <StudentStatementTable />
-    </div>
-  );
-}
+const mockAccountFilters = { query: "", schoolYear: "", grade: "", status: "", minimumBalance: "", maximumBalance: "" };
 
 export function AccountsPage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveBillingAccounts />;
+  const filters = useTableFilters(mockAccountFilters);
+  const visibleAccounts = billingAccounts.filter((account) => {
+    const student = getStudentById(account.studentId);
+    const applied = filters.applied;
+    const balance = Number(account.balance) / 100;
+    return (!applied.query || `${student?.name ?? ""} ${student?.number ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
+      && (!applied.schoolYear || account.schoolYear.toLowerCase().includes(applied.schoolYear.toLowerCase()))
+      && (!applied.grade || student?.grade.toLowerCase().includes(applied.grade.toLowerCase()))
+      && (!applied.status || account.status === applied.status)
+      && (!applied.minimumBalance || balance >= Number(applied.minimumBalance))
+      && (!applied.maximumBalance || balance <= Number(applied.maximumBalance));
+  });
   return (
     <>
       <PageHeader
@@ -1133,8 +837,14 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
+      <TableFilters scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or student number" }} fields={[
+        { key: "schoolYear", label: "School year" }, { key: "grade", label: "Grade" },
+        { key: "status", label: "Billing status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Current", label: "Current" }, { value: "Due soon", label: "Due soon" }, { value: "Overdue", label: "Overdue" }] },
+        { key: "minimumBalance", label: "Minimum balance (PHP)", type: "number", min: "0", step: "0.01" },
+        { key: "maximumBalance", label: "Maximum balance (PHP)", type: "number", min: "0", step: "0.01" },
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />
       <ListCard
-        rows={billingAccounts.map((account) => [
+        rows={visibleAccounts.map((account) => [
           getStudentById(account.studentId)?.name ?? "Unknown student",
           account.schoolYear,
           format(account.balance),
@@ -1146,6 +856,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function AccountWizardPage() {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title="Create billing account" description="Account creation is not available in the live system yet." backTo="/accounts" /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with billing account setup.</p></Card></>;
   const [step, setStep] = useState(1);
   const [studentQuery, setStudentQuery] = useState("");
   const [created, setCreated] = useState(false);
@@ -1244,6 +955,7 @@ export function AccountWizardPage() {
   );
 }
 export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveBillingAccountDetail user={user} />;
   const { id } = useParams();
   const account = getBillingAccount(id);
   const student = account && getStudentById(account.studentId);
@@ -1285,6 +997,8 @@ export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 
+const mockPaymentFilters = { query: "", status: "", dateFrom: "", dateTo: "", amountMinimum: "", amountMaximum: "" };
+
 export function PaymentsPage({
   user,
   detail = false,
@@ -1292,7 +1006,21 @@ export function PaymentsPage({
   user: AuthenticatedUser;
   detail?: boolean;
 }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentsPage user={user} detail={detail} />;
   if (detail) return <PaymentDetailPage user={user} />;
+  const filters = useTableFilters(mockPaymentFilters);
+  const visiblePayments = payments.filter((payment) => {
+    const applied = filters.applied;
+    const student = getStudentById(payment.studentId);
+    const amount = Number(payment.amount) / 100;
+    return (!applied.query || `${payment.receiptNo} ${student?.name ?? ""} ${student?.number ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
+      && (!applied.status || payment.status === applied.status)
+      && (!applied.dateFrom || payment.paidOn >= applied.dateFrom)
+      && (!applied.dateTo || payment.paidOn <= applied.dateTo)
+      && (!applied.amountMinimum || amount >= Number(applied.amountMinimum))
+      && (!applied.amountMaximum || amount <= Number(applied.amountMaximum));
+  });
+  const paymentPagination = useClientPagination(visiblePayments, "payments");
   return (
     <>
       <PageHeader
@@ -1310,9 +1038,14 @@ export function PaymentsPage({
           ) : undefined
         }
       />
+      <TableFilters scope="Sample payments" defaults={mockPaymentFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search receipt or student" }} fields={[
+        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Posted", label: "Posted" }, { value: "Void pending", label: "Void pending" }, { value: "Voided", label: "Voided" }] },
+        { key: "dateFrom", label: "Paid on or after", type: "date" }, { key: "dateTo", label: "Paid on or before", type: "date" },
+        { key: "amountMinimum", label: "Minimum amount (PHP)", type: "number", min: "0", step: "0.01" }, { key: "amountMaximum", label: "Maximum amount (PHP)", type: "number", min: "0", step: "0.01" },
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />
       <ListCard
         headers={["Receipt", "Student", "Amount", "Method", "Status"]}
-        rows={payments.map((payment) => [
+        rows={paymentPagination.items.map((payment) => [
           <Link className={inlineLinkClass} to={`/payments/${payment.id}`}>
             {payment.receiptNo}
           </Link>,
@@ -1322,13 +1055,13 @@ export function PaymentsPage({
           payment.status,
         ])}
       />
+      {paymentPagination.controls}
     </>
   );
 }
 function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
   const payment = getMockPayment(id ?? "mock-payment-0");
-  const canDownloadPdf = can(user, "receipt.pdf");
   const account = payment && getBillingAccount(payment.accountId);
   const student = payment && getStudentById(payment.studentId);
 
@@ -1350,11 +1083,6 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
                 ? "Reprint receipt"
                 : "View receipt"}
             </Link>
-            {canDownloadPdf && (
-              <Button type="button" variant="secondary">
-                Download PDF receipt
-              </Button>
-            )}
             {can(user, "payment.void.approve") && (
               <Link className={secondaryLinkClass} to="/voids">
                 Review void queue
@@ -1386,7 +1114,6 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
             ["Receipt number", payment.receiptNo],
             ["Notification", "Queued"],
             ["Reprint count", "0"],
-            ["PDF downloads", canDownloadPdf ? "Available" : "View only"],
             ["Void state", payment.status],
           ]}
         />
@@ -1510,10 +1237,12 @@ function PaymentWorkflow({
     setIsSaving(true);
     try {
       const payment = await recordCashPaymentForStudent({
+        billingAccountId: selectedStudent!.id,
         studentNumber: selectedStudent!.number,
         amount: enteredCentavos,
         paidOn: manilaDateInput(),
         notificationChannels,
+        idempotencyKey: "development-mock",
       });
       setSavedPayment(payment);
       setStage("saved");
@@ -1816,6 +1545,7 @@ function PaymentWorkflow({
 }
 export function PaymentEntryPage() {
   const [searchParams] = useSearchParams();
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentEntryPage />;
   const selectedStudent = students.find(
     (student) => student.id === searchParams.get("student"),
   );
@@ -1839,9 +1569,9 @@ export function PaymentEntryPage() {
 
 export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentReceiptPage user={user} />;
   const payment = getMockPayment(id ?? "mock-payment-0");
   const canPrint = can(user, "receipt.reprint");
-  const canDownloadPdf = can(user, "receipt.pdf");
   const student = payment && getStudentById(payment.studentId);
   const account = payment && getBillingAccount(payment.accountId);
 
@@ -1854,16 +1584,9 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
         description="EducaTrak · Mendez Christian Academy"
         backTo={`/payments/${payment.id}`}
         action={
-          canPrint || canDownloadPdf ? (
+          canPrint ? (
             <div className="flex flex-wrap gap-2">
-              {canPrint && (
-                <Button onClick={() => window.print()}>Print receipt</Button>
-              )}
-              {canDownloadPdf && (
-                <Button type="button" variant="secondary">
-                  Download PDF
-                </Button>
-              )}
+              <Button onClick={() => window.print()}>Print receipt</Button>
             </div>
           ) : undefined
         }
@@ -1889,14 +1612,14 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
         </div>
         <p className="mt-6 text-sm">
           This is a half-page receipt block. Receipt title and paper size are
-          controlled in settings. Reprints, void marks, and PDF downloads are
-          logged by the backend.
+          controlled in settings.
         </p>
       </Card>
     </div>
   );
 }
 export function VoidsPage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveVoidsPage user={user} />;
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
   const [resolved, setResolved] = useState<string | null>(null);
   const canDecide = can(user, "payment.void.approve");
@@ -1911,10 +1634,10 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
         headers={["Receipt", "Requester", "Reason", "Amount", "Decision"]}
         rows={[
           [
-            "OR-2026-001001",
+            "OR-2026-001007",
             "Casey Cashier (sample)",
             "Duplicate entry during handover",
-            "₱2,000.00",
+            "₱800.00",
             resolved ??
               (canDecide ? (
                 <div className="flex flex-wrap gap-2">
@@ -1945,8 +1668,8 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
       >
         <p className="mt-2 text-sm text-text-secondary">
           {decision === "approve"
-            ? "Approve the void for OR-2026-001001 and return ₱2,000.00 to the billing account?"
-            : "Reject the void request for OR-2026-001001?"}
+            ? "Approve the void for OR-2026-001007 and return ₱800.00 to the billing account?"
+            : "Reject the void request for OR-2026-001007?"}
         </p>
         <label className="mt-4 block text-sm font-medium">
           Decision note
@@ -1996,37 +1719,6 @@ function SectionTabs({
   );
 }
 
-function RemindersNotificationsTabs({
-  user,
-  active,
-}: {
-  user: AuthenticatedUser;
-  active: "followup" | "notifications";
-}) {
-  const items = [
-    can(user, "followup.view")
-      ? {
-          label: "Due follow-ups",
-          to: "/followup",
-          active: active === "followup",
-        }
-      : null,
-    can(user, "notification.view")
-      ? {
-          label: "Notification log",
-          to: "/notifications",
-          active: active === "notifications",
-        }
-      : null,
-  ].filter(Boolean) as { label: string; to: string; active: boolean }[];
-
-  if (active === "followup" && items.length === 1) return null;
-
-  return (
-    <SectionTabs items={items} />
-  );
-}
-
 function CloseoutTabs({
   user,
   active,
@@ -2058,11 +1750,13 @@ function CloseoutTabs({
   );
 }
 
-export function FollowupPage({ user }: { user: AuthenticatedUser }) {
+export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Follow-up" backTo="/students" feature="Follow-up reminders" />;
+  const filters = useTableFilters({ query: "", daysMinimum: "" });
   const followupAccounts = [
     {
-      id: students[2].id,
-      student: students[2].name,
+      id: students[2]!.id,
+      student: students[2]!.name,
       guardianEmail: null,
       guardianMobile: "0917 555 0103",
       amountOverdue: "₱8,500.00",
@@ -2070,15 +1764,19 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
       lastReminder: "Never",
     },
     {
-      id: students[1].id,
-      student: students[1].name,
-      guardianEmail: "guardian@example.test",
-      guardianMobile: "0917 555 0102",
+      id: students[1]!.id,
+      student: students[1]!.name,
+      guardianEmail: mockGuardianEmail,
+      guardianMobile: mockGuardianMobile,
       amountOverdue: "₱4,200.00",
       daysOverdue: "3",
       lastReminder: "Sep 20, 2026",
     },
   ];
+  const visibleFollowupAccounts = followupAccounts.filter((account) => (
+    account.student.toLowerCase().includes(filters.applied.query.trim().toLowerCase())
+    && (!filters.applied.daysMinimum || Number(account.daysOverdue) >= Number(filters.applied.daysMinimum))
+  ));
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>(["email"]);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -2091,7 +1789,11 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
     || (notificationChannels.includes("sms") && account.guardianMobile)
   ));
   const skippedAccounts = selectedAccounts.filter((account) => !recipientAccounts.includes(account));
-  const allAccountsSelected = selectedAccountIds.length === followupAccounts.length;
+  const allAccountsSelected = visibleFollowupAccounts.length > 0 && visibleFollowupAccounts.every((account) => selectedAccountIds.includes(account.id));
+  const applyFollowupFilters = () => { setSelectedAccountIds([]); filters.apply(); };
+  const clearFollowupFilters = () => { setSelectedAccountIds([]); filters.clear(); };
+  const searchFollowup = (key: "query" | "daysMinimum", value: string) => { setSelectedAccountIds([]); filters.search(key, value); };
+  const removeFollowupFilter = (key: "query" | "daysMinimum") => { setSelectedAccountIds([]); filters.remove(key); };
 
   function toggleAccountSelection(accountId: string, checked: boolean) {
     setSelectedAccountIds((current) => (
@@ -2105,7 +1807,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
     <>
       <PageHeader
         title="Reminders & notifications"
-        description="Review due follow-ups and notification history without merging their records."
+        description="Review reminder activity and notification history without merging their records."
         action={
           can(user, "followup.send") ? (
             <Button disabled={selectedAccounts.length === 0 || notificationChannels.length === 0 || sent} onClick={() => setReviewOpen(true)}>
@@ -2114,22 +1816,23 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
-      <RemindersNotificationsTabs user={user} active="followup" />
-      <Card>
-        <h2 className="font-semibold">Due follow-ups</h2>
-        {sent && (
-          <p role="status" className="mt-2 text-sm font-medium text-brand-green-dark">
-            {`Reminder${recipientAccounts.length === 1 ? "" : "s"} sent today to ${recipientAccounts.length} guardian${recipientAccounts.length === 1 ? "" : "s"}.`}
-            {skippedAccounts.length > 0
-              ? ` ${skippedAccounts.length} account${skippedAccounts.length === 1 ? " was" : "s were"} skipped because ${skippedAccounts.length === 1 ? "it has" : "they have"} no selected notification contact.`
-              : ""}
-          </p>
-        )}
-        <fieldset className="mt-3 rounded-md border border-border bg-surface p-3">
-          <legend className="px-1 text-sm font-medium">Reminder delivery</legend>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2">
+      {workspaceSwitch}
+      <TableFilters scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onReset={filters.reset} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />
+      {sent && (
+        <p role="status" className="mb-4 text-sm font-medium text-brand-green-dark">
+          {`Reminder${recipientAccounts.length === 1 ? "" : "s"} sent today to ${recipientAccounts.length} guardian${recipientAccounts.length === 1 ? "" : "s"}.`}
+          {skippedAccounts.length > 0
+            ? ` ${skippedAccounts.length} account${skippedAccounts.length === 1 ? " was" : "s were"} skipped because ${skippedAccounts.length === 1 ? "it has" : "they have"} no selected notification contact.`
+            : ""}
+        </p>
+      )}
+      <ListCard
+            title="Follow-up list"
+            toolbar={can(user, "followup.send") ? (
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
               <input
+                className="h-3.5 w-3.5 accent-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
                 type="checkbox"
                 checked={notificationChannels.includes("email")}
                 disabled={sent}
@@ -2138,9 +1841,10 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
                 ))}
               />
               Email
-            </label>
-            <label className="flex items-center gap-2">
+                </label>
+                <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
               <input
+                className="h-3.5 w-3.5 accent-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
                 type="checkbox"
                 checked={notificationChannels.includes("sms")}
                 disabled={sent}
@@ -2149,27 +1853,20 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
                 ))}
               />
               SMS
-            </label>
+                </label>
+                <label className="ml-auto inline-flex min-h-8 items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={allAccountsSelected}
+                    disabled={sent}
+                    onChange={(event) => setSelectedAccountIds(
+                      event.target.checked ? visibleFollowupAccounts.map((account) => account.id) : [],
+                    )}
+                  />
+                  Select all listed accounts
+                </label>
           </div>
-          {notificationChannels.includes("sms") && (
-            <p className="mt-2 text-sm text-text-secondary">
-              SMS load fee: not configured. Any configured carrier/load cost is recorded with the notification and is not added to a student's balance.
-            </p>
-          )}
-        </fieldset>
-        <label className="mt-3 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={allAccountsSelected}
-            disabled={sent}
-            onChange={(event) => setSelectedAccountIds(
-              event.target.checked ? followupAccounts.map((account) => account.id) : [],
-            )}
-          />{" "}
-          Select all listed accounts
-        </label>
-        <div className="mt-4">
-          <ListCard
+            ) : undefined}
             headers={[
               "Student",
               "Guardian email",
@@ -2177,7 +1874,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
               "Days overdue",
               "Last reminder",
             ]}
-            rows={followupAccounts.map((account) => [
+            rows={visibleFollowupAccounts.map((account) => [
               can(user, "followup.send") ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -2196,9 +1893,7 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
               account.lastReminder,
             ])}
           />
-        </div>
-      </Card>
-      {can(user, "followup.send") && (
+      {can(user, "followup.print") && (
         <div className="mt-4">
           <Button type="button" variant="secondary" onClick={() => window.print()}>
             Print list
@@ -2256,12 +1951,13 @@ export function FollowupPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function ClearancePage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Clearance" feature="Clearance" />;
   const [studentQuery, setStudentQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(firstStudent);
   return (
     <>
       <PageHeader
-        title="Clearance verification"
+        title="Clearance"
         description="Search a student to review enrollment and exam-period clearance."
       />
       <Card className="mb-4">
@@ -2287,6 +1983,7 @@ export function ClearancePage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function PermitPage() {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Exam permit" backTo="/clearance" feature="Exam permits" />;
   return (
     <div className="print-page mx-auto max-w-2xl">
       <PageHeader
@@ -2304,6 +2001,8 @@ export function PermitPage() {
   );
 }
 export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
+  const [searchParams] = useSearchParams();
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveDailyCloseOut user={user} initialView={searchParams.get("view") === "history" ? "history" : "today"} />;
   const [counted, setCounted] = useState("");
   const [varianceReason, setVarianceReason] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -2326,7 +2025,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Daily close-out"
+        title="Close-out"
         description="Review today's totals and history from one close-out area."
       />
       <CloseoutTabs user={user} active="today" />
@@ -2435,6 +2134,8 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
+  if (user.role === "cashier" && (import.meta.env.PROD || isLiveCashierApiEnabled())) return <Navigate to="/closeout?view=history" replace />;
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveCloseOutHistory user={user} />;
   return (
     <>
       <PageHeader
@@ -2459,6 +2160,9 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
 }
 
 export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
+  const mockStatementRoute = import.meta.env.DEV && !isLiveCashierApiEnabled()
+    ? "/reports/student/sample-1001"
+    : undefined;
   const reports: {
     kind: ReportKind;
     name: string;
@@ -2486,8 +2190,10 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
     {
       kind: "statement",
       name: "Student statement",
-      route: "/reports/student/sample-1001",
-      detail: "Fees, schedule, payments, and balance.",
+      route: mockStatementRoute ?? "/students",
+      detail: mockStatementRoute
+        ? "Fees, schedule, payments, and balance."
+        : "Search for a student, then open their statement.",
     },
   ];
   return (
@@ -2498,7 +2204,7 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
       />
       <div className="grid gap-4 md:grid-cols-2">
         {reports
-          .filter((report) => canViewReport(user, report.kind))
+          .filter((report) => canViewReport(user, report.kind) && (!import.meta.env.PROD && !isLiveCashierApiEnabled() || report.kind !== "monthly"))
           .map((report) => (
             <Link
               className="block rounded-md border border-border border-l-4 border-l-brand-green bg-white p-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
@@ -2515,7 +2221,7 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
     </>
   );
 }
-function StudentStatementTable() {
+function StudentStatementTable({ query = "", item = "" }: { query?: string; item?: string }) {
   return (
     <ListCard
       headers={["Item", "Due date", "Amount", "Paid"]}
@@ -2523,12 +2229,18 @@ function StudentStatementTable() {
         ["Tuition installment", "Oct 01, 2026", "₱2,500.00", "₱1,250.00"],
         ["Payment OR-2026-001000", "Sep 27, 2026", "₱1,250.00", "₱1,250.00"],
         ["Balance", "After payment", "₱1,250.00", "—"],
-      ]}
+      ].filter((row) => (!item || row[0] === item) && row.some((value) => value.toLowerCase().includes(query.trim().toLowerCase())))}
     />
   );
 }
 export function StudentStatementPage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentStatement user={user} studentId={id ?? ""} />;
+  return <MockStudentStatementPage user={user} studentId={id ?? ""} />;
+}
+
+function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser; studentId: string }) {
+  const id = studentId;
   const student = getStudentById(id);
   const account = student && getCurrentBillingAccount(student.id);
   if (!student || !account) return <NotFoundPage />;
@@ -2567,9 +2279,25 @@ export function StudentStatementPage({ user }: { user: AuthenticatedUser }) {
 }
 export function ReportPage({
   type,
+  user,
+}: {
+  type: "daily" | "monthly" | "outstanding" | "statement";
+  user: AuthenticatedUser;
+}) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
+    if (type === "daily") return <LiveDailyReport user={user} />;
+    if (type === "outstanding") return <LiveOutstandingReport />;
+    return <Card><p className="text-sm text-text-secondary">This report is unavailable until its live data source is connected.</p></Card>;
+  }
+  return <MockReportPage type={type} />;
+}
+
+function MockReportPage({
+  type,
 }: {
   type: "daily" | "monthly" | "outstanding" | "statement";
 }) {
+  const filters = useTableFilters({ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" });
   const reports = {
     daily: {
       title: "Daily collection report",
@@ -2580,7 +2308,7 @@ export function ReportPage({
       rows: [
         ["Method total", "Cash", "2", "₱3,250.00"],
         ["Cashier total", "Casey Cashier (sample)", "2", "₱3,250.00"],
-        ["Voids", "OR-2026-001001 pending", "1", "₱2,000.00"],
+        ["Voids", "OR-2026-001007 pending", "1", "₱800.00"],
       ],
     },
     monthly: {
@@ -2601,8 +2329,8 @@ export function ReportPage({
       filter: "outstanding",
       headers: ["Student", "Grade & section", "Balance", "Status"],
       rows: [
-        [students[2].name, "Grade 9 - Pine", "₱8,500.00", "Overdue"],
-        [students[1].name, "Grade 8 - Maple", "₱4,200.00", "Due soon"],
+        [students[2]!.name, "Grade 9 - Pine", "₱8,500.00", "Overdue"],
+        [students[1]!.name, "Grade 8 - Maple", "₱4,200.00", "Due soon"],
       ],
     },
     statement: {
@@ -2615,6 +2343,18 @@ export function ReportPage({
     },
   } as const;
   const report = reports[type];
+  const reportRows = report.rows.filter((row) => {
+    const query = filters.applied.query.trim().toLowerCase();
+    if (query && !row.some((value) => value.toLowerCase().includes(query))) return false;
+    if (filters.applied.category && row[0] !== filters.applied.category) return false;
+    if (type !== "outstanding") return true;
+    const gradeSection = row[1]?.toLowerCase() ?? "";
+    const balance = Number((row[2] ?? "").replace(/[^\d.]/g, ""));
+    return (!filters.applied.grade || gradeSection.includes(filters.applied.grade.trim().toLowerCase()))
+      && (!filters.applied.section || gradeSection.includes(filters.applied.section.trim().toLowerCase()))
+      && (!filters.applied.minimumBalance || balance >= Number(filters.applied.minimumBalance))
+      && (!filters.applied.status || row[3] === filters.applied.status);
+  });
   return (
     <>
       <PageHeader
@@ -2630,43 +2370,18 @@ export function ReportPage({
           </div>
         }
       />
+      <TableFilters scope={`Sample ${type} report`} defaults={{ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
+        { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
+        { key: "minimumBalance", label: "Minimum balance", type: "number", min: "0", step: "0.01" },
+        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Overdue", label: "Overdue" }, { value: "Due soon", label: "Due soon" }] },
+      ] : [{ key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
       <Card>
-        <div className="mb-4 flex flex-wrap gap-3">
-          {report.filter === "outstanding" ? (
-            <>
-              <input
-                aria-label="Grade"
-                className={cn(inputClass, "m-0 max-w-40")}
-                placeholder="Grade"
-              />
-              <input
-                aria-label="Section"
-                className={cn(inputClass, "m-0 max-w-40")}
-                placeholder="Section"
-              />
-              <input
-                aria-label="Minimum balance"
-                className={cn(inputClass, "m-0 max-w-48")}
-                placeholder="Minimum balance"
-              />
-            </>
-          ) : (
-            <input
-              type={report.filter === "month" ? "month" : "date"}
-              className={cn(inputClass, "m-0 max-w-48")}
-              defaultValue={
-                report.filter === "month" ? "2026-09" : "2026-09-27"
-              }
-            />
-          )}
-          <Button variant="secondary">Apply filters</Button>
-        </div>
         {type === "statement" ? (
-          <StudentStatementTable />
+          <StudentStatementTable query={filters.applied.query} item={filters.applied.category} />
         ) : (
           <ListCard
             headers={[...report.headers]}
-            rows={report.rows.map((row) => [...row])}
+            rows={reportRows.map((row) => [...row])}
           />
         )}
       </Card>
@@ -2674,19 +2389,20 @@ export function ReportPage({
   );
 }
 
-export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
+export function MockNotificationsPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedStatus = notificationStatusOptions.some(
     (option) => option.value === searchParams.get("status"),
   )
     ? searchParams.get("status")!
     : "all";
-  const rows =
-    selectedStatus === "all"
-      ? notificationRows
-      : notificationRows.filter(
-          (row) => row.status.toLowerCase() === selectedStatus,
-        );
+  const defaults = { query: "", status: "all", channel: "" };
+  const filters = useTableFilters(defaults, { ...defaults, status: selectedStatus });
+  const rows = notificationRows.filter((row) => (
+    row.student.toLowerCase().includes(filters.applied.query.trim().toLowerCase())
+    && (filters.applied.status === "all" || row.status.toLowerCase() === filters.applied.status)
+    && (!filters.applied.channel || row.channel === filters.applied.channel)
+  ));
 
   function updateStatusFilter(nextStatus: string) {
     const nextParams = new URLSearchParams(searchParams);
@@ -2698,13 +2414,24 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
     setSearchParams(nextParams);
   }
 
+  function applyNotificationFilters() { filters.apply(); updateStatusFilter(filters.draft.status); }
+  function clearNotificationFilters() { filters.clear(); updateStatusFilter("all"); }
+  function removeNotificationFilter(key: "query" | "status" | "channel") {
+    filters.remove(key);
+    if (key === "status") updateStatusFilter("all");
+  }
+
   return (
     <>
       <PageHeader
         title="Reminders & notifications"
         description="View email and SMS notification attempts, including any configured SMS load fee."
       />
-      <RemindersNotificationsTabs user={user} active="notifications" />
+      {workspaceSwitch}
+      <TableFilters scope="Sample notification log" defaults={defaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[
+        { key: "status", label: "Status", type: "select", options: notificationStatusOptions },
+        { key: "channel", label: "Channel", type: "select", options: [{ value: "", label: "All channels" }, { value: "Email", label: "Email" }, { value: "SMS", label: "SMS" }] },
+      ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onReset={filters.reset} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />
       <Card className="overflow-hidden p-0">
         <div className="border-b border-border p-4">
           <h2 className="font-semibold">Notification log</h2>
@@ -2728,48 +2455,7 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
                   SMS load fee
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex min-h-8 items-center gap-1 rounded-md px-1 font-medium uppercase text-text-secondary transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
-                        aria-label="Filter status"
-                      >
-                        Status
-                        <ChevronsUpDown
-                          aria-hidden="true"
-                          className="h-3.5 w-3.5"
-                        />
-                      </button>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Portal>
-                      <DropdownMenu.Content
-                        align="start"
-                        sideOffset={6}
-                        className="dropdown-menu z-50 min-w-44 rounded-md border border-border bg-white p-1 shadow-lg"
-                      >
-                        <DropdownMenu.RadioGroup
-                          value={selectedStatus}
-                          onValueChange={updateStatusFilter}
-                        >
-                          {notificationStatusOptions.map((option) => (
-                            <DropdownMenu.RadioItem
-                              key={option.value}
-                              value={option.value}
-                              className="dropdown-menu-item"
-                            >
-                              <DropdownMenu.ItemIndicator className="flex size-4 items-center justify-center">
-                                <Check aria-hidden="true" className="size-4" />
-                              </DropdownMenu.ItemIndicator>
-                              <span>{option.label}</span>
-                            </DropdownMenu.RadioItem>
-                          ))}
-                        </DropdownMenu.RadioGroup>
-                      </DropdownMenu.Content>
-                    </DropdownMenu.Portal>
-                  </DropdownMenu.Root>
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
                   Attempts
                 </th>
@@ -2822,6 +2508,7 @@ export function NotificationsPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function ImportPage() {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Ledger import" feature="Ledger import" />;
   const [stage, setStage] = useState<"upload" | "map" | "preview" | "result">(
     "upload",
   );
@@ -2903,6 +2590,24 @@ export function SettingsPage({
   section: "fees" | "plans" | "clearance" | "school" | "receipt" | "email";
   editable: boolean;
 }) {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
+    const titles = {
+      fees: "Fee schedules",
+      plans: "Payment plans",
+      clearance: "Clearance rules",
+      school: "School and academic lists",
+      receipt: "Receipt settings",
+      email: "Email settings",
+    } satisfies Record<typeof section, string>;
+
+    if (section === "fees" || section === "plans") {
+      return <LiveFinanceSettingsPage section={section} editable={editable} />;
+    }
+    return <UnavailableFeaturePage
+      title={titles[section]}
+      feature={section === "clearance" ? "Clearance configuration" : "System configuration"}
+    />;
+  }
   const [addFeeOpen, setAddFeeOpen] = useState(false);
   const [addListItemOpen, setAddListItemOpen] = useState(false);
   const [listItemType, setListItemType] = useState<"schoolYear" | "term" | "examPeriod" | "gradeLevel" | "section">("schoolYear");
@@ -2911,7 +2616,7 @@ export function SettingsPage({
     ["SY 2026-2027", "Grade 7", "Tuition - ₱12,500.00", "Active"],
     ["SY 2026-2027", "Grade 8", "Miscellaneous - optional", "Active"],
   ]);
-  const [schoolRows, setSchoolRows] = useState([
+  const [schoolRows, setSchoolRows] = useState<[string, string, string][]>([
     ["School year", "SY 2026-2027 current", "Active"],
     ["Exam period", "Midterm starts Oct 15, 2026", "Active"],
     ["Payment method", "Cash only", "Active"],
@@ -2974,7 +2679,7 @@ export function SettingsPage({
       rows: [
         ["Receipt title", "Acknowledgment Receipt", "Active"],
         ["Paper size", "Letter", "Active"],
-        ["Next receipt number", "OR-2026-001002", "Read-only"],
+        ["Next receipt number", "OR-2026-001011", "Read-only"],
       ],
     },
     email: {
@@ -3033,11 +2738,11 @@ export function SettingsPage({
       examPeriod: ["Exam period", `${name} starts ${formattedStartDate}`, "Active"],
       gradeLevel: ["Grade level", name, "Active"],
       section: ["Section", `${gradeLevel} - ${name}`, "Active"],
-    }[listItemType];
+    }[listItemType]! as [string, string, string];
 
     setSchoolRows((rows) => {
       const updatedRows = listItemType === "schoolYear" && isCurrent
-        ? rows.map((row) => row[0] === "School year" ? [row[0], row[1].replace(" current", ""), row[2]] : row)
+        ? rows.map((row) => row[0] === "School year" ? [row[0], row[1].replace(" current", ""), row[2]] as [string, string, string] : row)
         : rows;
       return [...updatedRows, listItem];
     });
@@ -3198,10 +2903,12 @@ export function SettingsPage({
     </>
   );
 }
-export function UsersPage() {
+export function UsersPage({ user }: { user?: AuthenticatedUser }) {
+  if (import.meta.env.PROD) return user ? <LiveUsersPage user={user} /> : <UnavailableFeaturePage title="User administration" feature="User administration" />;
+  if (isLiveCashierApiEnabled() && user) return <LiveUsersPage user={user} />;
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const filters = useTableFilters({ query: "", role: "", status: "" });
   const [users, setUsers] = useState([
     {
       id: "user-administrator",
@@ -3232,11 +2939,13 @@ export function UsersPage() {
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
   const editingUser = users.find((user) => user.id === editingUserId) ?? null;
-  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
+  const normalizedSearchQuery = filters.applied.query.trim().toLocaleLowerCase();
   const visibleUsers = users.filter((user) => (
-    !normalizedSearchQuery
+    (!normalizedSearchQuery
     || user.name.toLocaleLowerCase().includes(normalizedSearchQuery)
-    || user.username.toLocaleLowerCase().includes(normalizedSearchQuery)
+    || user.username.toLocaleLowerCase().includes(normalizedSearchQuery))
+    && (!filters.applied.role || user.role === filters.applied.role)
+    && (!filters.applied.status || (user.active ? "Active" : "Inactive") === filters.applied.status)
   ));
 
   function closeEditDialog() {
@@ -3278,26 +2987,13 @@ export function UsersPage() {
         title="User administration"
         description="Create, search, edit, deactivate, reactivate, or reset user accounts."
         action={
-          <>
-            <label className="sr-only" htmlFor="user-search">Search users</label>
-            <div className="relative w-full sm:w-80">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted-readable"
-              />
-              <input
-                id="user-search"
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by name or username"
-                className={cn(inputClass, "m-0 w-full pl-9")}
-              />
-            </div>
-            <Button onClick={() => setCreateOpen(true)}>Create user</Button>
-          </>
+          <Button onClick={() => setCreateOpen(true)}>Create user</Button>
         }
       />
+      <TableFilters scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
+        { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Registrar", label: "Registrar" }] },
+        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] },
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
       {visibleUsers.length > 0 ? (
         <ListCard
           headers={["Name", "Username", "Role", "State", "Action"]}
@@ -3444,61 +3140,91 @@ export function UsersPage() {
   );
 }
 export function RolesPage() {
+  const roles: { role: Role; label: string }[] = [
+    { role: "super_admin", label: "Super Admin" },
+    { role: "administrator", label: "Administrator" },
+    { role: "cashier", label: "Cashier" },
+    { role: "accounting", label: "Accounting Officer" },
+    { role: "auditor", label: "Auditor" },
+    { role: "registrar", label: "Registrar" },
+  ];
+  const permissions: { area: string; action: string; capability: Capability }[] = [
+    { area: "Dashboard", action: "View dashboard", capability: "dashboard.view" },
+    { area: "Students", action: "View student records", capability: "student.view" },
+    { area: "Students", action: "Edit student records", capability: "student.edit" },
+    { area: "Guardian details", action: "View contact details", capability: "guardianContact.view" },
+    { area: "Billing accounts", action: "View accounts", capability: "account.view" },
+    { area: "Billing accounts", action: "Create accounts", capability: "account.create" },
+    { area: "Payments", action: "View payment history", capability: "payment.view" },
+    { area: "Payments", action: "Record payments", capability: "payment.record" },
+    { area: "Payments", action: "Request payment voids", capability: "payment.void.request" },
+    { area: "Payments", action: "Review payment voids", capability: "payment.void.view" },
+    { area: "Payments", action: "Approve payment voids", capability: "payment.void.approve" },
+    { area: "Receipts", action: "Reprint receipts", capability: "receipt.reprint" },
+    { area: "Follow-up", action: "View overdue follow-up", capability: "followup.view" },
+    { area: "Follow-up", action: "Print overdue follow-up list", capability: "followup.print" },
+    { area: "Follow-up", action: "Send reminders", capability: "followup.send" },
+    { area: "Reports", action: "View reports", capability: "report.view" },
+    { area: "Reports", action: "Print student statements", capability: "statement.print" },
+    { area: "Finance settings", action: "View fee and plan settings", capability: "settings.finance.view" },
+    { area: "Finance settings", action: "Manage finance settings", capability: "settings.finance.manage" },
+    { area: "System settings", action: "View system settings", capability: "settings.system.view" },
+    { area: "System settings", action: "Manage system settings", capability: "settings.system.manage" },
+    { area: "Users and security", action: "Manage user accounts", capability: "user.manage" },
+    { area: "Users and security", action: "Review security events", capability: "security.events.view" },
+    { area: "Audit", action: "View audit history", capability: "audit.view" },
+    { area: "Notifications", action: "View notification log", capability: "notification.view" },
+    { area: "Notifications", action: "Retry failed notifications", capability: "notification.retry" },
+    { area: "Close-out", action: "Submit cashier close-out", capability: "closeout.submit" },
+    { area: "Close-out", action: "Review and sign off close-out", capability: "closeout.signoff" },
+    { area: "Close-out", action: "View close-out history", capability: "closeout.view" },
+    { area: "Clearance", action: "Search limited student identity", capability: "clearance.lookup" },
+    { area: "Clearance", action: "View clearance status", capability: "clearance.view" },
+    { area: "Exam permits", action: "Print exam permits", capability: "permit.print" },
+    { area: "Operations", action: "Manage backups", capability: "backup.manage" },
+  ];
+  const roleUsers = roles.map(({ role, label }) => ({ id: `role-${role}`, name: label, role }));
+
   return (
     <>
       <PageHeader
         title="Role matrix"
-        description="Read-only reference for exclusive primary ownership and narrow supporting access."
+        description="Current interface access by role. The server enforces permissions for every request."
       />
-      <ListCard
-        headers={[
-          "Primary module",
-          "Administrator",
-          "Cashier",
-          "Accounting",
-          "Auditor",
-          "Registrar",
-        ]}
-        rows={[
-          ["Users, system, backups, security", "Owns", "—", "—", "—", "—"],
-          [
-            "Students, billing, payments, follow-ups, close-out",
-            "—",
-            "Owns",
-            "—",
-            "—",
-            "—",
-          ],
-          [
-            "Policies, void approval, close-out sign-off, reports",
-            "—",
-            "—",
-            "Owns",
-            "—",
-            "—",
-          ],
-          ["Independent audit review", "—", "—", "—", "Owns", "—"],
-          [
-            "Clearance verification and exam permits",
-            "—",
-            "—",
-            "—",
-            "—",
-            "Owns",
-          ],
-        ]}
-      />
+      <Card className="overflow-x-auto">
+        <p className="mb-4 text-sm text-text-secondary">Allowed indicates a role capability. Some workflows remain unavailable until their live APIs are ready; API permission checks remain authoritative.</p>
+        <table className="w-full min-w-[960px] border-collapse text-left text-sm">
+          <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">
+            <th scope="col" className="px-3 py-3">Area</th>
+            <th scope="col" className="px-3 py-3">Action</th>
+            {roles.map(({ role, label }) => <th key={role} scope="col" className="px-3 py-3">{label}</th>)}
+          </tr></thead>
+          <tbody>{permissions.map(({ area, action, capability }) => <tr key={`${area}-${capability}`} className="border-b last:border-0">
+            <th scope="row" className="px-3 py-3 font-medium">{area}</th>
+            <td className="px-3 py-3">{action}</td>
+            {roleUsers.map((user) => <td key={user.role} className="px-3 py-3">{can(user, capability) ? "Allowed" : "Unavailable"}</td>)}
+          </tr>)}</tbody>
+        </table>
+      </Card>
     </>
   );
-}
-export function AuditPage({ user }: { user: AuthenticatedUser }) {
+}export function AuditPage({ user }: { user: AuthenticatedUser }) {
+  if (import.meta.env.PROD) return user.role === "administrator" ? <LiveAdminLog /> : <LiveAuditLog />;
+  if (isLiveCashierApiEnabled()) return user.role === "administrator" ? <LiveAdminLog /> : <LiveAuditLog />;
+  const filters = useTableFilters({ query: "", event: "" });
+  const matchesAuditRow = (row: string[]) => row.some((value) => value.toLowerCase().includes(filters.applied.query.trim().toLowerCase()))
+    && (!filters.applied.event || row.some((value) => value.toLowerCase().includes(filters.applied.event.toLowerCase())));
+  const filterBar = <TableFilters scope={user.role === "administrator" ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: user.role === "administrator"
+    ? [{ value: "", label: "All events" }, { value: "Sign-in", label: "Sign-in" }, { value: "Sign-out", label: "Sign-out" }, { value: "Password reset", label: "Password reset" }, { value: "deactivated", label: "Deactivation" }, { value: "reactivated", label: "Reactivation" }]
+    : [{ value: "", label: "All events" }, { value: "payment", label: "Payment" }, { value: "void", label: "Void" }, { value: "sign-off", label: "Close-out sign-off" }] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
   if (user.role === "administrator")
     return (
       <>
         <PageHeader
-        title="Admin Log"
+        title="Security"
           description="Review authentication and account-administration events. Entries cannot be changed or deleted."
         />
+        {filterBar}
         <ListCard
         headers={["When", "Account", "Event", "Status", "Details"]}
         centeredColumns={[3]}
@@ -3545,16 +3271,17 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
               "Recorded",
               "sample.cashier: Inactive -> Active",
             ],
-          ]}
+          ].filter(matchesAuditRow)}
         />
       </>
     );
   return (
     <>
       <PageHeader
-        title="Independent audit review"
+        title="Audit"
         description="Read-only review of authorized financial history, void decisions, close-out records, and audit events."
       />
+      {filterBar}
       <div className="space-y-5">
         <Card>
           <h2 className="font-semibold">Transaction and void history</h2>
@@ -3579,7 +3306,7 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
                 "Pending Accounting review",
                 "Review required",
               ],
-            ]}
+            ].filter(matchesAuditRow)}
           />
         </Card>
         <Card>
@@ -3594,7 +3321,7 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
                 "₱0.00",
                 "Awaiting sign-off",
               ],
-            ]}
+            ].filter(matchesAuditRow)}
           />
         </Card>
         <Card>
@@ -3617,7 +3344,7 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
                 "OR-2026-001001",
                 "Pending decision",
               ],
-            ]}
+            ].filter(matchesAuditRow)}
           />
         </Card>
       </div>
@@ -3625,6 +3352,7 @@ export function AuditPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function BackupPage() {
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Backup and recovery" feature="Backup and restore operations" />;
   return (
     <>
       <PageHeader
@@ -3672,16 +3400,22 @@ function Metric({ label, value }: { label: string; value: ReactNode }) {
 function ListCard({
   headers,
   rows,
+  title,
+  toolbar,
   className,
   centeredColumns = [],
 }: {
   headers: string[];
   rows: ReactNode[][];
+  title?: string;
+  toolbar?: ReactNode;
   className?: string;
   centeredColumns?: number[];
 }) {
   return (
     <Card className={cn("overflow-hidden p-0", className)}>
+      {title && <div className="border-b border-border p-4"><h2 className="font-semibold">{title}</h2></div>}
+      {toolbar && <div className="border-b border-border bg-surface/40 p-3">{toolbar}</div>}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] border-collapse text-left text-sm">
           <thead>

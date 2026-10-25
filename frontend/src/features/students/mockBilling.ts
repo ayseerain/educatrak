@@ -1,12 +1,12 @@
-import { centavos } from "@/lib/money";
+import { centavos, type Centavos } from "@/lib/money";
 import { students } from "@/features/students/mockStudents";
 
 export interface MockInstallment {
   id: string;
   label: string;
   dueDate: string;
-  amount: number;
-  paid: number;
+  amount: Centavos;
+  paid: Centavos;
   status: "paid" | "current" | "due_soon" | "overdue";
 }
 
@@ -14,9 +14,9 @@ export interface MockBillingAccount {
   id: string;
   studentId: string;
   schoolYear: string;
-  totalDue: number;
-  totalPaid: number;
-  balance: number;
+  totalDue: Centavos;
+  totalPaid: Centavos;
+  balance: Centavos;
   status: "Current" | "Due soon" | "Overdue";
   schedule: MockInstallment[];
 }
@@ -27,11 +27,13 @@ export interface MockPayment {
   studentId: string;
   receiptNo: string;
   paidOn: string;
-  amount: number;
+  amount: Centavos;
   status: "Posted" | "Void pending" | "Voided";
-  balanceAfter: number;
-  allocations: { installmentId: string; amount: number }[];
+  balanceAfter: Centavos;
+  allocations: { installmentId: string; amount: Centavos }[];
 }
+
+export const CURRENT_MOCK_SCHOOL_YEAR = "SY 2026-2027";
 
 export const billingAccounts: MockBillingAccount[] = [
   {
@@ -45,8 +47,8 @@ export const billingAccounts: MockBillingAccount[] = [
     ],
   },
   {
-    id: "account-1001-2027", studentId: "sample-1001", schoolYear: "SY 2027-2028", totalDue: centavos(1300000), totalPaid: 0, balance: centavos(1300000), status: "Current",
-    schedule: [{ id: "installment-1001-next", label: "Tuition installment", dueDate: "Sep 01, 2027", amount: centavos(250000), paid: 0, status: "current" }],
+    id: "account-1001-2027", studentId: "sample-1001", schoolYear: "SY 2027-2028", totalDue: centavos(1300000), totalPaid: centavos(0), balance: centavos(1300000), status: "Current",
+    schedule: [{ id: "installment-1001-next", label: "Tuition installment", dueDate: "Sep 01, 2027", amount: centavos(250000), paid: centavos(0), status: "current" }],
   },
   {
     id: "account-1002-2026", studentId: "sample-1002", schoolYear: "SY 2026-2027", totalDue: centavos(1000000), totalPaid: centavos(580000), balance: centavos(420000), status: "Due soon",
@@ -54,14 +56,14 @@ export const billingAccounts: MockBillingAccount[] = [
       { id: "installment-1002-1", label: "Tuition installment 1", dueDate: "Jun 01, 2026", amount: centavos(250000), paid: centavos(250000), status: "paid" },
       { id: "installment-1002-2", label: "Tuition installment 2", dueDate: "Jul 01, 2026", amount: centavos(250000), paid: centavos(250000), status: "paid" },
       { id: "installment-1002-3", label: "Tuition installment 3", dueDate: "Oct 01, 2026", amount: centavos(250000), paid: centavos(80000), status: "due_soon" },
-      { id: "installment-1002-4", label: "Tuition installment 4", dueDate: "Nov 01, 2026", amount: centavos(250000), paid: 0, status: "current" },
+      { id: "installment-1002-4", label: "Tuition installment 4", dueDate: "Nov 01, 2026", amount: centavos(250000), paid: centavos(0), status: "current" },
     ],
   },
   {
     id: "account-1003-2026", studentId: "sample-1003", schoolYear: "SY 2026-2027", totalDue: centavos(1500000), totalPaid: centavos(650000), balance: centavos(850000), status: "Overdue",
     schedule: [
-      { id: "installment-1003-1", label: "Installment 1", dueDate: "Sep 01, 2026", amount: centavos(500000), paid: 0, status: "overdue" },
-      { id: "installment-1003-2", label: "Installment 2", dueDate: "Oct 01, 2026", amount: centavos(350000), paid: 0, status: "overdue" },
+      { id: "installment-1003-1", label: "Installment 1", dueDate: "Sep 01, 2026", amount: centavos(500000), paid: centavos(0), status: "overdue" },
+      { id: "installment-1003-2", label: "Installment 2", dueDate: "Oct 01, 2026", amount: centavos(350000), paid: centavos(0), status: "overdue" },
       { id: "installment-1003-3", label: "Installment 3", dueDate: "Jun 01, 2026", amount: centavos(250000), paid: centavos(250000), status: "paid" },
       { id: "installment-1003-4", label: "Installment 4", dueDate: "Jul 01, 2026", amount: centavos(250000), paid: centavos(250000), status: "paid" },
       { id: "installment-1003-5", label: "Installment 5", dueDate: "Aug 01, 2026", amount: centavos(150000), paid: centavos(150000), status: "paid" },
@@ -71,16 +73,52 @@ export const billingAccounts: MockBillingAccount[] = [
 
 export const payments: MockPayment[] = [
   {
-    id: "mock-payment-0", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001000", paidOn: "2026-09-27", amount: centavos(125000), status: "Posted", balanceAfter: centavos(125000),
-    allocations: [{ installmentId: "installment-1001-1", amount: centavos(125000) }],
+    id: "mock-payment-0", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001000", paidOn: "2026-06-15", amount: centavos(250000), status: "Posted", balanceAfter: centavos(1000000),
+    allocations: [{ installmentId: "installment-1001-1", amount: centavos(250000) }],
   },
   {
-    id: "mock-payment-1", accountId: "account-1002-2026", studentId: "sample-1002", receiptNo: "OR-2026-001001", paidOn: "2026-09-27", amount: centavos(200000), status: "Void pending", balanceAfter: centavos(420000),
-    allocations: [{ installmentId: "installment-1002-1", amount: centavos(200000) }],
+    id: "mock-payment-1", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001001", paidOn: "2026-06-30", amount: centavos(250000), status: "Posted", balanceAfter: centavos(750000),
+    allocations: [{ installmentId: "installment-1001-2", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-2", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001002", paidOn: "2026-07-30", amount: centavos(250000), status: "Posted", balanceAfter: centavos(500000),
+    allocations: [{ installmentId: "installment-1001-3", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-3", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001003", paidOn: "2026-08-30", amount: centavos(250000), status: "Posted", balanceAfter: centavos(250000),
+    allocations: [{ installmentId: "installment-1001-4", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-4", accountId: "account-1001-2026", studentId: "sample-1001", receiptNo: "OR-2026-001004", paidOn: "2026-10-20", amount: centavos(125000), status: "Posted", balanceAfter: centavos(125000),
+    allocations: [{ installmentId: "installment-1001-5", amount: centavos(125000) }],
+  },
+  {
+    id: "mock-payment-5", accountId: "account-1002-2026", studentId: "sample-1002", receiptNo: "OR-2026-001005", paidOn: "2026-06-20", amount: centavos(250000), status: "Posted", balanceAfter: centavos(750000),
+    allocations: [{ installmentId: "installment-1002-1", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-6", accountId: "account-1002-2026", studentId: "sample-1002", receiptNo: "OR-2026-001006", paidOn: "2026-08-20", amount: centavos(250000), status: "Posted", balanceAfter: centavos(500000),
+    allocations: [{ installmentId: "installment-1002-2", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-7", accountId: "account-1002-2026", studentId: "sample-1002", receiptNo: "OR-2026-001007", paidOn: "2026-09-27", amount: centavos(80000), status: "Void pending", balanceAfter: centavos(420000),
+    allocations: [{ installmentId: "installment-1002-3", amount: centavos(80000) }],
+  },
+  {
+    id: "mock-payment-8", accountId: "account-1003-2026", studentId: "sample-1003", receiptNo: "OR-2026-001008", paidOn: "2026-07-15", amount: centavos(250000), status: "Posted", balanceAfter: centavos(1250000),
+    allocations: [{ installmentId: "installment-1003-3", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-9", accountId: "account-1003-2026", studentId: "sample-1003", receiptNo: "OR-2026-001009", paidOn: "2026-08-15", amount: centavos(250000), status: "Posted", balanceAfter: centavos(1000000),
+    allocations: [{ installmentId: "installment-1003-4", amount: centavos(250000) }],
+  },
+  {
+    id: "mock-payment-10", accountId: "account-1003-2026", studentId: "sample-1003", receiptNo: "OR-2026-001010", paidOn: "2026-09-15", amount: centavos(150000), status: "Posted", balanceAfter: centavos(850000),
+    allocations: [{ installmentId: "installment-1003-5", amount: centavos(150000) }],
   },
 ];
 
-let nextMockReceiptSequence = 1002;
+let nextMockReceiptSequence = 1011;
 
 function accountStatus(account: MockBillingAccount): MockBillingAccount["status"] {
   if (account.balance === 0) return "Current";
@@ -93,7 +131,7 @@ function synchronizeStudentBalance(studentId: string, account: MockBillingAccoun
   const student = getStudentById(studentId);
   if (!student) return;
 
-  student.balance = centavos(account.balance);
+    student.balance = account.balance;
   student.billingStatus = accountStatus(account);
   student.clearanceStatus = account.balance === 0 ? "Cleared" : "Not cleared";
 }
@@ -130,7 +168,7 @@ export function recordMockBillingPayment(input: {
     const allocation = Math.min(remaining, amountDue);
     if (allocation < 1) continue;
 
-    installment.paid += allocation;
+    installment.paid = centavos(installment.paid + allocation);
     installment.status = installment.paid === installment.amount ? "paid" : "current";
     allocations.push({ installmentId: installment.id, amount: centavos(allocation) });
     remaining -= allocation;
@@ -139,8 +177,8 @@ export function recordMockBillingPayment(input: {
 
   if (remaining !== 0) throw new Error("Payment cannot be allocated to the account schedule.");
 
-  account.totalPaid += input.amount;
-  account.balance -= input.amount;
+  account.totalPaid = centavos(account.totalPaid + input.amount);
+  account.balance = centavos(account.balance - input.amount);
   account.status = accountStatus(account);
   synchronizeStudentBalance(student.id, account);
 
@@ -175,7 +213,7 @@ export function getStudentBillingAccounts(studentId: string) {
 }
 
 export function getCurrentBillingAccount(studentId: string) {
-  return getStudentBillingAccounts(studentId).find((account) => account.schoolYear === "SY 2026-2027");
+  return getStudentBillingAccounts(studentId).find((account) => account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR);
 }
 
 export function getPaymentsForStudent(studentId: string) {
@@ -187,7 +225,7 @@ export function getMockPayment(id?: string) {
 }
 
 export function getDueInstallments(studentId: string) {
-  return getStudentBillingAccounts(studentId).flatMap((account) => account.schedule.filter((installment) => installment.status !== "paid" && installment.paid < installment.amount).map((installment) => ({ account, installment, amountDue: installment.amount - installment.paid })));
+  return getStudentBillingAccounts(studentId).flatMap((account) => account.schedule.filter((installment) => installment.status !== "paid" && installment.paid < installment.amount).map((installment) => ({ account, installment, amountDue: centavos(installment.amount - installment.paid) })));
 }
 
 export function getNextDueRecord(studentId: string) {
@@ -198,6 +236,6 @@ export function getNextDueRecord(studentId: string) {
     installment: due.installment.label,
     dueDate: due.installment.dueDate,
     status: due.installment.status.replace("_", " "),
-    amountDue: due.amountDue,
+    amountDue: centavos(due.amountDue),
   };
 }

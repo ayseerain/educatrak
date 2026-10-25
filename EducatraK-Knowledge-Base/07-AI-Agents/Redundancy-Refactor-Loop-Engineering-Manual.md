@@ -10,7 +10,7 @@
 2. **Authority:** canonical spec > derived requirement views > recorded approved decisions > agent manuals/plans > historical logs/prototypes. The owner has approved the UX direction, not arbitrary edits to canonical product scope. Escalate conflicts; do not silently rewrite requirements.
 3. **No invention:** no new roles, payment methods, online portal, external services, business rules, policies or backend behavior. Cash only under the currently approved implementation.
 4. **Owner-approved UI:** one Students & Billing area with account information inside each student profile, distinct student/account entities; **same shared payment form stays inline AND at `/payments/new`**.
-5. **Five roles:** Administrator, Cashier, Accounting Officer, Auditor, Registrar. Auditor read-only; Registrar amount-free clearance and limited student view; Administrator/Accounting cannot record payments; only authorized void approver may approve.
+5. **Six roles:** Super Admin, Administrator, Cashier, Accounting Officer, Auditor, Registrar. Current role simplification supersedes older access snapshots: Super Admin owns governance, protected user lifecycle, security events and read-only audit; Administrator owns day-to-day system/user/backup/security controls; Cashier owns daily student/payment/follow-up/close-out work; Accounting owns finance operations/reports/settings; Auditor has Audit Review only; Registrar has limited clearance identity search and no general student directory/profile. Auditor is read-only; only the authorized Accounting approver decides voids.
 6. **No false backend claims:** UI double-click prevention is not atomic multi-cashier safety. Laravel/MySQL transaction locks, idempotency, sequential receipts and durable authorization are backend dependencies.
 7. **No destructive cleanup:** preserve supported routes/deep links until an approved migration decision, financial history, audit behavior, void separation, printable documents, and existing accessible workflows.
 8. **Tests are evidence, not assumptions:** run actual commands; record exact results. Never mark a phase complete based on intended work.
@@ -35,23 +35,23 @@
 ### P0 — Baseline and traceability
 - [x] Read current HEAD, instructions, canonical spec, role matrix, current source and recent logs.
 - [x] Revalidate audit finding IDs R01–R16 and note superseded items.
-- [x] Map all five roles × routes × sensitive fields × actions.
+- [x] Map all six roles × routes × sensitive fields × actions.
 - [x] List open decisions, especially account URL/deep-link and historical account display.
 - [x] Submit Phase 0 plan and **wait for approval**.
 - [x] Complete approved Phase 0 documentation and **wait for acceptance**.
 - **State:** ACCEPTED
-- **Resume Note:** At `main` / `16eaf24ce045f34ffae51ac2c9324e6126a98bd9`, the working tree was clean and the five commits after the audit code baseline were documentation-only. R01–R14 remain confirmed or partially addressed as recorded in the Phase 0 revalidation; R15–R16 remain optional proposals requiring a later approval. The owner approved the documentation-only phase and decided to retain `/accounts` as a supported secondary account directory/deep link, with Student Profile as the primary Students & Billing context. Profile billing must support current, upcoming, and historical school-year account records; Settings and Users/Roles remain separate. See the audit revalidation and the 2026-10-08 Phase 0 log. No application code changed.
+- **Resume Note:** At `main` / `16eaf24ce045f34ffae51ac2c9324e6126a98bd9`, the working tree was clean and the five commits after the audit code baseline were documentation-only. R01–R14 remain confirmed or partially addressed as recorded in the Phase 0 revalidation; R15–R16 remain optional proposals requiring a later approval. The owner approved the documentation-only phase and decided to retain `/accounts` as a supported secondary account directory/deep link, with Student Profile as the primary Students & Billing context. Profile billing must support current, upcoming, and historical school-year account records; Settings and Users/Roles remain separate. See the audit revalidation and the 2026-10-08 Phase 0 log. No application code changed. Revalidated the current six-role map and permission tests on Sunday, October 25, 2026 — 12:06:10 +08:00: Super Admin has a governance-only path, and the other five roles retain their approved workspace boundaries.
 - **Owner approval:** Granted in the current task conversation.
 - **Owner acceptance:** ACCEPTED in the current task conversation.
 
 ### P1 — Permission and sensitive data
 - [x] Plan R01/R02/R07 fixes with specific tests; wait for approval.
 - [x] Gate inline `PaymentWorkflow` by `payment.record`, retain read-only history.
-- [x] Verify Admin/Accounting/Auditor/Registrar route and action restrictions.
+- [x] Verify Super Admin, Administrator, Cashier, Accounting Officer, Auditor, and Registrar route and action restrictions.
 - [x] Run role-based tests, typecheck and build; record actual output.
 - [x] Submit evidence; wait for acceptance.
-- **State:** WAITING_FOR_ACCEPTANCE
-- **Resume Note:** With owner approval in the current task conversation, Phase 1 made no capability expansion. Student Profile passes the authenticated user into billing/payment content; the shared payment form now renders only with `payment.record`, while permitted payment history remains visible. Account creation and profile statement printing are capability-gated. `canViewReport` preserves Cashier access only to daily reports and student statements, filters the Reports Hub, and protects direct monthly/outstanding URLs. Sidebar children now identify their explicit parent and are indented only when that visible parent is present. Added five-role component/policy coverage. `npx vitest run src/test/operations.test.tsx` passed (20 tests); `npm test` passed (52 tests); `npm run build` passed. See the Phase 1 implementation log.
+- **State:** ACCEPTED
+- **Resume Note:** With owner approval in the current task conversation, Phase 1 made no capability expansion. Student Profile passes the authenticated user into billing/payment content; the shared payment form now renders only with `payment.record`, while permitted payment history remains visible. Account creation and profile statement printing are capability-gated. `canViewReport` preserves Cashier access only to daily reports and student statements, filters the Reports Hub, and protects direct monthly/outstanding URLs. Sidebar children now identify their explicit parent and are indented only when that visible parent is present. Initial phase coverage included five roles; current six-role coverage adds Super Admin governance grants and explicit denials for operational capabilities. `npx vitest run src/test/operations.test.tsx` passed (20 tests); `npm test` passed (52 tests); `npm run build` passed. See the Phase 1 implementation log. Updated Sunday, October 25, 2026 — 12:06:59 +08:00: Super Admin is included in the primary-capability checks for all six roles; focused operations tests pass (47 tests) and the full frontend suite passes (169 tests across 26 files).
 - **Owner approval:** Granted in the current task conversation.
 - **Owner acceptance:** ACCEPTED under the user's continuous-execution directive.
 
@@ -61,8 +61,8 @@
 - [x] Establish coherent typed fake account/student/payment fixtures and selectors.
 - [x] Share billing/statement data and components without mixing school years.
 - [x] Test invalid IDs, amount consistency, role visibility.
-- **State:** PARTIALLY_COMPLETE
-- **Resume Note:** Added `mockBilling.ts` with typed accounts, schedules, payments, and selectors; profile, account, payment, follow-up, and student-statement routes now use it. Unknown student/account/statement IDs render Not Found. The independent dashboard mock adapter has not yet been reconciled to these fixtures, so R04 remains partially open.
+- **State:** COMPLETE
+- **Resume Note:** Added `mockBilling.ts` with typed accounts, schedules, payments, and selectors; profile, account, payment, follow-up, and student-statement routes now use it. Unknown student/account/statement IDs render Not Found. R04 is resolved: dashboard activity, cashier account summaries, and Accounting totals now project from the canonical synthetic billing records. Account payment amounts and allocations reconcile to account totals. Focused dashboard/billing tests pass (26 tests); full frontend tests pass (150 tests across 25 files); TypeScript production build passes; production asset verification confirms 40 development fixture/contact/credential markers are absent from four JavaScript assets. Browser acceptance remains tracked under U12.
 - **Owner approval:** Continuous-execution directive in the current task conversation.
 - **Owner acceptance:** Not required for this execution run.
 

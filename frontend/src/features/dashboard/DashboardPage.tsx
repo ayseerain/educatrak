@@ -6,6 +6,7 @@ import { AccountingDashboard } from "./components/AccountingDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { AuditorDashboard } from "./components/AuditorDashboard";
 import { RegistrarDashboard } from "./components/RegistrarDashboard";
+import { SuperAdminDashboard } from "./components/SuperAdminDashboard";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +21,9 @@ interface DashboardPageProps {
 
 export function DashboardPage({ user }: DashboardPageProps) {
   const navigate = useNavigate();
-  const [range, setRange] = useState<DashboardRange>("last_7_days");
+  const [range, setRange] = useState<DashboardRange>(
+    user.role === "cashier" || user.role === "auditor" ? "today" : "last_7_days",
+  );
   const { data, isPending, isError, refetch } = useDashboard(user, range);
 
   // Registrar's dashboard carries no financial data and needs no fetch;
@@ -38,8 +41,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
     <div className="space-y-4">
       <PageHeading
         user={user}
-        range={range}
-        onRangeChange={setRange}
+        range={user.role === "administrator" || user.role === "super_admin" ? undefined : range}
+        onRangeChange={user.role === "administrator" || user.role === "super_admin" ? undefined : setRange}
         onRecordPayment={() => navigate("/payments/new")}
       />
 
@@ -64,6 +67,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
       {data && data.role === "administrator" && (
         <AdminDashboard summary={data} />
       )}
+      {data && data.role === "super_admin" && <SuperAdminDashboard summary={data} />}
       {data && data.role === "auditor" && (
         <AuditorDashboard summary={data} range={range} />
       )}

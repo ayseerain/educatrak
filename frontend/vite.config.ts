@@ -4,12 +4,28 @@ import path from "node:path";
 
 // EducatraK is a desktop, offline-first application for a local school
 // intranet. No CDN or remote asset dependencies are configured here.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: [
+      ...(command === "build"
+        ? [
+            {
+              find: "@/features/students/mockStudents",
+              replacement: path.resolve(__dirname, "./src/production/mockStudents.ts"),
+            },
+            {
+              find: "@/features/students/mockBilling",
+              replacement: path.resolve(__dirname, "./src/production/mockBilling.ts"),
+            },
+            {
+              find: "@/features/operations/mockNotificationData",
+              replacement: path.resolve(__dirname, "./src/production/mockNotificationData.ts"),
+            },
+          ]
+        : []),
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+    ],
   },
   server: {
     port: 5173,
@@ -40,4 +56,4 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
   },
-});
+}));

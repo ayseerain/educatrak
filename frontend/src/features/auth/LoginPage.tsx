@@ -123,7 +123,9 @@ export function LoginPage() {
           </div>
 
           <div className="relative max-w-sm">
-            <p className="text-lg font-semibold leading-7">{en.login.mockHint}</p>
+            {import.meta.env.DEV && (
+              <p className="text-lg font-semibold leading-7">{en.login.mockHint}</p>
+            )}
           </div>
         </div>
 
@@ -217,7 +219,9 @@ export function LoginPage() {
               )}
             </div>
 
-            <p className="mt-6 text-xs leading-5 text-text-muted-readable lg:hidden">{en.login.mockHint}</p>
+            {import.meta.env.DEV && (
+              <p className="mt-6 text-xs leading-5 text-text-muted-readable lg:hidden">{en.login.mockHint}</p>
+            )}
           </div>
         </div>
       </section>

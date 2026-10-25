@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class RecordPaymentAction
 {
+    public function __construct(private readonly RecalculateBillingStatusAction $recalculateBillingStatus) {}
+
     public function handle(
         BillingAccount $account,
         int $amountCents,
@@ -20,8 +22,7 @@ class RecordPaymentAction
         ?string $notes = null,
         ?string $backdateReason = null,
         ?string $duplicateOverrideReason = null,
-    ): Payment
-    {
+    ): Payment {
         if ($amountCents < 1) {
             throw ValidationException::withMessages(['amount_cents' => 'Payment amount must be greater than zero.']);
         }
@@ -75,8 +76,19 @@ class RecordPaymentAction
 
             $account->increment('total_paid_cents', $amountCents);
             $account->decrement('balance_cents', $amountCents);
+            $account->refresh();
+            $payment->forceFill(['balance_after_cents' => $account->balance_cents])->save();
+            $this->recalculateBillingStatus->handle($account);
             $receiptYear = (int) CarbonImmutable::parse($paidOn, 'Asia/Manila')->year;
-            $sequence = ((int) Receipt::query()->lockForUpdate()->max('sequence')) + 1;
+            $receiptSequence = DB::table('receipt_sequences')->where('id', 1)->lockForUpdate()->first();
+            if ($receiptSequence === null) {
+                throw new \RuntimeException('The receipt sequence counter has not been initialized.');
+            }
+            $sequence = (int) $receiptSequence->last_sequence + 1;
+            DB::table('receipt_sequences')->where('id', 1)->update([
+                'last_sequence' => $sequence,
+                'updated_at' => now(),
+            ]);
             Receipt::query()->create(['payment_id' => $payment->id, 'sequence' => $sequence, 'receipt_year' => $receiptYear, 'receipt_no' => sprintf('OR-%d-%06d', $receiptYear, $sequence), 'issued_at' => now()]);
 
             return $payment->load(['allocations.installment', 'receipt']);

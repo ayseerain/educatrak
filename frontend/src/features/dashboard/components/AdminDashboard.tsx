@@ -16,18 +16,13 @@ export function AdminDashboard({ summary }: AdminDashboardProps) {
       <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.lastBackup}
-          value={formatDateTime(summary.lastBackupAt)}
+          value={summary.lastBackupAt ? formatDateTime(summary.lastBackupAt) : en.dashboard.backupUnavailable}
+          helperText={summary.lastBackupAt === null ? en.dashboard.noBackupRecord : summary.lastBackupSucceeded === null ? en.dashboard.backupResultUnavailable : summary.lastBackupSucceeded ? en.dashboard.backupSucceeded : en.dashboard.backupFailed}
           icon={Database}
         />
         <DashboardStatCard
           label={en.dashboard.activeUsers}
           value={String(summary.activeUserCount)}
-        />
-        <DashboardStatCard
-          label={en.dashboard.failedLoginAttempts}
-          value={String(summary.failedLoginCount)}
-          icon={ShieldCheck}
-          action={{ to: "/admin/audit-log", label: en.dashboard.viewSecurityEvents }}
         />
       </div>
 

@@ -1,5 +1,4 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
 import {
   AlertCircle,
   Banknote,
@@ -7,7 +6,6 @@ import {
   ClipboardCheck,
   MailSearch,
   ReceiptText,
-  SearchCheck,
   Users,
 } from "lucide-react";
 import { Card, CardLabel } from "@/components/ui/Card";
@@ -40,13 +38,13 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
             />
             <DashboardStatCard
               label={statLabels.collections}
-              value={format(summary.todayCollectionsTotal)}
+              value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)}
               icon={Banknote}
               action={{ to: "/closeout", label: en.dashboard.reviewCloseout }}
             />
             <DashboardStatCard
               label={statLabels.payments}
-              value={String(summary.paymentsTodayCount)}
+              value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)}
               icon={ReceiptText}
               action={{ to: "/payments", label: en.dashboard.viewPayments }}
             />
@@ -54,7 +52,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
               label={en.dashboard.failedEmails}
               value={String(summary.failedEmailCount)}
               icon={MailSearch}
-              action={{ to: "/followup", label: en.dashboard.reviewFollowups }}
+              action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }}
             />
           </div>
           <CloseoutStatus done={summary.closeoutDone} className="min-h-[116px]" />
@@ -65,35 +63,6 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
           accountsNeedingAttention={summary.accountsNeedingAttention}
         />
       </div>
-
-      <DashboardWorkPanel
-        title={en.dashboard.cashierWorkspace}
-        description={en.dashboard.cashierWorkspaceHelp}
-        items={[
-          {
-            label: en.dashboard.recordPayment,
-            detail: en.dashboard.recordPaymentHelp,
-            to: "/payments/new",
-            icon: ReceiptText,
-          },
-          {
-            label: en.dashboard.findStudentAccount,
-            detail: en.dashboard.findStudentAccountHelp,
-            to: "/students",
-            icon: SearchCheck,
-            meta: `${summary.accountsNeedingAttention.length} ${en.dashboard.needAttention}`,
-          },
-          {
-            label: en.dashboard.endOfDayCloseout,
-            detail: summary.closeoutDone
-              ? en.dashboard.closeoutDoneActionHelp
-              : en.dashboard.closeoutOpenActionHelp,
-            to: "/closeout",
-            icon: ClipboardCheck,
-            meta: summary.closeoutDone ? en.dashboard.done : en.dashboard.open,
-          },
-        ]}
-      />
 
       <section aria-labelledby="recent-activity-heading">
         <RecentActivity payments={summary.recentActivity} range={range} showActions />

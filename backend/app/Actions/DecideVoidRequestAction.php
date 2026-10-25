@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class DecideVoidRequestAction
 {
+    public function __construct(private readonly RecalculateBillingStatusAction $recalculateBillingStatus) {}
+
     public function handle(VoidRequest $voidRequest, User $decidedBy, string $decision, string $note): VoidRequest
     {
         return DB::transaction(function () use ($voidRequest, $decidedBy, $decision, $note): VoidRequest {
@@ -54,6 +56,7 @@ class DecideVoidRequestAction
                 'total_paid_cents' => max(0, $account->total_paid_cents - $payment->amount_cents),
                 'balance_cents' => $account->balance_cents + $payment->amount_cents,
             ]);
+            $this->recalculateBillingStatus->handle($account);
             $payment->update(['status' => 'voided']);
 
             return $voidRequest->load(['payment.receipt', 'requestedBy']);

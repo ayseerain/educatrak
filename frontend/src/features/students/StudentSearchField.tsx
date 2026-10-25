@@ -42,6 +42,7 @@ export function StudentSearchField({
   const generatedId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [suggestionsDismissed, setSuggestionsDismissed] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputId = id ?? generatedId;
   const suggestionsId = `${inputId}-suggestions`;
   const matches = getStudentSearchMatches(value);
@@ -78,11 +79,22 @@ export function StudentSearchField({
     if (event.key === "Escape" && hasSuggestions) {
       event.preventDefault();
       setSuggestionsDismissed(true);
+      setActiveIndex(-1);
+      return;
+    }
+    if (event.key === "ArrowDown" && hasSuggestions) {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % matches.length);
+      return;
+    }
+    if (event.key === "ArrowUp" && hasSuggestions) {
+      event.preventDefault();
+      setActiveIndex((current) => (current <= 0 ? matches.length - 1 : current - 1));
       return;
     }
     if (event.key !== "Enter") return;
 
-    const student = getStudentToOpen();
+    const student = activeIndex >= 0 ? matches[activeIndex] : getStudentToOpen();
     if (!student) return;
 
     event.preventDefault();
@@ -108,15 +120,20 @@ export function StudentSearchField({
           value={value}
           onChange={(event) => {
             setSuggestionsDismissed(false);
+            setActiveIndex(-1);
             onChange(event.target.value);
           }}
           onKeyDown={handleKeyDown}
           autoFocus={autoFocus}
           disabled={disabled}
           placeholder={placeholder}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={hasSuggestions}
           aria-invalid={ariaInvalid}
           aria-describedby={inputDescribedBy}
           aria-controls={hasSuggestions ? suggestionsId : undefined}
+          aria-activedescendant={activeIndex >= 0 ? `${inputId}-option-${activeIndex}` : undefined}
           className={cn("w-full", inputClassName, "pl-9")}
         />
       </div>
@@ -127,13 +144,17 @@ export function StudentSearchField({
             role="listbox"
             aria-label="Matching students"
           >
-            {matches.map((student) => (
+            {matches.map((student, index) => (
               <button
                 key={student.id}
+                id={`${inputId}-option-${index}`}
                 type="button"
                 role="option"
-                className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface focus:bg-surface focus:outline-none"
+                tabIndex={-1}
+                aria-selected={activeIndex === index}
+                className={`block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface focus:bg-surface focus:outline-none ${activeIndex === index ? "bg-surface" : ""}`}
                 onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => openStudent(student)}
               >
                 <span className="block font-medium text-text-primary">{student.name}</span>

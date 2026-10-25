@@ -49,6 +49,8 @@ export interface CashierDashboardSummary {
   overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
+  rangeCollectionsTotal: Centavos;
+  paymentsInRangeCount: number;
   failedEmailCount: number;
   closeoutDone: boolean;
   accountStatusOverview: CashierAccountStatusOverview;
@@ -73,10 +75,13 @@ export interface AccountingDashboardSummary {
 
 export interface AdministratorDashboardSummary {
   role: "administrator";
-  lastBackupAt: string; // ISO timestamp
-  lastBackupSucceeded: boolean;
+  lastBackupAt: string | null; // ISO timestamp when available
+  lastBackupSucceeded: boolean | null;
   activeUserCount: number;
-  failedLoginCount: number;
+}
+
+export interface SuperAdministratorDashboardSummary extends Omit<AdministratorDashboardSummary, "role"> {
+  role: "super_admin";
 }
 
 export interface AuditorDashboardSummary {
@@ -84,7 +89,8 @@ export interface AuditorDashboardSummary {
   overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
-  recentActivity: RecentPayment[];
+  rangeCollectionsTotal: Centavos;
+  paymentsInRangeCount: number;
 }
 
 export interface RegistrarDashboardSummary {
@@ -96,6 +102,7 @@ export type DashboardSummary =
   | CashierDashboardSummary
   | AccountingDashboardSummary
   | AdministratorDashboardSummary
+  | SuperAdministratorDashboardSummary
   | AuditorDashboardSummary
   | RegistrarDashboardSummary;
 

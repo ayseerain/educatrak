@@ -8,9 +8,10 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardLabel } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { en } from "@/i18n/en";
 import { format, type Centavos } from "@/lib/money";
-import { formatDate } from "@/lib/dates";
+import { formatShortDate } from "@/lib/dates";
 import type { CollectionTrendPoint, DashboardRange } from "@/api/dashboardTypes";
 import { dashboardRangeLabel } from "./dashboardRangeLabels";
 
@@ -23,9 +24,10 @@ interface CollectionTrendProps {
 // application (section 9, Accounting dashboard). Do not add more.
 export function CollectionTrend({ points, range }: CollectionTrendProps) {
   const data = points.map((p) => ({
-    label: formatDate(p.date).replace(", 2026", ""),
+    label: formatShortDate(p.date),
     total: p.totalCollected / 100,
   }));
+  const hasCollections = data.some((point) => point.total > 0);
   const label =
     range === "today"
       ? en.dashboard.todaysTotals
@@ -67,8 +69,10 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
   return (
     <Card>
       <CardLabel>{label}</CardLabel>
-      <div className="mt-3 h-56 min-h-56 min-w-0">
-        {isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
+      <div className="mt-3 flex h-56 min-h-56 min-w-0 items-center">
+        {!hasCollections ? (
+          <EmptyState message={en.dashboard.noCollectionsInRange} />
+        ) : isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
       </div>
     </Card>
   );

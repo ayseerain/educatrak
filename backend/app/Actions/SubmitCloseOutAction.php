@@ -15,7 +15,7 @@ class SubmitCloseOutAction
         return DB::transaction(function () use ($cashier, $countedCashCents, $varianceReason): CloseOut {
             $businessDate = today('Asia/Manila')->toDateString();
             $existing = CloseOut::query()
-                ->where('business_date', $businessDate)
+                ->whereDate('business_date', $businessDate)
                 ->where('cashier_id', $cashier->id)
                 ->lockForUpdate()
                 ->first();
@@ -26,7 +26,7 @@ class SubmitCloseOutAction
 
             $systemCashCents = (int) Payment::query()
                 ->where('recorded_by', $cashier->id)
-                ->where('paid_on', $businessDate)
+                ->whereDate('paid_on', $businessDate)
                 ->where('method', 'cash')
                 ->where('status', 'valid')
                 ->sum('amount_cents');

@@ -17,8 +17,9 @@ class AuthController extends Controller
     public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $credentials = $request->validated();
+        $guard = Auth::guard('web');
 
-        if (! Auth::attempt($credentials)) {
+        if (! $guard->attempt($credentials)) {
             $auditLogger->recordAuthenticationFailure(
                 $request,
                 $credentials['username'],
@@ -29,10 +30,10 @@ class AuthController extends Controller
         }
 
         /** @var User $user */
-        $user = Auth::user();
+        $user = $guard->user();
 
         if (! $user->active) {
-            Auth::logout();
+            $guard->logout();
             $auditLogger->recordAuthenticationFailure(
                 $request,
                 $user->username,
@@ -53,7 +54,7 @@ class AuthController extends Controller
     public function logout(Request $request, AuditLogger $auditLogger): JsonResponse
     {
         $auditLogger->record($request, 'auth.logout', $request->user());
-        Auth::logout();
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -90,6 +91,7 @@ class AuthController extends Controller
             'fullName' => $user->full_name,
             'role' => $user->role->value,
             'active' => $user->active,
+            'isProtected' => $user->is_protected,
             'mustChangePassword' => $user->must_change_password,
             'lastLoginAt' => $user->last_login_at?->toISOString(),
             'capabilities' => CapabilityMap::for($user->role),

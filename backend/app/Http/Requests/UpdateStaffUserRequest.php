@@ -25,11 +25,27 @@ class UpdateStaffUserRequest extends FormRequest
     public function rules(): array
     {
         $staffUser = $this->route('staffUser');
+        $roleRules = ['sometimes', Rule::enum(UserRole::class)];
+
+        $actor = $this->user();
+        $forbiddenRoles = [UserRole::Accounting->value, UserRole::SuperAdmin->value];
+        if ($actor?->role !== UserRole::SuperAdmin) {
+            $forbiddenRoles[] = UserRole::Admin->value;
+            // Allow a regular Administrator to retain an existing Admin role,
+            // but never to promote an operational account to that role.
+            if ($staffUser?->role === UserRole::Admin) {
+                $forbiddenRoles = array_values(array_diff($forbiddenRoles, [UserRole::Admin->value]));
+            }
+        }
+        if ($staffUser?->role === UserRole::Accounting) {
+            $forbiddenRoles = array_values(array_diff($forbiddenRoles, [UserRole::Accounting->value]));
+        }
+        $roleRules[] = Rule::notIn($forbiddenRoles);
 
         return [
             'full_name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($staffUser)],
-            'role' => ['sometimes', Rule::enum(UserRole::class)],
+            'role' => $roleRules,
             'active' => ['sometimes', 'boolean'],
         ];
     }

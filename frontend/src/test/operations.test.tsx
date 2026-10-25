@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, NotificationsPage, PaymentEntryPage, ReceiptPage, ReportsHubPage, RequireCapability, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
+import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
+import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
 import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/features/students/mockBilling";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { Shell } from "@/components/layout/Shell";
 import { can, canViewReport } from "@/lib/permissions";
 import type { AuthenticatedUser } from "@/lib/types";
 
@@ -39,12 +40,80 @@ const registrar: AuthenticatedUser = {
   role: "registrar",
 };
 
+const superAdmin: AuthenticatedUser = {
+  id: "user-super-admin",
+  name: "Morgan Super Admin (sample)",
+  role: "super_admin",
+};
+
 function LocationPath() {
   const { pathname, search } = useLocation();
   return <output aria-label="Current path">{pathname}{search}</output>;
 }
 
 describe("operational page navigation", () => {
+  it("separates read and manage settings access by the approved M9 roles", () => {
+    expect(can(accounting, "settings.finance.view")).toBe(true);
+    expect(can(accounting, "settings.finance.manage")).toBe(true);
+    expect(can(accounting, "settings.system.view")).toBe(true);
+    expect(can(accounting, "settings.system.manage")).toBe(false);
+
+    expect(can(administrator, "settings.finance.view")).toBe(false);
+    expect(can(administrator, "settings.finance.manage")).toBe(false);
+    expect(can(administrator, "settings.system.view")).toBe(true);
+    expect(can(administrator, "settings.system.manage")).toBe(true);
+
+    expect(can(auditor, "settings.finance.view")).toBe(false);
+    expect(can(auditor, "settings.finance.manage")).toBe(false);
+    expect(can(auditor, "settings.system.view")).toBe(false);
+    expect(can(auditor, "settings.system.manage")).toBe(false);
+    expect(can(cashier, "settings.finance.view")).toBe(false);
+    expect(can(registrar, "settings.system.view")).toBe(false);
+    expect(can(superAdmin, "settings.finance.view")).toBe(false);
+    expect(can(superAdmin, "settings.finance.manage")).toBe(false);
+    expect(can(superAdmin, "settings.system.view")).toBe(false);
+    expect(can(superAdmin, "settings.system.manage")).toBe(false);
+  });
+
+  it("shows the role matrix from the same capabilities used by interface guards", () => {
+    render(<MemoryRouter><RolesPage /></MemoryRouter>);
+
+    expect(screen.getByRole("columnheader", { name: "Accounting Officer" })).toBeInTheDocument();
+    const paymentEntry = screen.getByRole("row", { name: /Payments Record payments/ });
+    expect(within(paymentEntry).getAllByText("Allowed")).toHaveLength(1);
+    expect(within(paymentEntry).getAllByText("Unavailable")).toHaveLength(5);
+
+    const clearance = screen.getByRole("row", { name: /Clearance View clearance status/ });
+    expect(within(clearance).getAllByText("Allowed")).toHaveLength(1);
+    const clearanceSearch = screen.getByRole("row", { name: /Clearance Search limited student identity/ });
+    expect(within(clearanceSearch).getAllByText("Allowed")).toHaveLength(1);
+    const permitPrinting = screen.getByRole("row", { name: /Exam permits Print exam permits/ });
+    expect(within(permitPrinting).getAllByText("Allowed")).toHaveLength(1);
+    const administratorVoidQueue = screen.getByRole("row", { name: /Payments Review payment voids/ });
+    expect(within(administratorVoidQueue).getAllByText("Allowed")).toHaveLength(1);
+    const receiptReprint = screen.getByRole("row", { name: /Receipts Reprint receipts/ });
+    expect(within(receiptReprint).getAllByText("Allowed")).toHaveLength(2);
+    const notificationRetry = screen.getByRole("row", { name: /Notifications Retry failed notifications/ });
+    expect(within(notificationRetry).getAllByText("Allowed")).toHaveLength(1);
+    expect(within(notificationRetry).getAllByText("Unavailable")).toHaveLength(5);
+    expect(screen.queryByRole("row", { name: /Run student ledger import/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("row", { name: /Download receipt PDFs/ })).not.toBeInTheDocument();
+    const followupPrint = screen.getByRole("row", { name: /Follow-up Print overdue follow-up list/ });
+    expect(within(followupPrint).getAllByText("Allowed")).toHaveLength(2);
+    const closeoutHistory = screen.getByRole("row", { name: /Close-out View close-out history/ });
+    expect(within(closeoutHistory).getAllByText("Allowed")).toHaveLength(2);
+    expect(screen.getByText("Current interface access by role. The server enforces permissions for every request.")).toBeInTheDocument();
+  });
+
+  it("limits guardian contact access to roles with student record duties", () => {
+    expect(can(administrator, "guardianContact.view")).toBe(false);
+    expect(can(cashier, "guardianContact.view")).toBe(true);
+    expect(can(accounting, "guardianContact.view")).toBe(true);
+    expect(can(superAdmin, "guardianContact.view")).toBe(false);
+    expect(can(auditor, "guardianContact.view")).toBe(false);
+    expect(can(registrar, "guardianContact.view")).toBe(false);
+  });
+
   it("uses the available workflow width for the student form", () => {
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
 
@@ -98,10 +167,10 @@ describe("operational page navigation", () => {
     expect(within(administratorRow).getAllByRole("cell")[3]).toHaveClass("text-center");
   });
 
-  it("shows Admin Log with an aligned Status column for administrators", () => {
+  it("shows Security with an aligned Status column for administrators", () => {
     render(<MemoryRouter><AuditPage user={administrator} /></MemoryRouter>);
 
-    expect(screen.getByRole("heading", { name: "Admin Log" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Security" })).toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Outcome" })).not.toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Status" })).toHaveClass("text-center");
     const rows = screen.getAllByRole("row").slice(1);
@@ -143,7 +212,7 @@ describe("operational page navigation", () => {
     }
   });
 
-  it("lets Accounting add a fee item from Financial policies", async () => {
+  it("lets Accounting add a fee item from Finance", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SettingsPage section="fees" editable /></MemoryRouter>);
 
@@ -161,7 +230,7 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("cell", { name: /Laboratory fee - Other - ₱500\.00 - Optional/ })).toBeInTheDocument();
   });
 
-  it("lets an Administrator add a current school year from System configuration", async () => {
+  it("lets an Administrator add a current school year from Settings", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SettingsPage section="school" editable /></MemoryRouter>);
 
@@ -197,18 +266,24 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No users match that name or username.");
   });
 
-  it("hides the global student search and right-aligns account actions for every role", () => {
+  it("keeps profile and icon-only sign out in the sidebar for every role", () => {
     for (const user of [cashier, administrator, accounting, auditor, registrar]) {
-      const header = render(
+      const shell = render(
         <MemoryRouter>
-          <Header user={user} onLogout={() => undefined} onRoleChange={() => undefined} />
+          <Shell user={user} onLogout={() => undefined} onRoleChange={() => undefined}>
+            <p>Workspace</p>
+          </Shell>
         </MemoryRouter>,
       );
 
       expect(screen.queryByRole("searchbox", { name: /search students, receipts/i })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /account menu/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /sign out/i }).parentElement).toHaveClass("ml-auto");
-      header.unmount();
+      const sidebar = screen.getByRole("navigation", { name: "Primary" });
+      expect(within(sidebar).getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+      const signOut = within(sidebar).getByRole("button", { name: /sign out/i });
+      expect(signOut).toBeInTheDocument();
+      expect(signOut).toHaveTextContent("");
+      expect(signOut.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
+      shell.unmount();
     }
   });
 
@@ -240,11 +315,11 @@ describe("operational page navigation", () => {
     expect(screen.getByText(/cannot deactivate your own administrator account/i)).toBeInTheDocument();
   });
 
-  it("renders clearance verification for registrars", async () => {
+  it("renders Clearance for registrars", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><ClearancePage user={registrar} /></MemoryRouter>);
 
-    expect(screen.getByRole("heading", { name: /clearance verification/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Clearance" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
     expect(screen.getByText("Enrollment")).toBeInTheDocument();
     expect(screen.getByText("Midterm")).toBeInTheDocument();
@@ -254,10 +329,10 @@ describe("operational page navigation", () => {
     expect(screen.getAllByText("Installment overdue")).toHaveLength(2);
     expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
 
-    await user.type(screen.getByRole("searchbox", { name: "Search student" }), "Basil");
+    await user.type(screen.getByRole("combobox", { name: "Search student" }), "Basil");
     await user.click(screen.getByRole("option", { name: /Basil Mercado.*S-1002/i }));
 
-    expect(screen.getByRole("searchbox", { name: "Search student" })).toHaveValue("Basil Mercado (sample)");
+    expect(screen.getByRole("combobox", { name: "Search student" })).toHaveValue("Basil Mercado (sample)");
     expect(screen.getByText(/Basil Mercado \(sample\).*Grade 8.*Maple/)).toBeInTheDocument();
   });
 
@@ -448,9 +523,7 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: /transaction history/i })).toBeInTheDocument();
   });
 
-  it("shows record payment in the student activity widget without leaving the profile", async () => {
-    const user = userEvent.setup();
-
+  it("keeps the student profile focused on identity and permitted context", () => {
     render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes>
@@ -460,32 +533,12 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: /payments/i }));
-
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("The current student is selected");
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("SY 2026-2027 tuition");
-    expect(screen.getByLabelText(/fee name/i)).toHaveValue("SY 2026-2027 tuition");
-    await user.clear(screen.getByLabelText(/fee name/i));
-    await user.type(screen.getByLabelText(/fee name/i), "Tuition payment");
-    expect(screen.getByLabelText(/fee name/i)).toHaveValue("Tuition payment");
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("₱1,250.00");
-    expect(screen.queryByRole("link", { name: /record payment/i })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /payment method/i }));
-
-    expect(
-      screen.queryByRole("menuitemradio", { name: /gcash/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitemradio", { name: /bank deposit/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitemradio", { name: /^check$/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("menuitemradio", { name: "Cash" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Amara Villanueva/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /clearance details/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /record payment/i })).not.toBeInTheDocument();
   });
 
   it("opens the shared payment workflow route with student search", async () => {
@@ -551,9 +604,7 @@ describe("operational page navigation", () => {
     expect(await screen.findByText(/payment saved/i)).toBeInTheDocument();
   });
 
-  it("toggles follow-up in the student activity widget without leaving the profile", async () => {
-    const user = userEvent.setup();
-
+  it("keeps follow-up in its dedicated workspace instead of a student profile tab", () => {
     render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1003"]}>
         <Routes>
@@ -563,34 +614,16 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("link", { name: /create billing record/i })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("tab", { name: /follow-up/i }));
-
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1003");
-    expect(screen.getByRole("heading", { name: /follow-up reminder/i })).toBeInTheDocument();
-    expect(screen.getByRole("tabpanel")).toHaveTextContent("guardian@example.test");
-    expect(screen.getByRole("columnheader", { name: /payment for/i })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Status" })).toHaveClass("text-center");
-    const followupRows = within(screen.getByRole("tabpanel")).getAllByRole("row").slice(1);
-    const statusCells = followupRows.map((row) => {
-      const statusCell = within(row).getAllByRole("cell")[3];
-      expect(statusCell).toHaveClass("text-center");
-      return statusCell;
-    });
-    expect(statusCells.some((cell) => cell?.textContent?.trim() === "Overdue")).toBe(true);
-    expect(statusCells.every((cell) => {
-      const status = cell?.textContent?.trim();
-      return status ? status[0] === status[0]?.toUpperCase() : false;
-    })).toBe(true);
-    expect(screen.getByRole("cell", { name: /installment 1/i })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: /installment 2/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /follow-up/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /follow-up reminder/i })).not.toBeInTheDocument();
+
+    render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
+    expect(screen.queryByRole("heading", { name: /due follow-ups/i })).not.toBeInTheDocument();
   });
 
-  it("toggles the statement of account in the student activity widget", async () => {
-    const user = userEvent.setup();
-
-    render(
+  it("keeps the statement of account in its dedicated report route", () => {
+    const profile = render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes>
           <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
@@ -599,18 +632,26 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("tab", { name: /billing/i }));
-
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
+    expect(screen.queryByRole("tab", { name: /billing/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /statement of account/i })).not.toBeInTheDocument();
+    profile.unmount();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/reports/student/sample-1001"]}>
+        <Routes><Route path="/reports/student/:id" element={<StudentStatementPage user={cashier} />} /></Routes>
+      </MemoryRouter>,
+    );
+
     expect(screen.getByRole("heading", { name: /statement of account/i })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: /tuition installment/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("cell", { name: /tuition installment/i }).length).toBeGreaterThan(0);
   });
 
   it("filters notification status from the URL query", () => {
     render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications?status=failed"]}>
         <Routes>
-          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+          <Route path="/notifications" element={<MockNotificationsPage user={cashier} />} />
         </Routes>
         <LocationPath />
       </MemoryRouter>,
@@ -625,7 +666,7 @@ describe("operational page navigation", () => {
     render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications"]}>
         <Routes>
-          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+          <Route path="/notifications" element={<MockNotificationsPage user={cashier} />} />
         </Routes>
       </MemoryRouter>,
     );
@@ -635,34 +676,35 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
   });
 
-  it("updates the notification status filter query from the status dropdown", async () => {
+  it("updates the notification status filter query from the shared panel", async () => {
     const user = userEvent.setup();
 
     render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/notifications"]}>
         <Routes>
-          <Route path="/notifications" element={<NotificationsPage user={cashier} />} />
+          <Route path="/notifications" element={<MockNotificationsPage user={cashier} />} />
         </Routes>
         <LocationPath />
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: /filter status/i }));
-    await user.click(screen.getByRole("menuitemradio", { name: /failed/i }));
+    await user.click(screen.getByRole("button", { name: "Filter" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Status" }), "failed");
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
     expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
   });
 
-  it("keeps shareable receipt PDF downloads to permitted staff roles", () => {
+  it("does not offer receipt PDF downloads before the audited workflow exists", () => {
     const { rerender } = render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/receipts/mock-payment-0/print"]}>
         <ReceiptPage user={cashier} />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: /download pdf/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /download pdf/i })).not.toBeInTheDocument();
 
     rerender(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/receipts/mock-payment-0/print"]}>
@@ -671,37 +713,34 @@ describe("operational page navigation", () => {
     );
 
     expect(screen.queryByRole("button", { name: /download pdf/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/pdf downloads are logged by the backend/i)).toBeInTheDocument();
+    expect(screen.queryByText(/pdf downloads are logged by the backend/i)).not.toBeInTheDocument();
   });
 
-  it("keeps payment entry and history in the Cashier-owned student workflow", async () => {
-    const user = userEvent.setup();
+  it("keeps billing and payment work in dedicated role workspaces", () => {
     const renderProfile = (profileUser: AuthenticatedUser) => render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes><Route path="/students/:id" element={<StudentProfilePage user={profileUser} />} /></Routes>
       </MemoryRouter>,
     );
 
-    const cashierProfile = renderProfile(cashier);
-    await user.click(screen.getByRole("tab", { name: /payments/i }));
-    expect(screen.getByRole("heading", { name: /record payment/i })).toBeInTheDocument();
-    cashierProfile.unmount();
-
-    for (const restrictedUser of [administrator, accounting, auditor]) {
-      const profile = renderProfile(restrictedUser);
-      expect(screen.queryByRole("tab", { name: /payments/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("heading", { name: /record payment/i })).not.toBeInTheDocument();
+    for (const financeUser of [cashier, accounting]) {
+      const profile = renderProfile(financeUser);
+      expect(screen.getByRole("heading", { name: /Amara Villanueva/i })).toBeInTheDocument();
+      expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
       profile.unmount();
     }
 
+    const adminProfile = renderProfile(administrator);
+    expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
+    adminProfile.unmount();
+
     renderProfile(registrar);
-    expect(screen.queryByRole("tab", { name: /payments/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/guardian details/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/account balance/i)).not.toBeInTheDocument();
   });
 
-  it("keeps account creation out of the student billing profile", async () => {
-    const user = userEvent.setup();
+  it("keeps account creation in the dedicated billing workspace", () => {
     const renderProfile = (profileUser: AuthenticatedUser) => render(
       <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1001"]}>
         <Routes><Route path="/students/:id" element={<StudentProfilePage user={profileUser} />} /></Routes>
@@ -710,31 +749,35 @@ describe("operational page navigation", () => {
 
     {
       const profile = renderProfile(cashier);
-      await user.click(screen.getByRole("tab", { name: /billing/i }));
-      expect(screen.getByRole("button", { name: "Print" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Print" })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
       profile.unmount();
     }
 
-    for (const restrictedUser of [administrator, accounting, auditor]) {
+    for (const restrictedUser of [accounting]) {
       const profile = renderProfile(restrictedUser);
-      expect(screen.queryByRole("tab", { name: /billing/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Print" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
       profile.unmount();
     }
+
+    const administratorProfile = renderProfile(administrator);
+    expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
+    administratorProfile.unmount();
 
     const cashierAccounts = render(<MemoryRouter><AccountsPage user={cashier} /></MemoryRouter>);
     expect(screen.getByRole("link", { name: /create account/i })).toBeInTheDocument();
     cashierAccounts.unmount();
 
-    for (const readOnlyUser of [administrator, accounting, auditor]) {
+    for (const readOnlyUser of [administrator, accounting]) {
       const accountPage = render(<MemoryRouter><AccountsPage user={readOnlyUser} /></MemoryRouter>);
       expect(screen.queryByRole("link", { name: /create account/i })).not.toBeInTheDocument();
       accountPage.unmount();
     }
   });
 
-  it("reserves financial reports for Accounting", () => {
+  it("keeps reports with Accounting and Auditor review separate", () => {
     const cashierHub = render(<MemoryRouter><ReportsHubPage user={cashier} /></MemoryRouter>);
     expect(screen.queryByText(/daily collection/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/student statement/i)).not.toBeInTheDocument();
@@ -748,8 +791,24 @@ describe("operational page navigation", () => {
     expect(canViewReport(accounting, "statement")).toBe(true);
     expect(canViewReport(administrator, "monthly")).toBe(false);
     expect(canViewReport(auditor, "monthly")).toBe(false);
+    expect(canViewReport(cashier, "daily")).toBe(false);
+    expect(canViewReport(cashier, "statement")).toBe(false);
     expect(canViewReport(cashier, "monthly")).toBe(false);
     expect(canViewReport(cashier, "outstanding")).toBe(false);
+  });
+
+  it("keeps standalone reports out of the Cashier workspace", () => {
+    vi.stubEnv("VITE_USE_LIVE_API", "true");
+    try {
+      const cashierHub = render(<MemoryRouter><ReportsHubPage user={cashier} /></MemoryRouter>);
+
+      expect(screen.queryByRole("link", { name: /student statement/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /daily collection/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /monthly financial/i })).not.toBeInTheDocument();
+      cashierHub.unmount();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("opens an Accounting report when its widget is clicked", async () => {
@@ -768,17 +827,18 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("status", { name: "Current path" })).toHaveTextContent("/reports/monthly");
   });
 
-  it("shows only permitted primary pages for each of the five account roles", () => {
+  it("shows only permitted primary pages for each of the six account roles", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
-      [cashier, ["Dashboard", "Students & billing", "Cash payments & receipts", "Installments & follow-ups", "Daily close-out"]],
-      [accounting, ["Dashboard", "Financial policies", "Void approvals", "Close-out review", "Financial reports"]],
-      [administrator, ["Dashboard", "User & access management", "System configuration", "Backup & recovery", "Admin Log"]],
-      [auditor, ["Dashboard", "Audit review"]],
-      [registrar, ["Dashboard", "Clearance verification"]],
+      [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security"]],
+      [cashier, ["Dashboard", "Students", "Payments", "Follow-up", "Close-out"]],
+      [accounting, ["Dashboard", "Payment review", "Finance", "System settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
+      [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],
+      [auditor, ["Dashboard", "Audit"]],
+      [registrar, ["Dashboard", "Clearance"]],
     ]);
 
     for (const [user, links] of expectedLinks) {
-      const navigation = render(<MemoryRouter><Sidebar user={user} /></MemoryRouter>);
+      const navigation = render(<MemoryRouter><Sidebar user={user} onLogout={() => undefined} onRoleChange={() => undefined} /></MemoryRouter>);
       const navigationLinks = screen.getAllByRole("link");
       expect(navigationLinks.map((link) => link.textContent)).toEqual(links);
       expect(navigationLinks.every((link) => link.querySelector("svg[aria-hidden='true']"))).toBe(true);
@@ -790,21 +850,30 @@ describe("operational page navigation", () => {
     }
   });
 
-  it("hides inaccessible related pages within follow-up and close-out views", () => {
-    const followup = render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
-    expect(screen.queryByRole("tab", { name: "Due follow-ups" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Notification log" })).not.toBeInTheDocument();
+  it("shows the cashier notification and permitted close-out tabs", () => {
+    const followup = render(<MemoryRouter><RoleFollowupWorkspace user={cashier} /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Follow-up" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notification log" })).toBeInTheDocument();
     followup.unmount();
 
     const closeout = render(<MemoryRouter><CloseoutPage user={cashier} /></MemoryRouter>);
-    expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Today's close-out" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "History" })).toBeInTheDocument();
     closeout.unmount();
 
     render(<MemoryRouter><CloseoutHistoryPage user={accounting} /></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Close-out history" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
+  });
+
+  it("allows overdue-list printing for Cashier and Accounting only", () => {
+    const accountingPage = render(<MemoryRouter><FollowupPage user={accounting} /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Print list" })).toBeInTheDocument();
+    accountingPage.unmount();
+
+    render(<MemoryRouter><FollowupPage user={auditor} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "Print list" })).not.toBeInTheDocument();
   });
 
   it("uses the close-out reconciliation row and requires a reason for a variance", async () => {
@@ -832,18 +901,69 @@ describe("operational page navigation", () => {
     expect(within(confirmation).getByText("Drawer count was corrected after recounting.")).toBeInTheDocument();
   });
 
-  it("enforces allowed and forbidden primary capabilities for all five roles", () => {
+  it("enforces allowed and forbidden primary capabilities for all six roles", () => {
+    expect(can(superAdmin, "dashboard.view")).toBe(true);
+    expect(can(superAdmin, "user.manage")).toBe(true);
+    expect(can(superAdmin, "security.events.view")).toBe(true);
+    expect(can(superAdmin, "audit.view")).toBe(true);
+    expect(can(superAdmin, "student.view")).toBe(false);
+    expect(can(superAdmin, "account.view")).toBe(false);
+    expect(can(superAdmin, "payment.view")).toBe(false);
+    expect(can(superAdmin, "payment.record")).toBe(false);
+    expect(can(superAdmin, "payment.void.request")).toBe(false);
+    expect(can(superAdmin, "payment.void.view")).toBe(false);
+    expect(can(superAdmin, "payment.void.approve")).toBe(false);
+    expect(can(superAdmin, "receipt.reprint")).toBe(false);
+    expect(can(superAdmin, "followup.view")).toBe(false);
+    expect(can(superAdmin, "followup.send")).toBe(false);
+    expect(can(superAdmin, "notification.view")).toBe(false);
+    expect(can(superAdmin, "notification.retry")).toBe(false);
+    expect(can(superAdmin, "report.view")).toBe(false);
+    expect(can(superAdmin, "clearance.view")).toBe(false);
+    expect(can(superAdmin, "permit.print")).toBe(false);
+    expect(can(superAdmin, "closeout.submit")).toBe(false);
+    expect(can(superAdmin, "closeout.view")).toBe(false);
+    expect(can(superAdmin, "backup.manage")).toBe(false);
+    expect(can(superAdmin, "import.run")).toBe(false);
+
     expect(can(cashier, "payment.record")).toBe(true);
+    expect(can(cashier, "clearance.view")).toBe(false);
+    expect(can(cashier, "permit.print")).toBe(false);
     expect(can(cashier, "report.view")).toBe(false);
+    expect(can(cashier, "notification.retry")).toBe(true);
+    expect(can(cashier, "import.run")).toBe(false);
     expect(can(accounting, "payment.void.approve")).toBe(true);
     expect(can(accounting, "payment.record")).toBe(false);
+    expect(can(accounting, "followup.send")).toBe(true);
+    expect(can(accounting, "audit.view")).toBe(false);
+    expect(can(accounting, "notification.view")).toBe(true);
+    expect(can(accounting, "notification.retry")).toBe(false);
+    expect(can(accounting, "import.run")).toBe(false);
+    expect(can(accounting, "clearance.view")).toBe(false);
+    expect(can(accounting, "permit.print")).toBe(false);
     expect(can(administrator, "user.manage")).toBe(true);
-    expect(can(administrator, "finance.amounts.view")).toBe(false);
+    expect(can(administrator, "security.events.view")).toBe(true);
+    expect(can(administrator, "audit.view")).toBe(false);
+    expect(can(administrator, "payment.view")).toBe(false);
+    expect(can(administrator, "notification.retry")).toBe(false);
+    expect(can(administrator, "import.run")).toBe(false);
+    expect(can(administrator, "report.view")).toBe(false);
+    expect(can(administrator, "clearance.view")).toBe(false);
+    expect(can(administrator, "permit.print")).toBe(false);
     expect(can(auditor, "audit.view")).toBe(true);
+    expect(can(auditor, "notification.view")).toBe(false);
     expect(can(auditor, "payment.record")).toBe(false);
-    expect(can(registrar, "student.view")).toBe(true);
+    expect(can(auditor, "notification.retry")).toBe(false);
+    expect(can(auditor, "import.run")).toBe(false);
+    expect(can(auditor, "clearance.view")).toBe(false);
+    expect(can(auditor, "permit.print")).toBe(false);
+    expect(can(registrar, "student.view")).toBe(false);
+    expect(can(registrar, "clearance.lookup")).toBe(true);
     expect(can(registrar, "permit.print")).toBe(true);
-    expect(can(registrar, "finance.amounts.view")).toBe(false);
+    expect(can(registrar, "notification.view")).toBe(false);
+    expect(can(registrar, "followup.send")).toBe(false);
+    expect(can(registrar, "notification.retry")).toBe(false);
+    expect(can(registrar, "import.run")).toBe(false);
 
     render(
       <MemoryRouter>
@@ -855,9 +975,10 @@ describe("operational page navigation", () => {
 
     expect(screen.getByRole("heading", { name: /access denied/i })).toBeInTheDocument();
     expect(screen.queryByText("Payment entry")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
   });
 
-  it("allows a registrar to open the limited student profile used for clearance verification", () => {
+  it("keeps the Registrar in the clearance workspace instead of the student directory", () => {
     render(
       <MemoryRouter initialEntries={["/students/sample-1001"]}>
         <Routes>
@@ -873,15 +994,8 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/clearance/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
-    expect(screen.getByText("Enrollment")).toBeInTheDocument();
-    expect(screen.getByText("Midterm")).toBeInTheDocument();
-    expect(screen.getByText("Final")).toBeInTheDocument();
-    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/account balance/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/guardian details/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Access denied" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /amara villanueva/i })).not.toBeInTheDocument();
   });
 
   it("renders not found for unknown student and account routes", () => {
@@ -889,12 +1003,14 @@ describe("operational page navigation", () => {
       <MemoryRouter initialEntries={["/students/missing"]}><Routes><Route path="/students/:id" element={<StudentProfilePage user={cashier} />} /></Routes></MemoryRouter>,
     );
     expect(screen.getByRole("heading", { name: /page not found/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
     unknownStudent.unmount();
 
     render(
       <MemoryRouter initialEntries={["/accounts/missing"]}><Routes><Route path="/accounts/:id" element={<AccountDetailPage user={cashier} />} /></Routes></MemoryRouter>,
     );
     expect(screen.getByRole("heading", { name: /page not found/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
   });
 
   it("uses the shared mock account records for account, payment, and follow-up context", () => {

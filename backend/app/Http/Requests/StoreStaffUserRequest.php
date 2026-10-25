@@ -24,11 +24,23 @@ class StoreStaffUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $roleRules = ['required', Rule::enum(UserRole::class)];
+
+        // The bootstrap-only Super Admin can create Administrators. Regular
+        // Administrators cannot assign either privileged role. Accounting
+        // assignment remains closed until MCA confirms its policy.
+        if ($this->user()?->role !== UserRole::SuperAdmin) {
+            $roleRules[] = Rule::notIn([UserRole::Admin->value, UserRole::SuperAdmin->value]);
+        } else {
+            $roleRules[] = Rule::notIn([UserRole::SuperAdmin->value]);
+        }
+        $roleRules[] = Rule::notIn([UserRole::Accounting->value]);
+
         return [
-            'username' => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('users', 'username')],
+            'username' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')],
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
-            'role' => ['required', Rule::enum(UserRole::class)],
+            'role' => $roleRules,
         ];
     }
 }

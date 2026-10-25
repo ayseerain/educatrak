@@ -48,7 +48,7 @@ export function DropdownSelect<TValue extends string>({
           align={align}
           sideOffset={6}
           className={cn(
-            "dropdown-menu z-50 min-w-52 rounded-md border border-border bg-white p-1 shadow-lg",
+            "dropdown-menu z-50 max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] min-w-52 overflow-y-auto overscroll-contain rounded-md border border-border bg-white p-1 shadow-lg",
             contentClassName,
           )}
         >

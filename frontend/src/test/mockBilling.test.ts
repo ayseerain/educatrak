@@ -16,7 +16,7 @@ describe("mock billing database", () => {
 
     const account = getCurrentBillingAccount("sample-1001");
 
-    expect(payment.receiptNo).toBe("OR-2026-001002");
+    expect(payment.receiptNo).toBe("OR-2026-001011");
     expect(payment.allocations).toEqual([
       { installmentId: "installment-1001-5", amount: 125_000 },
     ]);

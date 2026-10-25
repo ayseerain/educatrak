@@ -9,6 +9,7 @@ use App\Models\CloseOut;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\AuditLogger;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,13 +22,14 @@ class CloseOutController extends Controller
         $businessDate = today('Asia/Manila')->toDateString();
         $systemCashCents = (int) Payment::query()
             ->where('recorded_by', $user->id)
-            ->where('paid_on', $businessDate)
+            ->whereDate('paid_on', $businessDate)
             ->where('method', 'cash')
             ->where('status', 'valid')
             ->sum('amount_cents');
         $closeOut = CloseOut::query()
+            ->with(['cashier', 'signedOffBy'])
             ->where('cashier_id', $user->id)
-            ->where('business_date', $businessDate)
+            ->whereDate('business_date', $businessDate)
             ->first();
 
         return response()->json(['data' => [
@@ -64,14 +66,29 @@ class CloseOutController extends Controller
 
     public function signOff(Request $request, CloseOut $closeOut, AuditLogger $auditLogger): JsonResponse
     {
-        if ($closeOut->signed_off_at !== null) {
+        $signedOff = DB::transaction(function () use ($request, $closeOut, $auditLogger): ?CloseOut {
+            $lockedCloseOut = CloseOut::query()
+                ->lockForUpdate()
+                ->findOrFail($closeOut->id);
+
+            if ($lockedCloseOut->signed_off_at !== null) {
+                return null;
+            }
+
+            $lockedCloseOut->update([
+                'signed_off_by' => $request->user()->id,
+                'signed_off_at' => now(),
+            ]);
+            $auditLogger->record($request, 'closeout.signed_off', $lockedCloseOut);
+
+            return $lockedCloseOut->fresh(['cashier', 'signedOffBy']);
+        });
+
+        if ($signedOff === null) {
             return response()->json(['message' => 'This close-out is already signed off.'], 422);
         }
 
-        $closeOut->update(['signed_off_by' => $request->user()->id, 'signed_off_at' => now()]);
-        $auditLogger->record($request, 'closeout.signed_off', $closeOut);
-
-        return response()->json(['data' => $this->closeOutData($closeOut->fresh(['cashier', 'signedOffBy']))]);
+        return response()->json(['data' => $this->closeOutData($signedOff)]);
     }
 
     /** @return array<string, mixed> */
@@ -87,6 +104,7 @@ class CloseOutController extends Controller
             'variance_reason' => $closeOut->variance_reason,
             'submitted_at' => $closeOut->submitted_at->toISOString(),
             'signed_off_at' => $closeOut->signed_off_at?->toISOString(),
+            'signed_off_by' => $closeOut->signedOffBy?->full_name,
         ];
     }
 }

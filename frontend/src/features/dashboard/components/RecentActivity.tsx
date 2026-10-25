@@ -88,9 +88,9 @@ export function RecentActivity({
           {
             id: "actions",
             header: en.table.actions,
-            cell: () => (
+            cell: ({ row }) => (
               <Link
-                to="/receipts/mock-payment-0/print"
+                to={`/receipts/${encodeURIComponent(row.original.id)}/print`}
                 className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
               >
                 {en.table.viewReceipt}

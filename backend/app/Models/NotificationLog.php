@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\NotificationLogFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NotificationLog extends Model
 {
@@ -14,6 +15,9 @@ class NotificationLog extends Model
     protected $fillable = [
         'student_id',
         'payment_id',
+        'installment_id',
+        'delivery_key',
+        'provider_message_sid',
         'guardian_email',
         'guardian_mobile',
         'channel',
@@ -24,4 +28,19 @@ class NotificationLog extends Model
         'attempts',
         'sent_at',
     ];
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
+    public function installment(): BelongsTo
+    {
+        return $this->belongsTo(Installment::class);
+    }
 }
