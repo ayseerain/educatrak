@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { SessionProvider } from "@/auth/session";
+import { MOCK_USERS } from "@/auth/mockSession";
 import { App } from "@/App";
 
 interface RenderAppOptions {
@@ -140,7 +141,7 @@ describe("LoginPage", () => {
   it("signs in with a valid mock account and opens the dashboard", async () => {
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!");
+    await fillLogin("sample.cashier", "demo-cashier");
 
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
@@ -150,11 +151,20 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it.each(Object.entries(MOCK_USERS))("signs in the seeded %s account", async (username, account) => {
+    renderApp();
+
+    await fillLogin(username, account.password);
+
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(await screen.findByRole("heading", { name: `Good day, ${account.user.name}` })).toBeInTheDocument();
+  });
+
   it("switches mock roles from the header and returns to the role dashboard", async () => {
     const user = userEvent.setup();
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!", user);
+    await fillLogin("sample.cashier", "demo-cashier", user);
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent(/^\/$/),
     );
@@ -169,7 +179,7 @@ describe("LoginPage", () => {
     expect(
       await screen.findByRole("heading", { name: /good day, avery accounting/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /void requests/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Void requests" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /preview role/i }));
     await user.click(screen.getByRole("menuitemradio", { name: /registrar/i }));
@@ -186,7 +196,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!");
+    await fillLogin("sample.cashier", "demo-cashier");
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
     );
@@ -260,7 +270,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 
@@ -296,7 +306,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 
@@ -320,7 +330,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
 
     act(() => {
@@ -351,7 +361,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 3000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 

@@ -1016,3 +1016,21 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Confirmed the three project `SKILL.md` files, the Impeccable hook file, and all three Codex plugin cache directories exist. `git diff --check -- .agents .codex` passed. Tests not run because this task only installs agent tooling.
 - **Commit/PR:** Not available.
 - **Follow-ups:** Taste Skill's installer reported one medium-risk socket alert. Use its workflow only for explicitly requested frontend work, and review the installed instructions before invocation. Start a new Codex session so newly installed plugins and skills load.
+
+### Sunday, October 25, 2026 — 18:51:14 Asia/Manila | Add central development mock database
+
+- **Agent:** Codex
+- **Summary:** Added one synthetic, relative-date JSON seed with an in-memory store, derived selectors, integrity guard, mock API switches, local persistence controls, and console reset/snapshot helpers. Replaced the student, billing, notification, session, and dashboard fixture sources with central-store compatibility exports. Production builds now alias the central mock module to a fail-closed empty implementation, keeping fixture records and development credentials out of shipped assets.
+- **Files:** Added `frontend/src/api/mock/`, `frontend/src/production/mockDatabase.ts`, and `frontend/src/test/mockDatabase.test.ts`. Updated `frontend/src/api/mockAdapter.ts`, `frontend/src/auth/mockSession.ts`, `frontend/src/features/operations/mockNotificationData.ts`, `frontend/src/features/students/mockBilling.ts`, `frontend/src/features/students/mockStudents.ts`, `frontend/src/test/login.test.tsx`, `frontend/vite.config.ts`, this tracker, and this changelog.
+- **Validation:** `npx vitest run src/test/mockDatabase.test.ts src/test/mockBilling.test.ts src/test/dashboard.test.tsx` passed (34 tests), including far-apart injected dates and a write-through balance/audit check. `npx vitest run src/test/login.test.tsx src/test/mockDatabase.test.ts src/test/mockBilling.test.ts` passed 18 of 19 tests; one duplicate Void Requests link assertion failed and was not investigated in this task. `npm run build` and `npm run verify:production-assets` passed. `git diff --check` passed with only existing LF-to-CRLF warnings.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Legacy development-only pages still use synchronous compatibility exports; migrate them to feature APIs/hooks to exercise mock loading, error, and empty states. Logged in `Issues-and-TODOs.md`.
+
+### Sunday, October 25, 2026 — 18:54:49 Asia/Manila | Verify central mock-account login
+
+- **Agent:** Codex
+- **Summary:** Corrected the role-switch regression assertion to target the navigation link exactly instead of also matching the dashboard shortcut. Added UI coverage that signs in with every seeded development account and its central mock-database password.
+- **Files:** Updated `frontend/src/test/login.test.tsx` and this changelog.
+- **Validation:** `npx vitest run src/test/login.test.tsx` passed (20 tests), including Super Admin, Cashier, Accounting Officer, Administrator, Auditor, and Registrar login. `npm run build`, `npm run verify:production-assets`, and `git diff --check` passed; Git reported only existing LF-to-CRLF warnings.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.

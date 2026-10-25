@@ -11,6 +11,10 @@ export default defineConfig(({ command }) => ({
       ...(command === "build"
         ? [
             {
+              find: "@/api/mock",
+              replacement: path.resolve(__dirname, "./src/production/mockDatabase.ts"),
+            },
+            {
               find: "@/features/students/mockStudents",
               replacement: path.resolve(__dirname, "./src/production/mockStudents.ts"),
             },

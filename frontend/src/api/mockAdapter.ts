@@ -7,6 +7,7 @@ import {
   payments,
 } from "@/features/students/mockBilling";
 import { students } from "@/features/students/mockStudents";
+import { getMockState, mockApiDelay } from "@/api/mock";
 import type {
   DashboardRange,
   DashboardSummary,
@@ -140,13 +141,18 @@ function overdueBalance() {
   );
 }
 
+function latestBackup() {
+  const backups = getMockState().backupRuns;
+  return backups[backups.length - 1];
+}
+
 /** Development-only dashboard projection over the same synthetic billing records as student and payment workspaces. */
 export async function fetchDashboardSummary(
   user: AuthenticatedUser,
   range: DashboardRange = "last_7_days",
   now = new Date(),
 ): Promise<DashboardSummary> {
-  await new Promise((resolve) => setTimeout(resolve, 350));
+  await mockApiDelay();
   const allPayments = currentSchoolYearPayments();
   const recentActivity = activityForRange(allPayments, range, now);
   const rangeTotals = financialTotalsForActivity(recentActivity);
@@ -163,8 +169,8 @@ export async function fetchDashboardSummary(
         paymentsTodayCount: todayTotals.paymentCount,
         rangeCollectionsTotal: rangeTotals.totalCollections,
         paymentsInRangeCount: rangeTotals.paymentCount,
-        failedEmailCount: 2,
-        closeoutDone: false,
+        failedEmailCount: getMockState().notificationAttempts.filter((attempt) => attempt.channel === "Email" && attempt.status === "Failed").length,
+        closeoutDone: getMockState().closeouts.length > 0,
         accountStatusOverview: accountStatusOverview(),
         accountsNeedingAttention: accountsNeedingAttention(),
         recentActivity,
@@ -175,23 +181,23 @@ export async function fetchDashboardSummary(
         overallEnrolledStudents: activeStudents,
         pendingVoidApprovals: payments.filter((payment) => payment.status === "Void pending").length,
         overdueTotal: overdueBalance(),
-        unsignedCloseouts: 2,
+        unsignedCloseouts: getMockState().closeouts.length,
         collectionTrend: collectionTrendForActivity(recentActivity),
         recentActivity,
       };
     case "administrator":
       return {
         role: "administrator",
-        lastBackupAt: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(),
-        lastBackupSucceeded: true,
-        activeUserCount: 14,
+        lastBackupAt: latestBackup()?.occurredAt ?? null,
+        lastBackupSucceeded: latestBackup()?.succeeded ?? null,
+        activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
       };
     case "super_admin":
       return {
         role: "super_admin",
-        lastBackupAt: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(),
-        lastBackupSucceeded: true,
-        activeUserCount: 14,
+        lastBackupAt: latestBackup()?.occurredAt ?? null,
+        lastBackupSucceeded: latestBackup()?.succeeded ?? null,
+        activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
       };
     case "auditor":
       return {
