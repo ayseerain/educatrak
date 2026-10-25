@@ -121,6 +121,28 @@ describe("operational page navigation", () => {
     expect(form).not.toHaveClass("max-w-3xl");
   });
 
+  it("returns to the student list after creating a sample student", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/students/new"]}>
+        <Routes>
+          <Route path="/students/new" element={<StudentFormPage />} />
+          <Route path="/students" element={<h1>Students</h1>} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/Student number/), "S-2000");
+    await user.type(screen.getByLabelText(/Student name/), "Taylor Student");
+    await user.type(screen.getByLabelText(/^Name/), "Taylor Guardian");
+    await user.type(screen.getByLabelText(/Relationship/), "Parent");
+    await user.click(screen.getByRole("button", { name: "Create student" }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students");
+    expect(screen.getByRole("heading", { name: "Students" })).toBeInTheDocument();
+  });
+
   it("limits student grade, section, and Senior High strand choices", async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);

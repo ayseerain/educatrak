@@ -13,6 +13,7 @@ import type {
   DashboardSummary,
   RecentPayment,
 } from "./dashboardTypes";
+import type { BackupRecord } from "./backupApi";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -144,6 +145,20 @@ function overdueBalance() {
 function latestBackup() {
   const backups = getMockState().backupRuns;
   return backups[backups.length - 1];
+}
+
+export async function listBackupRecords(): Promise<BackupRecord[]> {
+  await mockApiDelay();
+  return getMockState().backupRuns
+    .slice()
+    .sort((first, second) => second.occurredAt.localeCompare(first.occurredAt))
+    .map((backup) => ({
+      id: backup.id,
+      result: backup.succeeded ? "succeeded" : "failed",
+      sizeBytes: null,
+      error: null,
+      completedAt: backup.occurredAt,
+    }));
 }
 
 /** Development-only dashboard projection over the same synthetic billing records as student and payment workspaces. */
