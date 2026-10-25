@@ -903,6 +903,7 @@ export function AccountWizardPage() {
           <StudentSearchField
             value={studentQuery}
             onChange={setStudentQuery}
+            onSelect={(student) => setStudentQuery(student.name)}
             autoFocus
             placeholder="Search student name or number"
             wrapperClassName="mt-5"
@@ -1173,7 +1174,9 @@ function PaymentWorkflow({
   const [savedPayment, setSavedPayment] = useState<SavedCashPayment | null>(null);
   const selectedStudent =
     initialStudent ??
-    students.find((student) => studentMatchesSearch(student, studentQuery));
+    (studentQuery.trim()
+      ? students.find((student) => studentMatchesSearch(student, studentQuery))
+      : undefined);
   const nextDueRecord = selectedStudent
     ? getNextDueRecord(selectedStudent.id)
     : undefined;
@@ -1952,8 +1955,11 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
 }
 export function ClearancePage({ user }: { user: AuthenticatedUser }) {
   if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Clearance" feature="Clearance" />;
+  const [searchParams] = useSearchParams();
   const [studentQuery, setStudentQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState(firstStudent);
+  const [selectedStudent, setSelectedStudent] = useState(
+    students.find((student) => student.id === searchParams.get("studentId")) ?? firstStudent,
+  );
   return (
     <>
       <PageHeader
@@ -3021,13 +3027,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               <label className="block text-sm font-medium">
                 Primary role
                 <select name="role" defaultValue={editingUser.role} className={inputClass}>
-                  {[
-                    "Administrator",
-                    "Cashier",
-                    "Accounting Officer",
-                    "Auditor",
-                    "Registrar",
-                  ].map((role) => <option key={role}>{role}</option>)}
+                  {[...new Set([...createRoles.map(roleLabel), editingUser.role])].map((role) => <option key={role}>{role}</option>)}
                 </select>
               </label>
               <div className="flex justify-end gap-3">
@@ -3148,7 +3148,7 @@ export function RolesPage() {
         title="Roles"
         description="Current interface access by role. The server enforces permissions for every request."
       />
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto" tabIndex={0}>
         <p className="mb-4 text-sm text-text-secondary">Allowed indicates a role capability. Some workflows remain unavailable until their live APIs are ready; API permission checks remain authoritative.</p>
         <table className="w-full min-w-[960px] border-collapse text-left text-sm">
           <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">
