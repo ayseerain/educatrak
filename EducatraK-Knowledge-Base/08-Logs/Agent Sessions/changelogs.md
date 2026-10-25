@@ -928,3 +928,21 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm run build` passed with a 4GB Node heap; `git diff --check` passed for the frontend changes. Browser print-layout review remains open under U12.
 - **Commit/PR:** Not available.
 - **Follow-ups:** Check printed receipt clipping and report pagination/page breaks in browser print preview.
+
+### Sunday, October 25, 2026 — 16:58:14 Asia/Manila | Improve user archive actions and edit dialog
+
+- **Agent:** Codex
+- **Summary:** Added an archive action to the user edit dialog and retained the existing confirmation flow and 30-day restore/anonymization lifecycle. Made the edit dialog scroll within the viewport so its save and account-management controls remain reachable on shorter screens. Successful archiving now closes the edit dialog.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, and the B37 resume note in `EducatraK-Frontend-Loop-Engineering.md`.
+- **Validation:** `npm test -- --run src/test/liveUsersFilters.test.tsx` passed (3 tests); `npm run build` passed; final `git diff --check` passed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** The formal Phase 2 frontend audit and browser/accessibility acceptance remain pending.
+
+### Sunday, October 25, 2026 — 16:59:33 Asia/Manila | Emphasize account deactivation confirmation
+
+- **Agent:** Codex
+- **Summary:** Strengthened the user-account deactivation confirmation with a dimmed, blurred backdrop and a larger, heavier dialog so it remains distinct from the underlying edit form.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, and the B37 resume note in `EducatraK-Frontend-Loop-Engineering.md`.
+- **Validation:** `npm test -- --run src/test/liveUsersFilters.test.tsx` passed (4 tests); `npm run build` passed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** The formal Phase 2 frontend audit and browser/accessibility acceptance remain pending.

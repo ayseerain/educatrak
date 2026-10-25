@@ -69,7 +69,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
     },
     onError: (error: Error) => setErrorMessage(error.message),
   });
-  const archiveMutation = useMutation({ mutationFn: archiveStaffUser, onSuccess: async () => { setArchiveTarget(null); setErrorMessage(""); await refreshUsers(); }, onError: (error: Error) => setErrorMessage(error.message) });
+  const archiveMutation = useMutation({ mutationFn: archiveStaffUser, onSuccess: async () => { setArchiveTarget(null); setEditing(null); setErrorMessage(""); await refreshUsers(); }, onError: (error: Error) => setErrorMessage(error.message) });
   const restoreMutation = useMutation({ mutationFn: restoreStaffUser, onSuccess: async () => { setRestoreTarget(null); setErrorMessage(""); await refreshUsers(); }, onError: (error: Error) => setErrorMessage(error.message) });
 
   function submitCreate(event: FormEvent<HTMLFormElement>) {
@@ -153,21 +153,22 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
       </Dialog.Root>
 
       <Dialog.Root open={editing !== null} onOpenChange={(open) => { if (!open) { setEditing(null); setResetPassword(null); setRoleChoice(""); setErrorMessage(""); } }}>
-        <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[min(600px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-border bg-white shadow-xl">
+        <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90dvh] w-[min(600px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-white shadow-xl">
           <div className="border-b border-border p-6"><Dialog.Title className="text-lg font-semibold">Manage user account</Dialog.Title><Dialog.Description className="mt-1 text-sm text-text-secondary">Review the account details and access before saving.</Dialog.Description></div>
           {editing && <>
-            <form className="flex min-h-0 flex-col" onSubmit={submitEdit}>
-              <div className="flex-1 space-y-5 overflow-y-auto p-6">
+            <form className="space-y-5 p-6" onSubmit={submitEdit}>
                 {errorMessage && <p role="alert" className="rounded-md border border-status-error p-3 text-sm text-status-error">{errorMessage}</p>}
                 <section aria-labelledby="edit-account-heading"><h3 id="edit-account-heading" className="font-semibold">Account information</h3><div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="block text-sm font-medium">Full name<input key={`${editing.id}-name`} name="fullName" required maxLength={255} defaultValue={editing.fullName} className={inputClass} /></label><label className="block text-sm font-medium">Email<input key={`${editing.id}-email`} name="email" type="email" defaultValue={editing.email ?? ""} className={inputClass} /></label></div></section>
                 <section aria-labelledby="edit-role-heading" className="border-t border-border pt-4"><h3 id="edit-role-heading" className="font-semibold">Role and access</h3><label className="mt-3 block text-sm font-medium">Role<select key={`${editing.id}-role`} name="role" value={roleChoice || editing.role} onChange={(event) => setRoleChoice(event.target.value as StaffRole)} className={inputClass}>{Object.entries(ROLE_LABELS).filter(([role]) => role !== "super_admin" && (role !== "accounting" || editing.role === "accounting") && (user.role === "super_admin" || role !== "admin" || editing.role === "admin")).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></label>{roleChoice && roleChoice !== editing.role && <p role="status" className="mt-3 rounded-md border border-status-warning bg-surface p-3 text-sm text-text-primary">Changing this role changes the account's access to EducatraK. Confirm the new responsibilities before saving.</p>}</section>
                 <section aria-labelledby="edit-status-heading" className="border-t border-border pt-4"><h3 id="edit-status-heading" className="font-semibold">Account status</h3><div className="mt-3 flex flex-wrap items-center gap-3"><StatusBadge status={editing.archivedAt ? "Archived" : editing.active ? "Active" : "Inactive"} />{editing.mustChangePassword && <p className="text-sm text-status-warning">Password change required at next sign-in.</p>}</div></section>
-              </div>
-              <div className="sticky bottom-0 flex justify-end gap-3 border-t border-border bg-white p-4"><Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button><Button disabled={updateMutation.isPending || resetMutation.isPending}>{updateMutation.isPending ? "Saving changes…" : "Save changes"}</Button></div>
+              <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-white p-4"><Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button><Button disabled={updateMutation.isPending || resetMutation.isPending}>{updateMutation.isPending ? "Saving changes…" : "Save changes"}</Button></div>
             </form>
-            <div className="mt-5 border-t border-border pt-4">
+            <div className="border-t border-border p-6">
               {resetPassword ? <><p role="status" className="text-sm text-status-success">Temporary password (shown once):</p><p className="mt-2 rounded-md bg-surface p-3 font-mono">{resetPassword}</p></> : <Button type="button" variant="secondary" disabled={resetMutation.isPending} onClick={() => { setErrorMessage(""); resetMutation.mutate(editing.id); }}>{resetMutation.isPending ? "Resetting…" : "Reset password"}</Button>}
-              <Button type="button" variant={editing.active ? "destructive" : "secondary"} className="ml-2" disabled={updateMutation.isPending || (editing.active && editing.id === user.id)} onClick={() => setStatusConfirmOpen(true)}>{editing.active ? "Deactivate account" : "Reactivate account"}</Button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" variant={editing.active ? "destructive" : "secondary"} disabled={updateMutation.isPending || (editing.active && editing.id === user.id)} onClick={() => setStatusConfirmOpen(true)}>{editing.active ? "Deactivate account" : "Reactivate account"}</Button>
+                <Button type="button" variant="destructive" disabled={editing.isProtected || editing.id === user.id || archiveMutation.isPending} onClick={() => setArchiveTarget(editing)}>Archive account</Button>
+              </div>
               {editing.id === user.id && editing.active && <p className="mt-2 text-xs text-text-secondary">You cannot deactivate your own account.</p>}
             </div>
           </>}
@@ -175,7 +176,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
       </Dialog.Root>
 
       <Dialog.Root open={statusConfirmOpen} onOpenChange={setStatusConfirmOpen}>
-        <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[61] w-[min(440px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-white p-6 shadow-xl">
+        <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" /><Dialog.Content className="fixed left-1/2 top-1/2 z-[61] w-[min(520px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-border bg-white p-8 shadow-2xl">
           <Dialog.Title className="text-lg font-semibold">{editing?.active ? "Deactivate account?" : "Reactivate account?"}</Dialog.Title>
           <p className="mt-3 text-sm text-text-secondary">{editing?.active ? `${editing.fullName} will no longer be able to sign in. Account history will remain available.` : `${editing?.fullName} will be able to sign in again.`}</p>
           <div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setStatusConfirmOpen(false)}>Cancel</Button><Button type="button" variant={editing?.active ? "destructive" : "primary"} disabled={!editing || updateMutation.isPending} onClick={() => { if (!editing) return; updateMutation.mutate({ id: editing.id, patch: { active: !editing.active } }); setStatusConfirmOpen(false); }}>{editing?.active ? "Deactivate" : "Reactivate"}</Button></div>

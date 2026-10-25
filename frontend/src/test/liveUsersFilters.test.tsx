@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import type { AuthenticatedUser } from "@/lib/types";
 
-const { listStaffUsers } = vi.hoisted(() => ({ listStaffUsers: vi.fn() }));
+const { listStaffUsers, archiveStaffUser } = vi.hoisted(() => ({ listStaffUsers: vi.fn(), archiveStaffUser: vi.fn() }));
 vi.mock("@/api/staffApi", () => ({
   listStaffUsers,
-  archiveStaffUser: vi.fn(), createStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), restoreStaffUser: vi.fn(), updateStaffUser: vi.fn(),
+  archiveStaffUser, createStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), restoreStaffUser: vi.fn(), updateStaffUser: vi.fn(),
 }));
 
 function renderUsers(user: AuthenticatedUser) {
@@ -39,5 +39,45 @@ describe("role scoped user filters", () => {
     await screen.findByRole("heading", { name: "Users" });
     await user.click(screen.getByRole("button", { name: "Filter" }));
     expect(screen.getByRole("option", { name: "Super Admin" })).toBeInTheDocument();
+  });
+
+  it("keeps the edit dialog scrollable and lets an administrator archive a user from it", async () => {
+    const user = userEvent.setup();
+    const staffUser = {
+      id: "cashier-1", username: "sample.cashier", fullName: "Riley Sample", email: null,
+      role: "cashier" as const, active: true, archivedAt: null, anonymizeAt: null,
+      archivedBy: null, isProtected: false, mustChangePassword: false, lastLoginAt: null,
+    };
+    listStaffUsers.mockResolvedValue({ data: [staffUser], currentPage: 1, lastPage: 1, total: 1, perPage: 10 });
+    archiveStaffUser.mockResolvedValue({ ...staffUser, active: false, archivedAt: "2026-10-25T00:00:00.000Z", anonymizeAt: "2026-11-24T00:00:00.000Z" });
+    renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
+
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    const editDialog = screen.getByRole("dialog", { name: "Manage user account" });
+    expect(editDialog).toHaveClass("max-h-[90dvh]", "overflow-y-auto");
+    await user.click(screen.getByRole("button", { name: "Archive account" }));
+    expect(screen.getByText(/restored for 30 days/)).toBeInTheDocument();
+    const confirmButtons = screen.getAllByRole("button", { name: "Archive account" });
+    await user.click(confirmButtons[confirmButtons.length - 1]!);
+
+    await waitFor(() => expect(archiveStaffUser).toHaveBeenCalledWith("cashier-1", expect.anything()));
+  });
+
+  it("makes the deactivation confirmation stand out from the edit dialog", async () => {
+    const user = userEvent.setup();
+    const staffUser = {
+      id: "cashier-1", username: "sample.cashier", fullName: "Riley Sample", email: null,
+      role: "cashier" as const, active: true, archivedAt: null, anonymizeAt: null,
+      archivedBy: null, isProtected: false, mustChangePassword: false, lastLoginAt: null,
+    };
+    listStaffUsers.mockResolvedValue({ data: [staffUser], currentPage: 1, lastPage: 1, total: 1, perPage: 10 });
+    renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
+
+    await user.click(await screen.findByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Deactivate account" }));
+
+    const confirmation = screen.getByRole("dialog", { name: "Deactivate account?" });
+    expect(confirmation).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-8", "shadow-2xl");
+    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
   });
 });

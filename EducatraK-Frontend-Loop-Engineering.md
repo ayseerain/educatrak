@@ -356,7 +356,7 @@ For each screen below:
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** `/admin/users` uses `LiveUsersPage` with live search and filters, account creation/editing, password reset, deactivation/reactivation, and the approved archive/restore lifecycle. The edit dialog now scrolls within the viewport and exposes the confirmed archive action; archive confirmation explains the 30-day restore window. The deactivation confirmation has a blurred/dimmed backdrop and larger dialog dimensions for clear visual separation. Archive access remains disabled for protected accounts and the signed-in user. `frontend/src/test/liveUsersFilters.test.tsx` passes (4 tests), and `npm run build` passes. Formal Phase 2 audit remains pending.
 
 ### B38. Role Matrix — M1
 
