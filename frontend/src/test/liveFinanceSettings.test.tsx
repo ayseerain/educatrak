@@ -36,6 +36,7 @@ describe("live finance settings", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderSettings("fees");
 
+    expect(screen.getByRole("heading", { name: "Fees" })).toBeInTheDocument();
     expect(await screen.findByText("Grade 4 sample schedule")).toBeInTheDocument();
     expect(screen.getByText("₱2,500.00")).toBeInTheDocument();
     expect(screen.getByText("These finance settings are read-only for your role.")).toBeInTheDocument();
@@ -86,6 +87,7 @@ describe("live finance settings", () => {
     }));
     renderSettings("plans", true);
 
+    expect(screen.getByRole("heading", { name: "Plans" })).toBeInTheDocument();
     expect(await screen.findByText("Two-part sample plan")).toBeInTheDocument();
     expect(screen.getByText("First installment")).toBeInTheDocument();
     expect(screen.getByText("Your role may manage finance settings, but payment plan changes are not available yet.")).toBeInTheDocument();

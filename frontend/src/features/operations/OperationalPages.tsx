@@ -205,7 +205,7 @@ export function DeniedPage() {
 export function NotFoundPage() {
   return (
     <SystemPage
-      title="Page not found"
+      title="Not found"
       description="The address you entered does not match an EducaTrak page."
     />
   );
@@ -523,7 +523,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
       <form onSubmit={submit} className="w-full space-y-5">
         <Card className="grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium">
-            Student number
+            Student number <span aria-hidden="true" className="text-status-error">*</span>
             <input
               name="number"
               required
@@ -532,7 +532,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
             />
           </label>
           <label className="text-sm font-medium">
-            Student name
+            Student name <span aria-hidden="true" className="text-status-error">*</span>
             <input
               name="name"
               required
@@ -597,11 +597,11 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
           <h2 className="font-semibold">Guardian</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="text-sm font-medium">
-              Name
+              Name <span aria-hidden="true" className="text-status-error">*</span>
               <input required className={inputClass} />
             </label>
             <label className="text-sm font-medium">
-              Relationship
+              Relationship <span aria-hidden="true" className="text-status-error">*</span>
               <input required className={inputClass} />
             </label>
             <label className="text-sm font-medium">
@@ -827,7 +827,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Billing accounts"
+        title="Accounts"
         description="Supported account directory for current, upcoming, and historical school-year records."
         action={
           can(user, "account.create") ? (
@@ -856,7 +856,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function AccountWizardPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title="Create billing account" description="Account creation is not available in the live system yet." backTo="/accounts" /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with billing account setup.</p></Card></>;
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title="New account" description="Account creation is not available in the live system yet." backTo="/accounts" /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with billing account setup.</p></Card></>;
   const [step, setStep] = useState(1);
   const [studentQuery, setStudentQuery] = useState("");
   const [created, setCreated] = useState(false);
@@ -869,7 +869,7 @@ export function AccountWizardPage() {
   return (
     <>
       <PageHeader
-        title="Create billing account"
+        title="New account"
         description="Set up an account for one student and one school year."
         backTo="/accounts"
       />
@@ -1024,7 +1024,7 @@ export function PaymentsPage({
   return (
     <>
       <PageHeader
-        title="Transaction history"
+        title={user.role === "accounting" ? "Payment review" : "Payments"}
         description={
           user.role === "cashier"
             ? "Your recorded payments are shown by default."
@@ -1044,12 +1044,13 @@ export function PaymentsPage({
         { key: "amountMinimum", label: "Minimum amount (PHP)", type: "number", min: "0", step: "0.01" }, { key: "amountMaximum", label: "Maximum amount (PHP)", type: "number", min: "0", step: "0.01" },
       ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />
       <ListCard
-        headers={["Receipt", "Student", "Amount", "Method", "Status"]}
+        headers={["Receipt", "Student", "Date", "Amount", "Method", "Status"]}
         rows={paymentPagination.items.map((payment) => [
           <Link className={inlineLinkClass} to={`/payments/${payment.id}`}>
             {payment.receiptNo}
           </Link>,
           getStudentById(payment.studentId)?.name ?? "Unknown student",
+          payment.paidOn,
           format(payment.amount),
           "Cash",
           payment.status,
@@ -1627,7 +1628,7 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Void approval queue"
+        title="Void requests"
         description="Review pending void requests. The cashier who recorded a payment cannot approve its void."
       />
       <ListCard
@@ -1681,7 +1682,7 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
           </Button>
           <Button
             type="button"
-            variant={decision === "approve" ? "primary" : "destructive"}
+            variant={decision === "approve" ? "success" : "destructive"}
             onClick={() => {
               setResolved(decision === "approve" ? "Void approved" : "Void rejected");
               setDecision(null);
@@ -1806,7 +1807,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
   return (
     <>
       <PageHeader
-        title="Reminders & notifications"
+        title="Follow-up"
         description="Review reminder activity and notification history without merging their records."
         action={
           can(user, "followup.send") ? (
@@ -1827,7 +1828,6 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
         </p>
       )}
       <ListCard
-            title="Follow-up list"
             toolbar={can(user, "followup.send") ? (
               <div className="flex w-full flex-wrap items-center gap-2">
                 <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
@@ -1983,11 +1983,11 @@ export function ClearancePage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function PermitPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Exam permit" backTo="/clearance" feature="Exam permits" />;
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Permit" backTo="/clearance" feature="Exam permits" />;
   return (
     <div className="print-page mx-auto max-w-2xl">
       <PageHeader
-        title="Exam Permit"
+        title="Permit"
         description="Mendez Christian Academy"
         backTo="/clearance"
         action={<Button onClick={() => window.print()}>Print permit</Button>}
@@ -2139,7 +2139,7 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Close-out history"
+        title={user.role === "accounting" ? "Close-out review" : "Close-outs"}
         description="Review close-outs and sign off where authorized."
       />
       <CloseoutTabs user={user} active="history" />
@@ -2262,7 +2262,7 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
   return (
     <>
       <PageHeader
-        title="Student statement of account"
+        title="Statement"
         description={`${student.name} · ${account.schoolYear}`}
         backTo="/reports"
         action={
@@ -2300,7 +2300,7 @@ function MockReportPage({
   const filters = useTableFilters({ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" });
   const reports = {
     daily: {
-      title: "Daily collection report",
+      title: "Daily report",
       description:
         "Totals by method and cashier, with payments and voids separated.",
       filter: "date",
@@ -2312,7 +2312,7 @@ function MockReportPage({
       ],
     },
     monthly: {
-      title: "Monthly financial report",
+      title: "Monthly report",
       description:
         "Collections by fee category and grade level, compared with billed amounts.",
       filter: "month",
@@ -2323,7 +2323,7 @@ function MockReportPage({
       ],
     },
     outstanding: {
-      title: "Outstanding balances report",
+      title: "Outstanding",
       description:
         "Filter balances by grade, section, minimum balance, and overdue state.",
       filter: "outstanding",
@@ -2334,7 +2334,7 @@ function MockReportPage({
       ],
     },
     statement: {
-      title: "Student statement of account",
+      title: "Student statement",
       description:
         "One student's fees, schedule, payments, and remaining balance.",
       filter: "date",
@@ -2362,12 +2362,9 @@ function MockReportPage({
         description={report.description}
         backTo="/reports"
         action={
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => window.print()}>
-              Print
-            </Button>
-            <Button variant="secondary">Export to Excel</Button>
-          </div>
+          <Button variant="secondary" onClick={() => window.print()}>
+            Print
+          </Button>
         }
       />
       <TableFilters scope={`Sample ${type} report`} defaults={{ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
@@ -2424,7 +2421,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
   return (
     <>
       <PageHeader
-        title="Reminders & notifications"
+        title="Follow-up"
         description="View email and SMS notification attempts, including any configured SMS load fee."
       />
       {workspaceSwitch}
@@ -2508,79 +2505,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
   );
 }
 export function ImportPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Ledger import" feature="Ledger import" />;
-  const [stage, setStage] = useState<"upload" | "map" | "preview" | "result">(
-    "upload",
-  );
-  return (
-    <>
-      <PageHeader
-        title="Ledger import"
-        description="Nothing is saved until you confirm the final import."
-      />
-      <Card className="max-w-4xl">
-        <p className="text-sm font-medium">
-          Step:{" "}
-          {stage === "upload"
-            ? "Upload a .xlsx or .csv file"
-            : stage === "map"
-              ? "Map columns"
-              : stage === "preview"
-                ? "Preview and validate"
-                : "Import result"}
-        </p>
-        {stage === "upload" && (
-          <input className="mt-5 block" type="file" accept=".xlsx,.csv" />
-        )}
-        {stage === "map" && (
-          <p className="mt-4 text-sm">
-            Column suggestions are based on headers; correct each mapping before
-            previewing.
-          </p>
-        )}
-        {stage === "preview" && (
-          <ListCard
-            headers={["Row", "Status", "Details"]}
-            rows={[
-              ["2", "Valid", "Ready to import"],
-              ["3", "Warning", "Missing guardian email"],
-              ["4", "Error", "Duplicate student number"],
-            ]}
-          />
-        )}
-        {stage === "result" && (
-          <p className="mt-4 text-sm">
-            Import complete: 1 created, 1 skipped. Download the error report for
-            problem rows.
-          </p>
-        )}
-        <div className="mt-5 flex gap-3">
-          <Button variant="secondary" onClick={() => setStage("upload")}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() =>
-              setStage(
-                stage === "upload"
-                  ? "map"
-                  : stage === "map"
-                    ? "preview"
-                    : stage === "preview"
-                      ? "result"
-                      : "result",
-              )
-            }
-          >
-            {stage === "preview"
-              ? "Confirm valid rows"
-              : stage === "result"
-                ? "Download error report"
-                : "Continue"}
-          </Button>
-        </div>
-      </Card>
-    </>
-  );
+  return <UnavailableFeaturePage title="Import" feature="Ledger import" />;
 }
 
 export function SettingsPage({
@@ -2592,12 +2517,12 @@ export function SettingsPage({
 }) {
   if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
     const titles = {
-      fees: "Fee schedules",
-      plans: "Payment plans",
-      clearance: "Clearance rules",
-      school: "School and academic lists",
-      receipt: "Receipt settings",
-      email: "Email settings",
+      fees: "Fees",
+      plans: "Plans",
+      clearance: "Clearance",
+      school: "School settings",
+      receipt: "Receipts",
+      email: "Notifications",
     } satisfies Record<typeof section, string>;
 
     if (section === "fees" || section === "plans") {
@@ -2623,7 +2548,7 @@ export function SettingsPage({
   ]);
   const settings = {
     fees: {
-      title: "Fee schedules",
+      title: "Fees",
       description:
         "School year and grade-level fee items apply to new accounts only.",
       action: "Add fee item",
@@ -2631,7 +2556,7 @@ export function SettingsPage({
       rows: feeRows,
     },
     plans: {
-      title: "Payment plans",
+      title: "Plans",
       description:
         "Plan changes apply to new accounts only; preview schedules before saving.",
       action: "Add plan",
@@ -2642,7 +2567,7 @@ export function SettingsPage({
       ],
     },
     clearance: {
-      title: "Clearance rules",
+      title: "Clearance",
       description:
         "Rules are computed by the server after payments, voids, and adjustments.",
       action: "Add rule",
@@ -2663,7 +2588,7 @@ export function SettingsPage({
       ],
     },
     school: {
-      title: "School and academic lists",
+      title: "School settings",
       description:
         "Manage school year, terms, exam periods, grades, sections, and payment methods.",
       action: "Add list item",
@@ -2671,7 +2596,7 @@ export function SettingsPage({
       rows: schoolRows,
     },
     receipt: {
-      title: "Receipt settings",
+      title: "Receipts",
       description:
         "Set school header, receipt title, and configured paper size.",
       action: "Edit receipt settings",
@@ -2683,7 +2608,7 @@ export function SettingsPage({
       ],
     },
     email: {
-      title: "Notification settings",
+      title: "Notifications",
       description:
         "Configure email delivery, SMS notifications, and any SMS load fee recorded outside student balances.",
       action: "Edit notification settings",
@@ -2698,6 +2623,7 @@ export function SettingsPage({
     },
   } as const;
   const current = settings[section];
+  const mockActionAvailable = section === "fees" || section === "school";
 
   function addFeeItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2756,7 +2682,7 @@ export function SettingsPage({
       <PageHeader
         title={current.title}
         description={current.description}
-        action={editable ? (
+        action={editable && mockActionAvailable ? (
           <Button type="button" onClick={() => {
             if (section === "fees") setAddFeeOpen(true);
             if (section === "school") setAddListItemOpen(true);
@@ -2767,9 +2693,11 @@ export function SettingsPage({
       />
       <Card>
         <p className="text-sm text-text-secondary">
-          {editable
+          {editable && mockActionAvailable
             ? "Changes are prepared in this mock screen and would be audited by the backend."
-            : "You have read-only access to these settings."}
+            : editable
+              ? "Editing is not available for this mock section."
+              : "You have read-only access to these settings."}
         </p>
         <ListCard
           className="mt-4"
@@ -2904,10 +2832,16 @@ export function SettingsPage({
   );
 }
 export function UsersPage({ user }: { user?: AuthenticatedUser }) {
-  if (import.meta.env.PROD) return user ? <LiveUsersPage user={user} /> : <UnavailableFeaturePage title="User administration" feature="User administration" />;
+  if (import.meta.env.PROD) return user ? <LiveUsersPage user={user} /> : <UnavailableFeaturePage title="Users" feature="User administration" />;
   if (isLiveCashierApiEnabled() && user) return <LiveUsersPage user={user} />;
+  const defaultCreateRole: Role = user?.role === "super_admin" ? "administrator" : "cashier";
+  const createRoles: Role[] = user?.role === "super_admin"
+    ? ["administrator", "cashier", "auditor", "registrar"]
+    : ["cashier", "auditor", "registrar"];
   const [createOpen, setCreateOpen] = useState(false);
   const [created, setCreated] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createRole, setCreateRole] = useState<Role>(defaultCreateRole);
   const filters = useTableFilters({ query: "", role: "", status: "" });
   const [users, setUsers] = useState([
     {
@@ -2954,6 +2888,28 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     setStatusConfirmationOpen(false);
   }
 
+  function createMockUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("fullName") ?? "").trim();
+    const username = String(formData.get("username") ?? "").trim();
+    if (users.some((existingUser) => existingUser.username.toLocaleLowerCase() === username.toLocaleLowerCase())) {
+      setCreateError("That username is already in use.");
+      return;
+    }
+
+    setUsers((currentUsers) => [...currentUsers, {
+      id: `user-${username.toLocaleLowerCase()}`,
+      name: `${name} (sample)`,
+      username,
+      role: roleLabel(createRole),
+      active: true,
+      isCurrentAdministrator: false,
+    }]);
+    setCreateError("");
+    setCreated(true);
+  }
+
   function saveUserDetails(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingUser) return;
@@ -2984,10 +2940,10 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="User administration"
+        title="Users"
         description="Create, search, edit, deactivate, reactivate, or reset user accounts."
         action={
-          <Button onClick={() => setCreateOpen(true)}>Create user</Button>
+          <Button onClick={() => { setCreated(false); setCreateError(""); setCreateRole(defaultCreateRole); setCreateOpen(true); }}>Create user</Button>
         }
       />
       <TableFilters scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
@@ -3031,7 +2987,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           administrator.
         </p>
       </Card>
-      <MockDialog open={createOpen} onOpenChange={setCreateOpen} title="Create user">
+      <MockDialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) { setCreateError(""); setCreated(false); } }} title="Create user">
         {created ? (
           <div className="mt-3">
             <p role="status" className="font-medium text-brand-green-dark">User created.</p>
@@ -3039,10 +2995,11 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
             <div className="mt-4 flex justify-end"><Button type="button" onClick={() => setCreateOpen(false)}>Done</Button></div>
           </div>
         ) : (
-          <form className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); setCreated(true); }}>
-            <label className="block text-sm font-medium">Name<input required className={inputClass} /></label>
-            <label className="block text-sm font-medium">Username<input required className={inputClass} /></label>
-            <label className="block text-sm font-medium">Primary role<DropdownSelect aria-label="Primary role" value="cashier" options={[{ value: "cashier", label: "Cashier" }, { value: "accounting", label: "Accounting Officer" }, { value: "administrator", label: "Administrator" }, { value: "auditor", label: "Auditor" }, { value: "registrar", label: "Registrar" }]} onChange={() => undefined} className="mt-1 w-full" align="start" /></label>
+          <form className="mt-3 space-y-3" onSubmit={createMockUser}>
+            <label className="block text-sm font-medium">Name <span aria-hidden="true" className="text-status-error">*</span><input name="fullName" required maxLength={255} className={inputClass} /></label>
+            <label className="block text-sm font-medium">Username <span aria-hidden="true" className="text-status-error">*</span><input name="username" required maxLength={100} autoCapitalize="none" className={inputClass} /></label>
+            <label className="block text-sm font-medium">Primary role<DropdownSelect aria-label="Primary role" value={createRole} options={createRoles.map((role) => ({ value: role, label: roleLabel(role) }))} onChange={setCreateRole} className="mt-1 w-full" align="start" /></label>
+            {createError && <p role="alert" className="text-sm text-status-error">{createError}</p>}
             <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button>Create user</Button></div>
           </form>
         )}
@@ -3074,7 +3031,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
                 </select>
               </label>
               <div className="flex justify-end gap-3">
-                <Button type="button" variant="secondary" onClick={closeEditDialog}>Cancel</Button>
+                <Button type="button" variant="neutral" onClick={closeEditDialog}>Cancel</Button>
                 <Button>Save changes</Button>
               </div>
             </form>
@@ -3188,7 +3145,7 @@ export function RolesPage() {
   return (
     <>
       <PageHeader
-        title="Role matrix"
+        title="Roles"
         description="Current interface access by role. The server enforces permissions for every request."
       />
       <Card className="overflow-x-auto">
@@ -3352,28 +3309,17 @@ export function RolesPage() {
   );
 }
 export function BackupPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Backup and recovery" feature="Backup and restore operations" />;
+  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Backups" feature="Backup and restore operations" />;
   return (
     <>
       <PageHeader
-        title="Backup and recovery"
-        description="Review backup status and start a manual backup when needed."
-        action={<Button>Run backup now</Button>}
+        title="Backups"
+        description="Backup and recovery are not connected in this preview."
       />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Metric label="Last backup" value="Sep 27, 2026, 1:00 AM" />
-        <Metric label="Result" value="Succeeded" />
-        <Metric label="Last restore test" value="Sep 01, 2026" />
-      </div>
-      <Card className="mt-5">
-        <h2 className="font-semibold">Restore instructions</h2>
-        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-text-secondary">
-          <li>Stop the application with the school administrator.</li>
-          <li>
-            Use the approved server restore procedure outside this application.
-          </li>
-          <li>Verify the restored data before allowing users to sign in.</li>
-        </ol>
+      <Card>
+        <p className="text-sm text-text-secondary">
+          Backup history, execution, and recovery instructions are unavailable until a deployment owner and approved recovery procedure are in place.
+        </p>
       </Card>
     </>
   );

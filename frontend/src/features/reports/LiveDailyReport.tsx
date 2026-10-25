@@ -48,7 +48,7 @@ export function LiveDailyReport({ user }: { user: AuthenticatedUser }) {
 
   return <>
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold">Daily collection report</h1><p className="mt-1 text-sm text-text-secondary">{user.role === "cashier" ? "Today's collection activity recorded by your account." : "Persisted payments and void activity for the selected school date."}</p></div>
+      <div><h1 className="text-2xl font-semibold">Daily report</h1><p className="mt-1 text-sm text-text-secondary">{user.role === "cashier" ? "Today's collection activity recorded by your account." : "Persisted payments and void activity for the selected school date."}</p></div>
       <div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" onClick={() => window.print()}>Print</Button></div>
     </div>
     {exportError && <p className="mb-4 text-sm text-error" role="alert">{exportError}</p>}

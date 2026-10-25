@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { z } from "zod";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/ui/Button";
@@ -149,19 +149,25 @@ export function LoginPage() {
             <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
               <div>
                 <label htmlFor="username" className="mb-2 block text-sm font-medium text-text-primary">{en.login.username}</label>
-                <input
-                  id="username"
-                  autoComplete="username"
-                  aria-invalid={Boolean(errors.username)}
-                  aria-describedby={errors.username ? "username-error" : undefined}
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-                  disabled={disabled}
-                  {...usernameField}
-                  ref={(element) => {
-                    usernameField.ref(element);
-                    usernameRef.current = element;
-                  }}
-                />
+                <div className="relative">
+                  <UserRound
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+                  />
+                  <input
+                    id="username"
+                    autoComplete="username"
+                    aria-invalid={Boolean(errors.username)}
+                    aria-describedby={errors.username ? "username-error" : undefined}
+                    className="h-11 w-full rounded-md border border-border bg-white px-10 text-base focus-visible:border-brand-green-dark"
+                    disabled={disabled}
+                    {...usernameField}
+                    ref={(element) => {
+                      usernameField.ref(element);
+                      usernameRef.current = element;
+                    }}
+                  />
+                </div>
                 {errors.username?.message && (
                   <p id="username-error" className="mt-2 text-sm text-status-error">
                     {errors.username.message}
@@ -171,13 +177,17 @@ export function LoginPage() {
               <div>
                 <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
                 <div className="relative">
+                  <LockKeyhole
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+                  />
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     aria-invalid={Boolean(errors.password)}
                     aria-describedby={errors.password ? "password-error" : undefined}
-                    className="h-11 w-full rounded-md border border-border bg-white px-3 pr-12 text-base focus-visible:border-brand-green-dark"
+                    className="h-11 w-full rounded-md border border-border bg-white px-10 pr-12 text-base focus-visible:border-brand-green-dark"
                     disabled={disabled}
                     {...passwordField}
                   />

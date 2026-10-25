@@ -6,8 +6,8 @@ use App\Models\AuditEntry;
 use App\Models\User;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
 
@@ -296,6 +296,61 @@ class UserAdministrationTest extends TestCase
         $this->assertDatabaseHas('audit_entries', ['action' => 'user.restored', 'entity_id' => (string) $cashier->id]);
     }
 
+    public function test_archived_account_cannot_be_reactivated_through_general_user_update(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $archived = User::factory()->create([
+            'role' => UserRole::Cashier,
+            'active' => false,
+            'archived_at' => now()->subDay(),
+            'archived_by' => $administrator->id,
+            'anonymize_at' => now()->addDays(29),
+        ]);
+
+        $this->actingAs($administrator)
+            ->patchJson("/api/admin/users/{$archived->id}", ['active' => true])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.user.0', 'Archived accounts must be restored before they can be changed.');
+
+        $archived->refresh();
+        $this->assertFalse($archived->active);
+        $this->assertNotNull($archived->archived_at);
+        $this->assertNotNull($archived->anonymize_at);
+        $this->assertDatabaseMissing('audit_entries', [
+            'action' => 'user.updated',
+            'entity_id' => (string) $archived->id,
+        ]);
+    }
+
+    public function test_archived_account_password_cannot_be_reset_without_restoring_it(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $archived = User::factory()->create([
+            'role' => UserRole::Cashier,
+            'active' => false,
+            'must_change_password' => false,
+            'archived_at' => now()->subDay(),
+            'archived_by' => $administrator->id,
+            'anonymize_at' => now()->addDays(29),
+        ]);
+        $originalPasswordHash = $archived->password;
+
+        $this->actingAs($administrator)
+            ->postJson("/api/admin/users/{$archived->id}/reset-password")
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.user.0', 'Archived accounts must be restored before they can be changed.')
+            ->assertJsonMissingPath('temporaryPassword');
+
+        $archived->refresh();
+        $this->assertSame($originalPasswordHash, $archived->password);
+        $this->assertFalse($archived->must_change_password);
+        $this->assertNotNull($archived->archived_at);
+        $this->assertDatabaseMissing('audit_entries', [
+            'action' => 'user.password_reset',
+            'entity_id' => (string) $archived->id,
+        ]);
+    }
+
     public function test_archiving_protects_super_admin_self_and_last_active_administrator(): void
     {
         $administrator = User::factory()->create(['role' => UserRole::Admin]);
@@ -335,8 +390,8 @@ class UserAdministrationTest extends TestCase
 
         $archived->refresh();
         $entry->refresh();
-        $this->assertSame('archived-' . $archived->id, $archived->username);
-        $this->assertSame('Archived account ' . $archived->id, $archived->full_name);
+        $this->assertSame('archived-'.$archived->id, $archived->username);
+        $this->assertSame('Archived account '.$archived->id, $archived->full_name);
         $this->assertNull($archived->email);
         $this->assertFalse($archived->active);
         $this->assertSame((string) $archived->id, $entry->entity_id);

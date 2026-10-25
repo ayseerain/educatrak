@@ -28,6 +28,7 @@ function filtersFromSearch(search: string): Filters {
 }
 
 export function LiveNotificationLog({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
+  const canRetry = can(user, "notification.retry") && import.meta.env.VITE_REMINDER_DELIVERY_ENABLED === "true";
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKey = searchParams.toString();
@@ -67,10 +68,11 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
 
   return <>
     <div className="mb-5">
-      <h1 className="text-2xl font-semibold">Notification log</h1>
+      <h1 className="text-2xl font-semibold">Notifications</h1>
       <p className="mt-1 text-sm text-text-secondary">Review persisted email and SMS attempts. A queued status records an application entry and does not confirm delivery.</p>
     </div>
     {workspaceSwitch}
+    {can(user, "notification.retry") && !canRetry && <p role="status" className="mb-3 text-sm text-text-secondary">Reminder retry is unavailable until delivery policies are approved.</p>}
     <TableFilters scope="Notification log" defaults={notificationFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "student", label: "Student name or number" }} fields={[
       { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "queued", label: "Queued" }, { value: "sent", label: "Sent" }, { value: "failed", label: "Failed" }, { value: "not_sent", label: "Not sent" }] },
       { key: "dateFrom", label: "From", type: "date" }, { key: "dateTo", label: "To", type: "date" },
@@ -79,7 +81,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
     {logs.isError && <ErrorState message={logs.error.message} onRetry={() => void logs.refetch()} />}
     {logs.data && (logs.data.data.length === 0 ? <Card><EmptyState message="No notification entries match these filters." /></Card> : <Card className="overflow-x-auto p-0">
       <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
-        <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">{["Created", "Student", "Type", "Channel", "Recipient", "Status", "Attempts", "Details", ...(can(user, "notification.retry") ? ["Actions"] : [])].map((heading) => <th key={heading} scope="col" className="px-4 py-3">{heading}</th>)}</tr></thead>
+        <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">{["Created", "Student", "Type", "Channel", "Recipient", "Status", "Attempts", "Details", ...(canRetry ? ["Actions"] : [])].map((heading) => <th key={heading} scope="col" className="px-4 py-3">{heading}</th>)}</tr></thead>
         <tbody>{logs.data.data.map((entry) => <tr key={entry.id} className="border-b align-top last:border-0">
           <td className="whitespace-nowrap px-4 py-3">{formatTimestamp(entry.createdAt)}</td>
           <td className="px-4 py-3">{entry.studentName ?? entry.studentNo ?? "Unavailable"}</td>
@@ -89,7 +91,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
           <td className="px-4 py-3">{entry.status.replace(/_/g, " ")}</td>
           <td className="px-4 py-3">{entry.attempts}</td>
           <td className="max-w-sm whitespace-normal px-4 py-3">{entry.failureReason ?? (entry.sentAt ? `Sent ${formatTimestamp(entry.sentAt)}` : entry.status === "queued" ? "Awaiting provider delivery confirmation" : "—")}</td>
-          {can(user, "notification.retry") && <td className="px-4 py-3">{entry.type === "reminder" && entry.status === "failed" && <Button type="button" variant="secondary" size="sm" disabled={retryMutation.isPending} onClick={() => { if (window.confirm("Retry this failed reminder?")) retryMutation.mutate(entry.id); }}>{retryMutation.isPending ? "Retrying…" : "Retry"}</Button>}</td>}
+          {canRetry && <td className="px-4 py-3">{entry.type === "reminder" && entry.status === "failed" && <Button type="button" variant="secondary" size="sm" disabled={retryMutation.isPending} onClick={() => { if (window.confirm("Retry this failed reminder?")) retryMutation.mutate(entry.id); }}>{retryMutation.isPending ? "Retrying…" : "Retry"}</Button>}</td>}
         </tr>)}</tbody>
       </table>
       {retryMutation.isError && <p className="px-4 py-3 text-sm text-status-error" role="alert">{retryMutation.error.message}</p>}

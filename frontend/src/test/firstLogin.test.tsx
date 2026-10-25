@@ -45,7 +45,7 @@ describe("forced first-login password change", () => {
     const user = userEvent.setup();
     render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/"]}><SessionProvider><App /><CurrentPath /></SessionProvider></MemoryRouter></QueryClientProvider>);
 
-    expect(await screen.findByRole("heading", { name: "Set a new password" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "New password" })).toBeInTheDocument();
     expect(screen.getByLabelText("Current temporary password")).toBeInTheDocument();
     const currentPassword = screen.getByLabelText("Current temporary password");
     const newPassword = screen.getByLabelText("New password");
@@ -65,7 +65,7 @@ describe("forced first-login password change", () => {
     await user.click(screen.getByRole("button", { name: "Save new password" }));
 
     await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
-    expect(screen.queryByRole("heading", { name: "Set a new password" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "New password" })).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/change-password", expect.objectContaining({ method: "POST" }));
   });
 
@@ -86,7 +86,7 @@ describe("forced first-login password change", () => {
     const user = userEvent.setup();
     render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/"]}><SessionProvider><App /><CurrentPath /></SessionProvider></MemoryRouter></QueryClientProvider>);
 
-    await screen.findByRole("heading", { name: "Set a new password" });
+    await screen.findByRole("heading", { name: "New password" });
     await user.type(screen.getByLabelText("Current temporary password"), "WrongTempPass123!");
     await user.type(screen.getByLabelText("New password"), "longpassword");
     await user.type(screen.getByLabelText("Confirm new password"), "longpassword");
@@ -108,7 +108,7 @@ describe("forced first-login password change", () => {
     const user = userEvent.setup();
     render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/"]}><SessionProvider><App /></SessionProvider></MemoryRouter></QueryClientProvider>);
 
-    await screen.findByRole("heading", { name: "Set a new password" });
+    await screen.findByRole("heading", { name: "New password" });
     await user.type(screen.getByLabelText("Current temporary password"), "TempPass123!");
     const newPassword = screen.getByLabelText("New password");
     await user.type(newPassword, "short");

@@ -22,7 +22,7 @@ describe("role scoped user filters", () => {
   it("shows only roles an Administrator may inspect and keeps archive view separate from status filtering", async () => {
     const user = userEvent.setup();
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
-    await screen.findByRole("heading", { name: "User administration" });
+    await screen.findByRole("heading", { name: "Users" });
     await user.click(screen.getByRole("button", { name: "Filter" }));
     expect(screen.queryByRole("option", { name: "Super Admin" })).not.toBeInTheDocument();
     await user.selectOptions(screen.getByRole("combobox", { name: "Filter users by status" }), "inactive");
@@ -36,7 +36,7 @@ describe("role scoped user filters", () => {
   it("includes the protected role in the Super Admin's read filter", async () => {
     const user = userEvent.setup();
     renderUsers({ id: "super-1", name: "Jordan Sample Super Admin", role: "super_admin" });
-    await screen.findByRole("heading", { name: "User administration" });
+    await screen.findByRole("heading", { name: "Users" });
     await user.click(screen.getByRole("button", { name: "Filter" }));
     expect(screen.getByRole("option", { name: "Super Admin" })).toBeInTheDocument();
   });

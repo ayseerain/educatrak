@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
-import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
+import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
 import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/features/students/mockBilling";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Shell } from "@/components/layout/Shell";
@@ -266,6 +266,45 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No users match that name or username.");
   });
 
+  it("keeps mock user creation roles aligned with administrator assignment rules", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<MemoryRouter><UsersPage user={administrator} /></MemoryRouter>);
+
+    await user.click(screen.getByRole("button", { name: "Create user" }));
+    const administratorDialog = screen.getByRole("dialog", { name: "Create user" });
+    await user.click(within(administratorDialog).getByRole("button", { name: "Primary role" }));
+    expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
+      "Cashier", "Auditor", "Registrar",
+    ]);
+    await user.click(screen.getByRole("menuitemradio", { name: "Auditor" }));
+    expect(within(administratorDialog).getByRole("button", { name: "Primary role" })).toHaveTextContent("Auditor");
+    await user.type(within(administratorDialog).getByLabelText("Name"), "Jordan Example");
+    await user.type(within(administratorDialog).getByLabelText("Username"), "jordan.example");
+    await user.click(within(administratorDialog).getByRole("button", { name: "Create user" }));
+    expect(within(administratorDialog).getByRole("status")).toHaveTextContent("User created.");
+    await user.click(within(administratorDialog).getByRole("button", { name: "Done" }));
+    const createdRow = screen.getByRole("row", { name: /Jordan Example \(sample\)/ });
+    expect(within(createdRow).getByRole("cell", { name: "jordan.example" })).toBeInTheDocument();
+    expect(within(createdRow).getByRole("cell", { name: "Auditor" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create user" }));
+    const duplicateDialog = screen.getByRole("dialog", { name: "Create user" });
+    await user.type(within(duplicateDialog).getByLabelText("Name"), "Another Example");
+    await user.type(within(duplicateDialog).getByLabelText("Username"), "SAMPLE.CASHIER");
+    await user.click(within(duplicateDialog).getByRole("button", { name: "Create user" }));
+    expect(within(duplicateDialog).getByRole("alert")).toHaveTextContent("That username is already in use.");
+    await user.click(within(duplicateDialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.getAllByRole("row", { name: /sample\.cashier/i })).toHaveLength(1);
+    unmount();
+
+    render(<MemoryRouter><UsersPage user={superAdmin} /></MemoryRouter>);
+    await user.click(screen.getByRole("button", { name: "Create user" }));
+    const superAdminDialog = screen.getByRole("dialog", { name: "Create user" });
+    await user.click(within(superAdminDialog).getByRole("button", { name: "Primary role" }));
+    expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
+      "Administrator", "Cashier", "Auditor", "Registrar",
+    ]);
+  });
+
   it("keeps profile and icon-only sign out in the sidebar for every role", () => {
     for (const user of [cashier, administrator, accounting, auditor, registrar]) {
       const shell = render(
@@ -346,6 +385,7 @@ describe("operational page navigation", () => {
     );
 
     expect(screen.getByRole("button", { name: "Send reminder details" })).toBeDisabled();
+    expect(screen.queryByRole("heading", { level: 2, name: "Follow-up" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("columnheader")).toHaveLength(5);
     expect(screen.queryByRole("columnheader", { name: "Select" })).not.toBeInTheDocument();
     const coraRow = screen.getByRole("row", { name: /Cora Navarro/ });
@@ -402,11 +442,11 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("checkbox", { name: "SMS" }));
     await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
 
-    expect(screen.getByText(/SMS load fee: not configured/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Send reminder details" }));
 
-    expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("SMS: 0917 555 0103");
-    expect(screen.getByRole("dialog", { name: "Review reminder notifications" })).toHaveTextContent("not configured");
+    const reviewDialog = screen.getByRole("dialog", { name: "Review reminder notifications" });
+    expect(reviewDialog).toHaveTextContent("SMS: 0917 555 0103");
+    expect(reviewDialog).toHaveTextContent(/SMS load fee: not configured/i);
     expect(screen.getByRole("button", { name: "Send 1 reminder" })).toBeEnabled();
   });
 
@@ -643,7 +683,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: /statement of account/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Statement" })).toBeInTheDocument();
     expect(screen.getAllByRole("cell", { name: /tuition installment/i }).length).toBeGreaterThan(0);
   });
 
@@ -831,7 +871,7 @@ describe("operational page navigation", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
       [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security"]],
       [cashier, ["Dashboard", "Students", "Payments", "Follow-up", "Close-out"]],
-      [accounting, ["Dashboard", "Payment review", "Finance", "System settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
+      [accounting, ["Dashboard", "Payment review", "Finance", "School settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
       [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],
       [auditor, ["Dashboard", "Audit"]],
       [registrar, ["Dashboard", "Clearance"]],
@@ -850,6 +890,15 @@ describe("operational page navigation", () => {
     }
   });
 
+  it("uses role-specific payment page names", () => {
+    const cashierPage = render(<MemoryRouter><PaymentsPage user={cashier} /></MemoryRouter>);
+    expect(screen.getByRole("heading", { name: "Payments" })).toBeInTheDocument();
+    cashierPage.unmount();
+
+    render(<MemoryRouter><PaymentsPage user={accounting} /></MemoryRouter>);
+    expect(screen.getByRole("heading", { name: "Payment review" })).toBeInTheDocument();
+  });
+
   it("shows the cashier notification and permitted close-out tabs", () => {
     const followup = render(<MemoryRouter><RoleFollowupWorkspace user={cashier} /></MemoryRouter>);
     expect(screen.getByRole("button", { name: "Follow-up" })).toBeInTheDocument();
@@ -862,7 +911,7 @@ describe("operational page navigation", () => {
     closeout.unmount();
 
     render(<MemoryRouter><CloseoutHistoryPage user={accounting} /></MemoryRouter>);
-    expect(screen.getByRole("heading", { name: "Close-out history" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Close-out review" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
   });
@@ -1002,14 +1051,14 @@ describe("operational page navigation", () => {
     const unknownStudent = render(
       <MemoryRouter initialEntries={["/students/missing"]}><Routes><Route path="/students/:id" element={<StudentProfilePage user={cashier} />} /></Routes></MemoryRouter>,
     );
-    expect(screen.getByRole("heading", { name: /page not found/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /not found/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
     unknownStudent.unmount();
 
     render(
       <MemoryRouter initialEntries={["/accounts/missing"]}><Routes><Route path="/accounts/:id" element={<AccountDetailPage user={cashier} />} /></Routes></MemoryRouter>,
     );
-    expect(screen.getByRole("heading", { name: /page not found/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /not found/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
   });
 

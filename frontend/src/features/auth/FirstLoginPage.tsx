@@ -38,7 +38,7 @@ export function FirstLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface p-6">
       <section className="w-full max-w-lg rounded-lg border border-border bg-white p-8 shadow-card">
-        <h1 className="text-2xl font-semibold">Set a new password</h1>
+        <h1 className="text-2xl font-semibold">New password</h1>
         <p className="mt-2 text-sm text-text-secondary">For security, verify your temporary password and set a new one before continuing.</p>
         <form className="mt-6 space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium">Current temporary password

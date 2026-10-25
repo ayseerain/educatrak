@@ -18,6 +18,12 @@ class ReminderDeliveryController extends Controller
 {
     public function send(Request $request, AuditLogger $auditLogger): JsonResponse
     {
+        abort_unless(
+            config('services.reminders.enabled') === true || config('services.reminders.enabled') === 'true',
+            503,
+            'Reminder delivery is unavailable until its provider and delivery policies are approved.',
+        );
+
         $data = $request->validate([
             'idempotency_key' => ['required', 'uuid'],
             'installment_ids' => ['required', 'array', 'min:1', 'max:50'],
@@ -95,6 +101,12 @@ class ReminderDeliveryController extends Controller
 
     public function retry(Request $request, NotificationLog $notificationLog, AuditLogger $auditLogger): JsonResponse
     {
+        abort_unless(
+            config('services.reminders.enabled') === true || config('services.reminders.enabled') === 'true',
+            503,
+            'Reminder retry is unavailable until its provider and delivery policies are approved.',
+        );
+
         if ($notificationLog->kind !== 'reminder' || $notificationLog->status !== 'failed' || $notificationLog->installment_id === null) {
             throw ValidationException::withMessages(['notification' => 'Only failed reminder attempts can be retried.']);
         }

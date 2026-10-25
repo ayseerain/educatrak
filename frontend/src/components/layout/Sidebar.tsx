@@ -165,9 +165,6 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
       className={cn("w-full shrink-0 flex-col border-b border-border bg-white transition-[width] duration-200 ease-out md:h-full md:border-b-0 md:border-r", collapsed ? "flex md:w-16" : "flex md:w-72")}
     >
       <div className={cn("flex h-16 items-center border-b border-border px-3", collapsed && "md:justify-center md:px-1")}>
-        <button type="button" onClick={onToggleSidebar} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} aria-controls="primary-navigation" title={collapsed ? "Expand sidebar" : "Collapse sidebar"} className={cn("mr-2 inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark", collapsed && "md:mr-0")}>
-          <Menu className="h-5 w-5" aria-hidden="true" />
-        </button>
         <span className={cn("flex min-w-0 items-center gap-3", collapsed && "md:hidden")}>
           <img
             src="/mendez-christian-academy-seal.png"
@@ -181,6 +178,9 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
             </span>
           </span>
         </span>
+        <button type="button" onClick={onToggleSidebar} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} aria-controls="primary-navigation" title={collapsed ? "Expand sidebar" : "Collapse sidebar"} className={cn("ml-auto inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark", collapsed && "md:ml-0")}>
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
       </div>
       <ul className={cn("flex gap-4 overflow-x-auto p-3 md:flex-1 md:flex-col md:space-y-4 md:overflow-y-auto", collapsed && "hidden md:flex")}>
         {visibleGroups.map((group) => (

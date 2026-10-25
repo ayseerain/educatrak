@@ -177,6 +177,7 @@ class CapabilityMapTest extends TestCase
     public static function ledgerImportAccessCases(): array
     {
         return [
+            'super admin cannot run ledger import' => [UserRole::SuperAdmin, false],
             'administrator cannot run cashier ledger import' => [UserRole::Admin, false],
             'cashier cannot run ledger import' => [UserRole::Cashier, false],
             'accounting cannot run ledger import' => [UserRole::Accounting, false],

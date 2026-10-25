@@ -10,11 +10,11 @@ use App\Services\AuditLogger;
 use App\UserRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class UserAdministrationController extends Controller
 {
@@ -40,7 +40,7 @@ class UserAdministrationController extends Controller
             ->when(($filters['status'] ?? null) === 'inactive', fn ($query) => $query->where('active', false))
             ->when(isset($filters['role']), fn ($query) => $query->where('role', $filters['role']))
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
-                $term = '%' . trim($filters['query']) . '%';
+                $term = '%'.trim($filters['query']).'%';
                 $query->where(fn ($matches) => $matches->where('full_name', 'like', $term)->orWhere('username', 'like', $term));
             })
             ->when(isset($filters['date_from']), fn ($query) => $query->whereDate('created_at', '>=', $filters['date_from']))
@@ -77,6 +77,7 @@ class UserAdministrationController extends Controller
                 'anonymize_at' => $now->copy()->addDays(max(1, (int) config('services.user_archive.retention_days', 30))),
             ])->save();
             $auditLogger->record($request, 'user.archived', $lockedUser, $before, $this->auditProfile($lockedUser));
+
             return $lockedUser->load('archivedBy:id,full_name');
         });
 
@@ -97,6 +98,7 @@ class UserAdministrationController extends Controller
             $before = $this->auditProfile($lockedUser);
             $lockedUser->forceFill(['active' => true, 'archived_at' => null, 'archived_by' => null, 'anonymize_at' => null])->save();
             $auditLogger->record($request, 'user.restored', $lockedUser, $before, $this->auditProfile($lockedUser));
+
             return $lockedUser->load('archivedBy:id,full_name');
         });
 
@@ -138,6 +140,7 @@ class UserAdministrationController extends Controller
                 ->lockForUpdate()
                 ->pluck('id');
             $lockedUser = User::query()->lockForUpdate()->findOrFail($staffUser->id);
+            $this->assertNotArchived($lockedUser);
 
             $this->assertAdministratorRemainsAvailable(
                 $request,
@@ -159,19 +162,25 @@ class UserAdministrationController extends Controller
     public function resetPassword(Request $request, User $staffUser, AuditLogger $auditLogger): JsonResponse
     {
         $this->assertNotProtected($request, $staffUser);
-        $temporaryPassword = Str::password(20);
-        $staffUser->forceFill([
-            'password' => $temporaryPassword,
-            'must_change_password' => true,
-        ])->save();
+        [$staffUser, $temporaryPassword] = DB::transaction(function () use ($request, $staffUser, $auditLogger): array {
+            $lockedUser = User::query()->lockForUpdate()->findOrFail($staffUser->id);
+            $this->assertNotArchived($lockedUser);
+            $temporaryPassword = Str::password(20);
+            $lockedUser->forceFill([
+                'password' => $temporaryPassword,
+                'must_change_password' => true,
+            ])->save();
 
-        $auditLogger->record(
-            $request,
-            'user.password_reset',
-            $staffUser,
-            null,
-            ['must_change_password' => true],
-        );
+            $auditLogger->record(
+                $request,
+                'user.password_reset',
+                $lockedUser,
+                null,
+                ['must_change_password' => true],
+            );
+
+            return [$lockedUser, $temporaryPassword];
+        });
 
         return response()->json([
             'data' => $this->staffProfile($staffUser),
@@ -183,6 +192,15 @@ class UserAdministrationController extends Controller
     {
         if ($staffUser->is_protected) {
             throw new AccessDeniedHttpException('This bootstrap account is protected from routine changes.');
+        }
+    }
+
+    private function assertNotArchived(User $staffUser): void
+    {
+        if ($staffUser->archived_at !== null) {
+            throw ValidationException::withMessages([
+                'user' => 'Archived accounts must be restored before they can be changed.',
+            ]);
         }
     }
 

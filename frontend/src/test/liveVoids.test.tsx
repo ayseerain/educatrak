@@ -56,7 +56,7 @@ describe("live void approval queue", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={queryClient}><LiveVoidsPage user={administrator} /></QueryClientProvider>);
 
-    expect(await screen.findByRole("heading", { name: "Void request history" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Void requests" })).toBeInTheDocument();
     expect(await screen.findByText("OR-2026-001042")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Approve" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();

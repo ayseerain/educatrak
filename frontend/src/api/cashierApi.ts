@@ -5,6 +5,7 @@ import type { AuthenticatedUser, Role } from "@/lib/types";
 declare global {
   interface ImportMetaEnv {
     readonly VITE_USE_LIVE_API?: string;
+    readonly VITE_REMINDER_DELIVERY_ENABLED?: string;
     readonly DEV: boolean;
     readonly PROD: boolean;
   }

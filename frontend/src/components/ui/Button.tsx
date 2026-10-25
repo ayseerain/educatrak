@@ -11,8 +11,11 @@ const buttonVariants = cva(
       variant: {
         primary: "bg-brand-green-dark text-white hover:bg-[#023d12]",
         secondary:
-          "bg-white text-text-primary border border-border hover:bg-surface",
-        ghost: "text-text-primary hover:bg-surface",
+          "border border-brand-green-dark bg-white text-brand-green-dark hover:bg-[#F4FAF5]",
+        neutral:
+          "border border-border bg-white text-text-secondary hover:bg-surface hover:text-text-primary",
+        ghost: "text-brand-green-dark hover:bg-[#F4FAF5]",
+        success: "bg-status-success text-white hover:bg-[#185f2e]",
         destructive: "bg-status-error text-white hover:bg-[#b32828]",
       },
       size: {

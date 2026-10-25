@@ -94,7 +94,7 @@
 @media print {
   @page {
     size: var(--educatrak-paper-size, letter);
-    margin: 0.5in;
+    margin: 0.55in;
   }
 
   body {
@@ -104,13 +104,64 @@
   nav[aria-label="Primary"],
   header,
   a[href="#main-content"],
-  .no-print {
+  .no-print,
+  [data-print="controls"],
+  button,
+  input,
+  select {
     display: none !important;
   }
 
   #main-content {
     overflow: visible !important;
     padding: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #main-content > * {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  #main-content table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse !important;
+    font-size: 9pt;
+  }
+
+  #main-content thead {
+    display: table-header-group;
+  }
+
+  #main-content tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #main-content th,
+  #main-content td {
+    border: 1px solid #777777 !important;
+    padding: 0.12in 0.1in !important;
+    vertical-align: top;
+  }
+
+  #main-content [class*="overflow"] {
+    overflow: visible !important;
+  }
+
+  #main-content [class*="rounded"] {
+    border-radius: 0 !important;
+  }
+
+  #main-content [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  #main-content {
+    color: #000000 !important;
+    font-size: 10pt;
   }
 
   .print-page {
@@ -118,7 +169,57 @@
     color: #000000;
   }
 
-  .print-page > :first-child {
-    display: none !important;
+  .print-page,
+  .print-page * {
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .print-page [class*="overflow"] {
+    overflow: visible !important;
+  }
+
+  .print-page table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse !important;
+    font-size: 9pt;
+  }
+
+  .print-page thead {
+    display: table-header-group;
+  }
+
+  .print-page tr,
+  .print-page .print-keep-together {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page th,
+  .print-page td {
+    border: 1px solid #777777 !important;
+    padding: 0.12in 0.1in !important;
+    vertical-align: top;
+  }
+
+  .print-page .print-document {
+    width: 100%;
+    max-width: 7.4in;
+    margin: 0 auto;
+    border: 1.5px solid #222222 !important;
+    border-radius: 0 !important;
+    padding: 0.35in !important;
+    break-inside: avoid;
+  }
+
+  .print-document {
+    display: block !important;
+  }
+
+  .print-only {
+    display: block !important;
   }
 }
+
+.print-only { display: none; }

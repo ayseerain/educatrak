@@ -78,7 +78,7 @@ describe("live daily close-out", () => {
 
     expect(await screen.findByLabelText("Counted cash")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "History" }));
-    expect(await screen.findByRole("heading", { name: "Close-out history" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Close-outs" })).toBeInTheDocument();
     expect(await screen.findByText("No close-outs have been submitted.")).toBeInTheDocument();
   });
 });

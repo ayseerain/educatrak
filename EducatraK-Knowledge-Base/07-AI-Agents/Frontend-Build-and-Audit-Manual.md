@@ -356,7 +356,7 @@ For each screen below:
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, and an Edit action that opens account editing plus password reset, confirmed deactivation, and reactivation controls. The mock preserves account history messaging, shows the reset temporary password once, and disables an administrator's self-deactivation action. Covered by `frontend/src/test/operations.test.tsx`; `npm test -- --run` and `npm run build` pass. Formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/admin/users` as `UsersPage` with live name-or-username search, user list rows, and an Edit action that opens account editing plus password reset, confirmed deactivation, and reactivation controls. The mock preserves account history messaging, shows the reset temporary password once, and disables an administrator's self-deactivation action. Mock creation mirrors live role-assignment choices, adds the new fictional account to the local sample list, and rejects duplicate usernames. Focused `operations.test.tsx` passes (49 tests), the TypeScript/Vite production build passes, and production asset verification excludes all 74 checked markers. Formal Phase 2 audit remains pending. Updated Sunday, October 25, 2026 — 15:04:28 Asia/Manila.
 
 ### B38. Role Matrix — M1
 
@@ -778,7 +778,7 @@ A screen is never marked audited merely because it was previously built.
 - **Cross-Check & Audit status:** [ ] Audited
 - **Confirmation:** _Not run — PASS/FAIL pending._
 - **Simulation(s):** _Not run._
-- **Resume Note:** Administrator `/admin/audit-log` is limited to security events under `security.events.view`. Auditor alone uses the filtered finance/change audit under `audit.view`; Accounting is denied this workspace and Admin has no route or API access to it. `liveAdminLog.test.tsx` verifies the Admin Log stays security-event-only (2 tests), while `LiveAuditLog` covers audit filtering/detail. Neither feed exposes edit/delete actions. A39 remains unchecked pending persistence/actor-retention review and browser/role evidence.
+- **Resume Note:** Administrator `/admin/audit-log` is limited to security events under `security.events.view`. Auditor alone uses the filtered finance/change audit under `audit.view`; Accounting is denied this workspace and Admin has no route or API access to it. `liveAdminLog.test.tsx` verifies the Security page stays security-event-only (2 tests), while `LiveAuditLog` covers audit filtering/detail. Neither feed exposes edit/delete actions. A39 remains unchecked pending persistence/actor-retention review and browser/role evidence.
 
 ### A40. Backup & Recovery — M8
 

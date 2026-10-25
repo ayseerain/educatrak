@@ -2,17 +2,18 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
+import type { ReactNode } from "react";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
 
 const cashier = { id: "cashier-1", name: "Cashier", role: "cashier" as const };
 const accounting = { id: "accounting-1", name: "Accounting", role: "accounting" as const };
 
 vi.mock("@/features/followup/LiveFollowupPage", () => ({
-  LiveFollowupPage: () => <div>Follow-up content</div>,
+  LiveFollowupPage: ({ workspaceSwitch }: { workspaceSwitch?: ReactNode }) => <>{workspaceSwitch}<div>Follow-up content</div></>,
 }));
 
 vi.mock("@/features/operations/LiveNotificationLog", () => ({
-  LiveNotificationLog: () => <div>Notification history content</div>,
+  LiveNotificationLog: ({ workspaceSwitch }: { workspaceSwitch?: ReactNode }) => <>{workspaceSwitch}<div>Notification history content</div></>,
 }));
 
 beforeAll(() => vi.stubEnv("PROD", true));

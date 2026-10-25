@@ -26,7 +26,7 @@ export function PaginationControls({
   const safeLastPage = Math.max(lastPage, 1);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm">
+    <div className="no-print flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm">
       <p className="text-text-secondary" aria-live="polite">Showing {from}–{to} of {total} {label}</p>
       <div className="flex flex-wrap items-center gap-2">
         {onPerPageChange && <label className="flex items-center gap-2 text-text-secondary">Rows per page

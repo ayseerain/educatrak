@@ -14,7 +14,7 @@ export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedU
   const statement = useQuery({ queryKey: ["student-statement", studentId], queryFn: () => getStudentStatement(studentId), enabled: Boolean(studentId) });
   return <>
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-      <div><Link to="/reports" className="text-sm text-brand-green-dark underline">Back to reports</Link><h1 className="mt-2 text-2xl font-semibold">Student statement of account</h1><p className="mt-1 text-sm text-text-secondary">Current school-year fees, schedule, payments, and balance.</p></div>
+      <div><Link to="/reports" className="text-sm text-brand-green-dark underline">Back to reports</Link><h1 className="mt-2 text-2xl font-semibold">Statement</h1><p className="mt-1 text-sm text-text-secondary">Current school-year fees, schedule, payments, and balance.</p></div>
       {statement.data && <div className="flex gap-2">
         {can(user, "report.view") && <Button type="button" variant="secondary" onClick={() => {
           const data = statement.data!;

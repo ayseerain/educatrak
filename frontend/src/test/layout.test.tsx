@@ -28,9 +28,15 @@ describe("application sidebar", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("navigation", { name: "Primary" }).querySelector("button")!);
-
     const sidebar = screen.getByRole("navigation", { name: "Primary" });
+    const brand = screen.getByText("EdukaTrak").parentElement?.parentElement;
+    const toggle = within(sidebar).getByRole("button", { name: "Collapse sidebar" });
+
+    expect(brand?.nextElementSibling).toBe(toggle);
+    expect(toggle).toHaveClass("ml-auto");
+
+    fireEvent.click(toggle);
+
     expect(sidebar).toHaveClass("md:w-16");
     expect(screen.getByRole("link", { name: "Students" })).toHaveAttribute("title", "Students");
     expect(within(sidebar).getByRole("button", { name: "Expand sidebar" })).toHaveAttribute("aria-expanded", "false");

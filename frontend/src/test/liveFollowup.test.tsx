@@ -39,6 +39,7 @@ describe("live installment follow-up", () => {
     render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveFollowupPage user={cashier} /></MemoryRouter></QueryClientProvider>);
 
     expect(await screen.findByText("Avery Sample Student")).toBeInTheDocument();
+    expect(screen.queryByText("Follow-up list")).not.toBeInTheDocument();
     expect(screen.getByText("guardian@example.test")).toBeInTheDocument();
     expect(screen.getByText("Not recorded")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Print list" })).toBeInTheDocument();
@@ -63,6 +64,7 @@ describe("live installment follow-up", () => {
   });
 
   it("sends only selected eligible installments from the current page", async () => {
+    vi.stubEnv("VITE_REMINDER_DELIVERY_ENABLED", "true");
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === "POST") {
         return { ok: true, status: 202, json: async () => ({ data: [], summary: { queued: 1, failed: 0, notSent: 0 } }) };
@@ -93,5 +95,20 @@ describe("live installment follow-up", () => {
     const sendCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
     expect(JSON.parse(String(sendCall?.[1]?.body))).toEqual(expect.objectContaining({ installment_ids: ["eligible-1"], channels: ["email", "sms"] }));
     expect(await screen.findByText(/1 queued, 0 failed, 0 not sent/i)).toBeInTheDocument();
+  });
+
+  it("keeps reminder controls hidden until delivery is enabled", async () => {
+    vi.stubEnv("VITE_REMINDER_DELIVERY_ENABLED", "");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [], meta: { currentPage: 1, lastPage: 1, total: 0, perPage: 50, today: "2026-10-24" } }),
+    }));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveFollowupPage user={cashier} /></MemoryRouter></QueryClientProvider>);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Reminder sending is unavailable until delivery policies are approved.");
+    expect(screen.queryByRole("button", { name: /Send reminders/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: "Select all eligible on current page" })).not.toBeInTheDocument();
   });
 });

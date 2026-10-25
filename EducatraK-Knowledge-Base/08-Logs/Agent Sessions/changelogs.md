@@ -1,4 +1,4 @@
-# EducatraK — AI Agent Changelogs
+﻿# EducatraK — AI Agent Changelogs
 
 > **Purpose:** Central, append-only record of **every repository change made by an AI agent**, including code, UI, backend, tests, configuration, documentation, instructions, and file moves. Stored under `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/`.
 
@@ -656,3 +656,241 @@
 - **Validation:** `npm run build` passed (TypeScript and Vite production build). Tests were not run.
 - **Commit/PR:** Not available.
 - **Follow-ups:** None identified.
+
+### Sunday, October 25, 2026 — 14:18:25 Asia/Manila | Shorten role page names
+- **Agent:** Codex
+- **Summary:** Shortened role navigation section names and primary workspace headings to concise, precise labels. Added role-specific Accounting headings for Payment review and Close-out review while Cashier retains Payments and Close-outs. Updated the six-role navigation plan and current Security page wording in the frontend audit manual.
+- **Files:** Updated `frontend/src/i18n/en.ts`, `frontend/src/features/operations/OperationalPages.tsx`, live billing/operations/report page headings, affected frontend tests, `EducatraK-Knowledge-Base/07-AI-Agents/Mockup-Based-Role-UI-Implementation-Plan.md`, and `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`.
+- **Validation:** Six focused navigation/title tests passed across `operations.test.tsx`, `liveCloseouts.test.tsx`, and `liveVoids.test.tsx`; `git diff --check` passed. `tsc -b` completed, but the production Vite bundle step failed with a machine memory allocation error. The unrestricted frontend suite failed to start due worker/thread memory limits; a broader single-worker batch was not green (24 failures / 52 passes), including unrelated workflow/filter assertions, so no full-suite pass is claimed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Retry full frontend validation when sufficient system memory is available; continue U12 formal role/browser acceptance.
+
+### Sunday, October 25, 2026 — 14:21:04 Asia/Manila | Align live settings page names
+- **Agent:** Codex
+- **Summary:** Shortened the live Finance settings headings to Fees and Plans and aligned production unavailable-state titles for Clearance, School settings, Receipts, and Notifications with the concise mock workspace names.
+- **Files:** Updated `frontend/src/features/operations/LiveFinanceSettingsPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveFinanceSettings.test.tsx`, and this changelog.
+- **Validation:** `liveFinanceSettings.test.tsx` passes (4 tests); `npx tsc -b --pretty false` passes. A separate focused Vitest retry failed before collection because Node could not allocate memory; the previous targeted role navigation/title run passed (6 tests). Production build and full-suite validation remain open due memory limits.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue the U12 role acceptance and retry broader frontend validation when system memory permits.
+
+### Sunday, October 25, 2026 — 14:24:33 Asia/Manila | Enforce archived account lifecycle on admin APIs
+- **Agent:** Codex
+- **Summary:** Closed a lifecycle bypass discovered during the U11 role/API audit. General account updates and password resets now lock and reload their target account, reject archived accounts until they are explicitly restored within the approved retention window, and keep password mutation with its audit record in one transaction. Added regressions for attempted reactivation and password reset, including persisted state and audit assertions.
+- **Files:** Updated `backend/app/Http/Controllers/Api/UserAdministrationController.php`, `backend/tests/Feature/UserAdministrationTest.php`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** `UserAdministrationTest.php` passes (15 tests, 129 assertions) using the installed PHP 8.5 runtime with mbstring, SQLite, and OpenSSL extensions enabled; `vendor/laravel/pint/builds/pint --dirty --format agent` passed; `git diff --check` passed. The default PHP configuration omits those required extensions.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U11's broader API response/action audit, U12 browser acceptance, formal role flow acceptance, and remaining policy decisions stay open in the implementation plan.
+
+### Sunday, October 25, 2026 — 14:25:23 Asia/Manila | Finish short page titles
+- **Agent:** Codex
+- **Summary:** Shortened the remaining mock workflow headings to “New account” and “Student statement” so page titles stay concise and align with their role navigation labels.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** `git diff --check` passed. The focused Vitest run failed before collecting tests because esbuild could not allocate memory; `npx tsc -b --pretty false` also failed because the machine could not allocate memory. Earlier role-title tests (6 tests) and `liveFinanceSettings.test.tsx` (4 tests) passed before this final two-label adjustment.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Retry the focused frontend test and TypeScript check when sufficient memory is available; continue U11/U12 acceptance.
+
+### Sunday, October 25, 2026 — 14:26:19 Asia/Manila | Recheck Auditor dashboard scope
+- **Agent:** Codex
+- **Summary:** Re-ran the previously unverified Auditor dashboard response assertion and the full backend suite. The Auditor payload omits transaction-level activity as required; no implementation change was needed.
+- **Files:** Updated `EducatraK-Knowledge-Base/07-AI-Agents/Mockup-Based-Role-UI-Implementation-Plan.md` with current verification evidence and remaining U11/U12 scope; updated this changelog.
+- **Validation:** `DashboardTest.php` passed (6 tests, 53 assertions); full backend PHPUnit suite passed (141 tests, 928 assertions) using the installed PHP 8.5 runtime with mbstring, SQLite and OpenSSL extensions enabled.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue U11 UI action-to-endpoint/API response audit and U12 browser acceptance.
+
+### Sunday, October 25, 2026 — 14:29:10 Asia/Manila | Align reminder fee test with send confirmation
+- **Agent:** Codex
+- **Summary:** Updated a stale operations test to verify the SMS load-fee disclosure in the reminder confirmation dialog before sending. It had been checking for the disclosure before that dialog opened.
+- **Files:** Updated `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Mockup-Based-Role-UI-Implementation-Plan.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `operations.test.tsx` passes (48 tests) with Vitest constrained to one worker and `GOMAXPROCS=2`; `tsc -b --pretty false` passes with a 1 GB Node heap; full backend suite passes (141 tests / 928 assertions). Full frontend suite run failed under available memory while esbuild workers allocated memory.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue UI action/API route review and retry the frontend suite in smaller batches when machine memory permits.
+
+### Sunday, October 25, 2026 — 14:35:47 Asia/Manila | Verify all frontend tests in bounded batches
+- **Agent:** Codex
+- **Summary:** Fixed the follow-up workspace test doubles to forward the workspace selector prop. The focused test had reported a missing selector because both live child mocks rendered only placeholder content. Re-ran the workspace tests successfully, then ran every frontend test file in bounded batches to fit the available memory. The UI behavior itself required no change.
+- **Files:** Updated `frontend/src/test/roleFollowupWorkspace.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Mockup-Based-Role-UI-Implementation-Plan.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** All 29 frontend test files passed in constrained batches (176 tests); `tsc -b --pretty false` passed; `npm run build` passed (TypeScript and Vite production build); `npm run verify:production-assets` confirmed 74 checked markers absent from four JavaScript assets. The monolithic frontend run exceeded machine memory; split runs completed successfully. Backend suite passed earlier this turn (141 tests / 928 assertions).
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue U11 route/action/API audit and formal U12/A01–A40/F1–F8 acceptance.
+
+### Sunday, October 25, 2026 — 14:42:18 Asia/Manila | Gate production reminder delivery pending approval
+
+- **Agent:** Codex
+- **Summary:** Added a backend REMINDER_DELIVERY_ENABLED=false default and guard for send/retry, plus a frontend VITE_REMINDER_DELIVERY_ENABLED gate that hides live send/retry controls by default and informs eligible roles that delivery policies remain pending. Confirmed all six role navigation labels are concise (one or two words) and the previously shortened mock/live page titles remain in place.
+- **Files:** Updated backend/config/services.php, backend/.env.example, backend/app/Http/Controllers/Api/ReminderDeliveryController.php, backend/tests/Feature/FollowUpTest.php, frontend/src/api/cashierApi.ts, frontend/src/features/followup/LiveFollowupPage.tsx, frontend/src/features/operations/LiveNotificationLog.tsx, and the Issues-and-TODOs tracker.
+- **Validation:** git diff --check passed before the final documentation entry. Tests and builds were not run in this slice. Backend sender/retry guards and env defaults were reviewed statically. U04 operational approval and U12 browser acceptance remain open.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Do not enable reminder delivery until provider, consent/cost, message, limit, and retry policies are approved.
+
+Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend TypeScript build and Vite production build passed; production asset verifier confirms all 74 checked fixture/contact/credential markers are absent from four JavaScript assets. Backend ReminderDeliveryController and services.php pass php -l. git diff --check passes with only existing LF-to-CRLF warnings. Tests were not run.
+
+### Sunday, October 25, 2026 — 14:46:03 Asia/Manila | Remove inert mock settings actions
+
+- **Agent:** Codex
+- **Summary:** Removed development mock settings buttons for Add plan, Add rule, Edit receipt settings, and Edit notification settings because they had no action handlers. Kept the fees and school-list sample interactions that are implemented and label them as mock-only; unsupported settings now explicitly say editing is unavailable.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** `npm run build` and `npm run verify:production-assets` passed (74 markers absent from four JavaScript assets); `git diff --check` passed. Tests were not run.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Other illustrative mock actions remain open under P5/U11; this change does not imply production settings APIs exist.
+
+### Sunday, October 25, 2026 — 14:48:14 Asia/Manila | Remove mock report and backup actions
+
+- **Agent:** Codex
+- **Summary:** Removed the mock report's nonfunctional Export to Excel control. Replaced the development Backup page's fabricated backup dates/result, unsupported Run backup now action, and unapproved restore steps with a clear unavailable state.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and `EducatraK-Knowledge-Base/07-AI-Agents/Redundancy-Refactor-Loop-Engineering-Manual.md`.
+- **Validation:** `npm run build` and `npm run verify:production-assets` passed; the verifier confirmed 74 markers absent from four JavaScript assets. `git diff --check` passed. Tests were not run.
+- **Commit/PR:** Not available.
+
+- **Follow-ups:** Backup service/retention/recovery decisions, monthly report export, and remaining illustrative actions are still open under U05, U07, U11, and P5.
+
+### Sunday, October 25, 2026 — 14:49:21 Asia/Manila | Remove simulated report backup and import controls
+
+- **Agent:** Codex
+- **Summary:** Removed the mock Reports Export to Excel control with no handler; replaced Backup demo success dates, Run backup control, and unapproved instructions with an unavailable state; removed the Ledger Import wizard that simulated a successful import despite no role having `import.run`. The `/import` route remains capability-guarded and unavailable while U08 is unresolved.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and `EducatraK-Knowledge-Base/07-AI-Agents/Redundancy-Refactor-Loop-Engineering-Manual.md`.
+- **Validation:** `npm run build` and `npm run verify:production-assets` passed; the verifier found all 74 checked markers absent from four JavaScript assets. `git diff --check` passed. Tests were not run.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U05 monthly report semantics/export, U07 backup ownership and recovery, U08 import policy/service, remaining mock actions, and U12 role acceptance remain open.
+
+### Sunday, October 25, 2026 — 14:51:35 Asia/Manila | Finish two long shared page titles
+
+- **Agent:** Codex
+- **Summary:** Shortened the first-login page heading to New password and the not-found page heading to Not found; both fit the requested concise title convention. Updated the existing first-login heading assertions.
+- **Files:** Updated `frontend/src/features/auth/FirstLoginPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and `frontend/src/test/firstLogin.test.tsx`.
+- **Validation:** `npm run build` passed; `npm run verify:production-assets` confirmed all 74 checked markers absent from four production JavaScript assets; `git diff --check` passed. Tests were not run. Browser acceptance remains unavailable in this slice because browser automation dependencies are absent and the headless Chrome launch was blocked.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U12 role/browser acceptance and remaining formal screen audit remain open.
+
+### Sunday, October 25, 2026 — 14:53:14 Asia/Manila | Verify concise page titles and role navigation
+
+- **Agent:** Codex
+- **Summary:** Focused first-login and operations tests caught stale expectations for the renamed Not found heading; updated both assertions. The New password heading and six-role navigation remain aligned with the short-label request.
+- **Files:** Updated `frontend/src/test/operations.test.tsx` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** Focused Vitest run passed 51 tests across `firstLogin.test.tsx` and `operations.test.tsx`; `git diff --check` passed. Browser acceptance was not completed: no Playwright/Puppeteer package is installed, and the headless Chrome launch was rejected by execution policy.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Complete U12 manual browser, keyboard/focus, contrast, print, and six-role acceptance when a browser-control path is available.
+
+### Sunday, October 25, 2026 — 14:55:01 Asia/Manila | Document reminder delivery switches
+
+- **Agent:** Codex
+- **Summary:** Documented that `VITE_REMINDER_DELIVERY_ENABLED` only controls visibility of reminder send/retry controls, while the backend `REMINDER_DELIVERY_ENABLED` flag is authoritative and defaults off. Recorded the U04 approvals required before enabling delivery and clarified that provider credentials must not be included in frontend build values.
+- **Files:** Updated `frontend/src/features/auth/README.md` and this changelog.
+- **Validation:** Documentation-only change; no tests run. `AGENTS.md` and `CLAUDE.md` remain byte-identical.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U04 provider/network configuration, approved delivery and retry rules, and real-delivery verification remain open.
+
+### Sunday, October 25, 2026 — 14:57:06 Asia/Manila | Cover reminder delivery gates
+
+- **Agent:** Codex
+- **Summary:** Made reminder gate test setup explicit and added regression coverage for disabled send/retry controls and enabled retry controls. The initial focused run found the existing send-flow test had not enabled the newly added fail-closed UI flag; the test now opts in explicitly.
+- **Files:** Updated `frontend/src/test/liveFollowup.test.tsx`, `frontend/src/test/liveNotificationLog.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** Focused Vitest passed (8 tests across 2 files); Laravel `FollowUpTest.php` and `CapabilityMapTest.php` passed (67 tests / 259 assertions); `git diff --check` passed. `AGENTS.md` and `CLAUDE.md` remain byte-identical.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U04 provider and operational approvals plus real-delivery verification remain open.
+
+### Sunday, October 25, 2026 — 14:58:32 Asia/Manila | Cover Super Admin import denial
+
+- **Agent:** Codex
+- **Summary:** Added the missing Super Admin negative case to the backend capability test for ledger import. The approved/current role matrix assigns `import.run` to none of the six roles, and the other five denials were already asserted.
+- **Files:** Updated `backend/tests/Unit/CapabilityMapTest.php`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `CapabilityMapTest.php` passed (62 tests / 218 assertions); `git diff --check` passed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** U11 endpoint and response-field audit remains open; U08 import authority and source/rollover policy remain unresolved.
+
+### Sunday, October 25, 2026 — 15:04:23 +08:00 | Add login field icons
+
+- **Agent:** Codex
+- **Summary:** Added decorative user and lock icons to the username and password fields, adjusted left padding so input text clears each icon, and added regression assertions for the accessible decorative icons.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, and this changelog.
+- **Validation:** Focused login tests passed (14 tests); `npm run build` passed; `git diff --check` passed for the login code and test.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:01:57 Asia/Manila | Align mock user-role creation choices
+
+- **Agent:** Codex
+- **Summary:** Fixed the development Users page's no-op role selector and aligned available roles with the live user-creation policy. Administrator can choose Cashier, Auditor, or Registrar; Super Admin can additionally choose Administrator. Accounting Officer assignment and Super Admin creation stay unavailable.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Redundancy-Refactor-Loop-Engineering-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** The first production build caught a TypeScript mock assertion error in the reminder retry test; that assertion was corrected. Final `npm run build` passed; `npm run verify:production-assets` found all 74 checked markers absent; focused Vitest passed (57 tests across `operations.test.tsx`, `liveFollowup.test.tsx`, and `liveNotificationLog.test.tsx`); `git diff --check` passed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** P5's broader illustrative-action audit, U11 endpoint/response audit, and U12 formal screen acceptance remain open.
+
+### Sunday, October 25, 2026 — 15:04:28 Asia/Manila | Complete mock user creation feedback
+
+- **Agent:** Codex
+- **Summary:** Completed the development mock user-creation flow: submit now inserts the fictional account into the local sample list and rejects case-insensitive duplicate usernames. The role selector continues to follow live Administrator and Super Admin assignment rules.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Redundancy-Refactor-Loop-Engineering-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `operations.test.tsx` passed (49 tests); `npm run build` passed; `npm run verify:production-assets` confirmed 74 checked markers absent from four JavaScript assets; `git diff --check` passed. A no-op-handler/placeholder-anchor scan found no explicit matches in `frontend/src`.
+- **Commit/PR:** Not available.
+- **Follow-ups:** P5's full illustrative-action audit and U11/U12 reviews remain open.
+
+### Sunday, October 25, 2026 — 15:10:15 +08:00 | Move sidebar toggle beside system name
+
+- **Agent:** Copilot
+- **Summary:** Relocated the sidebar hamburger button to the right of the EdukaTrak/Mendez Christian Academy branding in the shared navigation header. It remains centered in the collapsed desktop rail.
+- **Files:** Updated `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/test/layout.test.tsx`, and this changelog.
+- **Validation:** Focused layout test passed (1 test); `npm run build` passed; `git diff --check` passed for the changed component and test (Git emitted its existing LF-to-CRLF working-copy warning).
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+### Sunday, October 25, 2026 — 15:10:55 Asia/Manila | Show required-field markers on user and student forms
+
+- **Agent:** Codex
+- **Summary:** Added a red asterisk beside each required field label on the live and development Create user forms and the development Add student form. Optional fields remain unmarked; native required validation is unchanged.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and this changelog.
+- **Validation:** Not run. `git diff --check` pending.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:14:41 Asia/Manila | Label payment date column as Date
+
+- **Agent:** Codex
+- **Summary:** Changed the `/payments` history table heading for the existing payment date value from “Date of payment” to “Date,” as requested.
+- **Files:** Updated `frontend/src/features/operations/LivePaymentsPage.tsx` and this changelog.
+- **Validation:** Not run. `git diff --check` pending.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:16:22 +08:00 | Remove redundant follow-up table title
+
+- **Agent:** Copilot
+- **Summary:** Removed the “Follow-up list” heading from the `/followup` table card and its empty state; the page title remains.
+- **Files:** Updated `frontend/src/features/followup/LiveFollowupPage.tsx`, `frontend/src/test/liveFollowup.test.tsx`, and this changelog.
+- **Validation:** Focused Vitest passed (4 tests); `git diff --check` passed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:20:54 +08:00 | Remove follow-up card heading
+
+- **Agent:** Copilot
+- **Summary:** Removed the redundant “Follow-up” heading above the mock follow-up table; the page-level title remains.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted follow-up selection test passed; `git diff --check` passed. The full `operations.test.tsx` run had 48 passing tests and one unrelated pre-existing failure in mock user-creation role tests (`Name` label not found). Updated: Sunday, October 25, 2026 — 15:21:09 +08:00.
+- **Commit/PR:** Not available.
+- **Follow-ups:** The unrelated mock user-creation test failure is outside this change.
+
+### Sunday, October 25, 2026 — 15:21:55 Asia/Manila | Show dates in sample Payments table
+
+- **Agent:** Codex
+- **Summary:** Added a Date column between Student and Amount on the development `/payments` table, displaying each sample payment's existing `paidOn` value.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** `git diff --check` passed for the two affected files; tests were not run.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:32:35 Asia/Manila | Establish action button color hierarchy
+
+- **Agent:** Codex
+- **Summary:** Updated the shared button variants so secondary actions use outlined brand-green styling, neutral actions have a quieter gray treatment, and ghost actions use the brand accent. Added a success variant and used it for approving a void request. Changed the live “Request void” action to secondary styling because it submits a review request rather than performing the destructive void.
+- **Files:** Updated `frontend/src/components/ui/Button.tsx`, `frontend/src/features/operations/LivePaymentsPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and this changelog.
+- **Validation:** `npm run build` passed with a 4GB Node heap. Tests were not run.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 15:39:00 Asia/Manila | Improve receipt and report printing
+
+- **Agent:** Codex
+- **Summary:** Added document-oriented print rules for page margins, printable table widths, repeating headings, page-break behavior, overflow, and removal of interactive controls and pagination. Receipt actions reached from payment detail now open the print dialog automatically after the existing server print/reprint action succeeds, without a separate preview confirmation step.
+- **Files:** Updated `frontend/src/index.css`, `frontend/src/components/ui/TableFilters.tsx`, `frontend/src/components/ui/PaginationControls.tsx`, `frontend/src/features/operations/LivePaymentsPage.tsx`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** `npm run build` passed with a 4GB Node heap; `git diff --check` passed for the frontend changes. Browser print-layout review remains open under U12.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Check printed receipt clipping and report pagination/page breaks in browser print preview.

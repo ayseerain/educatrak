@@ -22,7 +22,7 @@ export function LiveBillingAccounts() {
   const accounts = useQuery({ queryKey: ["billing-accounts", filters.applied, filters.page, filters.perPage], queryFn: () => listBillingAccounts({ query, schoolYear, grade, status, minimumBalanceCents, maximumBalanceCents, page: filters.page, perPage: filters.perPage }) });
 
   return <>
-    <div className="mb-5"><h1 className="text-2xl font-semibold">Billing accounts</h1><p className="mt-1 text-sm text-text-secondary">Search and review student billing accounts.</p></div>
+    <div className="mb-5"><h1 className="text-2xl font-semibold">Accounts</h1><p className="mt-1 text-sm text-text-secondary">Search and review student billing accounts.</p></div>
     <TableFilters scope="Billing accounts" defaults={billingFilterDefaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or student number" }} fields={[
       { key: "schoolYear", label: "Filter by school year", placeholder: "School year" },
       { key: "grade", label: "Filter by grade", placeholder: "Grade" },

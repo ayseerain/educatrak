@@ -142,8 +142,8 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
         <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold">Create user</Dialog.Title>
           {createdPassword ? <><p role="status" className="mt-4 text-sm text-status-success">Account created. Give this temporary password to the user securely; it will not be shown again.</p><p className="mt-3 rounded-md bg-surface p-3 font-mono">{createdPassword}</p><div className="mt-5 flex justify-end"><Button onClick={() => setCreateOpen(false)}>Done</Button></div></> : <form className="mt-4 space-y-4" onSubmit={submitCreate}>
-            <label className="block text-sm font-medium">Full name<input name="fullName" required maxLength={255} className={inputClass} /></label>
-            <label className="block text-sm font-medium">Username<input name="username" required maxLength={100} className={inputClass} autoCapitalize="none" /></label>
+            <label className="block text-sm font-medium">Full name <span aria-hidden="true" className="text-status-error">*</span><input name="fullName" required maxLength={255} className={inputClass} /></label>
+            <label className="block text-sm font-medium">Username <span aria-hidden="true" className="text-status-error">*</span><input name="username" required maxLength={100} className={inputClass} autoCapitalize="none" /></label>
             <label className="block text-sm font-medium">Email, if available<input name="email" type="email" className={inputClass} /></label>
             <label className="block text-sm font-medium">Role<select name="role" className={inputClass} defaultValue={user.role === "super_admin" ? "admin" : "cashier"}>{(user.role === "super_admin" ? SUPER_ADMIN_CREATE_ROLES : ADMIN_CREATE_ROLES).map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>
             <p className="text-xs text-text-secondary">Accounting Officer assignment remains restricted pending the approved access policy. Only Super Admin can create an Administrator account; no user can create a Super Admin from this screen.</p>
@@ -204,7 +204,7 @@ export function LiveUsersPage({ user }: { user: AuthenticatedUser }) {
 }
 
 function PageHeading({ onCreate }: { onCreate: () => void }) {
-  return <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">User administration</h1><p className="mt-1 text-sm text-text-secondary">Manage staff accounts and review their access status.</p></div><Button onClick={onCreate}>Create user</Button></div>;
+  return <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold">Users</h1><p className="mt-1 text-sm text-text-secondary">Manage staff accounts and review their access status.</p></div><Button onClick={onCreate}>Create user</Button></div>;
 }
 const inputClass = "mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-green-dark";
 

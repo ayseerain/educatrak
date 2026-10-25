@@ -32,6 +32,10 @@ return [
         'load_fee_cents' => env('SMS_LOAD_FEE_CENTS'),
     ],
 
+    'reminders' => [
+        'enabled' => env('REMINDER_DELIVERY_ENABLED', false),
+    ],
+
     'twilio' => [
         'account_sid' => env('TWILIO_ACCOUNT_SID'),
         'auth_token' => env('TWILIO_AUTH_TOKEN'),

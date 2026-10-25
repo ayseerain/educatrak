@@ -100,7 +100,7 @@ function FeeItemEditorDialog({
           {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={required} onChange={(event) => setRequired(event.target.checked)} />Required fee</label>
           <div className="flex justify-end gap-2 pt-2">
-            <Dialog.Close asChild><Button type="button" variant="secondary">Cancel</Button></Dialog.Close>
+            <Dialog.Close asChild><Button type="button" variant="neutral">Cancel</Button></Dialog.Close>
             <Button type="submit" disabled={isSaving}>{isSaving ? "Saving…" : item ? "Save new version" : "Add fee item"}</Button>
           </div>
         </form>
@@ -256,7 +256,7 @@ export function LiveFinanceSettingsPage({
     onSuccess: async () => queryClient.invalidateQueries({ queryKey: ["finance-settings", "fees"] }),
   });
 
-  const title = section === "fees" ? "Fee schedules" : "Payment plans";
+  const title = section === "fees" ? "Fees" : "Plans";
   function handleDeactivate(item: FinanceFeeSchedule["items"][number]) {
     if (window.confirm(`Deactivate “${item.name}”? It will remain in history and stop being available to new accounts.`)) {
       deactivateFeeItem.mutate(item.id);

@@ -18,7 +18,7 @@ export function LiveAuditLog() {
 
   return <>
     <div className="mb-5">
-      <h1 className="text-2xl font-semibold">Audit log</h1>
+      <h1 className="text-2xl font-semibold">Audit</h1>
       <p className="mt-1 text-sm text-text-secondary">Review recorded changes by user, action, date, or entity. Entries cannot be changed or deleted.</p>
     </div>
     <TableFilters scope="Audit log" defaults={auditFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "user", label: "User" }} fields={[

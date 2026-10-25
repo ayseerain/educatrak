@@ -36,7 +36,7 @@ export function LiveVoidsPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <div className="mb-5">
-        <h1 className="text-2xl font-semibold">{canDecide ? "Void approval queue" : "Void request history"}</h1>
+        <h1 className="text-2xl font-semibold">Void requests</h1>
         <p className="mt-1 text-sm text-text-secondary">{canDecide ? "Review persisted requests. The cashier who recorded a payment cannot approve or reject its void." : "Read-only view of persisted void requests and decisions."}</p>
       </div>
       {requestsQuery.isPending && <LoadingState message="Loading void requests…" />}

@@ -127,7 +127,7 @@ export function TableFilters<Values extends TableFilterValues>({
     setOpen(false);
   }
 
-  return <Card className="mb-4">
+  return <Card className="no-print mb-4">
     <div className="flex flex-wrap items-end gap-3">
       {searchSlot ?? (search && <div className="min-w-[min(100%,16rem)] flex-1">
         <input type="search" aria-label={search.label} value={draft[search.key]} placeholder={search.placeholder ?? search.label} onChange={(event) => (onSearch ?? onChange)(search.key, event.target.value)} className={searchInputClass} />

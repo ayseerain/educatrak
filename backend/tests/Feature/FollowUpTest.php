@@ -87,8 +87,39 @@ class FollowUpTest extends TestCase
         }
     }
 
+    public function test_reminder_sending_and_retry_are_unavailable_until_delivery_policy_is_approved(): void
+    {
+        config(['services.reminders.enabled' => false]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+        $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-GATE', 'full_name' => 'Quinn Sample Student', 'status' => 'enrolled']);
+        $notification = NotificationLog::query()->create([
+            'student_id' => $student->id,
+            'guardian_email' => 'guardian@example.test',
+            'channel' => 'email',
+            'kind' => 'reminder',
+            'status' => 'failed',
+            'failure_reason' => 'Provider unavailable.',
+            'attempts' => 1,
+        ]);
+
+        $this->actingAs($cashier)->postJson('/api/follow-up/reminders', [])->assertStatus(503)
+            ->assertJsonPath('message', 'Reminder delivery is unavailable until its provider and delivery policies are approved.');
+        $this->actingAs($cashier)->postJson("/api/notifications/{$notification->id}/retry")->assertStatus(503)
+            ->assertJsonPath('message', 'Reminder retry is unavailable until its provider and delivery policies are approved.');
+
+        $this->assertDatabaseCount('notification_logs', 1);
+        $this->assertDatabaseHas('notification_logs', [
+            'id' => $notification->id,
+            'status' => 'failed',
+            'failure_reason' => 'Provider unavailable.',
+            'attempts' => 1,
+        ]);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'reminder.retried']);
+    }
+
     public function test_cashier_can_queue_idempotent_email_and_twilio_reminders_and_delivery_callback_confirms_sms(): void
     {
+        config(['services.reminders.enabled' => true]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
         $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-02', 'full_name' => 'Morgan Sample', 'status' => 'enrolled']);

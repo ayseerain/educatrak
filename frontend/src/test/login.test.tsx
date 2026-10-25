@@ -75,8 +75,11 @@ describe("LoginPage", () => {
       "/mendez-christian-academy-seal.png",
       "/mendez-christian-academy-seal.png",
     ]);
-    expect(screen.getByLabelText(/username/i)).toHaveFocus();
-    expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
+    const username = screen.getByLabelText(/username/i);
+    const password = screen.getByLabelText("Password", { selector: "input" });
+    expect(username).toHaveFocus();
+    expect(username.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(password.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
   });
 

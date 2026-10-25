@@ -13,6 +13,13 @@ and remain development-only. Credentials are not stored in `localStorage`.
 The header's role preview control is also limited to local mock development; it
 is hidden when using the live API and is not included in production builds.
 
+Reminder sending and retry controls are hidden unless the frontend build sets
+`VITE_REMINDER_DELIVERY_ENABLED=true`. This frontend flag only controls the
+controls' visibility; the backend's `REMINDER_DELIVERY_ENABLED` switch is
+authoritative and defaults to `false`. Keep both disabled until the provider,
+network, consent and cost rules, message text, daily limit, and retry policy
+have been approved. Never place provider credentials in frontend build values.
+
 The sign-in page includes a "Forgot password?" control that directs staff to
 contact an administrator. It does not provide self-service password recovery.
 
