@@ -862,7 +862,6 @@ Statuses are computed by the server from the rules in M9.3 and recomputed after 
 |---|---|---|
 | View overdue and due-soon accounts | Student, guardian contact, amount overdue, days overdue, last reminder date | CSH, ACC |
 | Filter and sort | By grade, section, days overdue, amount | CSH, ACC |
-| Print list | One-page printable | CSH, ACC |
 
 ### M11.3 Reminder batches
 
@@ -996,7 +995,7 @@ Cashier opens payment → Request void → reason (required, min 10 characters) 
 Registrar (or cashier) opens `/clearance` → searches student → sees Enrollment and each exam-period status with a reason **appropriate to the viewer's role** (an amount for CSH/ACC/AUD/ADM, no amount for REG) → for a cleared period, clicks **Print exam permit** → print view → browser print dialog. For a not-cleared period the button is disabled with the reason.
 
 **F5. Overdue follow-up**
-Cashier or accounting opens `/followup` → filters → selects rows → **Send reminder emails** → review dialog (recipients, missing emails flagged, message preview) → confirm → rows show "Reminder sent today." Also a **Print list** action.
+Cashier or accounting opens `/followup` → filters → selects rows → **Send reminder emails** → review dialog (recipients, missing emails flagged, message preview) → confirm → rows show "Reminder sent today."
 
 **F6. End-of-day close-out**
 Cashier opens `/closeout` → sees system totals by method → enters counted cash → variance appears → adds reason if needed → confirm → day locks and a printable summary opens. Accounting later signs off from history.

@@ -90,7 +90,6 @@ export const en = {
   followup: {
     title: "Follow-up",
     description: "Unpaid installments and guardian contact details from persisted billing records.",
-    printList: "Print list",
     search: "Search",
     searchLabel: "Search student follow-up",
     searchPlaceholder: "Name or student number",

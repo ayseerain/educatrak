@@ -98,8 +98,7 @@ describe("operational page navigation", () => {
     expect(within(notificationRetry).getAllByText("Unavailable")).toHaveLength(5);
     expect(screen.queryByRole("row", { name: /Run student ledger import/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("row", { name: /Download receipt PDFs/ })).not.toBeInTheDocument();
-    const followupPrint = screen.getByRole("row", { name: /Follow-up Print overdue follow-up list/ });
-    expect(within(followupPrint).getAllByText("Allowed")).toHaveLength(2);
+    expect(screen.queryByRole("row", { name: /Follow-up Print overdue follow-up list/ })).not.toBeInTheDocument();
     const closeoutHistory = screen.getByRole("row", { name: /Close-out View close-out history/ });
     expect(within(closeoutHistory).getAllByText("Allowed")).toHaveLength(2);
     expect(screen.getByText("Current interface access by role. The server enforces permissions for every request.")).toBeInTheDocument();
@@ -914,15 +913,6 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: "Close-out review" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Today's close-out" })).not.toBeInTheDocument();
-  });
-
-  it("allows overdue-list printing for Cashier and Accounting only", () => {
-    const accountingPage = render(<MemoryRouter><FollowupPage user={accounting} /></MemoryRouter>);
-    expect(screen.getByRole("button", { name: "Print list" })).toBeInTheDocument();
-    accountingPage.unmount();
-
-    render(<MemoryRouter><FollowupPage user={auditor} /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: "Print list" })).not.toBeInTheDocument();
   });
 
   it("uses the close-out reconciliation row and requires a reason for a variance", async () => {

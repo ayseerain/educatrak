@@ -1887,13 +1887,6 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
               account.lastReminder,
             ])}
           />
-      {can(user, "followup.print") && (
-        <div className="mt-4">
-          <Button type="button" variant="secondary" onClick={() => window.print()}>
-            Print list
-          </Button>
-        </div>
-      )}
       <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title={notificationChannels.includes("sms") ? "Review reminder notifications" : "Review reminder emails"}>
         <div className="mt-2 space-y-3 text-sm text-text-secondary">
           <div>
@@ -3136,7 +3129,6 @@ export function RolesPage() {
     { area: "Payments", action: "Approve payment voids", capability: "payment.void.approve" },
     { area: "Receipts", action: "Reprint receipts", capability: "receipt.reprint" },
     { area: "Follow-up", action: "View overdue follow-up", capability: "followup.view" },
-    { area: "Follow-up", action: "Print overdue follow-up list", capability: "followup.print" },
     { area: "Follow-up", action: "Send reminders", capability: "followup.send" },
     { area: "Reports", action: "View reports", capability: "report.view" },
     { area: "Reports", action: "Print student statements", capability: "statement.print" },

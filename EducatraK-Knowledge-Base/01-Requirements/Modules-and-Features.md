@@ -459,7 +459,6 @@ Statuses are computed by the server from the rules in M9.3 and recomputed after 
 |---|---|---|
 | View overdue and due-soon accounts | Student, guardian contact, amount overdue, days overdue, last reminder date | CSH, ACC |
 | Filter and sort | By grade, section, days overdue, amount | CSH, ACC |
-| Print list | One-page printable | CSH, ACC |
 
 ### M11.3 Reminder batches
 

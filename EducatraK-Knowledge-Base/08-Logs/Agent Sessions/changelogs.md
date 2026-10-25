@@ -990,3 +990,29 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - Physical printer output and the interactive browser print dialog are not verified.
   - The A4 paper-size setting is not wired; tracked as a LATER item.
   - The receipt preview route and its navigation were left unchanged, per the requested scope.
+
+### Sunday, October 25, 2026 — 17:42:18 +08:00 | Remove Follow-up printing
+
+- **Summary:** Removed the Print list action from both live and development `/followup` views, along with the now-unused `followup.print` frontend capability, role-matrix entry, translation, and regression tests. The current core requirements, module/flow documentation, and frontend implementation ledger now reflect that Follow-up has no printing option.
+- **Files:** Updated `frontend/src/features/followup/LiveFollowupPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/lib/permissions.ts`, `frontend/src/lib/types.ts`, `frontend/src/i18n/en.ts`, `frontend/src/test/liveFollowup.test.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/00-Project-Core/Project-Specification.md`, `01-Requirements/Modules-and-Features.md`, `01-Requirements/Screens-Routes-and-Flows.md`, `07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Frontend-Loop-Engineering.md`, `08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm test -- --run src/test/liveFollowup.test.tsx` passed (3 tests). The combined focused run had 50 passing tests and one pre-existing unrelated failure in `operations.test.tsx` mock user creation (`Name` label not found); the Follow-up-related checks passed. `NODE_OPTIONS=--max-old-space-size=4096 npm run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not committed.
+- **Follow-ups:** None for this scoped removal.
+
+### Sunday, October 25, 2026 — 18:10:42 +08:00 | Add integrated agent baseline
+
+- **Agent:** Codex
+- **Summary:** Added a repository-wide integrated agent baseline covering evidence-first investigation, minimal complete changes, truthful reporting, proportional verification, stop conditions, consequence-based reviews, conditional UI craft, resilient accessibility, rendered-result inspection, and precise communication. The baseline explicitly remains subordinate to the existing source-of-truth hierarchy and does not authorize automatic external skill or prompt installation.
+- **Files:** Updated `AGENTS.md`, `CLAUDE.md`, and this changelog.
+- **Validation:** Confirmed `AGENTS.md` and `CLAUDE.md` are byte-for-byte identical by SHA-256; `git diff --check -- AGENTS.md CLAUDE.md` passed. Tests not run because this task changes agent instructions and documentation only.
+- **Commit/PR:** Not available.
+- **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 18:24:06 +08:00 | Install requested Codex plugins and project skills
+
+- **Agent:** Codex
+- **Summary:** Installed the requested Codex agent capabilities. Anti Slop, Ponytail, and Caveman are enabled as Codex plugins in the user's Codex profile. UI/UX Pro Max, Taste Skill's `design-taste-frontend`, and Impeccable are installed project-locally under `.agents/skills`; Impeccable also installed its project hook configuration.
+- **Files:** Added `.agents/skills/ui-ux-pro-max/`, `.agents/skills/design-taste-frontend/`, `.agents/skills/impeccable/`, project-local Impeccable hook configuration under `.codex/`, and this changelog. Codex profile plugin state changed outside the repository.
+- **Validation:** Confirmed the three project `SKILL.md` files, the Impeccable hook file, and all three Codex plugin cache directories exist. `git diff --check -- .agents .codex` passed. Tests not run because this task only installs agent tooling.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Taste Skill's installer reported one medium-risk socket alert. Use its workflow only for explicitly requested frontend work, and review the installed instructions before invocation. Start a new Codex session so newly installed plugins and skills load.

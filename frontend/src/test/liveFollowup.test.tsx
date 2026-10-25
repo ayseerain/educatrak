@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LiveFollowupPage } from "@/features/followup/LiveFollowupPage";
 
 const cashier = { id: "cashier-1", name: "Cashier", role: "cashier" as const };
-const auditor = { id: "auditor-1", name: "Auditor", role: "auditor" as const };
 
 describe("live installment follow-up", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -42,25 +41,12 @@ describe("live installment follow-up", () => {
     expect(screen.queryByText("Follow-up list")).not.toBeInTheDocument();
     expect(screen.getByText("guardian@example.test")).toBeInTheDocument();
     expect(screen.getByText("Not recorded")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Print list" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Print list" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Filter/ }));
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "overdue" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith("/api/follow-up?status=overdue&sort=days_overdue&direction=asc&page=1&per_page=10", expect.objectContaining({ credentials: "include" })));
-  });
-
-  it("keeps list printing to Cashier and Accounting instead of read-only Auditors", () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ data: [], meta: { currentPage: 1, lastPage: 1, total: 0, perPage: 50, today: "2026-10-24" } }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveFollowupPage user={auditor} /></MemoryRouter></QueryClientProvider>);
-
-    expect(screen.queryByRole("button", { name: "Print list" })).not.toBeInTheDocument();
   });
 
   it("sends only selected eligible installments from the current page", async () => {

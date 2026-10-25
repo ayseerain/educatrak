@@ -210,9 +210,9 @@ For each screen below:
 
 - **Route:** `/followup`
 - **Documented access:** CSH / ACC / AUD
-- **Build scope:** Due-soon/overdue list, filters, print list, and reminder-batch flow for permitted roles.
+- **Build scope:** Due-soon/overdue list, filters, and reminder-batch flow for permitted roles.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/followup` as `FollowupPage` with selectable reminder batches, email/SMS delivery choices, SMS load-fee disclosure, print-list-ready table structure, and permission-gated sending. Formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/followup` as `FollowupPage` with selectable reminder batches, email/SMS delivery choices, SMS load-fee disclosure, and permission-gated sending. The follow-up print option was removed by current user direction. Formal Phase 2 audit remains pending.
 
 ### B20. Clearance Lookup — M10
 

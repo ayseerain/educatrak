@@ -90,7 +90,6 @@ export function LiveFollowupPage({ user, workspaceSwitch }: { user: Authenticate
   return <>
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div><h1 className="text-2xl font-semibold">{en.followup.title}</h1><p className="mt-1 text-sm text-text-secondary">{en.followup.description}</p></div>
-      {can(user, "followup.print") && <Button type="button" variant="secondary" onClick={() => window.print()}>{en.followup.printList}</Button>}
     </div>
     {workspaceSwitch}
     {can(user, "followup.send") && !canSendReminders && <p role="status" className="mb-3 text-sm text-text-secondary">Reminder sending is unavailable until delivery policies are approved.</p>}
