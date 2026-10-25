@@ -55,7 +55,8 @@ describe("live billing account pages", () => {
     await user.click(screen.getByRole("button", { name: /^Filter/ }));
     await user.type(screen.getByRole("textbox", { name: "Filter by school year" }), "SY 2026-2027");
     await user.type(screen.getByRole("textbox", { name: "Filter by grade" }), "Grade 4");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Filter by billing status" }), "due_soon");
+    await user.click(screen.getByRole("button", { name: "Filter by billing status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Due soon" }));
     await user.type(screen.getByRole("spinbutton", { name: "Minimum balance" }), "100.00");
     await user.type(screen.getByRole("spinbutton", { name: "Maximum balance" }), "500.00");
     await user.click(screen.getByRole("button", { name: "Apply filters" }));

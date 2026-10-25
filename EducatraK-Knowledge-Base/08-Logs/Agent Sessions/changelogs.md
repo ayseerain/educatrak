@@ -1052,3 +1052,57 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm test -- --run src/test/backupPage.test.tsx src/test/productionUnavailable.test.tsx` passed (8 tests). `php artisan test --filter=BackupReadTest` passed (2 tests, 6 assertions); `php artisan test --filter=CapabilityMapTest` passed (62 tests, 222 assertions); `vendor/bin/pint --test app/Http/Controllers/Api/BackupController.php tests/Feature/BackupReadTest.php` passed; `npm run build` passed; and `git diff --check` passed. The repository-wide Pint check still reports pre-existing formatting violations in unrelated files.
 - **Commit/PR:** Not committed.
 - **Follow-ups:** Implement manual backup execution and restore instructions only after the deployment owner approves the server-side executor and recovery procedure.
+
+### Sunday, October 25, 2026 — 23:28:13 +08:00 | Default the functional prototype to persistent MockDB
+
+- **Agent:** Codex
+- **Summary:** Made MockDB the default data source in development and production builds; live API mode is explicit (`VITE_DATA_SOURCE=live`). Store writes now persist to Local Storage and notify the provider, so related mock screens refresh after create/edit/payment/void/close-out/user actions. Wired MockDB student create/edit, billing-account creation, void requests and decisions, close-out reopening/sign-off, and separate Audit/Security routes. The backend was deliberately untouched.
+- **Files:** Updated frontend data-source, MockDB, session, operational, navigation, and test files; updated the audit finding and issue tracker.
+- **Validation:** `npm.cmd test -- --run` passed (31 files, 195 tests). `npm.cmd run build` passed. The sandbox initially blocked Vitest's Vite-config read; the approved rerun completed without Laravel. No browser/axe re-check was run in this slice.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue the remaining audit acceptance work: browser/axe at target viewports, full findings matrix, and the deferred UX items.
+
+### Sunday, October 25, 2026 — 23:39:58 +08:00 | Continue frontend audit remediation
+
+- **Agent:** Codex
+- **Summary:** Standardized the sidebar wordmark to EducaTrak; restored reachable MockDB workflow entry points from the student profile; made account-list rows link to real account detail; corrected the student profile heading sequence; and added contextual Finance and School settings sub-navigation.
+- **Files:** Updated `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and `frontend/src/test/layout.test.tsx`.
+- **Validation:** `npm.cmd run build` passed. `npm.cmd test -- --run src/test/layout.test.tsx src/test/operations.test.tsx` passed (50 tests). Backend remained frozen.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue the open frontend audit items, especially accessible-name/contrast checks, responsive table behavior, richer MockDB account wizard, and browser/axe acceptance.
+
+### Sunday, October 25, 2026 — 23:46:27 +08:00 | Continue accessibility and clearance remediation
+
+- **Agent:** Codex
+- **Summary:** Updated visible-control accessible names to include their displayed value; changed Clearance from a misleading preselected record to a search-first empty state; and made close-out’s cash-count input spinner-free while retaining decimal validation. Close-out totals continue to derive from the shared MockDB.
+- **Files:** Updated `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/features/dashboard/components/DashboardRangeFilter.tsx`, `frontend/src/features/dashboard/components/RecentActivity.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and `frontend/src/test/operations.test.tsx`.
+- **Validation:** `npm.cmd run build` passed. `npm.cmd test -- --run src/test/operations.test.tsx src/test/layout.test.tsx` passed (50 tests). Backend remained frozen.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Automated browser/axe verification at the specified role and viewport matrix remains required before declaring the full audit closed.
+
+### Sunday, October 25, 2026 — 23:47:20 +08:00 | Validate current frontend audit-remediation work
+
+- **Agent:** Codex
+- **Summary:** Completed the full frontend regression pass after the current MockDB and audit-remediation batches. The audit tracker remains open for browser/axe acceptance and deliberately deferred UX improvements; it is not represented as fully closed.
+- **Files:** Updated this changelog.
+- **Validation:** `npm.cmd test -- --run` passed (31 files, 195 tests). The immediately preceding `npm.cmd run build` passed. No backend paths were changed.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Complete target-viewport role journeys and axe scans, then reclassify each remaining finding as fixed, accepted, or deferred with evidence.
+
+### Sunday, October 25, 2026 — 23:58:34 +08:00 | Remove redundant dashboard panels
+
+- **Agent:** Codex
+- **Summary:** Removed duplicated Accounting and Administrator workspace/safeguard panels. The relevant KPI cards now provide direct actions, and shared dashboard-card actions meet the minimum 44px target. Also refined profile account details and mock account-detail dates/statuses for consistent presentation.
+- **Files:** Updated dashboard card, Accounting dashboard, Administrator dashboard, operational pages, and profile tests.
+- **Validation:** `npm.cmd run build` passed. `npm.cmd test -- --run src/test/dashboard.test.tsx` passed (26 tests); the prior focused profile/operations run passed (56 tests). Backend remained frozen.
+- **Commit/PR:** Not available.
+- **Follow-ups:** Continue remaining code-level audit items; browser/axe was explicitly skipped at user direction.
+
+### Monday, October 26, 2026 — 02:47:53 +08:00 | Complete frontend-only audit remediation
+
+- **Agent:** Codex
+- **Summary:** Completed the remaining frontend audit remediation: MockDB-backed workflows, separate audit/security routes, safe role administration, close-out state actions, contextual links, accessible dropdown/filter behavior, audit before/after detail, report/date consistency, and dashboard/profile cleanup. No backend files were changed under the user’s frontend-only scope.
+- **Files:** Updated frontend feature/shared/test files and the audit findings and issue records.
+- **Validation:** `npm.cmd test -- --run` passed (31 files, 195 tests); `npm.cmd run build` passed; `git diff --check` reported no whitespace errors (with Git line-ending warnings). `npm.cmd run verify:production-assets` was run but reported MockDB fixture markers in the production bundle, an accepted consequence of the requested MockDB-default behavior rather than a pass.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser viewport and axe acceptance were explicitly skipped by the user. Live API/backend verification remains outside the frontend-only scope. Before a live deployment, switch to live data and require a clean production asset scan.

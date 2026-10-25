@@ -15,8 +15,7 @@ const cashier: AuthenticatedUser = {
 
 describe("profile password change", () => {
   beforeEach(() => {
-    vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_USE_LIVE_API", "");
+    vi.stubEnv("VITE_DATA_SOURCE", "live");
   });
 
   afterEach(() => {
@@ -45,8 +44,8 @@ describe("profile password change", () => {
     render(<MemoryRouter><SessionProvider><ProfilePage user={cashier} /></SessionProvider></MemoryRouter>);
 
     expect(screen.getByText(cashier.name)).toBeInTheDocument();
-    expect(screen.getByText(/Role: Cashier/)).toBeInTheDocument();
-    expect(screen.getByText(/Last login:/)).toHaveTextContent("Oct 24, 2026");
+    expect(screen.getByText("Role").parentElement).toHaveTextContent("Cashier");
+    expect(screen.getByText("Last login").parentElement).toHaveTextContent("Oct 24, 2026");
     await user.type(screen.getByLabelText("Current password"), "CurrentPass123!");
     await user.type(screen.getByLabelText("New password"), "lowercasepass");
     await user.type(screen.getByLabelText("Confirm new password"), "lowercasepass");
@@ -76,8 +75,8 @@ describe("profile password change", () => {
     const view = render(<MemoryRouter><SessionProvider><ProfilePage user={user} /></SessionProvider></MemoryRouter>);
 
     expect(await screen.findByText(profile.name)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`Role: ${roleLabel}`))).toBeInTheDocument();
-    expect(screen.getByText(/Last login:/)).toHaveTextContent("Oct 24, 2026");
+    expect(screen.getByText("Role").parentElement).toHaveTextContent(roleLabel);
+    expect(screen.getByText("Last login").parentElement).toHaveTextContent("Oct 24, 2026");
     view.unmount();
   });
 });

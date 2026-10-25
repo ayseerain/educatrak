@@ -11,7 +11,7 @@ type WorkspaceView = "followups" | "notifications";
 export function RoleFollowupWorkspace({ user }: { user: AuthenticatedUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const view: WorkspaceView = searchParams.get("view") === "notifications" ? "notifications" : "followups";
-  const useLiveData = import.meta.env.PROD || isLiveCashierApiEnabled();
+  const useLiveData = isLiveCashierApiEnabled();
 
   const workspaceSwitch = (
     <div role="group" aria-label="Follow-up and notification workspace" className="mb-5 flex flex-wrap gap-2">

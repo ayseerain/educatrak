@@ -234,7 +234,8 @@ describe("live payment history export", () => {
     await screen.findByText("Sample Student 1");
     await user.type(screen.getByRole("searchbox", { name: "Search receipt or student" }), "SAMPLE");
     await user.click(screen.getByRole("button", { name: /^Filter/ }));
-    await user.selectOptions(screen.getByLabelText("Status"), "valid");
+    await user.click(screen.getByRole("button", { name: "Status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Valid" }));
     await user.type(screen.getByLabelText("Date of payment from"), "2026-10-01");
     await user.type(screen.getByLabelText("Date of payment through"), "2026-10-24");
     await user.type(screen.getByLabelText("Cashier"), "Taylor");

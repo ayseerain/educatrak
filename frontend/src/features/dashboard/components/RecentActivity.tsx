@@ -118,7 +118,7 @@ export function RecentActivity({
         <label className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-text-secondary">
           <span>{en.dashboard.activityRows}</span>
           <DropdownSelect
-            aria-label={en.dashboard.activityRows}
+            aria-label={`${en.dashboard.activityRows}: ${activityLimit}`}
             value={activityLimit}
             options={ACTIVITY_LIMIT_OPTIONS}
             onChange={setActivityLimit}

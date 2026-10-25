@@ -93,7 +93,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
         { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage", icon: UsersRound },
         { label: en.nav.systemConfiguration, to: "/settings/school", capability: "settings.system.view", icon: Settings },
         { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.manage", icon: DatabaseBackup },
-        { label: en.nav.securityEvents, to: "/admin/audit-log", capability: "security.events.view", icon: ShieldCheck },
+        { label: en.nav.securityEvents, to: "/admin/security-events", capability: "security.events.view", icon: ShieldCheck },
       ],
     },
   ],
@@ -172,7 +172,7 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
             className="h-12 w-12 shrink-0 object-contain"
           />
           <span className="flex min-w-0 flex-col leading-tight text-brand-green-dark">
-            <span className="text-[18px] font-black tracking-tight">EdukaTrak</span>
+            <span className="text-[18px] font-black tracking-tight">{en.app.name}</span>
             <span className="mt-1 text-[12px] font-semibold tracking-tight text-text-muted-readable">
               {en.app.navbarName}
             </span>
@@ -223,7 +223,7 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
       <div className={cn("mt-auto border-t border-border p-3", collapsed && "md:px-1 md:py-2")}>
         {import.meta.env.DEV && !isLiveCashierApiEnabled() && (
           <DropdownSelect
-            aria-label={en.header.previewRole}
+            aria-label={`${en.header.previewRole}: ${ROLE_LABEL[user.role]}`}
             value={user.role}
             options={ROLE_OPTIONS}
             onChange={handleRoleChange}
@@ -235,7 +235,7 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
           <button
             type="button"
             onClick={() => navigate("/profile")}
-            aria-label={en.header.profileMenu}
+            aria-label={`Open my profile: ${user.name}`}
             title={`${user.name} · ${ROLE_LABEL[user.role]}`}
             className={cn("flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-1 text-left hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark", collapsed && "md:flex-none md:justify-center md:px-1")}
           >

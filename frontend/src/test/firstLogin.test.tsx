@@ -13,8 +13,7 @@ function CurrentPath() {
 
 describe("forced first-login password change", () => {
   beforeEach(() => {
-    vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_USE_LIVE_API", "");
+    vi.stubEnv("VITE_DATA_SOURCE", "live");
   });
 
   afterEach(() => {

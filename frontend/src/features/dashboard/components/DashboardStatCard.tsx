@@ -32,7 +32,7 @@ export function DashboardStatCard({
       {action && (
         <Link
           to={action.to}
-          className="mt-auto inline-flex min-h-8 items-center pt-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+          className="mt-auto inline-flex min-h-11 items-center pt-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
         >
           {action.label}
         </Link>

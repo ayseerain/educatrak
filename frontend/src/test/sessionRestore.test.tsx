@@ -11,8 +11,7 @@ function SessionStatus() {
 
 describe("live session restoration", () => {
   beforeEach(() => {
-    vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_USE_LIVE_API", "");
+    vi.stubEnv("VITE_DATA_SOURCE", "live");
   });
 
   afterEach(() => {

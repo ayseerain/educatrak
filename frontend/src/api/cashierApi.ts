@@ -5,6 +5,7 @@ import type { AuthenticatedUser, Role } from "@/lib/types";
 declare global {
   interface ImportMetaEnv {
     readonly VITE_USE_LIVE_API?: string;
+    readonly VITE_DATA_SOURCE?: "mock" | "live";
     readonly VITE_REMINDER_DELIVERY_ENABLED?: string;
     readonly DEV: boolean;
     readonly PROD: boolean;
@@ -372,9 +373,9 @@ export async function getBillingAccount(accountId: string): Promise<BillingAccou
 }
 
 export function isLiveCashierApiEnabled(): boolean {
-  // Production builds must never fall back to the in-memory demo account or
-  // payment adapter. Mock mode is reserved for local development.
-  return import.meta.env.PROD || import.meta.env.VITE_USE_LIVE_API === "true";
+  // The functional prototype is intentionally MockDB-first. Live integration
+  // remains available only when an operator explicitly opts into it.
+  return import.meta.env.VITE_DATA_SOURCE === "live" || import.meta.env.VITE_USE_LIVE_API === "true";
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {

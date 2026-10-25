@@ -19,18 +19,18 @@ function renderUsers(user: AuthenticatedUser) {
 describe("role scoped user filters", () => {
   beforeEach(() => listStaffUsers.mockResolvedValue({ data: [], currentPage: 1, lastPage: 1, total: 0, perPage: 10 }));
 
-  it("shows only roles an Administrator may inspect and keeps archive view separate from status filtering", async () => {
+  it("applies the Administrator's status filter and keeps archive view separate", async () => {
     const user = userEvent.setup();
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
     await screen.findByRole("heading", { name: "Users" });
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    expect(screen.queryByRole("option", { name: "Super Admin" })).not.toBeInTheDocument();
-    await user.selectOptions(screen.getByRole("combobox", { name: "Filter users by status" }), "inactive");
+    await user.click(screen.getByRole("button", { name: "Filter users by status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Inactive" }));
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
     await waitFor(() => expect(listStaffUsers).toHaveBeenLastCalledWith(expect.objectContaining({ status: "inactive", page: 1 })));
     await user.click(screen.getByRole("tab", { name: "Archived users" }));
     await waitFor(() => expect(listStaffUsers).toHaveBeenLastCalledWith(expect.objectContaining({ status: "archived", page: 1 })));
-    expect(screen.queryByRole("combobox", { name: "Filter users by status" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Filter users by status" })).not.toBeInTheDocument();
   });
 
   it("includes the protected role in the Super Admin's read filter", async () => {
@@ -38,7 +38,8 @@ describe("role scoped user filters", () => {
     renderUsers({ id: "super-1", name: "Jordan Sample Super Admin", role: "super_admin" });
     await screen.findByRole("heading", { name: "Users" });
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    expect(screen.getByRole("option", { name: "Super Admin" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Filter users by role" }));
+    expect(screen.getByRole("menuitemradio", { name: "Super Admin" })).toBeInTheDocument();
   });
 
   it("keeps the edit dialog scrollable and lets an administrator archive a user from it", async () => {

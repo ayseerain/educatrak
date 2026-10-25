@@ -127,8 +127,6 @@ export function SessionProvider({
         }
       }
 
-      if (!import.meta.env.DEV) return { ok: false };
-
       const normalizedUsername = username.trim().toLowerCase();
       const now = Date.now();
       const currentLock = lockedUntil[normalizedUsername] ?? 0;
@@ -161,7 +159,7 @@ export function SessionProvider({
 
   const switchRole = useCallback(
     (role: Role) => {
-      if (!import.meta.env.DEV || isLiveCashierApiEnabled()) return;
+      if (isLiveCashierApiEnabled()) return;
       void import("./mockSession").then(({ MOCK_USERS_BY_ROLE }) => {
         setUser(MOCK_USERS_BY_ROLE[role]);
         renewSession();
@@ -177,7 +175,6 @@ export function SessionProvider({
       renewSession();
       return;
     }
-    if (!import.meta.env.DEV) throw new Error("Password changes require the authenticated server session.");
     setUser((currentUser) => currentUser ? { ...currentUser, mustChangePassword: false } : currentUser);
   }, [renewSession]);
 

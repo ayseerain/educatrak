@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
 
 export type TableFilterValues = Record<string, string>;
 
@@ -102,11 +103,14 @@ export function TableFilters<Values extends TableFilterValues>({
     if (!open) return;
     menuRef.current?.querySelector<HTMLElement>("input, select")?.focus();
     function dismissOnOutsideClick(event: PointerEvent) {
+      if ((event.target as HTMLElement).closest("[data-radix-popper-content-wrapper]")) return;
+      if (menuRef.current?.parentElement?.parentElement?.contains(event.target as Node)) return;
       if (menuRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
       setOpen(false);
     }
     function dismissOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      if ((event.target as HTMLElement).closest("[data-radix-popper-content-wrapper]")) return;
       setOpen(false);
       triggerRef.current?.focus();
     }
@@ -162,7 +166,7 @@ function FilterInput<Key extends string>({ field, value, onChange }: { field: Ta
   if (field.type === "checkbox") return <label className="flex items-center gap-2 self-end pb-3 text-sm font-medium"><input type="checkbox" checked={value === "true"} onChange={(event) => onChange(event.target.checked ? "true" : "")} />{field.label}</label>;
   return <label className="block text-sm font-medium">{field.label}
     {field.type === "select"
-      ? <select aria-label={field.label} value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>{field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+      ? <DropdownSelect aria-label={field.label} value={value} options={[...(field.options ?? [])]} onChange={onChange} className="mt-1 w-full" align="start" />
       : <input aria-label={field.label} type={field.type ?? "text"} value={value} placeholder={field.placeholder} min={field.min} step={field.step} onChange={(event) => onChange(event.target.value)} className={inputClass} />}
   </label>;
 }

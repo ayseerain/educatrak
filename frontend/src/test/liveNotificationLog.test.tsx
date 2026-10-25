@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { listNotificationLogs, retryNotification } from "@/api/notificationApi";
@@ -42,14 +43,16 @@ describe("live notification log", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("shows persisted attempts and applies delivery and student filters", async () => {
+    const user = userEvent.setup();
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><LiveNotificationLog user={cashier} /><CurrentSearch /></MemoryRouter></QueryClientProvider>);
 
     expect(await screen.findByText("Casey Sample Student")).toBeInTheDocument();
     expect(screen.getByText(/does not confirm delivery/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^Filter/ }));
-    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "failed" } });
-    fireEvent.change(screen.getByLabelText("Student name or number"), { target: { value: "SAMPLE-8001" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+    await user.click(screen.getByRole("button", { name: /^Filter/ }));
+    await user.click(screen.getByRole("button", { name: "Status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Failed" }));
+    await user.type(screen.getByLabelText("Student name or number"), "SAMPLE-8001");
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     await waitFor(() => expect(listNotificationLogs).toHaveBeenLastCalledWith({ status: "failed", student: "SAMPLE-8001", page: 1, perPage: 10 }));
     expect(screen.getByText("?status=failed&student=SAMPLE-8001")).toBeInTheDocument();
@@ -60,7 +63,7 @@ describe("live notification log", () => {
 
     await waitFor(() => expect(listNotificationLogs).toHaveBeenCalledWith({ status: "failed", page: 1, perPage: 10 }));
     fireEvent.click(screen.getByRole("button", { name: /^Filter/ }));
-    expect(screen.getByLabelText("Status")).toHaveValue("failed");
+    expect(screen.getByRole("button", { name: "Status" })).toHaveTextContent("Failed");
   });
 
   it("keeps retry unavailable while the delivery switch is off", async () => {

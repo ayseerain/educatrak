@@ -29,7 +29,7 @@ describe("application sidebar", () => {
     );
 
     const sidebar = screen.getByRole("navigation", { name: "Primary" });
-    const brand = screen.getByText("EdukaTrak").parentElement?.parentElement;
+    const brand = screen.getByText("EducaTrak").parentElement?.parentElement;
     const toggle = within(sidebar).getByRole("button", { name: "Collapse sidebar" });
 
     expect(brand?.nextElementSibling).toBe(toggle);

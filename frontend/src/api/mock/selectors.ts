@@ -65,6 +65,46 @@ export interface MockStaffUser {
   active: boolean;
 }
 
+export interface MockCloseOut {
+  id: string;
+  businessDate: string;
+  cashierId: string;
+  systemCashCents: number;
+  countedCashCents: number;
+  varianceCents: number;
+  varianceReason: string | null;
+  status: "open" | "closed";
+  signedOffBy?: string;
+}
+
+export interface MockStudentInput {
+  number: string;
+  name: string;
+  grade: string;
+  section: string;
+  guardianName: string;
+  guardianRelationship: string;
+  guardianEmail?: string;
+  guardianMobile?: string;
+}
+
+function nextId(prefix: string, rows: ReadonlyArray<{ id: string }>): string {
+  let value = rows.length + 1;
+  while (rows.some((row) => row.id === `${prefix}-${value}`)) value += 1;
+  return `${prefix}-${value}`;
+}
+
+function appendAudit(action: string, entityId: string, actorId: string): void {
+  const state = getMockState();
+  (state.auditLog as Array<Record<string, unknown>>).unshift({
+    id: nextId("audit", state.auditLog as Array<{ id: string }>),
+    action,
+    entityId,
+    actorId,
+    occurredAt: `${getMockToday()}T12:00:00+08:00`,
+  });
+}
+
 function day(value: string): string {
   return value.slice(0, 10);
 }
@@ -265,7 +305,142 @@ export function updateMockStaffUser(userId: string, updates: Partial<Pick<MockSt
     updated = { ...user, role: user.role as MockStaffUser["role"] };
   });
   if (!updated) throw new Error("This sample user is no longer available.");
-  return updated;
+  return updated as MockStaffUser;
+}
+
+export function createMockStudent(input: MockStudentInput, actorId = "user-cashier"): Student {
+  const number = input.number.trim();
+  if (!number || !input.name.trim() || !input.grade || !input.section || !input.guardianName.trim() || !input.guardianRelationship.trim()) throw new Error("Complete the required student and guardian fields.");
+  if (getMockState().students.some((student) => student.number.toLocaleLowerCase() === number.toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
+  const id = nextId("mock-student", getMockState().students);
+  const guardianId = nextId("mock-guardian", getMockState().guardians);
+  updateMockState((state) => {
+    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active" });
+    state.guardians.push({ id: guardianId, name: input.guardianName.trim(), email: input.guardianEmail?.trim() || null, mobile: input.guardianMobile?.trim() || "" });
+    state.studentGuardianLinks.push({ id: `link-${id}`, studentId: id, guardianId, relationship: input.guardianRelationship.trim() });
+    appendAudit("student.created", id, actorId);
+  });
+  return getStudentById(id)!;
+}
+
+export function updateMockStudent(studentId: string, input: MockStudentInput, actorId = "user-cashier"): Student {
+  let found = false;
+  updateMockState((state) => {
+    const student = state.students.find((item) => item.id === studentId);
+    if (!student) return;
+    if (state.students.some((item) => item.id !== studentId && item.number.toLocaleLowerCase() === input.number.trim().toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
+    Object.assign(student, { number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section });
+    const link = state.studentGuardianLinks.find((item) => item.studentId === studentId);
+    const guardian = link && state.guardians.find((item) => item.id === link.guardianId);
+    if (link && guardian) {
+      guardian.name = input.guardianName.trim();
+      guardian.email = input.guardianEmail?.trim() || null;
+      guardian.mobile = input.guardianMobile?.trim() || "";
+      link.relationship = input.guardianRelationship.trim();
+    }
+    found = true;
+    appendAudit("student.updated", studentId, actorId);
+  });
+  if (!found) throw new Error("This student record is no longer available.");
+  return getStudentById(studentId)!;
+}
+
+export function createMockBillingAccount(studentId: string, actorId = "user-cashier"): MockBillingAccount {
+  const student = getStudentById(studentId);
+  if (!student) throw new Error("Select a student before creating an account.");
+  if (getCurrentBillingAccount(studentId)) throw new Error("This student already has a current school-year billing account.");
+  const state = getMockState();
+  const id = nextId("mock-account", state.billingAccounts);
+  const totalDueCents = 500_000;
+  updateMockState((current) => {
+    current.billingAccounts.push({ id, studentId, schoolYearId: current.config.currentSchoolYearId, totalDueCents });
+    for (let index = 0; index < 4; index += 1) {
+      current.installments.push({ id: `${id}-installment-${index + 1}`, accountId: id, label: index === 0 ? "Down payment" : `Installment ${index}`, dueDate: dateWithDays(getMockToday(), index * 30), amountCents: 125_000 });
+    }
+    appendAudit("billing_account.created", id, actorId);
+  });
+  return getBillingAccount(id)!;
+}
+
+export function requestMockVoid(paymentId: string, reason: string, actorId = "user-cashier"): void {
+  if (reason.trim().length < 10) throw new Error("Enter a void reason with at least 10 characters.");
+  updateMockState((state) => {
+    if (!state.payments.some((payment) => payment.id === paymentId)) throw new Error("This payment is no longer available.");
+    if (state.voidRequests.some((request) => request.paymentId === paymentId)) throw new Error("A void request already exists for this payment.");
+    const id = nextId("mock-void", state.voidRequests);
+    (state.voidRequests as Array<Record<string, unknown>>).unshift({ id, paymentId, status: "pending", reason: reason.trim(), requestedBy: actorId, requestedAt: `${getMockToday()}T12:00:00+08:00` });
+    appendAudit("payment.void_requested", paymentId, actorId);
+  });
+}
+
+export function decideMockVoid(requestId: string, approved: boolean, actorId = "user-accounting"): void {
+  updateMockState((state) => {
+    const request = state.voidRequests.find((item) => item.id === requestId);
+    if (!request) throw new Error("This void request is no longer available.");
+    if (request.status !== "pending") throw new Error("This void request has already been decided.");
+    request.status = approved ? "approved" : "rejected";
+    (request as Record<string, unknown>).decidedBy = actorId;
+    (request as Record<string, unknown>).decidedAt = `${getMockToday()}T12:00:00+08:00`;
+    appendAudit(approved ? "payment.void_approved" : "payment.void_rejected", request.paymentId, actorId);
+  });
+}
+
+export function mockSystemCashTotal(_cashierId = "user-cashier", businessDate = getMockToday()): Centavos {
+  const total = selectPayments()
+    .filter((payment) => payment.paidOn === businessDate && payment.status === "Posted")
+    .reduce((sum, payment) => sum + payment.amount, 0);
+  return centavos(total);
+}
+
+export function selectMockCloseOuts(cashierId?: string): MockCloseOut[] {
+  const rows = getMockState().closeouts as unknown as MockCloseOut[];
+  return rows.filter((row) => !cashierId || row.cashierId === cashierId).sort((left, right) => right.businessDate.localeCompare(left.businessDate));
+}
+
+export function recordMockCloseOut(input: { cashierId: string; countedCashCents: number; varianceReason?: string }): MockCloseOut {
+  const businessDate = getMockToday();
+  const systemCashCents = mockSystemCashTotal(input.cashierId, businessDate);
+  const varianceCents = input.countedCashCents - systemCashCents;
+  if (varianceCents !== 0 && !input.varianceReason?.trim()) throw new Error("Explain a non-zero cash variance before closing the day.");
+  let created: MockCloseOut | undefined;
+  updateMockState((state) => {
+    const closeouts = state.closeouts as unknown as MockCloseOut[];
+    if (closeouts.some((row) => row.cashierId === input.cashierId && row.businessDate === businessDate)) throw new Error("Today's close-out is already finalized.");
+    created = { id: nextId("mock-closeout", closeouts), businessDate, cashierId: input.cashierId, systemCashCents, countedCashCents: input.countedCashCents, varianceCents, varianceReason: input.varianceReason?.trim() || null, status: "closed" };
+    closeouts.push(created);
+    appendAudit("closeout.submitted", created.id, input.cashierId);
+  });
+  return created!;
+}
+
+export function reopenMockCloseOutForNewDay(cashierId = "user-cashier"): MockCloseOut {
+  const businessDate = getMockToday();
+  const history = selectMockCloseOuts(cashierId);
+  const existing = history.find((row) => row.businessDate === businessDate);
+  if (existing) {
+    if (existing.status === "open") return existing;
+    throw new Error("Today's close-out is finalized. A new session is available on a later Manila calendar day.");
+  }
+  const latest = history.find((row) => row.status === "closed");
+  if (!latest || latest.businessDate >= businessDate) throw new Error("Finalize a prior close-out before opening a new business day.");
+  let opened: MockCloseOut | undefined;
+  updateMockState((state) => {
+    const closeouts = state.closeouts as unknown as MockCloseOut[];
+    opened = { id: nextId("mock-closeout", closeouts), businessDate, cashierId, systemCashCents: mockSystemCashTotal(cashierId, businessDate), countedCashCents: 0, varianceCents: 0, varianceReason: null, status: "open" };
+    closeouts.push(opened);
+    appendAudit("closeout.opened", opened.id, cashierId);
+  });
+  return opened!;
+}
+
+export function signOffMockCloseOut(closeOutId: string, actorId = "user-accounting"): void {
+  updateMockState((state) => {
+    const row = (state.closeouts as unknown as MockCloseOut[]).find((item) => item.id === closeOutId);
+    if (!row || row.status !== "closed") throw new Error("Only finalized close-outs can be signed off.");
+    if (row.signedOffBy) throw new Error("This close-out is already signed off.");
+    row.signedOffBy = actorId;
+    appendAudit("closeout.signed_off", closeOutId, actorId);
+  });
 }
 
 export function recordMockBillingPayment(input: { studentNumber: string; amount: number; paidOn: string }): MockPayment {

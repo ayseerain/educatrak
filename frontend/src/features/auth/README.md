@@ -6,7 +6,9 @@ session after refresh. It shows a restoring state while that request is pending,
 returns to login on an unauthenticated response, and offers retry on a network or
 server error. The identity and role are not cached in browser storage.
 Local development may use the in-memory mock session in `src/auth/session.tsx`
-when `VITE_USE_LIVE_API` is not set to `true`. Production builds always use the
+when `VITE_DATA_SOURCE` is not set to `live`. The functional prototype uses the
+same MockDB in development and production builds by default; live API access is
+an explicit opt-in.
 backend and never fall back to mock credentials. Mock credentials are fictional
 and remain development-only. Credentials are not stored in `localStorage`.
 

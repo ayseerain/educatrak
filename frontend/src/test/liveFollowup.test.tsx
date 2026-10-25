@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LiveFollowupPage } from "@/features/followup/LiveFollowupPage";
@@ -10,6 +11,7 @@ describe("live installment follow-up", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("renders server data and applies the selected status filter", async () => {
+    const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -42,9 +44,10 @@ describe("live installment follow-up", () => {
     expect(screen.getByText("guardian@example.test")).toBeInTheDocument();
     expect(screen.getByText("Not recorded")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Print list" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^Filter/ }));
-    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "overdue" } });
-    fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+    await user.click(screen.getByRole("button", { name: /^Filter/ }));
+    await user.click(screen.getByRole("button", { name: "Status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Overdue" }));
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith("/api/follow-up?status=overdue&sort=days_overdue&direction=asc&page=1&per_page=10", expect.objectContaining({ credentials: "include" })));
   });

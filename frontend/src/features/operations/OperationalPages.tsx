@@ -17,7 +17,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft, CircleDashed } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
 import { useClientPagination } from "@/components/ui/useClientPagination";
@@ -38,10 +38,22 @@ import {
   getPaymentsForStudent,
   getStudentById,
   getMockGuardianContact,
+  getMockState,
+  getMockToday,
   selectMockNotificationRows,
   selectMockStaffUsers,
   createMockStaffUser,
+  createMockStudent,
+  createMockBillingAccount,
   updateMockStaffUser,
+  updateMockStudent,
+  mockSystemCashTotal,
+  recordMockCloseOut,
+  reopenMockCloseOutForNewDay,
+  requestMockVoid,
+  decideMockVoid,
+  selectMockCloseOuts,
+  signOffMockCloseOut,
 } from "@/api/mock";
 import { studentMatchesSearch } from "@/features/students/studentSearch";
 import { can, canViewReport, type ReportKind } from "@/lib/permissions";
@@ -309,13 +321,18 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
         title="My profile"
         description="Review your account details and change your password."
       />
-      <div className="grid max-w-4xl gap-4 lg:grid-cols-2">
-        <Metric label="Name" value={user.name} />
+      <div className="max-w-4xl space-y-4">
+        <Card>
+          <h2 className="text-lg font-semibold">Account details</h2>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div><dt className="text-sm text-text-secondary">Name</dt><dd className="mt-1 font-medium">{user.name}</dd></div>
+            <div><dt className="text-sm text-text-secondary">Role</dt><dd className="mt-1 font-medium">{roleLabel(user.role)}</dd></div>
+            <div><dt className="text-sm text-text-secondary">Last login</dt><dd className="mt-1 font-medium">{lastLogin}</dd></div>
+          </dl>
+        </Card>
         <Card>
           <h2 className="text-lg font-semibold">Change password</h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            Role: {roleLabel(user.role)} · Last login: {lastLogin}
-          </p>
+          <p className="mt-1 text-sm text-text-secondary">Use a unique password with at least 12 characters.</p>
           <form className="mt-4 space-y-3" onSubmit={save}>
             <label className="block text-sm font-medium">
               Current password
@@ -333,9 +350,6 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
                 className={inputClass}
               />
             </label>
-            <p className="text-sm text-text-secondary">
-              Use at least 12 characters.
-            </p>
             <label className="block text-sm font-medium">
               Confirm new password
               <input required minLength={12} type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className={inputClass} />
@@ -349,7 +363,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
                 Password changed successfully.
               </p>
             )}
-            <Button disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button>
+            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => { setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setError(null); }}>Cancel</Button><Button disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button></div>
           </form>
         </Card>
       </div>
@@ -358,7 +372,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
 }
 
 export function StudentsPage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentsPage user={user} />;
+  if (isLiveCashierApiEnabled()) return <LiveStudentsPage user={user} />;
   const filters = useTableFilters({ query: "", grade: "", section: "", status: "" });
   const limited = user.role === "registrar";
   const shown = students.filter((student) =>
@@ -506,44 +520,56 @@ function StudentTable({
   );
 }
 export function StudentFormPage({ edit }: { edit?: boolean }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title={edit ? "Edit student" : "Add student"} description="Student editing is not available in the live system." backTo={edit ? "/students" : "/students"} /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with student record changes.</p></Card></>;
   const navigate = useNavigate();
-  const [duplicate, setDuplicate] = useState(false);
-  const initialGrade = edit ? firstStudent.grade : gradeOptions[0]!.value;
+  const { id } = useParams();
+  const student = edit ? getStudentById(id) : undefined;
+  const contact = student ? getMockGuardianContact(student.id) : undefined;
+  const relationship = student ? getMockState().studentGuardianLinks.find((link) => link.studentId === student.id)?.relationship ?? "Parent" : "Parent";
+  const guardian = student ? getMockState().guardians.find((item) => item.id === getMockState().studentGuardianLinks.find((link) => link.studentId === student.id)?.guardianId) : undefined;
+  const [error, setError] = useState("");
+  const initialGrade = student?.grade ?? "";
   const [grade, setGrade] = useState(initialGrade);
-  const [section, setSection] = useState(
-    edit ? firstStudent.section : getSectionOptions(initialGrade)[0]?.value ?? "",
-  );
+  const [section, setSection] = useState(student?.section ?? "");
   const [strand, setStrand] = useState("");
   const seniorHigh = isSeniorHighGrade(grade);
 
   function selectGrade(nextGrade: string) {
     setGrade(nextGrade);
-    setSection(getSectionOptions(nextGrade)[0]?.value ?? "");
+    setSection("");
     setStrand(isSeniorHighGrade(nextGrade) ? strandOptions[0]!.value : "");
   }
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const number = new FormData(e.currentTarget).get("number");
-    setDuplicate(number === "S-1001");
-    if (number !== "S-1001") navigate("/students");
+    const form = new FormData(e.currentTarget);
+    try {
+      const input = {
+        number: String(form.get("number") ?? ""), name: String(form.get("name") ?? ""), grade, section,
+        guardianName: String(form.get("guardianName") ?? ""), guardianRelationship: String(form.get("guardianRelationship") ?? ""),
+        guardianEmail: String(form.get("guardianEmail") ?? ""), guardianMobile: String(form.get("guardianMobile") ?? ""),
+      };
+      const saved = student ? updateMockStudent(student.id, input) : createMockStudent(input);
+      navigate(`/students/${saved.id}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The student record could not be saved.");
+    }
   }
+  if (edit && !student) return <NotFoundPage />;
   return (
     <>
       <PageHeader
         title={edit ? "Edit student" : "Add student"}
         description="Student numbers must be unique. Guardian contact details are used for payment notifications."
-        backTo={edit ? "/students/sample-1001" : "/students"}
+        backTo={student ? `/students/${student.id}` : "/students"}
       />
-      <form onSubmit={submit} className="w-full space-y-5">
+      <form noValidate onSubmit={submit} className="w-full space-y-5">
         <Card className="grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium">
             Student number <span aria-hidden="true" className="text-status-error">*</span>
             <input
               name="number"
               required
-              defaultValue={edit ? "S-1001" : ""}
+              defaultValue={student?.number ?? ""}
               className={inputClass}
             />
           </label>
@@ -552,7 +578,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
             <input
               name="name"
               required
-              defaultValue={edit ? firstStudent.name : ""}
+              defaultValue={student?.name ?? ""}
               className={inputClass}
             />
           </label>
@@ -562,7 +588,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
               <DropdownSelect
                 aria-label="Grade level"
                 value={grade}
-                options={gradeOptions}
+                options={[{ value: "", label: "Select grade" }, ...gradeOptions]}
                 onChange={selectGrade}
                 className="w-full"
                 contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -577,7 +603,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
               <DropdownSelect
                 aria-label="Section"
                 value={section}
-                options={getSectionOptions(grade)}
+                options={grade ? [{ value: "", label: "Select section" }, ...getSectionOptions(grade)] : [{ value: "", label: "Select grade first" }]}
                 onChange={setSection}
                 className="w-full"
                 contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -614,35 +640,31 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="text-sm font-medium">
               Name <span aria-hidden="true" className="text-status-error">*</span>
-              <input required className={inputClass} />
+              <input name="guardianName" required defaultValue={guardian?.name ?? ""} className={inputClass} />
             </label>
             <label className="text-sm font-medium">
               Relationship <span aria-hidden="true" className="text-status-error">*</span>
-              <input required className={inputClass} />
+              <input name="guardianRelationship" required defaultValue={relationship} className={inputClass} />
             </label>
             <label className="text-sm font-medium">
               Email
-              <input type="email" className={inputClass} />
+              <input name="guardianEmail" type="email" defaultValue={contact?.email ?? ""} className={inputClass} />
             </label>
             <label className="text-sm font-medium">
               Mobile
-              <input className={inputClass} />
+              <input name="guardianMobile" defaultValue={contact?.mobile ?? ""} className={inputClass} />
             </label>
           </div>
         </Card>
-        {duplicate && (
-          <p role="alert" className="text-sm text-status-error">
-            This student number already belongs to a student record.
-          </p>
-        )}
-        <Button>{edit ? "Save changes" : "Create student"}</Button>
+        {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
+        <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(student ? `/students/${student.id}` : "/students")}>Cancel</Button><Button>{edit ? "Save changes" : "Create student"}</Button></div>
       </form>
     </>
   );
 }
 
 export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentProfilePage user={user} />;
+  if (isLiveCashierApiEnabled()) return <LiveStudentProfilePage user={user} />;
   const { id } = useParams();
   const student = getStudentById(id);
   if (!student) return <NotFoundPage />;
@@ -654,13 +676,12 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
         description={`${student.number} - ${student.grade} - ${student.section}`}
         backTo="/students"
         action={
-          !limited && can(user, "student.edit") ? (
-            <Link
-              to={`/students/${student.id}/edit`}
-              className={secondaryLinkClass}
-            >
-              Edit student
-            </Link>
+          !limited ? (
+            <div className="flex flex-wrap gap-2">
+              {can(user, "payment.record") && <Link to={`/payments/new?student=${student.id}`} className={primaryLinkClass}>Record payment</Link>}
+              {can(user, "account.view") && <Link to={`/accounts/${getCurrentBillingAccount(student.id)?.id ?? "new"}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
+              {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
+            </div>
           ) : undefined
         }
       />
@@ -702,7 +723,7 @@ function StudentOverviewPanel({
       <ClearanceSummary student={student} user={user} compact={limited} />
       {!limited && (
         <Card className="bg-white">
-          <h3 className="font-semibold">Guardian details</h3>
+          <h2 className="font-semibold">Guardian details</h2>
           <p className="mt-2 text-sm text-text-secondary">
             Guardian email health and contact changes stay with the student
             record.
@@ -776,7 +797,7 @@ function ClearanceSummary({
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
         <div>
-          <h3 id="clearance-details-heading" className="font-semibold">Clearance details</h3>
+          <h2 id="clearance-details-heading" className="font-semibold">Clearance details</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {student.name} · {student.grade} - {student.section}
           </p>
@@ -827,7 +848,7 @@ function ClearanceSummary({
 const mockAccountFilters = { query: "", schoolYear: "", grade: "", status: "", minimumBalance: "", maximumBalance: "" };
 
 export function AccountsPage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveBillingAccounts />;
+  if (isLiveCashierApiEnabled()) return <LiveBillingAccounts />;
   const filters = useTableFilters(mockAccountFilters);
   const visibleAccounts = billingAccounts.filter((account) => {
     const student = getStudentById(account.studentId);
@@ -861,7 +882,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
       ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />
       <ListCard
         rows={visibleAccounts.map((account) => [
-          getStudentById(account.studentId)?.name ?? "Unknown student",
+          <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>{getStudentById(account.studentId)?.name ?? "Unknown student"}</Link>,
           account.schoolYear,
           format(account.balance),
           account.status,
@@ -872,15 +893,24 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function AccountWizardPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <><PageHeader title="New account" description="Account creation is not available in the live system yet." backTo="/accounts" /><Card><p className="text-sm text-text-secondary">Contact an administrator for help with billing account setup.</p></Card></>;
   const [step, setStep] = useState(1);
   const [studentQuery, setStudentQuery] = useState("");
+  const [studentId, setStudentId] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const selectedStudent = studentId ? getStudentById(studentId) : undefined;
   const steps = ["Student", "Fees & plan", "Schedule", "Review"];
   function createAccount() {
-    setCreated(true);
-    window.setTimeout(() => navigate("/accounts/account-1001?created=1"), 0);
+    if (!studentId) return;
+    try {
+      setCreated(true);
+      const account = createMockBillingAccount(studentId);
+      navigate(`/accounts/${account.id}?created=1`);
+    } catch (cause) {
+      setCreated(false);
+      setError(cause instanceof Error ? cause.message : "The account could not be created.");
+    }
   }
   return (
     <>
@@ -918,18 +948,25 @@ export function AccountWizardPage() {
         {step === 1 && (
           <StudentSearchField
             value={studentQuery}
-            onChange={setStudentQuery}
-            onSelect={(student) => setStudentQuery(student.name)}
+            onChange={(value) => {
+              setStudentQuery(value);
+              if (value !== selectedStudent?.name) setStudentId(null);
+            }}
+            onSelect={(student) => { setStudentQuery(student.name); setStudentId(student.id); setError(""); }}
             autoFocus
             placeholder="Search student name or number"
             wrapperClassName="mt-5"
             inputClassName={cn(inputClass, "m-0")}
           />
         )}
+        {step === 1 && selectedStudent && (
+          <p role="status" className="mt-3 rounded-md border border-brand-green-light bg-[#F4FAF5] p-3 text-sm text-text-primary">
+            Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number})
+          </p>
+        )}
         {step === 2 && (
           <div className="mt-5 rounded-md border border-border bg-surface p-4 text-sm">
-            Required and optional fee items will be loaded from the selected
-            student's grade-level schedule.
+            Fee items and the installment plan use the current {selectedStudent?.grade ?? "student"} schedule. They are copied into this account when it is created.
           </div>
         )}
         {step === 3 && (
@@ -948,16 +985,18 @@ export function AccountWizardPage() {
             accounts are never changed by later fee or plan edits.
           </div>
         )}
-        <div className="mt-6 flex justify-between">
-          <Button
+        {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}</p>}
+        <div className="mt-6 flex justify-end gap-3">
+          <Link className={secondaryLinkClass} to="/accounts">Cancel</Link>
+          {step > 1 && <Button
             variant="secondary"
-            disabled={step === 1 || created}
+            disabled={created}
             onClick={() => setStep(step - 1)}
           >
             Back
-          </Button>
+          </Button>}
           <Button
-            disabled={created}
+            disabled={created || (step === 1 && !studentId)}
             onClick={() => (step === 4 ? createAccount() : setStep(step + 1))}
           >
             {created
@@ -972,7 +1011,7 @@ export function AccountWizardPage() {
   );
 }
 export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveBillingAccountDetail user={user} />;
+  if (isLiveCashierApiEnabled()) return <LiveBillingAccountDetail user={user} />;
   const { id } = useParams();
   const account = getBillingAccount(id);
   const student = account && getStudentById(account.studentId);
@@ -1003,10 +1042,10 @@ export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
         <ListCard
           headers={["Due date", "Amount", "Paid", "Status"]}
           rows={account.schedule.map((installment) => [
-            installment.dueDate,
+            formatDate(installment.dueDate),
             format(installment.amount),
             format(installment.paid),
-            installment.status.replace("_", " "),
+            <StatusBadge status={installment.status} />,
           ])}
         />
       </div>
@@ -1023,7 +1062,7 @@ export function PaymentsPage({
   user: AuthenticatedUser;
   detail?: boolean;
 }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentsPage user={user} detail={detail} />;
+  if (isLiveCashierApiEnabled()) return <LivePaymentsPage user={user} detail={detail} />;
   if (detail) return <PaymentDetailPage user={user} />;
   const filters = useTableFilters(mockPaymentFilters);
   const visiblePayments = payments.filter((payment) => {
@@ -1082,6 +1121,8 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
   const payment = getMockPayment(id ?? "mock-payment-0");
   const account = payment && getBillingAccount(payment.accountId);
   const student = payment && getStudentById(payment.studentId);
+  const [voidReason, setVoidReason] = useState("");
+  const [voidMessage, setVoidMessage] = useState("");
 
   if (!payment || !student) return <NotFoundPage />;
 
@@ -1147,8 +1188,20 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
             minLength={10}
             className={textareaClass}
             placeholder="Reason for void request"
+            value={voidReason}
+            onChange={(event) => setVoidReason(event.target.value)}
+            disabled={payment.status !== "Posted"}
           />
-          <Button className="mt-3" variant="destructive">
+          {voidMessage && <p role="status" className="mt-2 text-sm text-text-secondary">{voidMessage}</p>}
+          <Button className="mt-3" variant="destructive" disabled={payment.status !== "Posted"} onClick={() => {
+            try {
+              requestMockVoid(payment.id, voidReason, user.id);
+              setVoidMessage("Void request submitted for Accounting review.");
+              setVoidReason("");
+            } catch (error) {
+              setVoidMessage(error instanceof Error ? error.message : "The void request could not be submitted.");
+            }
+          }}>
             Request void
           </Button>
         </Card>
@@ -1565,7 +1618,7 @@ function PaymentWorkflow({
 }
 export function PaymentEntryPage() {
   const [searchParams] = useSearchParams();
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentEntryPage />;
+  if (isLiveCashierApiEnabled()) return <LivePaymentEntryPage />;
   const selectedStudent = students.find(
     (student) => student.id === searchParams.get("student"),
   );
@@ -1589,7 +1642,7 @@ export function PaymentEntryPage() {
 
 export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LivePaymentReceiptPage user={user} />;
+  if (isLiveCashierApiEnabled()) return <LivePaymentReceiptPage user={user} />;
   const payment = getMockPayment(id ?? "mock-payment-0");
   const canPrint = can(user, "receipt.reprint");
   const student = payment && getStudentById(payment.studentId);
@@ -1623,9 +1676,11 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function VoidsPage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveVoidsPage user={user} />;
+  if (isLiveCashierApiEnabled()) return <LiveVoidsPage user={user} />;
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
   const [resolved, setResolved] = useState<string | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
   const canDecide = can(user, "payment.void.approve");
 
   return (
@@ -1647,14 +1702,14 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    onClick={() => setDecision("approve")}
+                    onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("approve"); setActionError(""); }}
                   >
                     Approve
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setDecision("reject")}
+                    onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("reject"); setActionError(""); }}
                   >
                     Reject
                   </Button>
@@ -1679,6 +1734,7 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
           Decision note
           <textarea className={textareaClass} placeholder="Add a decision note" />
         </label>
+        {actionError && <p role="alert" className="mt-2 text-sm text-status-error">{actionError}</p>}
         <div className="mt-4 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={() => setDecision(null)}>
             Cancel
@@ -1687,8 +1743,15 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
             type="button"
             variant={decision === "approve" ? "success" : "destructive"}
             onClick={() => {
-              setResolved(decision === "approve" ? "Void approved" : "Void rejected");
-              setDecision(null);
+              if (!decision || !selectedRequestId) return;
+              try {
+                decideMockVoid(selectedRequestId, decision === "approve", user.id);
+                setResolved(decision === "approve" ? "Void approved" : "Void rejected");
+                setDecision(null);
+                setSelectedRequestId(null);
+              } catch (error) {
+                setActionError(error instanceof Error ? error.message : "The void request could not be decided.");
+              }
             }}
           >
             Confirm {decision}
@@ -1755,7 +1818,6 @@ function CloseoutTabs({
 }
 
 export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Follow-up" backTo="/students" feature="Follow-up reminders" />;
   const filters = useTableFilters({ query: "", daysMinimum: "" });
   const followupAccounts = [
     {
@@ -1947,11 +2009,10 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
   );
 }
 export function ClearancePage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Clearance" feature="Clearance" />;
   const [searchParams] = useSearchParams();
   const [studentQuery, setStudentQuery] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(
-    students.find((student) => student.id === searchParams.get("studentId")) ?? firstStudent,
+    students.find((student) => student.id === searchParams.get("studentId")),
   );
   return (
     <>
@@ -1977,12 +2038,13 @@ export function ClearancePage({ user }: { user: AuthenticatedUser }) {
           inputClassName={cn(inputClass, "m-0 mt-2")}
         />
       </Card>
-      <ClearanceSummary student={selectedStudent} user={user} showPermitActions />
+      {selectedStudent ? <ClearanceSummary student={selectedStudent} user={user} showPermitActions /> : (
+        <Card><p role="status" className="text-sm text-text-secondary">Search for a student to view clearance details and available permits.</p></Card>
+      )}
     </>
   );
 }
 export function PermitPage() {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Permit" backTo="/clearance" feature="Exam permits" />;
   return (
     <div className="print-page mx-auto max-w-2xl">
       <PageHeader
@@ -2001,18 +2063,22 @@ export function PermitPage() {
 }
 export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   const [searchParams] = useSearchParams();
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveDailyCloseOut user={user} initialView={searchParams.get("view") === "history" ? "history" : "today"} />;
+  if (isLiveCashierApiEnabled()) return <LiveDailyCloseOut user={user} initialView={searchParams.get("view") === "history" ? "history" : "today"} />;
   const [counted, setCounted] = useState("");
   const [varianceReason, setVarianceReason] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [closed, setClosed] = useState(false);
-  const systemCashTotal = centavos(125000);
+  const history = selectMockCloseOuts(user.id);
+  const currentCloseout = history.find((item) => item.businessDate === getMockToday());
+  const latestClosed = history.find((item) => item.status === "closed");
+  const closed = currentCloseout?.status === "closed";
+  const needsNewDaySession = !currentCloseout && latestClosed !== undefined && latestClosed.businessDate < getMockToday();
+  const systemCashTotal = mockSystemCashTotal(user.id);
   const enteredCount = Number(counted);
   const hasCountedCash = counted.trim() !== "" && Number.isFinite(enteredCount) && enteredCount >= 0;
   const countedCash = hasCountedCash ? centavos(Math.round(enteredCount * 100)) : null;
   const variance = countedCash === null ? null : centavos(countedCash - systemCashTotal);
   const requiresVarianceReason = variance !== null && variance !== 0;
-  const canReview = !closed && countedCash !== null && (!requiresVarianceReason || varianceReason.trim().length > 0);
+  const canReview = !closed && !needsNewDaySession && countedCash !== null && (!requiresVarianceReason || varianceReason.trim().length > 0);
 
   const varianceSummary = variance === null
     ? { label: "Waiting for count", detail: "Enter the drawer count to compare it with the system total.", className: "border-border bg-surface" }
@@ -2046,18 +2112,17 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
           }}
         >
           <div className="grid gap-4 lg:grid-cols-3">
-            <Metric label="System cash total" value="₱1,250.00" />
+            <Metric label="System cash total" value={format(systemCashTotal)} />
             <label className="block rounded-md border border-border bg-white p-4 text-sm font-medium shadow-card">
               Counted cash
               <input
                 autoFocus
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                pattern="^\d*(\.\d{0,2})?$"
                 aria-label="Counted cash"
                 value={counted}
                 onChange={(e) => setCounted(e.target.value)}
-                disabled={closed}
+                disabled={Boolean(closed || needsNewDaySession)}
                 inputMode="decimal"
                 placeholder="0.00"
                 className={inputClass}
@@ -2082,7 +2147,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
                 className={textareaClass}
                 value={varianceReason}
                 onChange={(event) => setVarianceReason(event.target.value)}
-                disabled={closed}
+                disabled={Boolean(closed || needsNewDaySession)}
                 placeholder="Explain the variance"
                 required
               />
@@ -2104,18 +2169,16 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
             </Button>
           </div>
         </form>
-        {closed ? (
+        {needsNewDaySession ? <div className="mt-4 rounded-md border border-status-success bg-[#F4FAF5] p-4"><p className="font-medium text-brand-green-dark">Start a new close-out for {formatDate(getMockToday())}.</p><p className="mt-1 text-sm text-text-secondary">The previous close-out remains finalized and unchanged.</p><div className="mt-4 flex justify-end"><Button type="button" onClick={() => { try { reopenMockCloseOutForNewDay(user.id); } catch (cause) { setVarianceReason(cause instanceof Error ? cause.message : "Unable to open a new day."); } }}>Reopen for New Day</Button></div></div> : closed ? (
           <div className="mt-4 rounded-md border border-status-success bg-[#F4FAF5] p-4">
-            <p role="status" className="font-medium text-brand-green-dark">Close-out locked for today.</p>
-            <Button className="mt-3" type="button" variant="secondary" onClick={() => window.print()}>
-              Print summary
-            </Button>
+            <p role="status" className="font-medium text-brand-green-dark">Closed for {formatDate(currentCloseout!.businessDate)}.</p>
+            <p className="mt-1 text-sm text-text-secondary">Your closing record has been finalized. It cannot be reopened or changed.</p>
           </div>
         ) : null}
       </Card>
       <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title="Confirm daily close-out">
         <dl className="mt-3 grid gap-2 text-sm">
-          <div className="flex justify-between gap-4"><dt>System cash total</dt><dd className="font-medium">₱1,250.00</dd></div>
+          <div className="flex justify-between gap-4"><dt>System cash total</dt><dd className="font-medium">{format(systemCashTotal)}</dd></div>
           <div className="flex justify-between gap-4"><dt>Counted cash</dt><dd className="font-medium">{countedCash === null ? "—" : format(countedCash)}</dd></div>
           <div className="flex justify-between gap-4"><dt>Variance</dt><dd className="font-medium">{variance === null ? "—" : format(variance)}</dd></div>
         </dl>
@@ -2126,15 +2189,19 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
         )}
         <div className="mt-4 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={() => setReviewOpen(false)}>Edit</Button>
-          <Button type="button" onClick={() => { setClosed(true); setReviewOpen(false); }}>Confirm and lock</Button>
+          <Button type="button" onClick={() => { if (countedCash === null) return; try { recordMockCloseOut({ cashierId: user.id, countedCashCents: countedCash, varianceReason }); setReviewOpen(false); } catch (cause) { setVarianceReason(cause instanceof Error ? cause.message : "Unable to lock the close-out."); setReviewOpen(false); } }}>Confirm and lock</Button>
         </div>
       </MockDialog>
     </>
   );
 }
 export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
-  if (user.role === "cashier" && (import.meta.env.PROD || isLiveCashierApiEnabled())) return <Navigate to="/closeout?view=history" replace />;
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveCloseOutHistory user={user} />;
+  if (user.role === "cashier" && isLiveCashierApiEnabled()) return <Navigate to="/closeout?view=history" replace />;
+  if (isLiveCashierApiEnabled()) return <LiveCloseOutHistory user={user} />;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const history = selectMockCloseOuts(user.role === "cashier" ? user.id : undefined);
+  const selected = history.find((record) => record.id === selectedId) ?? null;
   return (
     <>
       <PageHeader
@@ -2144,23 +2211,31 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
       <CloseoutTabs user={user} active="history" />
       <ListCard
         headers={["Date", "Cashier", "Variance", "Status", "Action"]}
-        rows={[
-          [
-            "Sep 27, 2026",
-            "Casey Cashier (sample)",
-            "₱0.00",
-            "Unsigned",
-            can(user, "closeout.signoff") ? "Sign off" : "View",
-          ],
-        ]}
+        rows={history.map((record) => [
+          formatDate(record.businessDate),
+          selectMockStaffUsers().find((staff) => staff.id === record.cashierId)?.name ?? "Unavailable",
+          format(centavos(record.varianceCents)),
+          record.signedOffBy ? "Signed off" : "Unsigned",
+          <Button key={record.id} type="button" variant="secondary" size="sm" onClick={() => { setSelectedId(record.id); setError(""); }}>View</Button>,
+        ])}
       />
+      {history.length === 0 && <Card><p className="text-sm text-text-secondary">No close-outs have been submitted.</p></Card>}
+      {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}</p>}
+      <MockDialog open={selected !== null} onOpenChange={(open) => !open && setSelectedId(null)} title="Close-out details">
+        {selected && <><dl className="mt-3 grid gap-2 text-sm"><div className="flex justify-between gap-4"><dt>System cash</dt><dd>{format(centavos(selected.systemCashCents))}</dd></div><div className="flex justify-between gap-4"><dt>Counted cash</dt><dd>{format(centavos(selected.countedCashCents))}</dd></div><div className="flex justify-between gap-4"><dt>Variance</dt><dd>{format(centavos(selected.varianceCents))}</dd></div></dl>{selected.varianceReason && <p className="mt-3 text-sm">Variance reason: {selected.varianceReason}</p>}<div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setSelectedId(null)}>Close</Button>{can(user, "closeout.signoff") && !selected.signedOffBy && <Button type="button" onClick={() => { try { signOffMockCloseOut(selected.id, user.id); setSelectedId(null); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to sign off this close-out."); } }}>Sign off</Button>}</div></>}
+      </MockDialog>
     </>
   );
 }
 
 export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
-  const mockStatementRoute = import.meta.env.DEV && !isLiveCashierApiEnabled()
-    ? "/reports/student/sample-1001"
+  const statementOptions = billingAccounts.map((account) => {
+    const student = getStudentById(account.studentId);
+    return { value: account.studentId, label: student ? `${student.name} (${student.number})` : account.studentId };
+  });
+  const [statementStudentId, setStatementStudentId] = useState(statementOptions[0]?.value ?? "");
+  const mockStatementRoute = !isLiveCashierApiEnabled()
+    ? `/reports/student/${statementStudentId}`
     : undefined;
   const reports: {
     kind: ReportKind;
@@ -2201,9 +2276,16 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
         title="Reports"
         description="Open a report or statement. Receipts are available from payment detail."
       />
+      {!isLiveCashierApiEnabled() && canViewReport(user, "statement") && statementOptions.length > 0 && (
+        <Card className="mb-4">
+          <label className="block text-sm font-medium">Student statement
+            <DropdownSelect aria-label="Student statement" value={statementStudentId} options={statementOptions} onChange={setStatementStudentId} className="mt-1 w-full sm:max-w-md" align="start" />
+          </label>
+        </Card>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         {reports
-          .filter((report) => canViewReport(user, report.kind) && (!import.meta.env.PROD && !isLiveCashierApiEnabled() || report.kind !== "monthly"))
+          .filter((report) => canViewReport(user, report.kind) && (!isLiveCashierApiEnabled() || report.kind !== "monthly"))
           .map((report) => (
             <Link
               className="block rounded-md border border-border border-l-4 border-l-brand-green bg-white p-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
@@ -2234,7 +2316,7 @@ function StudentStatementTable({ query = "", item = "" }: { query?: string; item
 }
 export function StudentStatementPage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) return <LiveStudentStatement user={user} studentId={id ?? ""} />;
+  if (isLiveCashierApiEnabled()) return <LiveStudentStatement user={user} studentId={id ?? ""} />;
   return <MockStudentStatementPage user={user} studentId={id ?? ""} />;
 }
 
@@ -2288,7 +2370,7 @@ export function ReportPage({
   type: "daily" | "monthly" | "outstanding" | "statement";
   user: AuthenticatedUser;
 }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
+  if (isLiveCashierApiEnabled()) {
     if (type === "daily") return <LiveDailyReport user={user} />;
     if (type === "outstanding") return <LiveOutstandingReport user={user} />;
     return <Card><p className="text-sm text-text-secondary">This report is unavailable until its live data source is connected.</p></Card>;
@@ -2303,13 +2385,14 @@ function MockReportPage({
   type: "daily" | "monthly" | "outstanding" | "statement";
   preparedBy: string;
 }) {
-  const filters = useTableFilters({ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" });
+  const reportFilterDefaults = { query: "", category: "", grade: "", section: "", minimumBalance: "", status: "", reportDate: manilaDateInput() };
+  const filters = useTableFilters(reportFilterDefaults);
   const reports = {
     daily: {
       printTitle: "DAILY COLLECTION REPORT",
-      period: "Reporting date: Sep 27, 2026",
+      period: `Reporting date: ${formatDate(filters.applied.reportDate)}`,
       moneyColumns: [2, 3],
-      title: "Daily report",
+      title: "Daily collection",
       description:
         "Totals by method and cashier, with payments and voids separated.",
       filter: "date",
@@ -2322,9 +2405,9 @@ function MockReportPage({
     },
     monthly: {
       printTitle: "MONTHLY FINANCIAL REPORT",
-      period: "Reporting month: September 2026",
+      period: `Reporting month: ${new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "Asia/Manila" }).format(new Date(`${filters.applied.reportDate}T00:00:00+08:00`))}`,
       moneyColumns: [2, 3],
-      title: "Monthly report",
+      title: "Monthly financial report",
       description:
         "Collections by fee category and grade level, compared with billed amounts.",
       filter: "month",
@@ -2385,11 +2468,11 @@ function MockReportPage({
           </Button>
         }
       />
-      <TableFilters scope={`Sample ${type} report`} defaults={{ query: "", category: "", grade: "", section: "", minimumBalance: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
+      <TableFilters scope={`Sample ${type} report`} defaults={reportFilterDefaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
         { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
         { key: "minimumBalance", label: "Minimum balance", type: "number", min: "0", step: "0.01" },
         { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Overdue", label: "Overdue" }, { value: "Due soon", label: "Due soon" }] },
-      ] : [{ key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
+      ] : [{ key: "reportDate", label: type === "monthly" ? "Reporting month" : "Reporting date", type: "date" }, { key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
       <Card>
         {type === "statement" ? (
           <StudentStatementTable query={filters.applied.query} item={filters.applied.category} />
@@ -2545,7 +2628,7 @@ export function SettingsPage({
   section: "fees" | "plans" | "clearance" | "school" | "receipt" | "email";
   editable: boolean;
 }) {
-  if (import.meta.env.PROD || isLiveCashierApiEnabled()) {
+  if (isLiveCashierApiEnabled()) {
     const titles = {
       fees: "Fees",
       plans: "Plans",
@@ -2721,6 +2804,15 @@ export function SettingsPage({
           </Button>
         ) : undefined}
       />
+      <SectionTabs items={section === "fees" || section === "plans" || section === "clearance" ? [
+        { label: "Fees", to: "/settings/fees", active: section === "fees" },
+        { label: "Plans", to: "/settings/plans", active: section === "plans" },
+        { label: "Clearance rules", to: "/settings/clearance-rules", active: section === "clearance" },
+      ] : [
+        { label: "School", to: "/settings/school", active: section === "school" },
+        { label: "Receipt", to: "/settings/receipt", active: section === "receipt" },
+        { label: "Email", to: "/settings/email", active: section === "email" },
+      ]} />
       <Card>
         <p className="text-sm text-text-secondary">
           {editable && mockActionAvailable
@@ -2862,7 +2954,6 @@ export function SettingsPage({
   );
 }
 export function UsersPage({ user }: { user?: AuthenticatedUser }) {
-  if (import.meta.env.PROD) return user ? <LiveUsersPage user={user} /> : <UnavailableFeaturePage title="Users" feature="User administration" />;
   if (isLiveCashierApiEnabled() && user) return <LiveUsersPage user={user} />;
   const defaultCreateRole: Role = user?.role === "super_admin" ? "administrator" : "cashier";
   const createRoles: Role[] = user?.role === "super_admin"
@@ -2882,6 +2973,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
       isCurrentAdministrator: staff.id === (user?.id ?? "user-admin"),
     })));
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editRole, setEditRole] = useState<Role>("cashier");
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
   const editingUser = users.find((user) => user.id === editingUserId) ?? null;
@@ -2893,9 +2985,11 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     && (!filters.applied.role || user.role === filters.applied.role)
     && (!filters.applied.status || (user.active ? "Active" : "Inactive") === filters.applied.status)
   ));
+  const userPagination = useClientPagination(visibleUsers, "users");
 
   function closeEditDialog() {
     setEditingUserId(null);
+    setEditRole("cashier");
     setTemporaryPassword(null);
     setStatusConfirmationOpen(false);
   }
@@ -2911,7 +3005,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     }
     let createdUser;
     try {
-      createdUser = createMockStaffUser({ name: `${name} (sample)`, username, role: createRole });
+      createdUser = createMockStaffUser({ name, username, role: createRole });
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "The user could not be created.");
       return;
@@ -2929,7 +3023,11 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     event.preventDefault();
     if (!editingUser) return;
     const formData = new FormData(event.currentTarget);
-    const nextRole = createRoles.find((role) => roleLabel(role) === String(formData.get("role") ?? editingUser.role)) ?? editingUser.role as Role;
+    const nextRole = editingUser.isCurrentAdministrator ? "administrator" : editRole;
+    if (editingUser.isCurrentAdministrator && editRole !== "administrator") {
+      setCreateError("You cannot change your own administrator role.");
+      return;
+    }
     const updated = updateMockStaffUser(editingUser.id, {
       name: String(formData.get("fullName") ?? editingUser.name),
       role: nextRole,
@@ -2945,6 +3043,11 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
 
   function updateAccountState() {
     if (!editingUser) return;
+    if (editingUser.isCurrentAdministrator) return;
+    if (editingUser.role === "Administrator" && editingUser.active && users.filter((item) => item.role === "Administrator" && item.active).length <= 1) {
+      setCreateError("The last active administrator cannot be deactivated.");
+      return;
+    }
     const updated = updateMockStaffUser(editingUser.id, { active: !editingUser.active });
     setUsers((currentUsers) => currentUsers.map((currentUser) => (
       currentUser.id === updated.id ? { ...currentUser, active: updated.active } : currentUser
@@ -2969,7 +3072,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
         <ListCard
           headers={["Name", "Username", "Role", "State", "Action"]}
           centeredColumns={[3]}
-          rows={visibleUsers.map((user) => [
+          rows={userPagination.items.map((user) => [
             user.name,
             user.username,
             user.role,
@@ -2981,6 +3084,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               size="sm"
               onClick={() => {
                 setEditingUserId(user.id);
+                setEditRole((Object.entries({ administrator: "Administrator", cashier: "Cashier", accounting: "Accounting Officer", auditor: "Auditor", registrar: "Registrar", super_admin: "Super Admin" }) as Array<[Role, string]>).find(([, label]) => label === user.role)?.[0] ?? "cashier");
                 setTemporaryPassword(null);
               }}
             >
@@ -2995,6 +3099,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           </p>
         </Card>
       )}
+      {visibleUsers.length > 0 && userPagination.controls}
       <Card className="mt-5">
         <p className="text-sm text-text-secondary">
           Temporary passwords are shown once after creation or reset. An
@@ -3035,9 +3140,8 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               </label>
               <label className="block text-sm font-medium">
                 Primary role
-                <select name="role" defaultValue={editingUser.role} className={inputClass}>
-                  {[...new Set([...createRoles.map(roleLabel), editingUser.role])].map((role) => <option key={role}>{role}</option>)}
-                </select>
+                <span className="mt-1 block"><DropdownSelect aria-label="Primary role" value={editRole} options={[...new Set([...createRoles, editRole])].map((role) => ({ value: role, label: roleLabel(role) }))} onChange={setEditRole} disabled={editingUser.isCurrentAdministrator} className="w-full" align="start" /></span>
+                {editingUser.isCurrentAdministrator && <span className="mt-1 block text-sm text-text-secondary">You cannot change your own administrator role.</span>}
               </label>
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="neutral" onClick={closeEditDialog}>Cancel</Button>
@@ -3173,20 +3277,20 @@ export function RolesPage() {
       </Card>
     </>
   );
-}export function AuditPage({ user }: { user: AuthenticatedUser }) {
-  if (import.meta.env.PROD) return user.role === "administrator" ? <LiveAdminLog /> : <LiveAuditLog />;
-  if (isLiveCashierApiEnabled()) return user.role === "administrator" ? <LiveAdminLog /> : <LiveAuditLog />;
+}export function AuditPage({ security = false }: { user: AuthenticatedUser; security?: boolean }) {
+  if (isLiveCashierApiEnabled()) return security ? <LiveAdminLog /> : <LiveAuditLog />;
   const filters = useTableFilters({ query: "", event: "" });
+  const [selectedChange, setSelectedChange] = useState<{ receipt: string; action: string; before: string; after: string } | null>(null);
   const matchesAuditRow = (row: string[]) => row.some((value) => value.toLowerCase().includes(filters.applied.query.trim().toLowerCase()))
     && (!filters.applied.event || row.some((value) => value.toLowerCase().includes(filters.applied.event.toLowerCase())));
-  const filterBar = <TableFilters scope={user.role === "administrator" ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: user.role === "administrator"
+  const filterBar = <TableFilters scope={security ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: security
     ? [{ value: "", label: "All events" }, { value: "Sign-in", label: "Sign-in" }, { value: "Sign-out", label: "Sign-out" }, { value: "Password reset", label: "Password reset" }, { value: "deactivated", label: "Deactivation" }, { value: "reactivated", label: "Reactivation" }]
     : [{ value: "", label: "All events" }, { value: "payment", label: "Payment" }, { value: "void", label: "Void" }, { value: "sign-off", label: "Close-out sign-off" }] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
-  if (user.role === "administrator")
+  if (security)
     return (
       <>
         <PageHeader
-        title="Security"
+        title="Security events"
           description="Review authentication and account-administration events. Entries cannot be changed or deleted."
         />
         {filterBar}
@@ -3295,24 +3399,21 @@ export function RolesPage() {
             className="mt-3"
             headers={["When", "User", "Action", "Entity", "Details"]}
             rows={[
-              [
-                "Sep 27, 2026, 9:00 AM",
-                "Casey Cashier (sample)",
-                "Recorded payment",
-                "OR-2026-001000",
-                "View before/after values",
-              ],
-              [
-                "Sep 27, 2026, 8:30 AM",
-                "Avery Accounting (sample)",
-                "Reviewed void request",
-                "OR-2026-001001",
-                "Pending decision",
-              ],
-            ].filter(matchesAuditRow)}
+              { when: "Sep 27, 2026, 9:00 AM", user: "Casey Cashier (sample)", action: "Recorded payment", receipt: "OR-2026-001000", before: "Balance: ₱2,500.00", after: "Balance: ₱1,250.00" },
+              { when: "Sep 27, 2026, 8:30 AM", user: "Avery Accounting (sample)", action: "Reviewed void request", receipt: "OR-2026-001001", before: "Void state: Pending", after: "Void state: Pending review" },
+            ].filter((change) => matchesAuditRow([change.when, change.user, change.action, change.receipt, change.before, change.after])).map((change) => [
+              change.when,
+              change.user,
+              change.action,
+              change.receipt,
+              <Button key={`${change.receipt}-view`} type="button" variant="secondary" size="sm" onClick={() => setSelectedChange(change)}>View change</Button>,
+            ])}
           />
         </Card>
       </div>
+      <MockDialog open={selectedChange !== null} onOpenChange={(open) => !open && setSelectedChange(null)} title="Recorded change">
+        {selectedChange && <><dl className="mt-3 grid gap-3 text-sm"><div><dt className="font-medium text-text-secondary">Before</dt><dd className="mt-1">{selectedChange.before}</dd></div><div><dt className="font-medium text-text-secondary">After</dt><dd className="mt-1">{selectedChange.after}</dd></div></dl><div className="mt-5 flex justify-end"><Button type="button" variant="secondary" onClick={() => setSelectedChange(null)}>Close</Button></div></>}
+      </MockDialog>
     </>
   );
 }
@@ -3379,15 +3480,8 @@ function formatBackupSize(bytes: number): string {
 function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Card className="group flex min-h-[96px] flex-col border-l-4 border-l-brand-green p-3 transition-shadow hover:shadow-md">
-      <div className="flex min-h-7 items-start justify-between gap-3">
+      <div className="flex min-h-7 items-start">
         <CardLabel className="leading-5">{label}</CardLabel>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">
-          <CircleDashed
-            aria-hidden="true"
-            className="h-4 w-4"
-            strokeWidth={1.8}
-          />
-        </span>
       </div>
       <CardValue className="truncate">{value}</CardValue>
     </Card>

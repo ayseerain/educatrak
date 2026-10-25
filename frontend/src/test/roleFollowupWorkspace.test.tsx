@@ -16,8 +16,8 @@ vi.mock("@/features/operations/LiveNotificationLog", () => ({
   LiveNotificationLog: ({ workspaceSwitch }: { workspaceSwitch?: ReactNode }) => <>{workspaceSwitch}<div>Notification history content</div></>,
 }));
 
-beforeAll(() => vi.stubEnv("PROD", true));
-afterEach(() => vi.stubEnv("PROD", true));
+beforeAll(() => vi.stubEnv("VITE_DATA_SOURCE", "live"));
+afterEach(() => vi.stubEnv("VITE_DATA_SOURCE", "live"));
 afterAll(() => vi.unstubAllEnvs());
 
 describe.each([["Cashier", cashier], ["Accounting", accounting]] as const)("%s combined workspace", (_roleName, user) => {
@@ -59,7 +59,7 @@ describe.each([["Cashier", cashier], ["Accounting", accounting]] as const)("%s c
   });
 
   it("keeps the notification view reachable through the combined workspace in development", () => {
-    vi.stubEnv("PROD", false);
+    vi.stubEnv("VITE_DATA_SOURCE", "mock");
     render(<MemoryRouter initialEntries={["/followup?view=notifications&status=failed"]}><RoleFollowupWorkspace user={user} /></MemoryRouter>);
 
     expect(screen.getByRole("button", { name: "Notification log" })).toHaveAttribute("aria-pressed", "true");

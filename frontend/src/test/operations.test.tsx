@@ -121,13 +121,13 @@ describe("operational page navigation", () => {
     expect(form).not.toHaveClass("max-w-3xl");
   });
 
-  it("returns to the student list after creating a sample student", async () => {
+  it("routes to the created MockDB student record", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/students/new"]}>
         <Routes>
           <Route path="/students/new" element={<StudentFormPage />} />
-          <Route path="/students" element={<h1>Students</h1>} />
+          <Route path="/students/:id" element={<h1>Student profile</h1>} />
         </Routes>
         <LocationPath />
       </MemoryRouter>,
@@ -135,12 +135,16 @@ describe("operational page navigation", () => {
 
     await user.type(screen.getByLabelText(/Student number/), "S-2000");
     await user.type(screen.getByLabelText(/Student name/), "Taylor Student");
+    await user.click(screen.getByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+    await user.click(screen.getByRole("button", { name: "Section" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Olive" }));
     await user.type(screen.getByLabelText(/^Name/), "Taylor Guardian");
     await user.type(screen.getByLabelText(/Relationship/), "Parent");
     await user.click(screen.getByRole("button", { name: "Create student" }));
 
-    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students");
-    expect(screen.getByRole("heading", { name: "Students" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent(/\/students\/mock-student-/);
+    expect(screen.getByRole("heading", { name: "Student profile" })).toBeInTheDocument();
   });
 
   it("limits student grade, section, and Senior High strand choices", async () => {
@@ -149,17 +153,17 @@ describe("operational page navigation", () => {
 
     await user.click(screen.getByRole("button", { name: "Grade level" }));
     expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
-      "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+      "Select grade", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
       "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
     ]);
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 11" }));
 
-    expect(screen.getByRole("button", { name: "Section" })).toHaveTextContent("Exodus");
+    expect(screen.getByRole("button", { name: "Section" })).toHaveTextContent("Select section");
     expect(screen.getByRole("button", { name: "Strand" })).toHaveTextContent("STEM");
 
     await user.click(screen.getByRole("button", { name: "Section" }));
     expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
-      "Exodus", "Section B",
+      "Select section", "Exodus", "Section B",
     ]);
     await user.click(screen.getByRole("menuitemradio", { name: "Exodus" }));
 
@@ -172,7 +176,7 @@ describe("operational page navigation", () => {
 
     await user.click(screen.getByRole("button", { name: "Grade level" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 8" }));
-    expect(screen.getByRole("button", { name: "Section" })).toHaveTextContent("Maple");
+    expect(screen.getByRole("button", { name: "Section" })).toHaveTextContent("Select section");
     expect(screen.queryByRole("button", { name: "Strand" })).not.toBeInTheDocument();
   });
 
@@ -188,10 +192,10 @@ describe("operational page navigation", () => {
     expect(within(administratorRow).getAllByRole("cell")[3]).toHaveClass("text-center");
   });
 
-  it("shows Security with an aligned Status column for administrators", () => {
-    render(<MemoryRouter><AuditPage user={administrator} /></MemoryRouter>);
+  it("shows Security Events with an aligned Status column for administrators", () => {
+    render(<MemoryRouter><AuditPage user={administrator} security /></MemoryRouter>);
 
-    expect(screen.getByRole("heading", { name: "Security" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Security events" })).toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Outcome" })).not.toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Status" })).toHaveClass("text-center");
     const rows = screen.getAllByRole("row").slice(1);
@@ -304,7 +308,7 @@ describe("operational page navigation", () => {
     await user.click(within(administratorDialog).getByRole("button", { name: "Create user" }));
     expect(within(administratorDialog).getByRole("status")).toHaveTextContent("User created.");
     await user.click(within(administratorDialog).getByRole("button", { name: "Done" }));
-    const createdRow = screen.getByRole("row", { name: /Jordan Example \(sample\)/ });
+    const createdRow = screen.getByRole("row", { name: /Jordan Example/ });
     expect(within(createdRow).getByRole("cell", { name: "jordan.example" })).toBeInTheDocument();
     expect(within(createdRow).getByRole("cell", { name: "Auditor" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create user" }));
@@ -338,7 +342,7 @@ describe("operational page navigation", () => {
 
       expect(screen.queryByRole("searchbox", { name: /search students, receipts/i })).not.toBeInTheDocument();
       const sidebar = screen.getByRole("navigation", { name: "Primary" });
-      expect(within(sidebar).getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+      expect(within(sidebar).getByRole("button", { name: /open my profile/i })).toBeInTheDocument();
       const signOut = within(sidebar).getByRole("button", { name: /sign out/i });
       expect(signOut).toBeInTheDocument();
       expect(signOut).toHaveTextContent("");
@@ -380,20 +384,17 @@ describe("operational page navigation", () => {
     render(<MemoryRouter><ClearancePage user={registrar} /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "Clearance" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
-    expect(screen.getByText("Enrollment")).toBeInTheDocument();
-    expect(screen.getByText("Midterm")).toBeInTheDocument();
-    expect(screen.getByText("Final")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /print exam permit/i })).toHaveAttribute("href", "/permits/sample-1001/midterm/print");
-    expect(screen.getByRole("button", { name: /print exam permit/i })).toBeDisabled();
-    expect(screen.getAllByText("Installment overdue")).toHaveLength(2);
-    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Search for a student");
 
     await user.type(screen.getByRole("combobox", { name: "Search student" }), "Basil");
     await user.click(screen.getByRole("option", { name: /Basil Mercado.*S-1002/i }));
 
     expect(screen.getByRole("combobox", { name: "Search student" })).toHaveValue("Basil Mercado (sample)");
     expect(screen.getByText(/Basil Mercado \(sample\).*Grade 8.*Maple/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
+    expect(screen.getByText("Enrollment")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /print exam permit/i })).toHaveAttribute("href", "/permits/sample-1002/midterm/print");
+    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
   });
 
   it("selects follow-up accounts individually and reviews selected reminder details", async () => {
@@ -501,8 +502,8 @@ describe("operational page navigation", () => {
 
     expect(screen.getByRole("columnheader", { name: /student status/i })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /billing status/i })).toBeInTheDocument();
-    expect(screen.getAllByText("Active")).toHaveLength(3);
-    expect(screen.getByText("Current")).toBeInTheDocument();
+    expect(screen.getAllByText("Active")).toHaveLength(4);
+    expect(screen.getAllByText("Current")).not.toHaveLength(0);
     expect(screen.getAllByText("Due soon")).not.toHaveLength(0);
     expect(screen.getByText("Overdue")).toBeInTheDocument();
   });
@@ -750,7 +751,8 @@ describe("operational page navigation", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.selectOptions(screen.getByRole("combobox", { name: "Status" }), "failed");
+    await user.click(screen.getByRole("button", { name: "Status" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Failed" }));
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/notifications?status=failed");

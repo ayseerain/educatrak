@@ -45,20 +45,18 @@ describe("live Registrar student list", () => {
     view.unmount();
   });
 
-  it("does not show a mock student edit form as a production save path", () => {
+  it("shows the MockDB student form when mock mode is active", () => {
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "Add student" })).toBeInTheDocument();
-    expect(screen.getByText("Student editing is not available in the live system.")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Student number")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
   });
 
-  it("does not show a mock existing-student edit form as a production save path", () => {
-    render(<MemoryRouter><StudentFormPage edit /></MemoryRouter>);
+  it("shows the MockDB existing-student edit form when mock mode is active", () => {
+    render(<MemoryRouter initialEntries={["/students/sample-1001/edit"]}><Routes><Route path="/students/:id/edit" element={<StudentFormPage edit />} /></Routes></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "Edit student" })).toBeInTheDocument();
-    expect(screen.getByText("Student editing is not available in the live system.")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Student number")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
   });
 
   it("links a Cashier live student profile to payment entry only", async () => {

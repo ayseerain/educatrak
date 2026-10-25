@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { isLiveCashierApiEnabled } from "@/api/cashierApi";
-import { mockApiDelay } from "@/api/mock";
+import { mockApiDelay, subscribeToMockState } from "@/api/mock";
 
 type MockLoadState =
   | { status: "loading" }
@@ -16,8 +16,9 @@ type MockLoadState =
  * latency and failures apply before any screen reads its derived mock records.
  */
 export function MockDatabaseProvider({ children }: { children: ReactNode }) {
-  const enabled = import.meta.env.DEV && !isLiveCashierApiEnabled();
+  const enabled = !isLiveCashierApiEnabled();
   const [attempt, setAttempt] = useState(0);
+  const [revision, setRevision] = useState(0);
   const [state, setState] = useState<MockLoadState>({ status: "loading" });
 
   useEffect(() => {
@@ -41,13 +42,15 @@ export function MockDatabaseProvider({ children }: { children: ReactNode }) {
     };
   }, [attempt, enabled]);
 
+  useEffect(() => enabled ? subscribeToMockState(() => setRevision((value) => value + 1)) : undefined, [enabled]);
+
   if (!enabled) return <>{children}</>;
   if (state.status === "ready") {
     const emptyRequested = typeof window !== "undefined"
       && new URLSearchParams(window.location.search).get("mock") === "empty";
     return emptyRequested
       ? <main className="mx-auto flex min-h-screen max-w-3xl items-center p-6"><EmptyState message="No development data is available for this preview." /></main>
-      : <>{children}</>;
+      : <Fragment key={revision}>{children}</Fragment>;
   }
   if (state.status === "error") {
     return <ErrorState message={state.message} onRetry={() => setAttempt((value) => value + 1)} />;

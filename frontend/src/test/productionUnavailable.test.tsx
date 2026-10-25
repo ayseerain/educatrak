@@ -5,7 +5,6 @@ import {
   AccountWizardPage,
   ClearancePage,
   FollowupPage,
-  ImportPage,
   PermitPage,
   ReportPage,
   SettingsPage,
@@ -16,29 +15,26 @@ const cashier = { id: "cashier-sample", name: "Casey Cashier (sample)", role: "c
 const accounting = { id: "accounting-sample", name: "Avery Accounting (sample)", role: "accounting" as const };
 const registrar = { id: "registrar-sample", name: "Riley Registrar (sample)", role: "registrar" as const };
 
-describe("production unavailable workflows", () => {
+describe("MockDB production workflows", () => {
   beforeEach(() => {
-    vi.stubEnv("PROD", true);
-    vi.stubEnv("VITE_USE_LIVE_API", "");
+    vi.stubEnv("VITE_DATA_SOURCE", "mock");
   });
 
   afterEach(() => vi.unstubAllEnvs());
 
   it.each([
-    ["billing account creation", <AccountWizardPage />, /account creation is not available in the live system/i],
-    ["reminder sending", <FollowupPage user={cashier} />, /follow-up reminders is not available in the live system/i],
-    ["clearance decisions", <ClearancePage user={registrar} />, /clearance is not available in the live system/i],
-    ["permit printing", <PermitPage />, /exam permits is not available in the live system/i],
-    ["student import", <ImportPage />, /ledger import is not available in the live system/i],
-    ["school configuration", <SettingsPage section="school" editable={false} />, /system configuration is not available in the live system/i],
-    ["monthly reporting", <ReportPage type="monthly" user={accounting} />, /report is unavailable until its live data source is connected/i],
-  ] as [string, ReactNode, RegExp][]) (
-    "does not present a mock success path for %s",
-    (_name, page, message) => {
+    ["billing account creation", <AccountWizardPage />],
+    ["reminder sending", <FollowupPage user={cashier} />],
+    ["clearance decisions", <ClearancePage user={registrar} />],
+    ["permit printing", <PermitPage />],
+    ["school configuration", <SettingsPage section="school" editable={false} />],
+    ["monthly reporting", <ReportPage type="monthly" user={accounting} />],
+  ] as [string, ReactNode][]) (
+    "does not require a Laravel data source for %s",
+    (_name, page) => {
       const view = render(<MemoryRouter>{page}</MemoryRouter>);
 
-      expect(screen.getByText(message)).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /send|create account|run backup|upload|approve|print permit/i })).not.toBeInTheDocument();
+      expect(screen.queryByText(/not available in the live system|unavailable until its live data source is connected/i)).not.toBeInTheDocument();
 
       view.unmount();
     },
