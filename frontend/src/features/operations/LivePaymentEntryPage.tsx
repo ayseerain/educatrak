@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { getPaymentContext, recordCashPaymentForStudent, searchPaymentStudents, type NotificationChannel, type PaymentStudent } from "@/api/cashierApi";
 import { centavos, format } from "@/lib/money";
+import { ReceiptPrintAction } from "@/components/printing/ReceiptPrintAction";
 
 export function LivePaymentEntryPage() {
   const queryClient = useQueryClient();
@@ -156,7 +157,7 @@ export function LivePaymentEntryPage() {
         <Card>
           <p role="status" className="font-medium text-status-success">Payment saved. Receipt {saved.receiptNo} was issued for {format(centavos(saved.amountCents))}.</p>
           <p className="mt-2 text-sm text-text-secondary">{saved.emailQueued ? "The email receipt was queued." : "The email receipt was not queued."} The server accepted the payment.</p>
-          <div className="mt-4 flex flex-wrap gap-3"><Link className="inline-flex min-h-control items-center justify-center rounded-md bg-brand-green-dark px-4 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark" to={`/receipts/${saved.paymentId}/print`}>Preview and print receipt</Link><Button variant="secondary" onClick={resetDraft}>Done — record another payment</Button></div>
+          <div className="mt-4 flex flex-wrap items-start gap-3"><ReceiptPrintAction paymentId={saved.paymentId} label="Print Receipt" /><Button variant="secondary" onClick={resetDraft}>Done — record another payment</Button></div>
         </Card>
       ) : (
         <Card>

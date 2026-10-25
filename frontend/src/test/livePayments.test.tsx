@@ -28,6 +28,7 @@ vi.mock("@/api/cashierApi", () => ({
   reprintPayment,
   searchPaymentStudents,
 }));
+vi.mock("@/lib/printing", () => ({ printDocumentWhenReady: vi.fn(() => { window.print(); return Promise.resolve(); }) }));
 vi.mock("@/lib/csv", () => ({ downloadCsv: vi.fn() }));
 
 const cashier: AuthenticatedUser = { id: "cashier-1", name: "Sample Cashier", role: "cashier" };
@@ -156,6 +157,28 @@ describe("live cashier payment entry", () => {
     expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
     expect(screen.getByText("payment recorded")).toBeInTheDocument();
     expect(getPayment).toHaveBeenCalledWith("payment-1");
+  });
+
+  it("initiates the audited receipt print from payment detail without navigating away", async () => {
+    const user = userEvent.setup();
+    const payment = {
+      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", studentNo: "S-TEST-1001",
+      billingAccountId: "billing-account-1", amountCents: 5000, method: "cash", paidOn: "2026-10-24", status: "valid",
+      receiptNo: "OR-2026-000001", firstPrintedAt: null, recordedAt: "2026-10-24T08:00:00Z", recordedBy: "Casey Cashier",
+      reprintCount: 0, balanceAfterCents: 15000, allocations: [{ installmentLabel: "Installment 1", amountCents: 5000 }],
+    };
+    getPayment.mockResolvedValue(payment);
+    reprintPayment.mockResolvedValue({ ...payment, firstPrintedAt: "2026-10-24T08:30:00Z" });
+    const print = vi.fn();
+    vi.stubGlobal("print", print);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/payments/payment-1"]}><Routes><Route path="/payments/:id" element={<LivePaymentsPage user={cashier} detail />} /></Routes></MemoryRouter></QueryClientProvider>);
+
+    await user.click(await screen.findByRole("button", { name: "Print Receipt" }));
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    expect(reprintPayment).toHaveBeenCalledWith("payment-1");
+    expect(screen.getByRole("heading", { name: "Payment OR-2026-000001" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "ACKNOWLEDGMENT RECEIPT" })).not.toBeInTheDocument();
   });
 
   it("distinguishes the first receipt print from later reprints", async () => {

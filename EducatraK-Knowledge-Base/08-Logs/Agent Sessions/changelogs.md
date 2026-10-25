@@ -25,6 +25,40 @@
 
 ## Entries
 
+### Sunday, October 25, 2026 — 16:08:31 Asia/Manila | Restore and emphasize print masthead
+
+- **Summary:** Fixed the print cascade that hid the document header and seal by excluding `.print-document-header` from the generic hidden-header rule and explicitly retaining it on the print surface. Increased seal size and strengthened the school-color masthead, receipt section hierarchy, report summary rule, and table-heading contrast.
+- **Files:** Updated `frontend/src/index.css` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Reason:** The previous global `header { display: none !important; }` selector concealed the official logo in print output and flattened the document hierarchy.
+- **Validation:** `npm run build` passed with `NODE_OPTIONS=--max-old-space-size=4096`. The seal asset was inspected and is present in `frontend/public/`. No browser-generated print preview was produced in this follow-up; visual print acceptance remains open.
+- **Commit/PR:** Pending/not available.
+- **Follow-ups:** Manually inspect Letter and A4 print output after paper-size configuration is resolved.
+
+### Sunday, October 25, 2026 — 15:59:29 Asia/Manila | Confirm final print diff hygiene
+
+- **Summary:** Re-ran repository whitespace/diff checks after the final print refinements.
+- **Files:** Updated only this changelog entry; implementation files are recorded in the prior entries.
+- **Validation:** `git diff --check` passed. `AGENTS.md` and `CLAUDE.md` SHA-256 values match.
+- **Follow-ups:** Actual print-preview inspection remains open under U12.
+- **Commit/PR:** Pending/not available.
+
+### Sunday, October 25, 2026 — 15:59:17 Asia/Manila | Final validation for print redesign
+
+- **Summary:** Completed final print refinements: right-aligned supported money columns and refreshed payment query caches after an audited receipt print attempt.
+- **Files:** Updated `frontend/src/components/printing/PrintDocumentTable.tsx`, `ReceiptPrintAction.tsx`, `frontend/src/features/reports/LiveDailyReport.tsx`, `LiveOutstandingReport.tsx`, `LiveStudentStatement.tsx`, and `frontend/src/index.css`.
+- **Validation:** `npm run build` passed with `NODE_OPTIONS=--max-old-space-size=4096`. The focused payment, daily report, outstanding report, and statement tests passed separately (17 tests total). The default full-suite run hit the Node memory limit; a single-thread run exposed unrelated dashboard/operations test failures and was stopped. `git diff --check` passed before these refinements; rerun after final edits.
+- **Follow-ups:** No browser print-preview inspection was completed. See the open print verification item in `Issues-and-TODOs.md` for paper-size, settings, audit semantics, and monthly-report limitations.
+- **Commit/PR:** Pending/not available.
+
+### Sunday, October 25, 2026 — 15:56:54 Asia/Manila | Formalize receipt and report printing
+
+- **Summary:** Replaced the live Payment Detail and post-save receipt preview navigation with direct native printing from the current screen. Added a formal receipt using the local MCA seal, transaction-backed details, status markings and a top-of-page half-sheet layout. Added shared document headers/tables and full-dataset print surfaces for daily, outstanding, and student statements.
+- **Files:** Added `frontend/src/components/printing/PrintDocumentHeader.tsx`, `PrintDocumentTable.tsx`, `ReceiptPrintAction.tsx`, and `frontend/src/lib/printing.ts`; updated `frontend/src/features/operations/LivePaymentsPage.tsx`, `LivePaymentEntryPage.tsx`, `frontend/src/features/reports/LiveDailyReport.tsx`, `LiveOutstandingReport.tsx`, `LiveStudentStatement.tsx`, `frontend/src/index.css`, `frontend/src/test/livePayments.test.tsx`, `liveOutstandingReport.test.tsx`, `liveStudentStatement.test.tsx`, and this issue tracker.
+- **Reason:** Deliver the requested in-place receipt print workflow and consistent school-branded print documents while keeping receipt identity, server-side permissions, audit attempts, and report filters/data intact.
+- **Validation:** `npm run build` passed. Focused frontend tests passed (17 tests across 4 files). Added coverage for in-place receipt printing and paginated outstanding print completeness. The ordinary full frontend test run exited with Node out-of-memory; a single-thread full run also surfaced failures in existing operational/dashboard tests and was stopped before completion. No actual browser print-preview visual inspection was completed; Letter/A4 output is unverified.
+- **Follow-ups:** M9.5 receipt title and paper-size configuration remain undecided; official school address/contact data is not available through the current live API; print audit records currently mean an initiated print attempt, not verified physical printing; monthly reports remain unavailable pending data/API support. Preserve legacy `/receipts/:id/print` for direct links. No backend endpoint or persisted transaction behavior changed.
+- **Commit/PR:** Pending/not available.
+
 ### Saturday, October 24, 2026 — 14:06:20 Asia/Manila | Centralize agent issue tracking and changelogs
 - **Agent:** ChatGPT (GitHub connector)
 - **Summary:** Created the `Agent Sessions` documentation directory; moved the existing EducatraK-specific issues tracker from repository root into it; introduced this centralized AI-agent changelog; updated repository agent instructions and their synchronized copy to require logging every AI-made change and to use the new tracker location.

@@ -9,6 +9,11 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { TableFilters, activeTableFilters, useTableFilters } from "@/components/ui/TableFilters";
 import { downloadCsv } from "@/lib/csv";
+import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
+import type { OutstandingAccount } from "@/api/reportApi";
+import { printDocumentWhenReady } from "@/lib/printing";
+import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 
 const outstandingFilterDefaults = { grade: "", section: "", minimumBalance: "", maximumBalance: "", overdueOnly: "" };
 
@@ -17,6 +22,9 @@ export function LiveOutstandingReport() {
   const [validationError, setValidationError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [printError, setPrintError] = useState("");
+  const [printAccounts, setPrintAccounts] = useState<OutstandingAccount[] | null>(null);
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const applied = tableFilters.applied;
   const active = activeTableFilters(applied, outstandingFilterDefaults);
   const filters = {
@@ -53,6 +61,28 @@ export function LiveOutstandingReport() {
     }
   }
 
+  async function printReport() {
+    if (!report.data || isPreparingPrint) return;
+    setIsPreparingPrint(true);
+    setPrintError("");
+    try {
+      const first = await getOutstandingReport({ ...filters, page: 1, perPage: 50 });
+      const accounts = [...first.data];
+      for (let startPage = 2; startPage <= first.lastPage; startPage += 5) {
+        const pages = Array.from({ length: Math.min(5, first.lastPage - startPage + 1) }, (_, index) => startPage + index);
+        const results = await Promise.all(pages.map((page) => getOutstandingReport({ ...filters, page, perPage: 50 })));
+        results.forEach((result) => accounts.push(...result.data));
+      }
+      setPrintAccounts(accounts);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await printDocumentWhenReady();
+    } catch (error) {
+      setPrintError(error instanceof Error ? error.message : "The complete report could not be prepared for printing.");
+    } finally {
+      setIsPreparingPrint(false);
+    }
+  }
+
   function submit() {
     const { minimumBalance, maximumBalance } = tableFilters.draft;
     const validAmount = (value: string) => !value.trim() || (/^\d+(\.\d{1,2})?$/.test(value.trim()) && Number.isFinite(Number(value)));
@@ -71,8 +101,14 @@ export function LiveOutstandingReport() {
   }
 
   return <>
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">Outstanding</h1><p className="mt-1 text-sm text-text-secondary">Billing accounts with an unpaid balance across school years.</p></div><div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" onClick={() => window.print()}>Print</Button></div></div>
+    {printAccounts && <section aria-hidden="true" className="print-root report-print-root">
+      <PrintDocumentHeader title="OUTSTANDING BALANCE REPORT" subtitle={["All school years", active.grade && `Grade: ${active.grade}`, active.section && `Section: ${active.section}`, active.minimumBalance && `Minimum: ₱${active.minimumBalance}`, active.maximumBalance && `Maximum: ₱${active.maximumBalance}`, active.overdueOnly === "true" && "Overdue only"].filter(Boolean).join(" · ")} />
+      <p className="report-print-summary"><strong>Accounts:</strong> {printAccounts.length} <span>·</span> <strong>Total outstanding:</strong> {money(printAccounts.reduce((sum, account) => sum + account.balanceCents, 0))}</p>
+      <PrintDocumentTable title="Outstanding billing accounts" headings={["Student", "Student no.", "Grade", "Section", "School year", "Balance", "Status"]} rightAlignColumns={[5]} rows={printAccounts.map((account) => [account.studentName, account.studentNo, account.gradeLevel ?? "", account.section ?? "", account.schoolYear, money(account.balanceCents), account.status.replace(/_/g, " ")])} />
+    </section>}
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">Outstanding</h1><p className="mt-1 text-sm text-text-secondary">Billing accounts with an unpaid balance across school years.</p></div><div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" disabled={!report.data || isPreparingPrint} onClick={() => void printReport()}><span className="inline-flex items-center gap-2"><PrinterIcon />{isPreparingPrint ? "Preparing report…" : "Print Report"}</span></Button></div></div>
     {exportError && <p className="mb-4 text-sm text-error" role="alert">{exportError}</p>}
+    {printError && <p className="mb-4 text-sm text-error" role="alert">{printError}</p>}
     <TableFilters scope="Outstanding balances" defaults={outstandingFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} fields={[
       { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
       { key: "minimumBalance", label: "Minimum balance (PHP)", type: "number", min: "0", step: "0.01" },

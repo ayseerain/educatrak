@@ -10,6 +10,11 @@ import { PaginationControls } from "@/components/ui/PaginationControls";
 import { TableFilters, useTableFilters } from "@/components/ui/TableFilters";
 import { downloadCsv } from "@/lib/csv";
 import type { AuthenticatedUser } from "@/lib/types";
+import { PrintDocumentHeader } from "@/components/printing/PrintDocumentHeader";
+import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
+import type { DailyReport } from "@/api/reportApi";
+import { printDocumentWhenReady } from "@/lib/printing";
+import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 
 export function LiveDailyReport({ user }: { user: AuthenticatedUser }) {
   const tableFilters = useTableFilters({ date: manilaToday() });
@@ -19,6 +24,9 @@ export function LiveDailyReport({ user }: { user: AuthenticatedUser }) {
   const [perPage, setPerPage] = useState(10);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [printError, setPrintError] = useState("");
+  const [printData, setPrintData] = useState<{ payments: DailyReport["payments"]; voids: DailyReport["voids"] } | null>(null);
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const report = useQuery({ queryKey: ["daily-report", date, page, voidPage, perPage], queryFn: () => getDailyReport(date, page, perPage, voidPage) });
 
   async function exportReport() {
@@ -46,12 +54,41 @@ export function LiveDailyReport({ user }: { user: AuthenticatedUser }) {
     }
   }
 
+  async function printReport() {
+    if (!report.data || isPreparingPrint) return;
+    setIsPreparingPrint(true);
+    setPrintError("");
+    try {
+      const first = await getDailyReport(date, 1, 50, 1);
+      const payments = [...first.payments];
+      for (let currentPage = 2; currentPage <= first.meta.lastPage; currentPage += 1) payments.push(...(await getDailyReport(date, currentPage, 50, 1)).payments);
+      const voids = [...first.voids];
+      for (let currentPage = 2; currentPage <= first.voidMeta.lastPage; currentPage += 1) voids.push(...(await getDailyReport(date, 1, 50, currentPage)).voids);
+      setPrintData({ payments, voids });
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await printDocumentWhenReady();
+    } catch (error) {
+      setPrintError(error instanceof Error ? error.message : "The complete report could not be prepared for printing.");
+    } finally {
+      setIsPreparingPrint(false);
+    }
+  }
+
   return <>
+    {report.data && printData && <section aria-hidden="true" className="print-root report-print-root">
+      <PrintDocumentHeader title="DAILY COLLECTION REPORT" subtitle={`Reporting date: ${date}`} />
+      <p className="report-print-summary"><strong>Total collected:</strong> {money(report.data.totalCents)} <span>(voided payments excluded; pending voids included)</span></p>
+      <PrintDocumentTable title="Collections by payment method" headings={["Method", "Transactions", "Amount"]} rightAlignColumns={[2]} rows={report.data.byMethod.map((row) => [row.method, String(row.transactionCount), money(row.totalCents)])} />
+      <PrintDocumentTable title="Collections by cashier" headings={["Cashier", "Transactions", "Amount"]} rightAlignColumns={[2]} rows={report.data.byCashier.map((row) => [row.cashier, String(row.transactionCount), money(row.totalCents)])} />
+      <PrintDocumentTable title={`Payments (${printData.payments.length})`} headings={["Student", "Student no.", "Receipt", "Cashier", "Method", "Amount", "Status"]} rightAlignColumns={[5]} rows={printData.payments.map((row) => [row.studentName, row.studentNo, row.receiptNo ?? "Unavailable", row.cashier, row.method, money(row.amountCents), row.status.replace(/_/g, " ")])} />
+      <PrintDocumentTable title={`Void requests and decisions (${printData.voids.length})`} headings={["Student", "Receipt", "Amount", "Status", "Reason", "Requested by"]} rightAlignColumns={[2]} rows={printData.voids.map((row) => [row.studentName, row.receiptNo ?? "Unavailable", money(row.amountCents), row.status, row.reason, row.requestedBy])} />
+    </section>}
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div><h1 className="text-2xl font-semibold">Daily report</h1><p className="mt-1 text-sm text-text-secondary">{user.role === "cashier" ? "Today's collection activity recorded by your account." : "Persisted payments and void activity for the selected school date."}</p></div>
-      <div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" onClick={() => window.print()}>Print</Button></div>
+      <div className="flex gap-2"><Button type="button" variant="secondary" disabled={!report.data || isExporting} onClick={() => void exportReport()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button><Button type="button" variant="secondary" disabled={!report.data || isPreparingPrint} onClick={() => void printReport()}><span className="inline-flex items-center gap-2"><PrinterIcon />{isPreparingPrint ? "Preparing report…" : "Print Report"}</span></Button></div>
     </div>
     {exportError && <p className="mb-4 text-sm text-error" role="alert">{exportError}</p>}
+    {printError && <p className="mb-4 text-sm text-error" role="alert">{printError}</p>}
     {user.role === "cashier"
       ? <Card className="mb-5 text-sm">Report date: {date}</Card>
       : <TableFilters scope="Daily report" defaults={{ date: manilaToday() }} draft={tableFilters.draft} applied={tableFilters.applied} fields={[{ key: "date", label: "Report date", type: "date" }]} onChange={tableFilters.update} onApply={() => { tableFilters.apply(); setPage(1); setVoidPage(1); }} onReset={tableFilters.reset} onClear={() => { tableFilters.clear(); setPage(1); setVoidPage(1); }} onRemove={(key) => { tableFilters.remove(key); setPage(1); setVoidPage(1); }} />}

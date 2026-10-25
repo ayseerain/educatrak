@@ -28,10 +28,10 @@ describe("live student statement", () => {
 
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><LiveStudentStatement user={accounting} studentId="student-1" /></MemoryRouter></QueryClientProvider>);
 
-    expect(await screen.findByText("Sample tuition")).toBeInTheDocument();
-    expect(screen.getByText("First installment")).toBeInTheDocument();
-    expect(screen.getByText("OR-SAMPLE-9101")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Print" })).toBeInTheDocument();
+    expect(await screen.findAllByText("Sample tuition")).toHaveLength(2);
+    expect(screen.getAllByText("First installment")).toHaveLength(2);
+    expect(screen.getAllByText("OR-SAMPLE-9101")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Print Report" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Export for Excel (.csv)" })).toBeInTheDocument();
   });
 
@@ -44,8 +44,8 @@ describe("live student statement", () => {
     });
     render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><LiveStudentStatement user={auditor} studentId="student-1" /></MemoryRouter></QueryClientProvider>);
 
-    await screen.findByText("Sample tuition");
-    expect(screen.queryByRole("button", { name: "Print" })).not.toBeInTheDocument();
+    await screen.findAllByText("Sample tuition");
+    expect(screen.queryByRole("button", { name: "Print Report" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Export for Excel (.csv)" })).not.toBeInTheDocument();
   });
 
