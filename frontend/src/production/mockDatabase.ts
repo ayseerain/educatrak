@@ -28,4 +28,9 @@ export function getMockPayment(): undefined { return undefined; }
 export function getNextDueRecord(): undefined { return undefined; }
 export function getPaymentsForStudent(): never[] { return []; }
 export function getStudentBillingAccounts(): never[] { return []; }
+export function getMockGuardianContact(): undefined { return undefined; }
+export function selectMockNotificationRows(): never[] { return []; }
+export function selectMockStaffUsers(): never[] { return []; }
+export function createMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
+export function updateMockStaffUser(): never { throw new Error("Mock data is unavailable in production."); }
 export function recordMockBillingPayment(): never { throw new Error("Mock data is unavailable in production."); }

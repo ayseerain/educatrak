@@ -3,8 +3,8 @@ import {
   getCurrentBillingAccount,
   getMockPayment,
   recordMockBillingPayment,
-} from "@/features/students/mockBilling";
-import { students } from "@/features/students/mockStudents";
+} from "@/api/mock";
+import { students } from "@/api/mock";
 
 describe("mock billing database", () => {
   it("allocates a payment to the oldest outstanding installment and synchronizes the account", () => {

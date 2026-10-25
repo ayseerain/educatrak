@@ -1,4 +1,4 @@
-import { students, type Student } from "@/features/students/mockStudents";
+import { students, type Student } from "@/api/mock";
 
 export function normalizeStudentSearchQuery(query: string) {
   return query.trim().toLocaleLowerCase();

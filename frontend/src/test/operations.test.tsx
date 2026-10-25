@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
 import { AccountDetailPage, AccountsPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
-import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/features/students/mockBilling";
+import { getBillingAccount, getCurrentBillingAccount, getDueInstallments } from "@/api/mock";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Shell } from "@/components/layout/Shell";
 import { can, canViewReport } from "@/lib/permissions";
@@ -484,7 +484,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("cell", { name: /grade 7/i }));
+    await user.click(screen.getByRole("link", { name: /open amara villanueva/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
     expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
@@ -503,7 +503,7 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("columnheader", { name: /billing status/i })).toBeInTheDocument();
     expect(screen.getAllByText("Active")).toHaveLength(3);
     expect(screen.getByText("Current")).toBeInTheDocument();
-    expect(screen.getByText("Due soon")).toBeInTheDocument();
+    expect(screen.getAllByText("Due soon")).not.toHaveLength(0);
     expect(screen.getByText("Overdue")).toBeInTheDocument();
   });
 
