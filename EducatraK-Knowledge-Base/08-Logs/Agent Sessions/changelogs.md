@@ -1034,3 +1034,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npx vitest run src/test/login.test.tsx` passed (20 tests), including Super Admin, Cashier, Accounting Officer, Administrator, Auditor, and Registrar login. `npm run build`, `npm run verify:production-assets`, and `git diff --check` passed; Git reported only existing LF-to-CRLF warnings.
 - **Commit/PR:** Not available.
 - **Follow-ups:** None.
+
+### Sunday, October 25, 2026 — 21:42:32 +08:00 | Link development screens to the central mock database
+
+- **Agent:** Codex
+- **Summary:** Added a development-only `MockDatabaseProvider` around the application so every development screen waits for the central mock database and consistently handles loading, URL-requested latency/error, and full-database empty preview states. Removed the obsolete student, billing, and notification compatibility modules and their production aliases; all prior consumers now use `@/api/mock`. Notification contacts/rows and development user administration now derive from and mutate the central store. The user-creation inputs now expose exact accessible names, and brittle fixture assertions were made specific to the intended seeded records.
+- **Files:** Added `frontend/src/api/mock/MockDatabaseProvider.tsx`. Updated `frontend/src/main.tsx`, `api/mock/README.md`, `api/mock/mock-db.json`, `api/mock/selectors.ts`, `api/cashierApi.ts`, `api/mockAdapter.ts`, `features/operations/OperationalPages.tsx`, `features/students/StudentSearchField.tsx`, `features/students/studentSearch.ts`, `production/mockDatabase.ts`, frontend mock/operations tests, and `vite.config.ts`. Deleted the retired `mockStudents.ts`, `mockBilling.ts`, and `mockNotificationData.ts` compatibility/production files. Updated this tracker and changelog.
+- **Validation:** `tsc -b frontend/tsconfig.json` passed. `npm --prefix frontend test -- --run src/test/mockDatabase.test.ts src/test/operations.test.tsx` passed (55 tests). `npm --prefix frontend run build` passed. `npm --prefix frontend run verify:production-assets` confirmed 74 development fixture/contact/credential markers absent from four production JavaScript assets. `git diff --check` passed; Git emitted an existing LF-to-CRLF warning for `frontend/src/api/cashierApi.ts`.
+- **Commit/PR:** Not committed.
+- **Follow-ups:** None.

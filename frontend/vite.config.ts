@@ -14,18 +14,6 @@ export default defineConfig(({ command }) => ({
               find: "@/api/mock",
               replacement: path.resolve(__dirname, "./src/production/mockDatabase.ts"),
             },
-            {
-              find: "@/features/students/mockStudents",
-              replacement: path.resolve(__dirname, "./src/production/mockStudents.ts"),
-            },
-            {
-              find: "@/features/students/mockBilling",
-              replacement: path.resolve(__dirname, "./src/production/mockBilling.ts"),
-            },
-            {
-              find: "@/features/operations/mockNotificationData",
-              replacement: path.resolve(__dirname, "./src/production/mockNotificationData.ts"),
-            },
           ]
         : []),
       { find: "@", replacement: path.resolve(__dirname, "./src") },

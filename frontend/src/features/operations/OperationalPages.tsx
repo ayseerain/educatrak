@@ -24,8 +24,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
-import { students } from "@/features/students/mockStudents";
 import {
+  students,
   billingAccounts,
   payments,
   getBillingAccount,
@@ -34,7 +34,12 @@ import {
   getNextDueRecord,
   getPaymentsForStudent,
   getStudentById,
-} from "@/features/students/mockBilling";
+  getMockGuardianContact,
+  selectMockNotificationRows,
+  selectMockStaffUsers,
+  createMockStaffUser,
+  updateMockStaffUser,
+} from "@/api/mock";
 import { studentMatchesSearch } from "@/features/students/studentSearch";
 import { can, canViewReport, type ReportKind } from "@/lib/permissions";
 import { format, centavos } from "@/lib/money";
@@ -56,7 +61,6 @@ import { LiveVoidsPage } from "@/features/operations/LiveVoidsPage";
 import { LiveCloseOutHistory, LiveDailyCloseOut } from "@/features/operations/LiveCloseouts";
 import { LiveAdminLog } from "@/features/operations/LiveAdminLog";
 import { LiveAuditLog } from "@/features/operations/LiveAuditLog";
-import { notificationRows, notificationStatusOptions, mockGuardianEmail, mockGuardianMobile } from "@/features/operations/mockNotificationData";
 import { LiveDailyReport } from "@/features/reports/LiveDailyReport";
 import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
 import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
@@ -1761,8 +1765,8 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
     {
       id: students[1]!.id,
       student: students[1]!.name,
-      guardianEmail: mockGuardianEmail,
-      guardianMobile: mockGuardianMobile,
+      guardianEmail: getMockGuardianContact(students[1]!.id)?.email ?? "No guardian email",
+      guardianMobile: getMockGuardianContact(students[1]!.id)?.mobile ?? "No guardian mobile number",
       amountOverdue: "₱4,200.00",
       daysOverdue: "3",
       lastReminder: "Sep 20, 2026",
@@ -2404,6 +2408,11 @@ function MockReportPage({
 
 export function MockNotificationsPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const notificationRows = selectMockNotificationRows();
+  const notificationStatusOptions = [
+    { value: "all", label: "All statuses" },
+    ...Array.from(new Set(notificationRows.map((row) => row.status))).map((status) => ({ value: status.toLowerCase(), label: status })),
+  ];
   const selectedStatus = notificationStatusOptions.some(
     (option) => option.value === searchParams.get("status"),
   )
@@ -2859,32 +2868,14 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   const [createError, setCreateError] = useState("");
   const [createRole, setCreateRole] = useState<Role>(defaultCreateRole);
   const filters = useTableFilters({ query: "", role: "", status: "" });
-  const [users, setUsers] = useState([
-    {
-      id: "user-administrator",
-      name: "Alex Administrator (sample)",
-      username: "sample.admin",
-      role: "Administrator",
-      active: true,
-      isCurrentAdministrator: true,
-    },
-    {
-      id: "user-cashier",
-      name: "Casey Cashier (sample)",
-      username: "sample.cashier",
-      role: "Cashier",
-      active: true,
-      isCurrentAdministrator: false,
-    },
-    {
-      id: "user-registrar",
-      name: "Riley Registrar (sample)",
-      username: "sample.registrar",
-      role: "Registrar",
-      active: false,
-      isCurrentAdministrator: false,
-    },
-  ]);
+  const [users, setUsers] = useState(() => selectMockStaffUsers()
+    .filter((staff) => ["administrator", "cashier", "registrar"].includes(staff.role))
+    .sort((left, right) => ["administrator", "cashier", "registrar"].indexOf(left.role) - ["administrator", "cashier", "registrar"].indexOf(right.role))
+    .map((staff) => ({
+      ...staff,
+      role: roleLabel(staff.role),
+      isCurrentAdministrator: staff.id === (user?.id ?? "user-admin"),
+    })));
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [statusConfirmationOpen, setStatusConfirmationOpen] = useState(false);
@@ -2913,13 +2904,16 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
       setCreateError("That username is already in use.");
       return;
     }
-
+    let createdUser;
+    try {
+      createdUser = createMockStaffUser({ name: `${name} (sample)`, username, role: createRole });
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "The user could not be created.");
+      return;
+    }
     setUsers((currentUsers) => [...currentUsers, {
-      id: `user-${username.toLocaleLowerCase()}`,
-      name: `${name} (sample)`,
-      username,
-      role: roleLabel(createRole),
-      active: true,
+      ...createdUser,
+      role: roleLabel(createdUser.role),
       isCurrentAdministrator: false,
     }]);
     setCreateError("");
@@ -2930,14 +2924,13 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     event.preventDefault();
     if (!editingUser) return;
     const formData = new FormData(event.currentTarget);
-    setUsers((currentUsers) => currentUsers.map((user) => (
-      user.id === editingUser.id
-        ? {
-            ...user,
-            name: String(formData.get("fullName") ?? user.name),
-            role: String(formData.get("role") ?? user.role),
-          }
-        : user
+    const nextRole = createRoles.find((role) => roleLabel(role) === String(formData.get("role") ?? editingUser.role)) ?? editingUser.role as Role;
+    const updated = updateMockStaffUser(editingUser.id, {
+      name: String(formData.get("fullName") ?? editingUser.name),
+      role: nextRole,
+    });
+    setUsers((currentUsers) => currentUsers.map((currentUser) => (
+      currentUser.id === updated.id ? { ...currentUser, name: updated.name, role: roleLabel(updated.role) } : currentUser
     )));
   }
 
@@ -2947,8 +2940,9 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
 
   function updateAccountState() {
     if (!editingUser) return;
-    setUsers((currentUsers) => currentUsers.map((user) => (
-      user.id === editingUser.id ? { ...user, active: !user.active } : user
+    const updated = updateMockStaffUser(editingUser.id, { active: !editingUser.active });
+    setUsers((currentUsers) => currentUsers.map((currentUser) => (
+      currentUser.id === updated.id ? { ...currentUser, active: updated.active } : currentUser
     )));
     setStatusConfirmationOpen(false);
   }
@@ -3012,8 +3006,8 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           </div>
         ) : (
           <form className="mt-3 space-y-3" onSubmit={createMockUser}>
-            <label className="block text-sm font-medium">Name <span aria-hidden="true" className="text-status-error">*</span><input name="fullName" required maxLength={255} className={inputClass} /></label>
-            <label className="block text-sm font-medium">Username <span aria-hidden="true" className="text-status-error">*</span><input name="username" required maxLength={100} autoCapitalize="none" className={inputClass} /></label>
+            <label className="block text-sm font-medium">Name <span aria-hidden="true" className="text-status-error">*</span><input aria-label="Name" name="fullName" required maxLength={255} className={inputClass} /></label>
+            <label className="block text-sm font-medium">Username <span aria-hidden="true" className="text-status-error">*</span><input aria-label="Username" name="username" required maxLength={100} autoCapitalize="none" className={inputClass} /></label>
             <label className="block text-sm font-medium">Primary role<DropdownSelect aria-label="Primary role" value={createRole} options={createRoles.map((role) => ({ value: role, label: roleLabel(role) }))} onChange={setCreateRole} className="mt-1 w-full" align="start" /></label>
             {createError && <p role="alert" className="text-sm text-status-error">{createError}</p>}
             <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button>Create user</Button></div>

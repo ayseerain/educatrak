@@ -1,4 +1,4 @@
-import { recordMockBillingPayment } from "@/features/students/mockBilling";
+import { recordMockBillingPayment } from "@/api/mock";
 import { centavos } from "@/lib/money";
 import type { AuthenticatedUser, Role } from "@/lib/types";
 

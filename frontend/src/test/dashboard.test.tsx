@@ -9,7 +9,7 @@ import { AdminDashboard } from "@/features/dashboard/components/AdminDashboard";
 import type { AuthenticatedUser } from "@/lib/types";
 import * as mockAdapter from "@/api/mockAdapter";
 import { centavos } from "@/lib/money";
-import { billingAccounts, payments } from "@/features/students/mockBilling";
+import { billingAccounts, payments } from "@/api/mock";
 
 function renderWithProviders(user: AuthenticatedUser) {
   const queryClient = new QueryClient({

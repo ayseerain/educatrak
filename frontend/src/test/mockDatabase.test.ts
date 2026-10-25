@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mockIntegrityErrors } from "@/api/mock/integrity";
-import { getBillingAccount, getMockState, getStudentById, rawMockDatabase, recordMockBillingPayment, resetMockStore, selectBillingAccounts, selectPayments, setMockToday } from "@/api/mock";
+import { createMockStaffUser, getBillingAccount, getMockState, getStudentById, rawMockDatabase, recordMockBillingPayment, resetMockStore, selectBillingAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockStaffUser } from "@/api/mock";
 
 describe("central mock database", () => {
   afterEach(() => resetMockStore());
@@ -34,6 +34,20 @@ describe("central mock database", () => {
     expect(getStudentById("sample-1001")?.clearanceStatus).toBe("Cleared");
     expect(selectPayments().some((candidate) => candidate.id === payment.id)).toBe(true);
     expect(getMockState().auditLog).toHaveLength(beforeAuditCount + 1);
+  });
+
+  it("keeps development user administration on the shared mock store", () => {
+    const created = createMockStaffUser({
+      name: "Jordan Example (sample)",
+      username: "jordan.example",
+      role: "auditor",
+    });
+    const updated = updateMockStaffUser(created.id, { active: false, role: "registrar" });
+
+    expect(selectMockStaffUsers()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: created.id, username: "jordan.example", role: "registrar", active: false }),
+    ]));
+    expect(updated).toMatchObject({ id: created.id, role: "registrar", active: false });
   });
 
   it.each(["2030-01-15", "2040-03-15", "2050-12-20"])("preserves key billing states on %s", (mockToday) => {

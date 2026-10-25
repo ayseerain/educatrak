@@ -2,7 +2,7 @@
 
 `mock-db.json` is the only hand-edited fixture. It contains synthetic raw facts only. `seed.ts` resolves relative Manila dates, `store.ts` owns mutable in-memory state, `selectors.ts` derives balances and statuses, and `api.ts` adds development latency and failure switches.
 
-Pages must use feature APIs or hooks. They must not import `mock-db.json` or the store.
+`MockDatabaseProvider` wraps the app in development mode, so every screen waits for the shared mock database and receives its loading/error behavior. Pages must use feature APIs, selectors, or hooks; they must not import `mock-db.json` or the store.
 
 Development URL switches:
 

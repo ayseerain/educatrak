@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getStudentSearchMatches, normalizeStudentSearchQuery } from "@/features/students/studentSearch";
-import type { Student } from "@/features/students/mockStudents";
+import type { Student } from "@/api/mock";
 
 interface StudentSearchFieldProps {
   id?: string;

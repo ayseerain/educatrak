@@ -5,8 +5,8 @@ import {
   CURRENT_MOCK_SCHOOL_YEAR,
   getStudentById,
   payments,
-} from "@/features/students/mockBilling";
-import { students } from "@/features/students/mockStudents";
+  students,
+} from "@/api/mock";
 import { getMockState, mockApiDelay } from "@/api/mock";
 import type {
   DashboardRange,

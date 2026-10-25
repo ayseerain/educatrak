@@ -47,6 +47,24 @@ export interface MockPayment {
   allocations: { installmentId: string; amount: Centavos }[];
 }
 
+export interface MockNotificationRow {
+  student: string;
+  type: string;
+  channel: string;
+  recipient: string;
+  loadFee: string;
+  status: string;
+  attempts: string;
+}
+
+export interface MockStaffUser {
+  id: string;
+  name: string;
+  username: string;
+  role: "super_admin" | "cashier" | "accounting" | "administrator" | "auditor" | "registrar";
+  active: boolean;
+}
+
 function day(value: string): string {
   return value.slice(0, 10);
 }
@@ -189,6 +207,65 @@ export function getNextDueRecord(studentId: string) {
   const due = getDueInstallments(studentId)[0];
   if (!due) return undefined;
   return { account: `${due.account.schoolYear} tuition`, installment: due.installment.label, dueDate: due.installment.dueDate, status: due.installment.status.replace("_", " "), amountDue: due.amountDue };
+}
+
+export function getMockGuardianContact(studentId: string): { email: string | null; mobile: string | null } | undefined {
+  const state = getMockState();
+  const guardianId = state.studentGuardianLinks.find((link) => link.studentId === studentId)?.guardianId;
+  const guardian = state.guardians.find((candidate) => candidate.id === guardianId);
+  return guardian ? { email: guardian.email, mobile: guardian.mobile } : undefined;
+}
+
+export function selectMockNotificationRows(): MockNotificationRow[] {
+  return getMockState().notificationAttempts.map((attempt) => ({
+    student: getStudentById(attempt.studentId)?.name ?? "Unavailable student",
+    type: attempt.type,
+    channel: attempt.channel,
+    recipient: attempt.recipient,
+    loadFee: "—",
+    status: attempt.status,
+    attempts: String(attempt.attempts),
+  }));
+}
+
+export function selectMockStaffUsers(): MockStaffUser[] {
+  return getMockState().staffUsers.map((user) => ({
+    ...user,
+    role: user.role as MockStaffUser["role"],
+  }));
+}
+
+export function createMockStaffUser(input: Omit<MockStaffUser, "id" | "active">): MockStaffUser {
+  const username = input.username.trim();
+  if (!username) throw new Error("A username is required.");
+  if (getMockState().staffUsers.some((user) => user.username.toLocaleLowerCase() === username.toLocaleLowerCase())) {
+    throw new Error("That username is already in use.");
+  }
+  const user: MockStaffUser = {
+    id: `user-${username.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+    name: input.name.trim(),
+    username,
+    role: input.role,
+    active: true,
+  };
+  updateMockState((state) => {
+    state.staffUsers.push(user);
+  });
+  return user;
+}
+
+export function updateMockStaffUser(userId: string, updates: Partial<Pick<MockStaffUser, "name" | "role" | "active">>): MockStaffUser {
+  let updated: MockStaffUser | undefined;
+  updateMockState((state) => {
+    const user = state.staffUsers.find((candidate) => candidate.id === userId);
+    if (!user) return;
+    if (updates.name !== undefined) user.name = updates.name.trim();
+    if (updates.role !== undefined) user.role = updates.role;
+    if (updates.active !== undefined) user.active = updates.active;
+    updated = { ...user, role: user.role as MockStaffUser["role"] };
+  });
+  if (!updated) throw new Error("This sample user is no longer available.");
+  return updated;
 }
 
 export function recordMockBillingPayment(input: { studentNumber: string; amount: number; paidOn: string }): MockPayment {
