@@ -171,7 +171,7 @@ function MockDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className={cn("fixed inset-0", emphasis ? "z-[60] bg-black/50 backdrop-blur-sm" : "z-40 bg-black/40")} />
-        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[calc(100%_-_2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white", emphasis ? "z-[61] max-w-2xl border-2 border-border p-8 shadow-2xl" : "z-50 border border-border p-5 shadow-lg")}>
+        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white", emphasis ? "z-[61] max-w-2xl border-2 border-border p-8 shadow-2xl" : "z-50 border border-border p-5 shadow-lg")}>
           <Dialog.Title className="text-lg font-semibold text-text-primary">
             {title}
           </Dialog.Title>

@@ -457,6 +457,7 @@ describe("operational page navigation", () => {
 
     await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Edit" }));
     const editDialog = screen.getByRole("dialog", { name: "Edit user account" });
+    expect(editDialog).toHaveClass("w-[min(32rem,calc(100vw-2rem))]");
     expect(within(editDialog).queryByRole("button", { name: "Reset password" })).not.toBeInTheDocument();
     expect(within(editDialog).queryByRole("button", { name: "Deactivate account" })).not.toBeInTheDocument();
     expect(within(editDialog).getByRole("button", { name: "Archive account" }).parentElement).toHaveClass("flex", "justify-end", "gap-3");
@@ -565,6 +566,7 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("button", { name: "Send reminder details" }));
 
     const reviewDialog = screen.getByRole("dialog", { name: "Review reminder notifications" });
+    expect(reviewDialog).toHaveClass("w-[min(32rem,calc(100vw-2rem))]");
     expect(reviewDialog).toHaveTextContent("SMS: 0917 555 0103");
     expect(reviewDialog).toHaveTextContent(/SMS load fee: not configured/i);
     expect(screen.getByRole("button", { name: "Send 1 reminder" })).toBeEnabled();

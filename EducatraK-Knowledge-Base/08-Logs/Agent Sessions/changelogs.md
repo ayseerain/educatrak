@@ -1250,3 +1250,21 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npx vitest run src/test/dashboard.test.tsx` passed (27 tests). `npm run build` passed. A local Chrome check authenticated all six sample roles at 1024px; each dashboard had a visible role title and no horizontal document overflow. Rendered 1440px Administrator, Super Admin, Auditor, Cashier, Accounting, and Registrar screenshots from the local MockDB app; manually reviewed Administrator/Super Admin/Auditor plus Administrator at 1024px. `git diff --check` passed. Full `npm test` and focused `operations.test.tsx` retain two existing tracked fixture assertions (expected 850000 / ₱8,500.00; current fixture is 1250000 / no ₱8,500.00). `npm run verify:production-assets` reports synthetic fixture markers, an accepted MockDB-default limitation recorded in the tracker.
 - **Commit/PR:** Not created.
 - **Follow-ups:** The seeded MockDB has no audit/security rows, so the new previews correctly render their honest empty state until a supported mock action writes an event. No duplicate issue-tracker entry was added because the existing balance-test and MockDB production-asset entries already cover the two validation limitations.
+
+### Monday, October 26, 2026 — 11:48:09 +08:00 | Compact shared dropdown menus
+
+- **Agent:** Codex
+- **Summary:** Reduced the shared `DropdownSelect` menu baseline from 208px to 144px and removed the six full-trigger-width overrides in student, payment, and Accounting fee forms. Option menus now stay compact across role workspaces while the controls and their keyboard behavior remain unchanged.
+- **Files:** Updated `frontend/src/components/ui/DropdownSelect.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and this changelog.
+- **Validation:** `npm.cmd run test -- --run src/test/login.test.tsx src/test/dashboard.test.tsx src/test/tableFilters.test.tsx` passed (3 files, 50 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, October 26, 2026 — 11:53:16 +08:00 | Constrain shared popup dialogs
+
+- **Agent:** Codex
+- **Summary:** Corrected the popup scope after user clarification: reverted the unrelated dropdown-menu sizing change and constrained the shared MockDB `MockDialog` surface to 512px maximum width while preserving a 16px viewport gutter on small screens. This affects reminder review, user editing, account confirmations, and the other mock workflow dialogs without changing live modal forms that already use constrained widths.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused MockDB reminder-review and user-account dialog coverage passed (2 tests). `npm.cmd run build` passed before the assertion-only test change; `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
