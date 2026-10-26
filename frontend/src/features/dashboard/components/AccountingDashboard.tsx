@@ -1,5 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { Banknote, CalendarClock, FileClock, Users } from "lucide-react";
+import { Banknote, CalendarClock, FileClock } from "lucide-react";
 import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -14,12 +14,7 @@ interface AccountingDashboardProps {
 export function AccountingDashboard({ summary, range }: AccountingDashboardProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4">
-        <DashboardStatCard
-          label={en.dashboard.overallEnrolledStudents}
-          value={String(summary.overallEnrolledStudents)}
-          icon={Users}
-        />
+      <div className="grid gap-3 sm:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.pendingVoidApprovals}
           value={String(summary.pendingVoidApprovals)}
@@ -41,7 +36,7 @@ export function AccountingDashboard({ summary, range }: AccountingDashboardProps
 
       <CollectionTrend points={summary.collectionTrend} range={range} />
 
-      <section aria-labelledby="recent-activity-heading">
+      <section aria-labelledby="recent-activity-heading" className="rounded-md border border-border bg-white p-4 shadow-card">
         <RecentActivity payments={summary.recentActivity} range={range} />
       </section>
     </div>

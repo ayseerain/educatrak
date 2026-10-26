@@ -20,11 +20,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-        <MockDatabaseProvider>
-          <SessionProvider>
+        <SessionProvider>
+          <MockDatabaseProvider>
             <App />
-          </SessionProvider>
-        </MockDatabaseProvider>
+          </MockDatabaseProvider>
+        </SessionProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

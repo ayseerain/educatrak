@@ -1,14 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import type { AuthenticatedUser } from "@/lib/types";
 
-const { listStaffUsers, archiveStaffUser, updateStaffUser } = vi.hoisted(() => ({ listStaffUsers: vi.fn(), archiveStaffUser: vi.fn(), updateStaffUser: vi.fn() }));
+const { listStaffUsers, archiveStaffUser, resetStaffUserPassword, updateStaffUser } = vi.hoisted(() => ({ listStaffUsers: vi.fn(), archiveStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), updateStaffUser: vi.fn() }));
 vi.mock("@/api/staffApi", () => ({
   listStaffUsers,
-  archiveStaffUser, updateStaffUser, createStaffUser: vi.fn(), resetStaffUserPassword: vi.fn(), restoreStaffUser: vi.fn(),
+  archiveStaffUser, resetStaffUserPassword, updateStaffUser, createStaffUser: vi.fn(), restoreStaffUser: vi.fn(),
 }));
 
 function renderUsers(user: AuthenticatedUser) {
@@ -56,10 +56,18 @@ describe("role scoped user filters", () => {
     await user.click(await screen.findByRole("button", { name: "Edit" }));
     const editDialog = screen.getByRole("dialog", { name: "Manage user account" });
     expect(editDialog).toHaveClass("max-h-[90dvh]", "overflow-y-auto");
-    await user.click(screen.getByRole("button", { name: "Archive account" }));
-    expect(screen.getByText(/restored for 30 days/)).toBeInTheDocument();
-    const confirmButtons = screen.getAllByRole("button", { name: "Archive account" });
-    await user.click(confirmButtons[confirmButtons.length - 1]!);
+    expect(within(editDialog).queryByRole("button", { name: "Reset password" })).not.toBeInTheDocument();
+    expect(within(editDialog).queryByRole("button", { name: "Deactivate account" })).not.toBeInTheDocument();
+    expect(within(editDialog).queryByRole("button", { name: "Reactivate account" })).not.toBeInTheDocument();
+    const archiveButton = within(editDialog).getByRole("button", { name: "Archive account" });
+    expect(archiveButton.parentElement).toHaveClass("flex", "justify-end", "gap-3");
+    await user.click(archiveButton);
+    const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
+    expect(archiveDialog).toBeVisible();
+    expect(archiveDialog).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-8", "shadow-2xl");
+    expect(archiveDialog).toHaveTextContent(/restored for 30 days/);
+    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
 
     await waitFor(() => expect(archiveStaffUser).toHaveBeenCalledWith("cashier-1", expect.anything()));
   });
@@ -73,10 +81,16 @@ describe("role scoped user filters", () => {
     };
     listStaffUsers.mockResolvedValue({ data: [staffUser], currentPage: 1, lastPage: 1, total: 1, perPage: 10 });
     updateStaffUser.mockResolvedValue({ ...staffUser, active: false });
+    resetStaffUserPassword.mockResolvedValue({ user: staffUser, temporaryPassword: "ResetPassword123!" });
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
 
     await screen.findByRole("button", { name: "Edit" });
     expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reset password" }));
+    const resetDialog = await screen.findByRole("dialog", { name: "Password reset" });
+    expect(within(resetDialog).getByText("ResetPassword123!")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Manage user account" })).not.toBeInTheDocument();
+    await user.click(within(resetDialog).getByRole("button", { name: "Done" }));
     await user.click(screen.getByRole("button", { name: "Deactivate account" }));
 
     const confirmation = screen.getByRole("dialog", { name: "Deactivate account?" });

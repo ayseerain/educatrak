@@ -1187,3 +1187,66 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** The focused MockDB user-action test passed (1 test); `mockDatabase.test.ts` passed (11 tests); `liveUsersFilters.test.tsx` passed (5 tests); `npm.cmd run build` and `git diff --check` passed. The full `operations.test.tsx` run has two existing balance/statement assertion failures, recorded in the issue tracker above.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Browser visual review remains unavailable in this environment. Reconcile the two tracked `operations.test.tsx` assertions with the current fixture before claiming the whole operations suite passes.
+
+### Monday, October 26, 2026 — 09:55:49 Asia/Manila | Investigate MockDB action redirects to login
+
+- **Agent:** Codex
+- **Summary:** Identified a confirmed MockDB session-loss defect: each persisted mock update dispatches a store-change event, and `MockDatabaseProvider` changes the key of a fragment that contains `SessionProvider`. The remount resets the in-memory authenticated user, after which the application guard routes to `/login`. The named Create student, Confirm and save, and Deactivate/Reactivate account controls have correct button types and are triggers, not the redirect mechanism.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` and this changelog only. No application code changed.
+- **Validation:** Static path traced through `store.ts`, `MockDatabaseProvider.tsx`, `main.tsx`, and `App.tsx`. `npm.cmd run test -- --run src/test/operations.test.tsx src/test/login.test.tsx` produced 71 passing tests; two pre-existing `operations.test.tsx` fixture-balance/statement assertions failed (expected ₱8,500.00 / 850000, received current fixture values), which are already recorded in the issue tracker. No browser reproduction was run.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Fix the keyed remount boundary and add a signed-in, post-mutation regression test before closing the issue.
+
+### Monday, October 26, 2026 — 10:00:43 Asia/Manila | Preserve MockDB authentication after write actions
+
+- **Agent:** Codex
+- **Summary:** Moved `SessionProvider` outside the keyed `MockDatabaseProvider` subtree, so MockDB refreshes after create, save, deactivate, reactivate, and other write actions no longer discard the signed-in user. Added a regression test that signs in, persists a representative MockDB student creation, and verifies the app remains on an authenticated route.
+- **Files:** Updated `frontend/src/main.tsx`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm.cmd run test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up for this defect. Broader browser acceptance remains outside this focused repair.
+
+### Monday, October 26, 2026 — 10:16:24 Asia/Manila | Make the archive confirmation visible above the page
+
+- **Agent:** Codex
+- **Summary:** Strengthened the live user-archive confirmation with the existing blurred/dimmed destructive-action backdrop and a larger, high-elevation dialog surface, so it remains visibly distinct above the account-edit dialog and page content.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveUsersFilters.test.tsx` passed (5 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual review remains outside this focused code-and-test validation.
+
+### Monday, October 26, 2026 — 10:22:18 +08:00 | Simplify the user-account editor
+
+- **Agent:** Codex
+- **Summary:** Removed reset-password and deactivate/reactivate controls, plus the account-management section, from both live and MockDB Edit dialogs. Archive now sits horizontally with Cancel and Save changes. Reset password and account-state changes remain available as separate table actions; one-time reset passwords now display in a dedicated dialog instead of reopening the editor.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveUsersFilters.test.tsx src/test/operations.test.tsx` passed all 5 live-user tests and the user-administration MockDB test. The command still has two pre-existing, tracked mock billing/statement fixture failures (expected 850000 / ₱8,500.00, received 1250000 / no ₱8,500.00). `npm.cmd run build` and `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual review remains unavailable in this environment.
+
+### Monday, October 26, 2026 — 10:26:27 +08:00 | Elevate the MockDB archive confirmation
+
+- **Agent:** Codex
+- **Summary:** Added a narrowly scoped emphasized MockDB dialog variant for Archive account. Its overlay now sits above the Edit dialog, dims and blurs the whole background, and the confirmation surface increases from 576px to a 672px maximum width with stronger border and shadow treatment.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "provides separate MockDB user actions with archive and restore"` passed (1 test, 52 skipped). `npm.cmd run build` and `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual review remains unavailable in this environment.
+
+### Monday, October 26, 2026 — 11:11:28 +08:00 | Unify application and role-dashboard headers
+
+- **Agent:** Codex
+- **Summary:** Extracted the shared standard page heading from `OperationalPages.tsx` into `PageHeader`, preserving its back navigation and existing page actions while giving every active application page the same compact title, description, action, and divider structure. Added a distinct `DashboardHeader` for all six role dashboards. It identifies the signed-in workspace, role-specific focus, reporting controls, and only the authorized primary action. Rebalanced Cashier around collection/payment/due-soon/failed-email KPIs, a linked attention queue, concise close-out state, and compact activity preview; removed redundant Cashier status distribution and unrelated enrolled-student metric. Accounting now prioritizes voids, overdue balance, and unsigned close-outs around its approved sole chart. Administrator, Super Admin, Auditor, and Registrar retain only authorized, MockDB-sourced work; duplicate Super Admin navigation buttons were removed and the Auditor audit link moved to the dashboard header.
+- **Files:** Added `frontend/src/components/layout/PageHeader.tsx` and `frontend/src/features/dashboard/components/DashboardHeader.tsx`. Updated `frontend/src/features/operations/OperationalPages.tsx`, dashboard components and page, `frontend/src/i18n/en.ts`, `frontend/src/test/dashboard.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd run build` passed. Focused `npm.cmd run test -- --run src/test/dashboard.test.tsx` passed (26 tests). Full `npm.cmd run test` ran 31 files / 205 tests: 203 passed and two pre-existing, tracked `operations.test.tsx` fixture assertions failed because they expect ₱8,500.00 while current MockDB data returns ₱12,500.00 (see the existing open tracker entry updated Monday, October 26, 2026 — 05:40:00 +08:00). `git diff --check` passed. Browser automation and Python contrast tooling are unavailable in this checkout; no browser screenshot was fabricated. The implemented breakpoints stack content at narrow widths, preserve 44px actions, and retain visible global focus styles.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Run the six dashboards through a real browser at mobile, tablet, desktop, and collapsed-sidebar widths once browser automation or a manual browser session is available. Reconcile the separately tracked MockDB fixture/test mismatch before treating the full suite as green.
+
+### Monday, October 26, 2026 — 11:37:04 +08:00 | Enrich role dashboards with MockDB-backed oversight context
+
+- **Agent:** Codex
+- **Summary:** Refined the shared dashboard header and KPI treatment, preserving the existing centralized standard page header. Added typed MockDB projections for staff-account distribution, current school configuration, and recorded audit/security activity. Administrator now shows account composition, live configuration context, administrative activity, and security-event previews; Super Admin shows governance-specific account coverage and read-only oversight previews; Auditor now presents one substantial, read-only audit preview instead of financial KPI cards. Cashier, Accounting, and Registrar retain their authorized workflows, with Cashier KPI/card proportions kept compact and Accounting retaining its sole approved collection chart.
+- **Files:** Updated `frontend/src/api/dashboardTypes.ts`, `frontend/src/api/mockAdapter.ts`, `frontend/src/features/dashboard/DashboardPage.tsx`, dashboard components, `frontend/src/i18n/en.ts`, and `frontend/src/test/dashboard.test.tsx`; added `AuditActivityPreview.tsx` and `StaffAccountOverview.tsx`; updated this changelog. Backend files were not changed.
+- **Validation:** `npx vitest run src/test/dashboard.test.tsx` passed (27 tests). `npm run build` passed. A local Chrome check authenticated all six sample roles at 1024px; each dashboard had a visible role title and no horizontal document overflow. Rendered 1440px Administrator, Super Admin, Auditor, Cashier, Accounting, and Registrar screenshots from the local MockDB app; manually reviewed Administrator/Super Admin/Auditor plus Administrator at 1024px. `git diff --check` passed. Full `npm test` and focused `operations.test.tsx` retain two existing tracked fixture assertions (expected 850000 / ₱8,500.00; current fixture is 1250000 / no ₱8,500.00). `npm run verify:production-assets` reports synthetic fixture markers, an accepted MockDB-default limitation recorded in the tracker.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The seeded MockDB has no audit/security rows, so the new previews correctly render their honest empty state until a supported mock action writes an event. No duplicate issue-tracker entry was added because the existing balance-test and MockDB production-asset entries already cover the two validation limitations.

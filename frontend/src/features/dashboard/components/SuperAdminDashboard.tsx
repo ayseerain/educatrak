@@ -1,28 +1,40 @@
-import { useNavigate } from "react-router-dom";
-import { Database, FileSearch, ShieldCheck, UsersRound } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { ShieldCheck, UsersRound } from "lucide-react";
+import { AuditActivityPreview } from "./AuditActivityPreview";
 import { DashboardStatCard } from "./DashboardStatCard";
-import { Button } from "@/components/ui/Button";
-import { formatDateTime } from "@/lib/dates";
+import { StaffAccountOverview } from "./StaffAccountOverview";
 import type { SuperAdministratorDashboardSummary } from "@/api/dashboardTypes";
+import { en } from "@/i18n/en";
 
 export function SuperAdminDashboard({ summary }: { summary: SuperAdministratorDashboardSummary }) {
-  const navigate = useNavigate();
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <DashboardStatCard label="Active accounts" value={String(summary.activeUserCount)} icon={UsersRound} />
-        <DashboardStatCard label="Latest backup" value={summary.lastBackupAt ? formatDateTime(summary.lastBackupAt) : "Unavailable"} helperText={summary.lastBackupSucceeded === null ? "Backup status is not recorded." : summary.lastBackupSucceeded ? "Last backup succeeded." : "Last backup failed."} icon={Database} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DashboardStatCard label={en.dashboard.activeAccounts} value={String(summary.activeUserCount)} icon={UsersRound} action={{ to: "/admin/users", label: en.dashboard.manageUsers }} />
+        <DashboardStatCard label={en.dashboard.privilegedAccounts} value={String(summary.staffAccounts?.privileged ?? 0)} helperText={en.dashboard.privilegedAccountsHelp} icon={ShieldCheck} />
       </div>
-      <Card className="p-5">
-        <h2 className="text-lg font-semibold text-text-primary">System governance</h2>
-        <p className="mt-1 text-sm text-text-secondary">Manage privileged access and review security and change history. Financial operations remain with their assigned roles.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => navigate("/admin/users")}><UsersRound aria-hidden="true" className="mr-2 h-4 w-4" />Users</Button>
-          <Button variant="secondary" onClick={() => navigate("/admin/security-events")}><ShieldCheck aria-hidden="true" className="mr-2 h-4 w-4" />Security</Button>
-          <Button variant="secondary" onClick={() => navigate("/admin/audit-log")}><FileSearch aria-hidden="true" className="mr-2 h-4 w-4" />Audit</Button>
-        </div>
-      </Card>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <StaffAccountOverview
+          summary={summary.staffAccounts}
+          title={en.dashboard.governanceAccountOverview}
+          description={en.dashboard.governanceAccountOverviewHelp}
+        />
+        <AuditActivityPreview
+          title={en.dashboard.governanceActivity}
+          description={en.dashboard.governanceActivityHelp}
+          entries={summary.recentAdministrativeActivity}
+          emptyMessage={en.dashboard.noGovernanceActivity}
+          to="/admin/audit-log"
+          actionLabel={en.dashboard.goToAuditLog}
+        />
+      </div>
+      <AuditActivityPreview
+        title={en.dashboard.securityEvents}
+        description={en.dashboard.securityEventsHelp}
+        entries={summary.securityEvents}
+        emptyMessage={en.dashboard.noSecurityEvents}
+        to="/admin/security-events"
+        actionLabel={en.dashboard.viewSecurityEvents}
+      />
     </div>
   );
 }

@@ -439,10 +439,12 @@ describe("operational page navigation", () => {
     expect(within(cashierRow).getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(within(cashierRow).getByRole("button", { name: "Reset password" })).toBeInTheDocument();
     await user.click(within(cashierRow).getByRole("button", { name: "Reset password" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Password reset complete.");
-    expect(screen.getByText(/temporary password \(shown once\):/i)).toBeInTheDocument();
-    expect(screen.getByText("SampleReset123!")).toBeInTheDocument();
-    await user.click(within(screen.getByRole("dialog", { name: "Edit user account" })).getByRole("button", { name: "Cancel" }));
+    const resetDialog = screen.getByRole("dialog", { name: "Password reset" });
+    expect(within(resetDialog).getByRole("status")).toHaveTextContent("Password reset complete.");
+    expect(within(resetDialog).getByText(/temporary password for casey cashier/i)).toBeInTheDocument();
+    expect(within(resetDialog).getByText("SampleReset123!")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Edit user account" })).not.toBeInTheDocument();
+    await user.click(within(resetDialog).getByRole("button", { name: "Done" }));
 
     await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Deactivate account" }));
     expect(screen.getByRole("heading", { name: "Deactivate account?" })).toBeInTheDocument();
@@ -454,8 +456,15 @@ describe("operational page navigation", () => {
     await user.click(within(screen.getByRole("dialog", { name: "Reactivate account?" })).getByRole("button", { name: "Reactivate account" }));
 
     await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Edit" }));
-    await user.click(screen.getByRole("button", { name: "Archive account" }));
-    await user.click(within(screen.getByRole("dialog", { name: "Archive account?" })).getByRole("button", { name: "Archive account" }));
+    const editDialog = screen.getByRole("dialog", { name: "Edit user account" });
+    expect(within(editDialog).queryByRole("button", { name: "Reset password" })).not.toBeInTheDocument();
+    expect(within(editDialog).queryByRole("button", { name: "Deactivate account" })).not.toBeInTheDocument();
+    expect(within(editDialog).getByRole("button", { name: "Archive account" }).parentElement).toHaveClass("flex", "justify-end", "gap-3");
+    await user.click(within(editDialog).getByRole("button", { name: "Archive account" }));
+    const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
+    expect(archiveDialog).toHaveClass("z-[61]", "max-w-2xl", "border-2", "p-8", "shadow-2xl");
+    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
     expect(screen.queryByRole("row", { name: /Casey Cashier \(sample\)/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Archived users" }));

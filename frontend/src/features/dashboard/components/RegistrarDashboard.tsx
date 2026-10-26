@@ -15,7 +15,7 @@ export function RegistrarDashboard() {
   const navigate = useNavigate();
 
   return (
-    <div className="mt-4">
+    <div>
       <Card className="border-l-4 border-l-brand-green p-5">
         <div className="flex items-start gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">

@@ -18,7 +18,7 @@ export function DashboardStatCard({
   action,
 }: DashboardStatCardProps) {
   return (
-    <Card className="group flex min-h-[96px] flex-col border-l-4 border-t-0 border-l-brand-green p-3 transition-shadow hover:shadow-md">
+    <Card className="group flex flex-col border-t-2 border-t-brand-green p-3 transition-shadow hover:shadow-md">
       <div className="flex min-h-7 items-start justify-between gap-3">
         <CardLabel className="max-w-[12rem] leading-5">{label}</CardLabel>
         {Icon && (

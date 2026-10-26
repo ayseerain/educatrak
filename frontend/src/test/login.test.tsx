@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +6,8 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { SessionProvider } from "@/auth/session";
 import { MOCK_USERS } from "@/auth/mockSession";
 import { App } from "@/App";
+import { MockDatabaseProvider } from "@/api/mock/MockDatabaseProvider";
+import { createMockStudent, resetMockStore } from "@/api/mock";
 
 interface RenderAppOptions {
   sessionDurationMs?: number;
@@ -56,6 +58,10 @@ function submitLogin(username: string, password: string) {
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 }
+
+beforeEach(() => {
+  resetMockStore();
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -149,6 +155,43 @@ describe("LoginPage", () => {
     expect(
       await screen.findByRole("heading", { name: /good day, casey cashier/i }),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the mock session after a persisted MockDB update", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/login"]} future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+          <SessionProvider>
+            <MockDatabaseProvider>
+              <App />
+              <LocationPath />
+            </MockDatabaseProvider>
+          </SessionProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByLabelText(/username/i);
+    await fillLogin("sample.cashier", "demo-cashier", user);
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+
+    act(() => {
+      createMockStudent({
+        number: "MOCK-SESSION-REGRESSION",
+        name: "Session Regression Student",
+        grade: "Grade 7",
+        section: "Olive",
+        guardianName: "Session Regression Guardian",
+        guardianRelationship: "Parent",
+        guardianEmail: "",
+        guardianMobile: "",
+      });
+    });
+
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(screen.queryByRole("heading", { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it.each(Object.entries(MOCK_USERS))("signs in the seeded %s account", async (username, account) => {

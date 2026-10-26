@@ -78,6 +78,10 @@ export interface AdministratorDashboardSummary {
   lastBackupAt: string | null; // ISO timestamp when available
   lastBackupSucceeded: boolean | null;
   activeUserCount: number;
+  staffAccounts?: DashboardStaffAccountSummary;
+  configuration?: DashboardConfigurationSummary;
+  recentAdministrativeActivity?: DashboardActivity[];
+  securityEvents?: DashboardActivity[];
 }
 
 export interface SuperAdministratorDashboardSummary extends Omit<AdministratorDashboardSummary, "role"> {
@@ -91,6 +95,27 @@ export interface AuditorDashboardSummary {
   paymentsTodayCount: number;
   rangeCollectionsTotal: Centavos;
   paymentsInRangeCount: number;
+  recentAuditActivity?: DashboardActivity[];
+}
+
+export interface DashboardStaffAccountSummary {
+  active: number;
+  inactive: number;
+  privileged: number;
+  byRole: Array<{ role: Role; count: number }>;
+}
+
+export interface DashboardConfigurationSummary {
+  schoolYear: string | null;
+  gradeLevelCount: number;
+  paymentMethodCount: number;
+}
+
+export interface DashboardActivity {
+  id: string;
+  label: string;
+  actor: string | null;
+  occurredAt: string;
 }
 
 export interface RegistrarDashboardSummary {

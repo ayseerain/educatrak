@@ -150,16 +150,16 @@ describe("DashboardPage", () => {
     renderWithProviders(cashier);
 
     expect(await screen.findByRole("button", { name: /record payment/i })).toBeInTheDocument();
-    await screen.findByRole("link", { name: /view students/i });
-    expect(screen.queryByRole("heading", { name: /cashier workspace/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /view students/i })).toHaveLength(1);
+    await screen.findByRole("link", { name: /view payments/i });
+    expect(screen.getByLabelText(/cashier workspace dashboard/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /view students/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /view payments/i })).toHaveLength(1);
     expect(screen.getByRole("link", { name: /review close-out/i })).toBeInTheDocument();
   });
 
   it("defaults Cashier to today's collections and keeps other ranges available", async () => {
     renderWithProviders(cashier);
-    expect(await screen.findByText(/overall enrolled students/i)).toBeInTheDocument();
+    expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /filter range/i })).toHaveTextContent(
       "Today",
     );
@@ -167,14 +167,12 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/payments today/i)).toBeInTheDocument();
   });
 
-  it("renders the cashier account status overview without a duplicate due-soon widget", async () => {
+  it("keeps the cashier follow-up queue separate from its due-soon KPI", async () => {
     renderWithProviders(cashier);
 
-    expect(await screen.findByText(/account status overview/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("progressbar", { name: /due soon: 2/i }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText(/^Due soon$/i)).toHaveLength(1);
+    expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
+    expect(screen.getByText(/accounts due soon/i)).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
   it("shows cashier attention accounts with names and balances from shared billing records", async () => {
@@ -184,9 +182,11 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Amara Villanueva (sample)")).toBeInTheDocument();
     expect(screen.getByText("Basil Mercado (sample)")).toBeInTheDocument();
     expect(screen.getByText("Cora Navarro (sample)")).toBeInTheDocument();
-    expect(screen.getByText(/1,250\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/4,200\.00/)).toBeInTheDocument();
-    expect(screen.getByText(/8,500\.00/)).toBeInTheDocument();
+    const summary = await mockAdapter.fetchDashboardSummary(cashier, "today");
+    if (summary.role !== "cashier") throw new Error("Cashier dashboard summary expected");
+    for (const account of summary.accountsNeedingAttention) {
+      expect(screen.getByText(new RegExp((account.amountDue / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", "\\.")))).toBeInTheDocument();
+    }
   });
 
   it("opens overdue follow-up from the accounts needing attention panel", async () => {
@@ -203,9 +203,9 @@ describe("DashboardPage", () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);
 
-    expect(await screen.findByRole("link", { name: /view students/i })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /view payments/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /review close-out/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /view payments/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /review follow-ups/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /view payments/i }));
 
@@ -225,7 +225,7 @@ describe("DashboardPage", () => {
     const user = userEvent.setup();
     renderWithProviders(cashier);
 
-    await screen.findByText(/account status overview/i);
+    await screen.findByText(/accounts needing attention/i);
     const rangeFilter = screen.getByRole("button", { name: /filter range/i });
     const activityRows = () => Math.max(screen.queryAllByRole("row").length - 1, 0);
 
@@ -301,11 +301,23 @@ describe("DashboardPage", () => {
     expect(screen.queryByText(/failed emails/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the Super Admin dashboard focused on governance and audit access", async () => {
+  it("derives Administrator account and configuration context from the shared MockDB", async () => {
+    const summary = await mockAdapter.fetchDashboardSummary(administrator, "last_7_days");
+    expect(summary.role).toBe("administrator");
+    if (summary.role !== "administrator") throw new Error("Administrator dashboard summary expected");
+
+    expect(summary.staffAccounts?.active).toBe(summary.activeUserCount);
+    expect(summary.staffAccounts?.byRole).toHaveLength(6);
+    expect(summary.configuration?.schoolYear).toBe("SY 2026-2027");
+    expect(summary.configuration?.gradeLevelCount).toBeGreaterThan(0);
+    expect(summary.configuration?.paymentMethodCount).toBeGreaterThan(0);
+  });
+
+  it("keeps the Super Admin dashboard focused on governance without duplicate navigation panels", async () => {
     renderWithProviders({ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" });
-    await waitFor(() => expect(screen.getByRole("heading", { name: "System governance" })).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Users" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Audit" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText(/system governance dashboard/i)).toBeInTheDocument());
+    expect(await screen.findByRole("link", { name: "Users" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Audit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /record payment/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /financial reports/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /filter range/i })).not.toBeInTheDocument();
@@ -324,7 +336,7 @@ describe("DashboardPage", () => {
   it("Auditor dashboard has no record/void/approve controls", async () => {
     renderWithProviders(auditor);
     await waitFor(() =>
-      expect(screen.getByText(/today's collections/i)).toBeInTheDocument(),
+      expect(screen.getByText(/recent audit activity/i)).toBeInTheDocument(),
     );
     expect(
       screen.queryByRole("button", { name: /record payment/i }),
@@ -333,6 +345,7 @@ describe("DashboardPage", () => {
       screen.queryByRole("button", { name: /void/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /go to reports/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/today's collections/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /open audit/i })).toHaveAttribute("href", "/admin/audit-log");
   });
 

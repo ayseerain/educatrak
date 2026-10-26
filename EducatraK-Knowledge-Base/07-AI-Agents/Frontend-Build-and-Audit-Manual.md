@@ -362,6 +362,10 @@ Updated: Monday, October 26, 2026 — 05:31:10 +08:00. The live user table now p
 
 Updated: Monday, October 26, 2026 — 05:40:00 +08:00. MockDB now persists archive and restore lifecycle dates for staff accounts, adds archive/restore audit entries, and presents the same separate Edit, Reset password, and confirmed Deactivate/Reactivate controls as the live page. The existing Archived users tab exposes restore and the stored archive lifecycle dates. Focused MockDB/UI coverage and the production build pass; the broader operations suite has two existing balance/statement assertion failures tracked in the issue ledger.
 
+Updated: Monday, October 26, 2026 — 10:22:18 +08:00. The Edit dialog now limits account management to the archive action, aligned with Cancel and Save changes. Reset password and deactivate/reactivate remain separate table actions; reset results appear in a dedicated one-time-password dialog rather than reopening the editor. Focused user-administration coverage and the production build pass; the unrelated MockDB balance/statement assertions remain tracked in the issue ledger.
+
+Updated: Monday, October 26, 2026 — 10:26:27 +08:00. The MockDB archive confirmation now uses a higher layer than the Edit dialog, a blurred/dimmed backdrop, a 672px maximum width, and stronger border/shadow emphasis. Its focused workflow test and the production build pass.
+
 ### B38. Role Matrix — M1
 
 - **Route:** `/admin/roles`

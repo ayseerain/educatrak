@@ -1,5 +1,5 @@
 import { centavos } from "@/lib/money";
-import type { AuthenticatedUser } from "@/lib/types";
+import type { AuthenticatedUser, Role } from "@/lib/types";
 import {
   billingAccounts,
   CURRENT_MOCK_SCHOOL_YEAR,
@@ -9,8 +9,10 @@ import {
 } from "@/api/mock";
 import { getMockState, mockApiDelay } from "@/api/mock";
 import type {
+  DashboardActivity,
   DashboardRange,
   DashboardSummary,
+  DashboardStaffAccountSummary,
   RecentPayment,
 } from "./dashboardTypes";
 import type { BackupRecord } from "./backupApi";
@@ -147,6 +149,60 @@ function latestBackup() {
   return backups[backups.length - 1];
 }
 
+function staffAccountSummary(): DashboardStaffAccountSummary {
+  const staff = getMockState().staffUsers;
+  const roleOrder: Role[] = [
+    "super_admin",
+    "administrator",
+    "accounting",
+    "cashier",
+    "auditor",
+    "registrar",
+  ];
+  const roles: DashboardStaffAccountSummary["byRole"] = roleOrder.map((role) => ({
+    role,
+    count: staff.filter((user) => user.role === role).length,
+  }));
+
+  return {
+    active: staff.filter((user) => user.active).length,
+    inactive: staff.filter((user) => !user.active).length,
+    privileged: staff.filter((user) => user.active && (user.role === "super_admin" || user.role === "administrator")).length,
+    byRole: roles,
+  };
+}
+
+function readableAuditAction(action: string): string {
+  return action
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function dashboardAuditActivity(): DashboardActivity[] {
+  const state = getMockState();
+  const staffNames = new Map(state.staffUsers.map((user) => [user.id, user.name]));
+  const records = state.auditLog as Array<{
+    id?: unknown;
+    action?: unknown;
+    actorId?: unknown;
+    occurredAt?: unknown;
+  }>;
+
+  return records
+    .filter((record) => typeof record.id === "string" && typeof record.action === "string" && typeof record.occurredAt === "string")
+    .map((record) => ({
+      id: record.id as string,
+      label: readableAuditAction(record.action as string),
+      actor: typeof record.actorId === "string" ? staffNames.get(record.actorId) ?? null : null,
+      occurredAt: record.occurredAt as string,
+    }))
+    .sort((first, second) => second.occurredAt.localeCompare(first.occurredAt));
+}
+
+function securityActivity(events: DashboardActivity[]): DashboardActivity[] {
+  return events.filter((event) => /^(Auth|User)/.test(event.label));
+}
+
 export async function listBackupRecords(): Promise<BackupRecord[]> {
   await mockApiDelay();
   return getMockState().backupRuns
@@ -174,6 +230,10 @@ export async function fetchDashboardSummary(
   const todayActivity = activityForRange(allPayments, "today", now);
   const todayTotals = financialTotalsForActivity(todayActivity);
   const activeStudents = students.filter((student) => student.studentStatus === "Active").length;
+  const staffAccounts = staffAccountSummary();
+  const auditActivity = dashboardAuditActivity();
+  const configuration = getMockState().config;
+  const currentSchoolYear = getMockState().schoolYears.find((year) => year.id === configuration.currentSchoolYearId)?.label ?? null;
 
   switch (user.role) {
     case "cashier":
@@ -206,6 +266,14 @@ export async function fetchDashboardSummary(
         lastBackupAt: latestBackup()?.occurredAt ?? null,
         lastBackupSucceeded: latestBackup()?.succeeded ?? null,
         activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
+        staffAccounts,
+        configuration: {
+          schoolYear: currentSchoolYear,
+          gradeLevelCount: configuration.grades.length,
+          paymentMethodCount: configuration.paymentMethods.length,
+        },
+        recentAdministrativeActivity: auditActivity,
+        securityEvents: securityActivity(auditActivity),
       };
     case "super_admin":
       return {
@@ -213,6 +281,9 @@ export async function fetchDashboardSummary(
         lastBackupAt: latestBackup()?.occurredAt ?? null,
         lastBackupSucceeded: latestBackup()?.succeeded ?? null,
         activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
+        staffAccounts,
+        recentAdministrativeActivity: auditActivity,
+        securityEvents: securityActivity(auditActivity),
       };
     case "auditor":
       return {
@@ -222,6 +293,7 @@ export async function fetchDashboardSummary(
         paymentsTodayCount: todayTotals.paymentCount,
         rangeCollectionsTotal: rangeTotals.totalCollections,
         paymentsInRangeCount: rangeTotals.paymentCount,
+        recentAuditActivity: auditActivity,
       };
     case "registrar":
       return { role: "registrar" };

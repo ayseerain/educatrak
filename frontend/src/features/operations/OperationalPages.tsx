@@ -12,13 +12,12 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   Navigate,
   Link,
-  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -160,17 +159,19 @@ function MockDialog({
   onOpenChange,
   title,
   children,
+  emphasis = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   children: ReactNode;
+  emphasis?: boolean;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-[calc(100%_-_2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-white p-5 shadow-lg">
+        <Dialog.Overlay className={cn("fixed inset-0", emphasis ? "z-[60] bg-black/50 backdrop-blur-sm" : "z-40 bg-black/40")} />
+        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[calc(100%_-_2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white", emphasis ? "z-[61] max-w-2xl border-2 border-border p-8 shadow-2xl" : "z-50 border border-border p-5 shadow-lg")}>
           <Dialog.Title className="text-lg font-semibold text-text-primary">
             {title}
           </Dialog.Title>
@@ -178,55 +179,6 @@ function MockDialog({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-function PageHeader({
-  title,
-  description,
-  action,
-  backTo,
-  backLabel = "Back",
-}: {
-  title: string;
-  description: string;
-  action?: ReactNode;
-  backTo?: string;
-  backLabel?: string;
-}) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  function goBack() {
-    if (location.key !== "default") {
-      navigate(-1);
-      return;
-    }
-    if (backTo) navigate(backTo);
-  }
-  return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
-        {backTo && (
-          <button
-            className="mb-3 inline-flex min-h-control items-center gap-2 rounded-md border border-border bg-white px-3 text-sm font-medium text-text-primary transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
-            type="button"
-            onClick={goBack}
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {backLabel}
-          </button>
-        )}
-        <h1 className="text-2xl font-semibold text-text-primary">{title}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-text-secondary">
-          {description}
-        </p>
-      </div>
-      {action && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {action}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -3041,6 +2993,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<Role>("cashier");
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<(typeof users)[number] | null>(null);
   const [statusTarget, setStatusTarget] = useState<(typeof users)[number] | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<(typeof users)[number] | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<(typeof users)[number] | null>(null);
@@ -3060,7 +3013,6 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   function closeEditDialog() {
     setEditingUserId(null);
     setEditRole("cashier");
-    setTemporaryPassword(null);
     setStatusTarget(null);
   }
 
@@ -3110,11 +3062,11 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
   function openEdit(user: (typeof users)[number]) {
     setEditingUserId(user.id);
     setEditRole((Object.entries({ administrator: "Administrator", cashier: "Cashier", accounting: "Accounting Officer", auditor: "Auditor", registrar: "Registrar", super_admin: "Super Admin" }) as Array<[Role, string]>).find(([, label]) => label === user.role)?.[0] ?? "cashier");
-    setTemporaryPassword(null);
   }
 
-  function resetPassword() {
+  function resetPassword(target: (typeof users)[number]) {
     setTemporaryPassword("SampleReset123!");
+    setResetTarget(target);
   }
 
   function updateAccountState() {
@@ -3181,7 +3133,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               <Button key={`${user.id}-restore`} type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => setRestoreTarget(user)}>Restore</Button>,
             ] : [
               <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
-              <div key={`${user.id}-actions`} className="flex flex-wrap gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => { openEdit(user); resetPassword(); }}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
+              <div key={`${user.id}-actions`} className="flex flex-wrap gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
             ]),
           ])}
         />
@@ -3237,53 +3189,20 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
                 {editingUser.isCurrentAdministrator && <span className="mt-1 block text-sm text-text-secondary">You cannot change your own administrator role.</span>}
               </label>
               <div className="flex justify-end gap-3">
+                <Button type="button" variant="destructive" disabled={editingUser.isCurrentAdministrator} onClick={() => setArchiveTarget(editingUser)}>Archive account</Button>
                 <Button type="button" variant="neutral" onClick={closeEditDialog}>Cancel</Button>
                 <Button type="submit">Save changes</Button>
               </div>
             </form>
-
-            <div className="border-t border-border pt-5">
-              <h2 className="font-semibold">Account management</h2>
-              <p className="mt-1 text-sm text-text-secondary">
-                Resetting the password forces a change at the account's next sign-in.
-              </p>
-              {temporaryPassword ? (
-                <div className="mt-3 rounded-md border border-brand-green-light bg-surface p-3">
-                  <p role="status" className="font-medium text-brand-green-dark">Password reset complete.</p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    Temporary password (shown once): <span className="font-medium text-text-primary">{temporaryPassword}</span>
-                  </p>
-                </div>
-              ) : (
-                <Button className="mt-3" type="button" variant="secondary" onClick={resetPassword}>
-                  Reset password
-                </Button>
-              )}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {editingUser.active ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={editingUser.isCurrentAdministrator}
-                      onClick={() => setStatusTarget(editingUser)}
-                    >
-                      Deactivate account
-                    </Button>
-                    {editingUser.isCurrentAdministrator && (
-                      <p className="text-sm text-text-secondary">You cannot deactivate your own administrator account.</p>
-                    )}
-                  </>
-                ) : (
-                  <Button type="button" variant="secondary" onClick={() => setStatusTarget(editingUser)}>
-                    Reactivate account
-                  </Button>
-                )}
-                <Button type="button" variant="destructive" disabled={editingUser.isCurrentAdministrator} onClick={() => setArchiveTarget(editingUser)}>Archive account</Button>
-              </div>
-            </div>
           </div>
         )}
+      </MockDialog>
+      <MockDialog open={resetTarget !== null} onOpenChange={(open) => { if (!open) { setResetTarget(null); setTemporaryPassword(null); } }} title="Password reset">
+        <div className="mt-3">
+          <p role="status" className="font-medium text-brand-green-dark">Password reset complete.</p>
+          <p className="mt-1 text-sm text-text-secondary">Temporary password for {resetTarget?.name} (shown once): <span className="font-medium text-text-primary">{temporaryPassword}</span></p>
+          <div className="mt-4 flex justify-end"><Button type="button" onClick={() => { setResetTarget(null); setTemporaryPassword(null); }}>Done</Button></div>
+        </div>
       </MockDialog>
       <MockDialog
         open={statusTarget !== null}
@@ -3300,7 +3219,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           </div>
         </div>
       </MockDialog>
-      <MockDialog open={archiveTarget !== null} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }} title="Archive account?">
+      <MockDialog open={archiveTarget !== null} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }} title="Archive account?" emphasis>
         <div className="mt-3"><p className="text-sm text-text-secondary">{archiveTarget?.name} will lose sign-in access immediately. This MockDB account can be restored for 30 days before its identifying details are anonymized.</p><div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setArchiveTarget(null)}>Cancel</Button><Button type="button" variant="destructive" onClick={archiveUser}>Archive account</Button></div></div>
       </MockDialog>
       <MockDialog open={restoreTarget !== null} onOpenChange={(open) => { if (!open) setRestoreTarget(null); }} title="Restore account?">

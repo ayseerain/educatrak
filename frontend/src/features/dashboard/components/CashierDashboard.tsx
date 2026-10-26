@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardLabel } from "@/components/ui/Card";
+import { Link } from "react-router-dom";
 import { AccountStatusOverview } from "./AccountStatusOverview";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -27,44 +28,20 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex h-full flex-col gap-3">
-          <div className="grid flex-1 grid-cols-2 items-stretch gap-3">
-            <DashboardStatCard
-              label={en.dashboard.overallEnrolledStudents}
-              value={String(summary.overallEnrolledStudents)}
-              icon={Users}
-              action={{ to: "/students", label: en.dashboard.viewStudents }}
-            />
-            <DashboardStatCard
-              label={statLabels.collections}
-              value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)}
-              icon={Banknote}
-              action={{ to: "/closeout", label: en.dashboard.reviewCloseout }}
-            />
-            <DashboardStatCard
-              label={statLabels.payments}
-              value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)}
-              icon={ReceiptText}
-              action={{ to: "/payments", label: en.dashboard.viewPayments }}
-            />
-            <DashboardStatCard
-              label={en.dashboard.failedEmails}
-              value={String(summary.failedEmailCount)}
-              icon={MailSearch}
-              action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }}
-            />
-          </div>
-          <CloseoutStatus done={summary.closeoutDone} className="min-h-[116px]" />
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardStatCard label={statLabels.collections} value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)} icon={Banknote} action={{ to: "/payments", label: en.dashboard.viewPayments }} />
+        <DashboardStatCard label={statLabels.payments} value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)} icon={ReceiptText} />
+        <DashboardStatCard label={en.dashboard.dueSoon} value={String(summary.accountStatusOverview.dueSoon)} helperText={en.dashboard.dueSoonAccounts} icon={Users} action={{ to: "/followup?status=due_soon", label: en.dashboard.reviewFollowups }} />
+        <DashboardStatCard label={en.dashboard.failedEmails} value={String(summary.failedEmailCount)} icon={MailSearch} action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }} />
+      </div>
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <CloseoutStatus done={summary.closeoutDone} />
         <AccountStatusOverview
-          className="h-full"
-          overview={summary.accountStatusOverview}
           accountsNeedingAttention={summary.accountsNeedingAttention}
         />
       </div>
 
-      <section aria-labelledby="recent-activity-heading">
+      <section aria-labelledby="recent-activity-heading" className="rounded-md border border-border bg-white p-4 shadow-card">
         <RecentActivity payments={summary.recentActivity} range={range} showActions />
       </section>
     </div>
@@ -108,6 +85,9 @@ function CloseoutStatus({
                 : en.dashboard.closeoutStatusOpenHelp}
             </span>
           </p>
+          <Link to="/closeout" className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline">
+            {en.dashboard.reviewCloseout}
+          </Link>
         </div>
       </div>
     </Card>
