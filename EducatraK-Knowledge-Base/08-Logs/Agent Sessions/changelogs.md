@@ -25,6 +25,17 @@
 
 ## Entries
 
+### Thursday, October 29, 2026 â€” 12:19:09 +08:00 | Agent instructions: use project skills; create skills for reusable patterns
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** On the project owner's request ("copy the instruction from cliniq like use the available skills for similar request, but if not available create the skill"), `AGENTS.md` and `CLAUDE.md` gained two items under "During the Task", adapted from CLINIQ's `CLAUDE.md`:
+  - Item 11: check `.agents/skills/` for a matching `educatrak-*` skill and follow it.
+  - Item 12: create a component skill only for cross-page patterns. Look for an existing skill first; when a request changes the pattern, update the skill and the shared component together; state and log each skill change.
+  - EducatraK's paths replace CLINIQ's: `.agents/skills/`, `UX-and-Design-System.md`, and the changelog/session log in place of CLINIQ's `Skills-Setup.md`.
+- **Files:** Modified `AGENTS.md`, `CLAUDE.md` (kept identical).
+- **Validation:** `cmp AGENTS.md CLAUDE.md` reported identical after the edit.
+- **Commit/PR:** Not available at time of entry (the project owner commits).
+- **Follow-ups:** None.
+
 ### Thursday, October 29, 2026 â€” 12:06:53 +08:00 | Sidebar active-state flicker, Follow-up selection controls, favicon
 - **Agent:** Claude Code (Opus 5.5)
 - **Summary:** These changes were requested by the project owner.
