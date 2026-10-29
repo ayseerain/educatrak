@@ -26,18 +26,18 @@ describe.each([["Cashier", cashier], ["Accounting", accounting]] as const)("%s c
     render(<MemoryRouter><RoleFollowupWorkspace user={user} /></MemoryRouter>);
 
     expect(screen.getByText("Follow-up content")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Follow-up" })).toHaveAttribute("aria-pressed", "true");
-    await interaction.click(screen.getByRole("button", { name: "Notification log" }));
+    expect(screen.getByRole("tab", { name: "Follow-up" })).toHaveAttribute("aria-selected", "true");
+    await interaction.click(screen.getByRole("tab", { name: "Notification log" }));
 
     expect(screen.getByText("Notification history content")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Notification log" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("tab", { name: "Notification log" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("opens the notification view directly from a notification link", () => {
     render(<MemoryRouter initialEntries={["/followup?view=notifications"]}><RoleFollowupWorkspace user={user} /></MemoryRouter>);
 
     expect(screen.getByText("Notification history content")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Notification log" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("tab", { name: "Notification log" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("keeps the selected view synchronized with browser Back and Forward", async () => {
@@ -45,16 +45,16 @@ describe.each([["Cashier", cashier], ["Accounting", accounting]] as const)("%s c
     window.history.replaceState({}, "", "/followup");
     render(<BrowserRouter><RoleFollowupWorkspace user={user} /></BrowserRouter>);
 
-    await interaction.click(screen.getByRole("button", { name: "Notification log" }));
+    await interaction.click(screen.getByRole("tab", { name: "Notification log" }));
     expect(await screen.findByText("Notification history content")).toBeInTheDocument();
     await waitFor(() => expect(window.location.search).toBe("?view=notifications"));
 
     act(() => window.history.back());
-    await waitFor(() => expect(screen.getByRole("button", { name: "Follow-up" })).toHaveAttribute("aria-pressed", "true"));
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Follow-up" })).toHaveAttribute("aria-selected", "true"));
     expect(window.location.search).toBe("");
 
     act(() => window.history.forward());
-    await waitFor(() => expect(screen.getByRole("button", { name: "Notification log" })).toHaveAttribute("aria-pressed", "true"));
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Notification log" })).toHaveAttribute("aria-selected", "true"));
     expect(window.location.search).toBe("?view=notifications");
   });
 
@@ -62,7 +62,7 @@ describe.each([["Cashier", cashier], ["Accounting", accounting]] as const)("%s c
     vi.stubEnv("VITE_DATA_SOURCE", "mock");
     render(<MemoryRouter initialEntries={["/followup?view=notifications&status=failed"]}><RoleFollowupWorkspace user={user} /></MemoryRouter>);
 
-    expect(screen.getByRole("button", { name: "Notification log" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("tab", { name: "Notification log" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
     expect(screen.queryByRole("cell", { name: /queued/i })).not.toBeInTheDocument();
   });

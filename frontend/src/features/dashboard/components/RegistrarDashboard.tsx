@@ -16,15 +16,13 @@ export function RegistrarDashboard() {
 
   return (
     <div>
-      <Card className="border-l-4 border-l-brand-green p-5">
+      <Card className="p-5">
         <div className="flex items-start gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">
-            <SearchCheck aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
-          </span>
+          <SearchCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-green-dark" />
           <div className="min-w-0 flex-1">
             <label
               htmlFor="registrar-student-search"
-              className="block text-lg font-semibold text-text-primary"
+              className="block text-base font-semibold text-text-primary"
             >
               {en.dashboard.studentSearchLabel}
             </label>

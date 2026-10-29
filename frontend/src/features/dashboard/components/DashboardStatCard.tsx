@@ -1,6 +1,7 @@
-import { Card, CardLabel, CardValue, CardHelperText } from "@/components/ui/Card";
 import { Link } from "react-router-dom";
-import type { LucideIcon } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
+import { CARD_SURFACE } from "@/components/ui/Card";
+import { cn } from "@/lib/cn";
 
 interface DashboardStatCardProps {
   label: string;
@@ -10,6 +11,7 @@ interface DashboardStatCardProps {
   action?: { to: string; label: string };
 }
 
+/** CLINIQ stat card: semibold label with a tinted icon chip, a large bold figure, a quiet scope line. */
 export function DashboardStatCard({
   label,
   value,
@@ -18,25 +20,26 @@ export function DashboardStatCard({
   action,
 }: DashboardStatCardProps) {
   return (
-    <Card className="group flex flex-col border-t-2 border-t-brand-green p-3 transition-shadow hover:shadow-md">
-      <div className="flex min-h-7 items-start justify-between gap-3">
-        <CardLabel className="max-w-[12rem] leading-5">{label}</CardLabel>
+    <div className={cn(CARD_SURFACE, "flex w-full flex-col gap-2 p-5 print:break-inside-avoid")}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold text-text-secondary">{label}</p>
         {Icon && (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-brand-green-light/60 bg-[#EAF6EC] text-brand-green-dark">
-            <Icon aria-hidden="true" className="h-4 w-4 transition-transform group-hover:scale-105" strokeWidth={1.8} />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-green-light/30 text-brand-green-dark">
+            <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
           </span>
         )}
       </div>
-      <CardValue className="truncate">{value}</CardValue>
-      {helperText && <CardHelperText>{helperText}</CardHelperText>}
+      <p className="-mt-1 truncate text-3xl font-bold tabular-nums tracking-tight text-text-primary">{value}</p>
+      {helperText && <p className="text-xs text-text-secondary">{helperText}</p>}
       {action && (
         <Link
           to={action.to}
-          className="mt-auto inline-flex min-h-11 items-center pt-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+          className="mt-auto inline-flex min-h-control items-center gap-1 self-start text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green motion-reduce:transition-none"
         >
           {action.label}
+          <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
         </Link>
       )}
-    </Card>
+    </div>
   );
 }

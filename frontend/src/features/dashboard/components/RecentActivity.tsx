@@ -91,7 +91,7 @@ export function RecentActivity({
             cell: ({ row }) => (
               <Link
                 to={`/receipts/${encodeURIComponent(row.original.id)}/print`}
-                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
+                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green"
               >
                 {en.table.viewReceipt}
               </Link>
@@ -111,7 +111,7 @@ export function RecentActivity({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2
           id="recent-activity-heading"
-          className="text-lg font-semibold text-text-primary"
+          className="text-base font-semibold text-text-primary"
         >
           {en.dashboard.recentActivity}
         </h2>
@@ -123,7 +123,6 @@ export function RecentActivity({
             options={ACTIVITY_LIMIT_OPTIONS}
             onChange={setActivityLimit}
             className="min-w-[150px]"
-            contentClassName="min-w-[150px]"
           />
         </label>
       </div>

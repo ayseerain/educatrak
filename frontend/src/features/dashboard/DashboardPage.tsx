@@ -10,7 +10,7 @@ import { RegistrarDashboard } from "./components/RegistrarDashboard";
 import { SuperAdminDashboard } from "./components/SuperAdminDashboard";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { en } from "@/i18n/en";
 import type { AuthenticatedUser } from "@/lib/types";
 import type { DashboardRange } from "@/api/dashboardTypes";
@@ -32,7 +32,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   // rendering it directly keeps the role overview free of financial fields.
   if (user.role === "registrar") {
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col gap-4">
         <PageHeading user={user} />
         <RegistrarDashboard />
       </div>
@@ -48,7 +48,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onRecordPayment={() => navigate("/payments/new")}
       />
 
-      {isPending && <LoadingState message={en.states.loadingDashboard} />}
+      {isPending && <LoadingState message={en.states.loadingDashboard} layout="dashboard" />}
 
       {isError && (
         <ErrorState
@@ -114,5 +114,5 @@ function PageHeading({
 }
 
 function DashboardAction({ to, icon: Icon, label }: { to: string; icon: typeof ShieldCheck; label: string }) {
-  return <Link to={to} className="inline-flex min-h-control items-center gap-2 rounded-md bg-brand-green-dark px-4 text-sm font-medium text-white transition-colors hover:bg-[#023d12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"><Icon aria-hidden="true" className="h-4 w-4" />{label}</Link>;
+  return <Link to={to} className={buttonVariants({ variant: "primary" })}><Icon aria-hidden="true" className="h-4 w-4" />{label}</Link>;
 }

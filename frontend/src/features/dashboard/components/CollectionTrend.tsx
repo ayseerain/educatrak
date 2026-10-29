@@ -7,7 +7,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardLabel } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { ChartColumn } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { en } from "@/i18n/en";
 import { format, type Centavos } from "@/lib/money";
@@ -53,7 +54,7 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
           format((Math.round(value * 100)) as Centavos)
         }
         contentStyle={{
-          borderRadius: 6,
+          borderRadius: 8,
           borderColor: "#E0E0E0",
           fontSize: 12,
         }}
@@ -67,9 +68,9 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
   );
 
   return (
-    <Card>
-      <CardLabel>{label}</CardLabel>
-      <div className="mt-3 flex h-56 min-h-56 min-w-0 items-center">
+    <Card className="p-0">
+      <CardHeader icon={<ChartColumn aria-hidden="true" />} title={label} />
+      <div className="flex h-56 min-h-56 min-w-0 items-center px-5 pb-5">
         {!hasCollections ? (
           <EmptyState message={en.dashboard.noCollectionsInRange} />
         ) : isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}

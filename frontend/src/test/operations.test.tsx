@@ -463,8 +463,8 @@ describe("operational page navigation", () => {
     expect(within(editDialog).getByRole("button", { name: "Archive account" }).parentElement).toHaveClass("flex", "justify-end", "gap-3");
     await user.click(within(editDialog).getByRole("button", { name: "Archive account" }));
     const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
-    expect(archiveDialog).toHaveClass("z-[61]", "max-w-2xl", "border-2", "p-8", "shadow-2xl");
-    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    expect(archiveDialog).toHaveClass("z-[61]", "max-w-2xl", "p-6", "shadow-raised");
+    expect(document.querySelector('[class~="bg-text-primary/40"]')).toBeInTheDocument();
     await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
     expect(screen.queryByRole("row", { name: /Casey Cashier \(sample\)/ })).not.toBeInTheDocument();
 
@@ -1006,8 +1006,8 @@ describe("operational page navigation", () => {
       expect(navigationLinks.map((link) => link.textContent)).toEqual(links);
       expect(navigationLinks.every((link) => link.querySelector("svg[aria-hidden='true']"))).toBe(true);
       expect(screen.getByRole("img", { name: "Mendez Christian Academy seal" })).toHaveClass(
-        "h-12",
-        "w-12",
+        "h-11",
+        "w-11",
       );
       navigation.unmount();
     }
@@ -1024,8 +1024,8 @@ describe("operational page navigation", () => {
 
   it("shows the cashier notification and permitted close-out tabs", () => {
     const followup = render(<MemoryRouter><RoleFollowupWorkspace user={cashier} /></MemoryRouter>);
-    expect(screen.getByRole("button", { name: "Follow-up" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Notification log" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Follow-up" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Notification log" })).toBeInTheDocument();
     followup.unmount();
 
     const closeout = render(<MemoryRouter><CloseoutPage user={cashier} /></MemoryRouter>);

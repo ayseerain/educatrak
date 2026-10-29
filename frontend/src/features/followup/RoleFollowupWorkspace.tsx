@@ -1,5 +1,5 @@
+import { ViewTabs } from "@/components/ui/ViewTabs";
 import { useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
 import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 import { LiveNotificationLog } from "@/features/operations/LiveNotificationLog";
 import { FollowupPage, MockNotificationsPage } from "@/features/operations/OperationalPages";
@@ -14,25 +14,25 @@ export function RoleFollowupWorkspace({ user }: { user: AuthenticatedUser }) {
   const useLiveData = isLiveCashierApiEnabled();
 
   const workspaceSwitch = (
-    <div role="group" aria-label="Follow-up and notification workspace" className="mb-5 flex flex-wrap gap-2">
-      <Button type="button" variant={view === "followups" ? "primary" : "secondary"} aria-pressed={view === "followups"} onClick={() => selectView("followups")}>
-        Follow-up
-      </Button>
-      <Button type="button" variant={view === "notifications" ? "primary" : "secondary"} aria-pressed={view === "notifications"} onClick={() => selectView("notifications")}>
-        Notification log
-      </Button>
-    </div>
+    <ViewTabs
+      label="Follow-up and notification workspace"
+      items={[
+        { key: "followups", label: "Follow-up", selected: view === "followups", onSelect: () => selectView("followups") },
+        { key: "notifications", label: "Notification log", selected: view === "notifications", onSelect: () => selectView("notifications") },
+      ]}
+    />
   );
 
   function selectView(nextView: WorkspaceView) {
     setSearchParams(nextView === "notifications" ? { view: nextView } : {});
   }
 
-  return view === "followups"
+  // Each view fades in when its tab is chosen (the tab strip itself slides).
+  return <div key={view} className="animate-screen-in motion-reduce:animate-none">{view === "followups"
     ? useLiveData
       ? <LiveFollowupPage user={user} workspaceSwitch={workspaceSwitch} />
       : <FollowupPage user={user} workspaceSwitch={workspaceSwitch} />
     : useLiveData
       ? <LiveNotificationLog user={user} workspaceSwitch={workspaceSwitch} />
-      : <MockNotificationsPage user={user} workspaceSwitch={workspaceSwitch} />;
+      : <MockNotificationsPage user={user} workspaceSwitch={workspaceSwitch} />}</div>;
 }

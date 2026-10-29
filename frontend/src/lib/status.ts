@@ -19,28 +19,28 @@ export const STATUS_TONE_STYLES: Record<
   { badge: string; text: string; soft: string; bar: string; borderLeft: string; surface: string }
 > = {
   success: {
-    badge: "bg-white text-status-success",
+    badge: "bg-status-success/10 text-text-primary",
     text: "text-status-success",
-    soft: "bg-[#E0F2E4]",
+    soft: "bg-status-success/15",
     bar: "bg-status-success",
     borderLeft: "border-l-status-success",
-    surface: "bg-[#F4FAF5]",
+    surface: "bg-status-success/5",
   },
   warning: {
-    badge: "bg-white text-status-warning",
+    badge: "bg-status-warning/10 text-text-primary",
     text: "text-status-warning",
-    soft: "bg-[#FBEEDC]",
+    soft: "bg-status-warning/15",
     bar: "bg-status-warning",
     borderLeft: "border-l-status-warning",
-    surface: "bg-[#FFF9F0]",
+    surface: "bg-status-warning/5",
   },
   error: {
-    badge: "bg-white text-status-error",
+    badge: "bg-status-error/10 text-text-primary",
     text: "text-status-error",
-    soft: "bg-[#FDE7E7]",
+    soft: "bg-status-error/15",
     bar: "bg-status-error",
     borderLeft: "border-l-status-error",
-    surface: "bg-[#FFF4F4]",
+    surface: "bg-status-error/5",
   },
   neutral: {
     badge: "bg-surface text-text-secondary",

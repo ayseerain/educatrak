@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSession } from "@/auth/session";
 import { Shell } from "@/components/layout/Shell";
+import { ScreenTransition } from "@/components/layout/ScreenTransition";
 import { can, canViewReport, type ReportKind } from "@/lib/permissions";
 import { SessionExpirationWarning } from "@/features/auth/SessionExpirationWarning";
 import { FirstLoginPage } from "@/features/auth/FirstLoginPage";
@@ -28,7 +29,7 @@ function AuthenticatedApp({ onLogout, onRoleChange, user }: { onLogout: () => vo
   notificationParams.set("view", "notifications");
   const notificationWorkspacePath = `/followup?${notificationParams.toString()}`;
   const guarded = (capability: Capability, element: ReactNode) => <Guard user={user} capability={capability}>{element}</Guard>;
-  return <Shell user={user} onLogout={onLogout} onRoleChange={onRoleChange}><SessionExpirationWarning />{user.role === "auditor" && !auditorPageAllowed ? <DeniedPage /> : <Routes>
+  return <Shell user={user} onLogout={onLogout} onRoleChange={onRoleChange}><SessionExpirationWarning /><ScreenTransition screenKey={`${user.role}:${location.pathname}`}>{user.role === "auditor" && !auditorPageAllowed ? <DeniedPage /> : <Routes>
     <Route path="/" element={<DashboardPage user={user} />} /><Route path="/profile" element={<ProfilePage user={user} />} />
     <Route path="/students" element={guarded("student.view", <StudentsPage user={user} />)} /><Route path="/students/new" element={guarded("student.edit", <StudentFormPage />)} /><Route path="/students/:id/edit" element={guarded("student.edit", <StudentFormPage edit />)} /><Route path="/students/:id" element={guarded("student.view", <StudentProfilePage user={user} />)} />
     <Route path="/accounts" element={guarded("account.view", <AccountsPage user={user} />)} /><Route path="/accounts/new" element={guarded("account.create", <AccountWizardPage user={user} />)} /><Route path="/accounts/:id" element={guarded("account.view", <AccountDetailPage user={user} />)} />
@@ -40,16 +41,16 @@ function AuthenticatedApp({ onLogout, onRoleChange, user }: { onLogout: () => vo
     <Route path="/settings/fees" element={guarded("settings.finance.view", <SettingsPage section="fees" editable={can(user, "settings.finance.manage")} actorId={user.id} />)} /><Route path="/settings/plans" element={guarded("settings.finance.view", <SettingsPage section="plans" editable={can(user, "settings.finance.manage")} actorId={user.id} />)} /><Route path="/settings/clearance-rules" element={guarded("settings.finance.view", <SettingsPage section="clearance" editable={can(user, "settings.finance.manage")} actorId={user.id} />)} /><Route path="/settings/school" element={guarded("settings.system.view", <SettingsPage section="school" editable={can(user, "settings.system.manage")} actorId={user.id} />)} /><Route path="/settings/receipt" element={guarded("settings.system.view", <SettingsPage section="receipt" editable={can(user, "settings.system.manage")} actorId={user.id} />)} /><Route path="/settings/email" element={guarded("settings.system.view", <SettingsPage section="email" editable={can(user, "settings.system.manage")} actorId={user.id} />)} />
     <Route path="/admin/users" element={guarded("user.manage", <UsersPage user={user} />)} /><Route path="/admin/roles" element={guarded("user.manage", <RolesPage />)} /><Route path="/admin/audit-log" element={guarded("audit.view", <AuditPage user={user} />)} /><Route path="/admin/security-events" element={guarded("security.events.view", <AuditPage user={user} security />)} /><Route path="/admin/backup" element={guarded("backup.manage", <BackupPage />)} />
     <Route path="/403" element={<DeniedPage />} /><Route path="/404" element={<NotFoundPage />} /><Route path="*" element={<Navigate to="/404" replace />} />
-  </Routes>}</Shell>;
+  </Routes>}</ScreenTransition></Shell>;
 }
 
 export function App() {
   const { logout, switchRole, user, isRestoringSession, sessionRestoreError, retrySessionRestore } = useSession();
-  if (isRestoringSession) return <LoadingState message="Restoring your secure session…" />;
+  if (isRestoringSession) return <LoadingState message="Restoring your secure session…" layout="page" />;
   if (sessionRestoreError) return <ErrorState message={sessionRestoreError} onRetry={() => void retrySessionRestore()} />;
   return <Routes>
-    <Route path="/login" element={user ? <Navigate to={user.mustChangePassword ? "/first-login" : "/"} replace /> : <LoginPage />} />
-    <Route path="/first-login" element={!user ? <Navigate to="/login" replace /> : user.mustChangePassword ? <FirstLoginPage /> : <Navigate to="/" replace />} />
+    <Route path="/login" element={user ? <Navigate to={user.mustChangePassword ? "/first-login" : "/"} replace /> : <div data-auth-screen><LoginPage /></div>} />
+    <Route path="/first-login" element={!user ? <Navigate to="/login" replace /> : user.mustChangePassword ? <div data-auth-screen><FirstLoginPage /></div> : <Navigate to="/" replace />} />
     <Route path="/*" element={!user ? <Navigate to="/login" replace /> : user.mustChangePassword ? <Navigate to="/first-login" replace /> : <AuthenticatedApp user={user} onLogout={logout} onRoleChange={switchRole} />} />
   </Routes>;
 }

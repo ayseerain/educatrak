@@ -52,13 +52,34 @@ const ACTIVITY_EVENTS = [
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+// Mock mode only: keeps the signed-in development user across a page refresh for this tab.
+// Live mode never uses it; the Laravel cookie session is restored from /api/auth/me instead.
+const MOCK_SESSION_KEY = "educatrak.mockSession";
+
+interface StoredMockSession {
+  user: AuthenticatedUser;
+  expiresAt: number;
+}
+
+function readMockSession(): StoredMockSession | null {
+  if (isLiveCashierApiEnabled()) return null;
+  try {
+    const stored = JSON.parse(window.sessionStorage.getItem(MOCK_SESSION_KEY) ?? "null") as StoredMockSession | null;
+    if (!stored?.user?.id || !stored.user.role || !(stored.expiresAt > Date.now())) return null;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
 export function SessionProvider({
   children,
   sessionDurationMs = DEFAULT_SESSION_DURATION_MS,
   warningDurationMs = DEFAULT_WARNING_DURATION_MS,
 }: SessionProviderProps) {
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [restoredMockSession] = useState(readMockSession);
+  const [user, setUser] = useState<AuthenticatedUser | null>(restoredMockSession?.user ?? null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(restoredMockSession?.expiresAt ?? null);
   const [isRestoringSession, setIsRestoringSession] = useState(isLiveCashierApiEnabled());
   const [sessionRestoreError, setSessionRestoreError] = useState<string | null>(null);
   const [isExpirationWarningOpen, setExpirationWarningOpen] = useState(false);
@@ -181,6 +202,19 @@ export function SessionProvider({
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    if (isLiveCashierApiEnabled()) return;
+    try {
+      if (user && expiresAt) {
+        window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify({ user, expiresAt } satisfies StoredMockSession));
+      } else {
+        window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+      }
+    } catch {
+      // Without browser storage, a refresh simply returns to the sign-in screen.
+    }
+  }, [expiresAt, user]);
 
   useEffect(() => {
     if (!user || !expiresAt) return;

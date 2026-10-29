@@ -6,7 +6,7 @@
 
 These are the floor requirements for every screen, written for low-experience cashier staff. Section 5 (Design System) builds the full visual language on top of these; where the two overlap, this section's rules win.
 
-- **Type size floor:** base font 16px; body text never smaller than 14px; buttons at least 44px tall.
+- **Type size floor:** body text 14px; supporting text never smaller than 12px; buttons and inputs at least 44px tall. (Thursday, October 29, 2026: body text follows CLINIQ; see `06-Decisions/2026-10-29-clinic-design-system-alignment.md`.)
 - **One main task per screen; one primary button per screen.** The primary action sits bottom-right of its form, consistently.
 - **Plain-language labels** — say "Amount received," not "Remit"; "Balance left," not "Outstanding principal."
 - **Status is never shown by color alone** — always icon + text (`Current`, `Due soon`, `Overdue`, `Cleared`, `Not cleared`).
@@ -45,16 +45,15 @@ Hierarchy should come primarily from **font weight, spacing, and placement first
 
 | Token | Size | Suggested weight | Usage |
 |---|---:|---:|---|
-| `text-xs` | 12px | 400–500 | Timestamps, compact metadata, table helper text |
-| `text-sm` | 14px | 400–500 | Secondary text, helper text, compact labels |
-| `text-base` | 16px | 400 | Default body text |
-| `text-lg` | 18px | 500–600 | Emphasized body text, section labels |
-| `text-xl` | 20px | 600 | Subsection headings |
-| `text-2xl` | 24px | 600 | Page headings |
-| `text-3xl` | 30px | 600–700 | Major dashboard/page headings, used sparingly |
+| `text-xs` | 12px | 400–600 | Timestamps, compact metadata, table headers, badges |
+| `text-sm` | 14px | 400–600 | Default body text, labels, controls, table cells |
+| `text-base` | 16px | 400–600 | Card and section headings |
+| `text-lg` | 18px | 500–600 | Dialog titles, emphasized values |
+| `text-xl` | 22px | 600 | Metric figures, subsection headings |
+| `text-2xl` | 28px | 700 | Page titles (`font-bold tracking-tight`, in the page header card) |
 
-**Minimum readability rules:**
-- Base font size: **16px**. Normal body text must not be smaller than **14px**.
+**Minimum readability rules** (aligned with CLINIQ, `06-Decisions/2026-10-29-clinic-design-system-alignment.md`):
+- Body text is **14px** (`text-sm` on `<body>`). Supporting text must not be smaller than **12px**.
 - Avoid 12px text for important information. Important user actions must remain clearly readable.
 - Labels must not depend on placeholders to communicate meaning.
 - Supporting text may be smaller but must remain readable and accessible.
@@ -81,8 +80,8 @@ Restrained, cohesive palette; strong text/background contrast; limited use of hi
 
 | Token | Hex | Usage |
 |---|---|---|
-| `brand-green` | `#039935` | Primary buttons, active navigation, headers, primary UI |
-| `brand-green-dark` | `#035419` | High-contrast green, especially for white text |
+| `brand-green` | `#039935` | Outlines, icons, hover borders, secondary-button borders (never a fill under small white text) |
+| `brand-green-dark` | `#035419` | Primary button fill, active navigation item, focus ring, brand wordmark; safe for white text at any size |
 | `brand-green-light` | `#8CCC7E` | Surface/accent backgrounds only |
 | `brand-yellow` | `#EAEA09` | Secondary accent, highlights, badges |
 | `brand-yellow-dark` | `#AFAF07` | Hover/active yellow state; use with dark text |
@@ -90,7 +89,7 @@ Restrained, cohesive palette; strong text/background contrast; limited use of hi
 | `text-secondary` | `#616161` | Supporting text |
 | `text-muted` | `#9E9E9E` | Placeholder, disabled, timestamp text |
 | `background` | `#FFFFFF` | Main page background |
-| `surface` | `#F5F5F5` | Cards and panels |
+| `surface` | `#F5F5F5` | Page background behind cards; hover and selected-row tint |
 | `border` | `#E0E0E0` | Dividers, borders, input outlines |
 
 **Design tokens (implementation-ready):**
@@ -123,8 +122,10 @@ info: #1976D2
 
 Typography:
 font-family: "Segoe UI", system-ui, sans-serif
-base-size: 16px
-minimum-body-size: 14px
+root-size: 16px
+body-size: 14px
+minimum-text-size: 12px
+minimum-control-height: 44px
 ```
 
 ### 5.4 Semantic Colors
@@ -168,8 +169,8 @@ Small-to-medium in visual size, comfortable to click, at least **44px tall** (pe
 
 | Role | Treatment |
 |---|---|
-| **Primary** | `brand-green` background, white text. The one action you probably want. |
-| **Secondary** | Outlined or surface-filled treatment, `brand-green` text. Visually quieter than primary. |
+| **Primary** | `brand-green-dark` background, white text, soft raised shadow; hover lightens slightly (`brightness-125`). The one action you probably want. White 14px text on `brand-green` fails WCAG AA, so `brand-green` is never a button fill. |
+| **Secondary** | White with a `brand-green` outline and `brand-green-dark` text; hover tints `surface`. Visually quieter than primary. |
 | **Cancel / Neutral** | Plain text, quiet gray outline, or neutral surface treatment. Never competes visually with the primary action. |
 | **Destructive** | `error`/`destructive` styling, reserved for genuinely irreversible or destructive actions only — never for ordinary Cancel, Back, Close, Return, or Clear. |
 
@@ -180,16 +181,32 @@ Never rely on color alone for meaning — pair it with labels, icons, or positio
 One consistent, subtle radius scale reused across buttons, inputs, cards, dialogs, and containers:
 
 ```text
-sm  — small controls
-md  — standard buttons, inputs, cards
-lg  — larger containers/dialogs
+sm  — 6px: badges, menu items, chips
+md  — 8px: buttons, inputs, dropdowns, cards, dialogs
+lg  — 12px: reserved for larger containers
 ```
 
-Exact pixel values may follow the project's Tailwind configuration, but the visual principle is: **slightly rounded, modern, and softened — never sharp, excessively rounded, or playful.** No pill-shaped components as the default; no fully sharp corners; no excessive rounding.
+These are CLINIQ's values (`frontend/tailwind.config.ts`). The visual principle is: **slightly rounded, modern, and softened — never sharp, excessively rounded, or playful.** No pill-shaped components as the default; no fully sharp corners; no excessive rounding.
 
 ### 5.8 Layout and Spacing
 
 Clean, organized, compact, comfortable, uncluttered — avoid both cramped crowding and excessive whitespace that makes the system feel inefficient. Consistent spacing and alignment show relationships; group related information and separate unrelated information.
+
+### 5.8a Shared Look with CLINIQ (Thursday, October 29, 2026)
+
+EducatraK's signed-in screens share CLINIQ's component look, because both systems serve Mendez Christian Academy (decision: `06-Decisions/2026-10-29-clinic-design-system-alignment.md`). Login, First Login, the session-expiry warning, and printouts keep their own design.
+
+- **Shell:** a `17rem` white sidebar (seal + EducaTrak lockup, uppercase group labels, solid `brand-green-dark` active item, and in its footer the signed-in account chip that opens the profile plus the red sign-out icon) and a 64px white top bar with the live date and time. Page content sits on `surface` with `px-8 py-6` padding.
+- **Widgets:** stat cards with a semibold label, a tinted icon chip, and a large bold figure; list cards with an icon + 16px title header and divided rows; statuses as soft badges with icons; amounts as plain text. No accent stripes, tinted panels, or hover shadows.
+- **View tabs:** switching a page between views uses one tab strip (raised white chip with a green ring), never two separate buttons. The selection slides to the chosen tab and the new view fades in.
+- **Panels:** white cards, `rounded-md`, soft `shadow-card`, no outline. Popovers and dialogs use `shadow-raised`.
+- **Page header:** a white header card with a bold 28px title and a one-line purpose; actions on the right. A quiet text "Back" control sits above the card on child and detail screens.
+- **Tables:** inside a card; the search box and Filter button form the card's top row (never a separate card above the table); sentence-case 12px semibold headers with no fill; every data column sortable by its header (arrow shows the direction); compact cells; hairline dividers; pagination at the card's foot.
+- **Status badges:** soft 10% tint of the status color, `text-primary` label, colored icon (never color alone).
+- **Inputs and dropdowns:** 44px, `border-border`, `shadow-card`, semibold value, `brand-green` hover border. Dropdown selection is shown by `surface` tint, weight, and `brand-green-dark` text, with no checkmark.
+- **Pagination:** "Showing X–Y of N", rows per page, and labeled Previous / Next buttons with "Page X of Y".
+- **Loading:** skeletons shaped like the loaded screen, never a spinner or a blank screen. Every screen switch (and a previewed-role switch) shows a brief skeleton, then fades the screen in, so screens never flicker or swap abruptly.
+- **Rules for agents:** `.agents/skills/educatrak-*`.
 
 ### 5.9 Forms
 
@@ -201,7 +218,7 @@ Predictable and simple: familiar terminology, no unneeded jargon, current locati
 
 ### 5.11 Feedback and System States
 
-Every relevant component defines loading, saving, success, error, warning, empty, disabled, hover, focus, and completed states, with concise, actionable messages (e.g., "Unable to save changes. Please check the required fields." rather than a raw error). This extends the loading/empty/error/permission-denied floor set in Section 4.
+Every relevant component defines loading (a skeleton shaped like the screen; see 5.8a), saving, success, error, warning, empty, disabled, hover, focus, and completed states, with concise, actionable messages (e.g., "Unable to save changes. Please check the required fields." rather than a raw error). This extends the loading/empty/error/permission-denied floor set in Section 4.
 
 ### 5.12 Modals and Confirmation
 

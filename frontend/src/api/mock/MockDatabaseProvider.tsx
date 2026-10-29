@@ -55,5 +55,5 @@ export function MockDatabaseProvider({ children }: { children: ReactNode }) {
   if (state.status === "error") {
     return <ErrorState message={state.message} onRetry={() => setAttempt((value) => value + 1)} />;
   }
-  return <LoadingState message="Loading development data…" />;
+  return <LoadingState message="Loading development data…" layout="page" />;
 }

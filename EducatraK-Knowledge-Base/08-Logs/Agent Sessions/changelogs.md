@@ -25,6 +25,14 @@
 
 ## Entries
 
+### Thursday, October 29, 2026 — 11:38:35 +08:00 | Tables: built-in search/filter, column sorting; screen and tab transitions
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** On the project owner's request, every list table now has its search box and Filter button inside the table's own card, not in a separate card above it. Each data column in the mock-mode lists can be sorted (accessible header buttons, `aria-sort`, whole list sorted before paging). Route and role switches now show a 250ms screen-shaped skeleton, then fade in. This removes the one-frame skeleton flash seen on a role switch. View tabs slide their selection and fade their panel. Live-mode lists got the built-in toolbar; their column sorting waits on API sort parameters.
+- **Files:** Added `frontend/src/lib/tableSort.ts`, `frontend/src/components/layout/ScreenTransition.tsx`, `frontend/src/test/tableSort.test.ts`, `frontend/src/test/tableSorting.test.tsx`. Modified `frontend/src/App.tsx`, `frontend/tailwind.config.ts`, `frontend/src/components/ui/{Table,TableFilters,ViewTabs,LoadingState,Skeleton,useClientPagination}.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/followup/{RoleFollowupWorkspace,LiveFollowupPage}.tsx`, `frontend/src/features/operations/{LiveAdminLog,LiveAuditLog,LiveNotificationLog,LivePaymentsPage,LiveUsersPage,LiveCloseouts}.tsx`, `frontend/src/features/billing/LiveBillingAccounts.tsx`, `frontend/src/features/reports/LiveOutstandingReport.tsx`, `frontend/src/features/students/LiveStudentsPage.tsx`, skills `educatrak-table-patterns`, `educatrak-sorting-patterns`, `educatrak-interactive-states`, `03-Design/UX-and-Design-System.md`, `06-Decisions/2026-10-29-clinic-design-system-alignment.md`, `Issues-and-TODOs.md`, session log `08-Logs/2026-10-29-tables-and-transitions.md`.
+- **Validation:** `npx tsc --noEmit -p .` passed. `npx vitest run`: 211 of 213 passed; the 2 failures are the pre-existing ₱8,500.00 fixture assertions in `operations.test.tsx`. In Playwright with local Chromium (no Edge), each route switch showed the skeleton for about 250ms, and the role switch no longer flashed the dashboard skeleton for one frame. Tab switches skipped the skeleton. The filter panel opened over the table without clipping.
+- **Commit/PR:** Not available at time of entry (the project owner commits).
+- **Follow-ups:** Live-mode column sorting needs API `sort`/`direction` parameters (tracker item added).
+
 ### Sunday, October 25, 2026 — 16:08:31 Asia/Manila | Restore and emphasize print masthead
 
 - **Summary:** Fixed the print cascade that hid the document header and seal by excluding `.print-document-header` from the generic hidden-header rule and explicitly retaining it on the print surface. Increased seal size and strengthened the school-color masthead, receipt section hierarchy, report summary rule, and table-heading contrast.
@@ -1268,3 +1276,68 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused MockDB reminder-review and user-account dialog coverage passed (2 tests). `npm.cmd run build` passed before the assertion-only test change; `git diff --check` passed.
 - **Commit/PR:** Not created.
 - **Follow-ups:** None.
+
+### Thursday, October 29, 2026 — 03:05:20 +08:00 | Keep the mock session across a page refresh
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** At the project owner's request ("it always logs me out when refreshing … not backend work"), mock mode now stores the signed-in development user and session expiry in `sessionStorage` (`educatrak.mockSession`) and restores them on load. Logout, session expiry, and closing the tab clear it. No password is stored. Live mode is unchanged: it writes no token to browser storage and still restores the Laravel cookie session through `/api/auth/me`.
+- **Files:** `frontend/src/auth/session.tsx`, `frontend/src/test/setup.ts` (clears sessionStorage after each test), `frontend/src/test/sessionRestore.test.tsx` (new mock restore/expiry test), and this changelog.
+- **Validation:** `npx vitest run src/test/sessionRestore.test.tsx src/test/login.test.tsx src/test/firstLogin.test.tsx src/test/layout.test.tsx` passed (4 files, 28 tests). In a Playwright/Chromium check, reloading `/followup` kept the cashier signed in.
+- **Commit/PR:** Not created (the project owner commits).
+- **Follow-ups:** None.
+
+### Thursday, October 29, 2026 — 03:05:21 +08:00 | Align the signed-in UI with CLINIQ's design system
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:**
+  - On branch `revamp/frontend-ui-design-system`, EducatraK's signed-in UI now follows CLINIQ's design system (same client and school). Content, routes, roles, rules and data are unchanged.
+  - Owner-confirmed scope: hybrid sizing (14px body, 44px controls), Segoe UI kept, CLINIQ top bar added, skeleton loading. Login, First Login, session-expiry and printouts left alone.
+  - Tokens: `surface`, radius, shadows, type scale.
+  - Shared components restyled: Button (`buttonVariants`), Card, Badge/StatusBadge, DataTable, PaginationControls, DropdownSelect, TableFilters, EmptyState, ErrorState.
+  - New shared components: `BackButton`, `Skeleton`; `LoadingState` now renders a skeleton shaped like the screen.
+  - Shell: top bar with clock, user chip and sign-out. Sidebar: CLINIQ look. `PageHeader` and `DashboardHeader` are now header cards.
+  - Pages: table classes normalized; detail pages moved to BackButton + header card; inputs moved to `form-control`; raw hex tints replaced with token opacity; dialogs moved to one modal surface.
+  - Login and First Login pin their old tokens through `data-auth-screen`.
+  - Added 13 `.agents/skills/educatrak-*` skills adapted from CLINIQ. Not copied (clinic-specific): `cliniq-audit-trail`, `cliniq-display-privacy`, `cliniq-item-picker-patterns`, `cliniq-print-patterns`.
+- **Files:**
+  - Config and styles: `frontend/tailwind.config.ts`, `frontend/src/index.css`, `frontend/src/App.tsx`.
+  - Components: `frontend/src/components/ui/*` (new `BackButton.tsx`, `Skeleton.tsx`), `frontend/src/components/layout/*`, `frontend/src/lib/status.ts`.
+  - Features: dashboard components, operations/live pages, reports, students, billing, follow-up, `api/mock/MockDatabaseProvider.tsx`.
+  - Tests: `frontend/src/test/operations.test.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`.
+  - Skills: `.agents/skills/educatrak-*` (13).
+  - Docs: `03-Design/UX-and-Design-System.md`, `06-Decisions/2026-10-29-clinic-design-system-alignment.md`, `08-Logs/2026-10-29-clinic-design-system-alignment.md`, `Issues-and-TODOs.md`, this changelog.
+- **Validation:**
+  - `npx tsc --noEmit -p .` and `npm run build` passed.
+  - `npx vitest run`: 205 of 207 passed. The 2 failures are the pre-existing, tracked ₱8,500.00 vs ₱12,500.00 fixture assertions in `operations.test.tsx`. The baseline before the change had the same 2 failures.
+  - Tests changed only for restyle-driven class or placement assertions.
+  - Playwright-core with local Chromium (no Edge), at 1440px and 390px: dashboard, students, payments, follow-up, student profile, add student, users, an open dropdown, and Login. Login looks unchanged. No horizontal overflow at 390px.
+- **Commit/PR:** Not created (the project owner commits).
+- **Follow-ups:**
+  - The session-expiry dialog still inherits the restyled shared Button and tokens (Radix portal).
+  - Native date inputs remain.
+  - The canonical Project Specification, Sections 4–5, needs the 14px body and `brand-green-dark` primary update.
+
+### Thursday, October 29, 2026 — 03:36:37 +08:00 | CLINIQ alignment follow-up: widgets, view tabs, dropdown width, sidebar account
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** Owner feedback pass on `revamp/frontend-ui-design-system`:
+  - Dashboard widgets moved to CLINIQ's stat card, card header and list-row patterns. Status badges replace tinted icon tiles, amounts are plain text with no background, and accent stripes, tinted panels and hover shadows are gone.
+  - The Close-out widget is now a plain card.
+  - New shared `ViewTabs` replaces the paired buttons on Follow-up/Notification log, Close-out and Users.
+  - Dropdown panels are never narrower than their trigger.
+  - The account chip and sign-out moved back to the sidebar footer; the top bar keeps the clock.
+  - Sidebar and page spacing now use CLINIQ's values.
+  - Card titles are 16px, links are underlined at rest, and the Close-out inner boxes share one style.
+  - `Badge` now shows tone icons.
+- **Files:**
+  - Components: `frontend/src/components/ui/{Card,Badge,DropdownSelect,PaginationControls,ViewTabs}.tsx`, `frontend/src/components/layout/{Sidebar,Shell}.tsx`, `frontend/tailwind.config.ts` (`3xl` size).
+  - Dashboard: `frontend/src/features/dashboard/**`.
+  - Features: `frontend/src/features/followup/RoleFollowupWorkspace.tsx`, `frontend/src/features/operations/{OperationalPages,LiveCloseouts,LiveUsersPage,LiveFinanceSettingsPage,LivePaymentEntryPage,LivePaymentsPage}.tsx`, reports, students, billing.
+  - Tests: `frontend/src/test/{operations,roleFollowupWorkspace,liveCloseouts}.test.tsx`.
+  - Skills and docs: three `.agents/skills/educatrak-*` skills, `03-Design/UX-and-Design-System.md`, `06-Decisions/2026-10-29-clinic-design-system-alignment.md`, `08-Logs/2026-10-29-clinic-design-alignment-feedback.md`, and this changelog.
+- **Validation:**
+  - `npx tsc --noEmit -p .` and `npm run build` passed.
+  - `npx vitest run`: 205 of 207 passed. The 2 failures are the same pre-existing, tracked fixture failures.
+  - Playwright/Chromium (no Edge) screenshots of the Cashier, Accounting, Administrator and Registrar screens at 1440px.
+- **Commit/PR:** Not created (the project owner commits).
+- **Follow-ups:** The CLINIQ max-width page containers (1200px / 720px) were not applied; they need an owner decision.

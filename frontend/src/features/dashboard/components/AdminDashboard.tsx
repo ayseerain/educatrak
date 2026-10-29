@@ -66,20 +66,20 @@ function ConfigurationOverview({
 }) {
   return (
     <Card className="p-0" aria-labelledby="school-configuration-heading">
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border px-5 pb-3 pt-5">
         <CardLabel id="school-configuration-heading" className="text-base font-semibold text-text-primary">
           {en.dashboard.schoolConfiguration}
         </CardLabel>
         <p className="mt-1 text-sm text-text-secondary">{en.dashboard.schoolConfigurationHelp}</p>
       </div>
       {configuration ? (
-        <dl className="space-y-3 px-4 py-4">
+        <dl className="space-y-3 p-5">
           <ConfigurationItem icon={CalendarDays} label={en.dashboard.currentSchoolYear} value={configuration.schoolYear ?? en.dashboard.configurationUnavailable} />
           <ConfigurationItem icon={GraduationCap} label={en.dashboard.configuredGradeLevels} value={String(configuration.gradeLevelCount)} />
           <ConfigurationItem icon={Users} label={en.dashboard.configuredPaymentMethods} value={String(configuration.paymentMethodCount)} />
         </dl>
       ) : (
-        <p className="px-4 py-5 text-sm text-text-secondary">{en.dashboard.configurationUnavailable}</p>
+        <p className="px-5 py-5 text-sm text-text-secondary">{en.dashboard.configurationUnavailable}</p>
       )}
     </Card>
   );
@@ -96,9 +96,7 @@ function ConfigurationItem({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#EAF6EC] text-brand-green-dark">
-        <Icon aria-hidden="true" className="h-4 w-4" />
-      </span>
+      <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-green-dark" />
       <div className="min-w-0">
         <dt className="text-sm text-text-secondary">{label}</dt>
         <dd className="mt-0.5 font-semibold text-text-primary">{value}</dd>

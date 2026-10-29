@@ -16,10 +16,13 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { ViewTabs } from "@/components/ui/ViewTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
 import { useClientPagination } from "@/components/ui/useClientPagination";
+import { SortableHeader, useTableSort } from "@/components/ui/Table";
+import { cellSortValue, sortTableRows } from "@/lib/tableSort";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -131,16 +134,12 @@ function isSeniorHighGrade(grade: string) {
 function getSectionOptions(grade: string) {
   return sectionOptionsByGrade[grade] ?? [];
 }
-const primaryLinkClass =
-  "inline-flex min-h-control items-center justify-center gap-2 rounded-md bg-brand-green-dark px-4 text-sm font-medium text-white transition-colors hover:bg-[#023d12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
-const secondaryLinkClass =
-  "inline-flex min-h-control items-center justify-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-medium text-text-primary transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
+const primaryLinkClass = buttonVariants({ variant: "primary" });
+const secondaryLinkClass = buttonVariants({ variant: "secondary" });
 const inlineLinkClass =
-  "inline-flex min-h-control items-center gap-1 text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
-const inputClass =
-  "mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-text-primary placeholder:text-text-muted-readable transition-colors focus-visible:border-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand-green-dark";
-const textareaClass =
-  "mt-3 w-full rounded-md border border-border bg-white p-3 text-text-primary placeholder:text-text-muted-readable transition-colors focus-visible:border-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand-green-dark";
+  "inline-flex min-h-control items-center gap-1 text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
+const inputClass = "form-control mt-1";
+const textareaClass = "form-control mt-3 p-3";
 
 function manilaDateInput(): string {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -170,8 +169,8 @@ function MockDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className={cn("fixed inset-0", emphasis ? "z-[60] bg-black/50 backdrop-blur-sm" : "z-40 bg-black/40")} />
-        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg bg-white", emphasis ? "z-[61] max-w-2xl border-2 border-border p-8 shadow-2xl" : "z-50 border border-border p-5 shadow-lg")}>
+        <Dialog.Overlay className={cn("fixed inset-0 bg-text-primary/40", emphasis ? "z-[60]" : "z-40")} />
+        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white shadow-raised", emphasis ? "z-[61] max-w-2xl p-6" : "z-50 p-5")}>
           <Dialog.Title className="text-lg font-semibold text-text-primary">
             {title}
           </Dialog.Title>
@@ -206,8 +205,8 @@ function SystemPage({
   description: string;
 }) {
   return (
-    <Card className="mx-auto mt-20 max-w-lg border-l-4 border-l-brand-green text-center">
-      <h1 className="text-2xl font-semibold">{title}</h1>
+    <Card className="mx-auto mt-20 max-w-lg p-5 text-center">
+      <h1 className="text-2xl font-bold tracking-tight text-text-primary">{title}</h1>
       <p className="mt-2 text-text-secondary">{description}</p>
       <Link className={cn(primaryLinkClass, "mt-6")} to="/">
         Go to dashboard
@@ -283,7 +282,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
       />
       <div className="max-w-4xl space-y-4">
         <Card>
-          <h2 className="text-lg font-semibold">Account details</h2>
+          <h2 className="text-base font-semibold text-text-primary">Account details</h2>
           <dl className="mt-3 grid gap-3 sm:grid-cols-3">
             <div><dt className="text-sm text-text-secondary">Name</dt><dd className="mt-1 font-medium">{user.name}</dd></div>
             <div><dt className="text-sm text-text-secondary">Role</dt><dd className="mt-1 font-medium">{roleLabel(user.role)}</dd></div>
@@ -291,7 +290,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
           </dl>
         </Card>
         <Card>
-          <h2 className="text-lg font-semibold">Change password</h2>
+          <h2 className="text-base font-semibold text-text-primary">Change password</h2>
           <p className="mt-1 text-sm text-text-secondary">Use a unique password with at least 12 characters.</p>
           <form className="mt-4 space-y-3" onSubmit={save}>
             <label className="block text-sm font-medium">
@@ -358,7 +357,9 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
-      <TableFilters scope="Sample students" defaults={{ query: "", grade: "", section: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search students" }} searchSlot={
+      <Card className="p-0">
+        <div className="border-b border-border px-5 py-3">
+          <TableFilters embedded scope="Sample students" defaults={{ query: "", grade: "", section: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search students" }} searchSlot={
         <StudentSearchField
             id="student-search"
             label="Search students"
@@ -371,7 +372,7 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
             inputClassName={cn(inputClass, "m-0")}
           />
       } fields={[{ key: "grade", label: "Grade" }, { key: "section", label: "Section" }, { key: "status", label: "Enrollment status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]} onChange={filters.update} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
-      <Card className="space-y-4 p-0">
+        </div>
         <StudentTable user={user} data={shown} />
       </Card>
     </>
@@ -387,6 +388,13 @@ function StudentTable({
 }) {
   const limited = user.role === "registrar";
   const navigate = useNavigate();
+  const sorting = useTableSort();
+  const rows = sortTableRows(data, sorting.sort, (student, key) => {
+    if (key === "name") return student.name;
+    if (key === "grade") return `${student.grade} - ${student.section}`;
+    if (key === "balance") return cellSortValue(format(student.balance));
+    return student[key as "studentStatus" | "billingStatus" | "clearanceStatus"];
+  });
 
   function openStudent(studentId: string) {
     navigate(`/students/${studentId}`);
@@ -405,35 +413,35 @@ function StudentTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[680px] text-left text-sm">
         <thead>
-          <tr className="border-b bg-surface">
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+          <tr className="border-b border-border">
+            <SortableHeader sortKey="name" sort={sorting.sort} onSort={sorting.toggle}>
               Student
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+            </SortableHeader>
+            <SortableHeader sortKey="grade" sort={sorting.sort} onSort={sorting.toggle}>
               Grade & section
-            </th>
+            </SortableHeader>
             {!limited && (
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+              <SortableHeader sortKey="balance" sort={sorting.sort} onSort={sorting.toggle}>
                 Balance
-              </th>
+              </SortableHeader>
             )}
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+            <SortableHeader sortKey="studentStatus" sort={sorting.sort} onSort={sorting.toggle}>
               Student status
-            </th>
+            </SortableHeader>
             {!limited && (
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+              <SortableHeader sortKey="billingStatus" sort={sorting.sort} onSort={sorting.toggle}>
                 Billing status
-              </th>
+              </SortableHeader>
             )}
             {limited && (
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
+              <SortableHeader sortKey="clearanceStatus" sort={sorting.sort} onSort={sorting.toggle}>
                 Clearance
-              </th>
+              </SortableHeader>
             )}
           </tr>
         </thead>
         <tbody>
-          {data.map((student) => (
+          {rows.map((student) => (
             <tr
               aria-label={`Open ${student.name}`}
               className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus:bg-surface/70 focus:outline-none focus-visible:bg-surface/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-green-dark"
@@ -443,7 +451,7 @@ function StudentTable({
               role="link"
               tabIndex={0}
             >
-              <td className="px-4 py-3">
+              <td className="px-3 py-2">
                 <div className="font-medium text-brand-green-dark">
                   {student.name}
                 </div>
@@ -451,24 +459,24 @@ function StudentTable({
                   {student.number}
                 </div>
               </td>
-              <td className="px-4 py-3">
+              <td className="px-3 py-2">
                 {student.grade} - {student.section}
               </td>
               {!limited && (
-                <td className="px-4 py-3 font-medium">
+                <td className="px-3 py-2 font-medium">
                   {format(student.balance)}
                 </td>
               )}
-              <td className="px-4 py-3">
+              <td className="px-3 py-2">
                 <StatusBadge status={student.studentStatus} />
               </td>
               {!limited && (
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <StatusBadge status={student.billingStatus} />
                 </td>
               )}
               {limited && (
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <StatusBadge status={student.clearanceStatus} />
                 </td>
               )}
@@ -551,7 +559,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
                 options={[{ value: "", label: "Select grade" }, ...asDropdownOptions(getMockGradeLevels())]}
                 onChange={selectGrade}
                 className="w-full"
-                contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+
                 align="start"
               />
             </span>
@@ -566,7 +574,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
                 options={grade ? [{ value: "", label: "Select section" }, ...getSectionOptions(grade)] : [{ value: "", label: "Select grade first" }]}
                 onChange={setSection}
                 className="w-full"
-                contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+
                 align="start"
               />
             </span>
@@ -582,7 +590,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
                   options={strandOptions}
                   onChange={setStrand}
                   className="w-full"
-                  contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+
                   align="start"
                 />
               </span>
@@ -596,7 +604,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
           )}
         </Card>
         <Card>
-          <h2 className="font-semibold">Guardian</h2>
+          <h2 className="text-base font-semibold text-text-primary">Guardian</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="text-sm font-medium">
               Name <span aria-hidden="true" className="text-status-error">*</span>
@@ -685,7 +693,7 @@ function StudentOverviewPanel({
       <ClearanceSummary student={student} user={user} compact={limited} />
       {!limited && (
         <Card className="bg-white">
-          <h2 className="font-semibold">Guardian details</h2>
+          <h2 className="text-base font-semibold text-text-primary">Guardian details</h2>
           <p className="mt-2 text-sm text-text-secondary">
             Guardian email health and contact changes stay with the student
             record.
@@ -699,7 +707,7 @@ function StudentOverviewPanel({
       )}
       {!limited && (
         <Card>
-          <h2 className="font-semibold">Billing accounts</h2>
+          <h2 className="text-base font-semibold text-text-primary">Billing accounts</h2>
           <p className="mt-1 text-sm text-text-secondary">Each school year remains a separate billing record. Historical balances and payments are not carried forward.</p>
           <ListCard
             className="mt-4"
@@ -853,13 +861,13 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
-      <TableFilters scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or student number" }} fields={[
+      <ListCard
+        toolbar={<TableFilters embedded scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or student number" }} fields={[
         { key: "schoolYear", label: "School year" }, { key: "grade", label: "Grade" },
         { key: "status", label: "Billing status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Current", label: "Current" }, { value: "Due soon", label: "Due soon" }, { value: "Overdue", label: "Overdue" }] },
         { key: "minimumBalance", label: "Minimum balance (PHP)", type: "number", min: "0", step: "0.01" },
         { key: "maximumBalance", label: "Maximum balance (PHP)", type: "number", min: "0", step: "0.01" },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />
-      <ListCard
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />}
         rows={visibleAccounts.map((account) => [
           <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>{getStudentById(account.studentId)?.name ?? "Unknown student"}</Link>,
           account.schoolYear,
@@ -953,14 +961,14 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
     <>
       <PageHeader title="New account" description={renewalMode ? "Create a new school-year billing account without changing earlier financial records." : "Set up an account for one student and one school year."} backTo="/accounts" />
       <Card className="max-w-4xl">
-        <ol className="mb-6 flex flex-wrap gap-2 text-sm">{steps.map((label, index) => <li key={label} className={cn("rounded-md border px-3 py-2", index + 1 === step ? "border-brand-green-light bg-[#EAF6EC] font-semibold text-brand-green-dark" : "border-border bg-white text-text-secondary")}>{index + 1}. {label}</li>)}</ol>
-        <h2 className="text-lg font-semibold">{steps[step - 1]}</h2>
+        <ol className="mb-6 flex flex-wrap gap-2 text-sm">{steps.map((label, index) => <li key={label} className={cn("rounded-md border px-3 py-2", index + 1 === step ? "border-brand-green-light bg-status-success/10 font-semibold text-brand-green-dark" : "border-border bg-white text-text-secondary")}>{index + 1}. {label}</li>)}</ol>
+        <h2 className="text-base font-semibold text-text-primary">{steps[step - 1]}</h2>
         <p className="mt-2 text-sm text-text-secondary">{step === 1 ? "Confirm the student, target school year, and grade level." : step === 2 ? "Configured fee items and active payment plans load from the shared mock database." : step === 3 ? "Review installment due dates and amounts before saving." : "Confirm the new account. Earlier financial records will remain unchanged."}</p>
         {step === 1 && <StudentSearchField value={studentQuery} onChange={(value) => { setStudentQuery(value); if (value !== `${selectedStudent?.name} - ${selectedStudent?.number}`) setStudentId(null); }} onSelect={selectStudent} autoFocus={!queryStudent} placeholder="Search student name or number" wrapperClassName="mt-5" inputClassName={cn(inputClass, "m-0")} />}
-        {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
-        {step === 2 && <div className="mt-5 space-y-5">{!feeItems?.length ? <p role="status" className="rounded-md border border-status-warning bg-[#FFF8E8] p-4 text-sm text-text-primary">No fee schedule is configured for {gradeLevel || "this grade"} in the selected school year. Go back and choose a configured grade or year.</p> : <fieldset><legend className="font-medium">Fee items</legend><p className="mt-1 text-sm text-text-secondary">Required fees are locked. Selected amounts are copied into this billing account.</p><div className="mt-3 space-y-2">{feeItems.map((item) => <label key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface p-3 text-sm"><span className="flex items-center gap-3"><input type="checkbox" checked={feeItemIds.includes(item.id)} disabled={item.required} onChange={(event) => setFeeItemIds((selected) => event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><span><span className="font-medium">{item.name}</span><span className="ml-2 text-text-secondary">{item.category} · {item.required ? "Required" : "Optional"}</span></span></span><span className="font-medium">{format(item.amount)}</span></label>)}</div><p className="mt-3 text-sm font-semibold">Selected total: {format(totalDue)}</p></fieldset>}<fieldset><legend className="font-medium">Installment plan</legend><div className="mt-3 grid gap-3 md:grid-cols-3">{paymentPlans.map((plan) => <label key={plan.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-white p-3 text-sm"><input type="radio" name="paymentPlan" checked={paymentPlanId === plan.id} onChange={() => setPaymentPlanId(plan.id)} /><span><span className="block font-medium">{plan.name}</span><span className="mt-1 block text-text-secondary">Down payment: {format(plan.downPayment)} · {plan.installmentCount} scheduled payment{plan.installmentCount === 1 ? "" : "s"}</span></span></label>)}</div></fieldset></div>}
+        {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
+        {step === 2 && <div className="mt-5 space-y-5">{!feeItems?.length ? <p role="status" className="rounded-md border border-status-warning bg-status-warning/5 p-4 text-sm text-text-primary">No fee schedule is configured for {gradeLevel || "this grade"} in the selected school year. Go back and choose a configured grade or year.</p> : <fieldset><legend className="font-medium">Fee items</legend><p className="mt-1 text-sm text-text-secondary">Required fees are locked. Selected amounts are copied into this billing account.</p><div className="mt-3 space-y-2">{feeItems.map((item) => <label key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface p-3 text-sm"><span className="flex items-center gap-3"><input type="checkbox" checked={feeItemIds.includes(item.id)} disabled={item.required} onChange={(event) => setFeeItemIds((selected) => event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><span><span className="font-medium">{item.name}</span><span className="ml-2 text-text-secondary">{item.category} · {item.required ? "Required" : "Optional"}</span></span></span><span className="font-medium">{format(item.amount)}</span></label>)}</div><p className="mt-3 text-sm font-semibold">Selected total: {format(totalDue)}</p></fieldset>}<fieldset><legend className="font-medium">Installment plan</legend><div className="mt-3 grid gap-3 md:grid-cols-3">{paymentPlans.map((plan) => <label key={plan.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-white p-3 text-sm"><input type="radio" name="paymentPlan" checked={paymentPlanId === plan.id} onChange={() => setPaymentPlanId(plan.id)} /><span><span className="block font-medium">{plan.name}</span><span className="mt-1 block text-text-secondary">Down payment: {format(plan.downPayment)} · {plan.installmentCount} scheduled payment{plan.installmentCount === 1 ? "" : "s"}</span></span></label>)}</div></fieldset></div>}
         {step === 3 && <div className="mt-5"><ListCard rows={schedule.map((installment) => [installment.label, formatDate(installment.dueDate), format(installment.amount)])} headers={["Installment", "Due date", "Amount"]} /><p className="mt-3 text-right text-sm font-semibold">Billing total: {format(totalDue)}</p></div>}
-        {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex items-start gap-3"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
+        {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex items-start gap-3"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
         {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}{duplicateAccount && <> <Link className={inlineLinkClass} to={`/accounts/${duplicateAccount.id}`}>View existing billing account</Link></>}</p>}
         <div className="mt-6 flex justify-end gap-3"><Link className={secondaryLinkClass} to="/accounts">Cancel</Link>{step > 1 && <Button type="button" variant="secondary" disabled={created} onClick={() => { setStep((current) => current - 1); setError(""); }}>Back</Button>}<Button type="button" disabled={created} onClick={continueWizard}>{created ? "Creating account..." : step === 4 ? "Create account" : "Continue"}</Button></div>
       </Card>
@@ -991,7 +999,7 @@ export function AccountDetailPage({ user }: { user: AuthenticatedUser }) {
           ) : undefined
         }
       />
-      {searchParams.get("created") === "1" && <div role="status" className="mb-5 rounded-md border border-status-success bg-[#EAF6EC] p-4 text-sm text-text-primary"><h2 className="font-semibold text-brand-green-dark">Billing Account Created Successfully</h2><p className="mt-1">The student's billing account for the selected school year has been created. You are viewing the new billing account.</p></div>}
+      {searchParams.get("created") === "1" && <div role="status" className="mb-5 rounded-md border border-status-success bg-status-success/10 p-4 text-sm text-text-primary"><h2 className="font-semibold text-brand-green-dark">Billing Account Created Successfully</h2><p className="mt-1">The student's billing account for the selected school year has been created. You are viewing the new billing account.</p></div>}
       <div className="grid gap-4 md:grid-cols-3">
         <Metric label="Total fees" value={format(account.totalDue)} />
         <Metric label="Paid" value={format(account.totalPaid)} />
@@ -1036,7 +1044,6 @@ export function PaymentsPage({
       && (!applied.amountMinimum || amount >= Number(applied.amountMinimum))
       && (!applied.amountMaximum || amount <= Number(applied.amountMaximum));
   });
-  const paymentPagination = useClientPagination(visiblePayments, "payments");
   return (
     <>
       <PageHeader
@@ -1054,14 +1061,15 @@ export function PaymentsPage({
           ) : undefined
         }
       />
-      <TableFilters scope="Sample payments" defaults={mockPaymentFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search receipt or student" }} fields={[
+      <ListCard
+        toolbar={<TableFilters embedded scope="Sample payments" defaults={mockPaymentFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search receipt or student" }} fields={[
         { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Posted", label: "Posted" }, { value: "Void pending", label: "Void pending" }, { value: "Voided", label: "Voided" }] },
         { key: "dateFrom", label: "Paid on or after", type: "date" }, { key: "dateTo", label: "Paid on or before", type: "date" },
         { key: "amountMinimum", label: "Minimum amount (PHP)", type: "number", min: "0", step: "0.01" }, { key: "amountMaximum", label: "Maximum amount (PHP)", type: "number", min: "0", step: "0.01" },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />
-      <ListCard
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />}
+        paginate={{ label: "payments" }}
         headers={["Receipt", "Student", "Date", "Amount", "Method", "Status"]}
-        rows={paymentPagination.items.map((payment) => [
+        rows={visiblePayments.map((payment) => [
           <Link className={inlineLinkClass} to={`/payments/${payment.id}`}>
             {payment.receiptNo}
           </Link>,
@@ -1072,7 +1080,6 @@ export function PaymentsPage({
           payment.status,
         ])}
       />
-      {paymentPagination.controls}
     </>
   );
 }
@@ -1139,7 +1146,7 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
       </div>
       {can(user, "payment.void.request") && (
         <Card className="mt-5">
-          <h2 className="font-semibold">Request void</h2>
+          <h2 className="text-base font-semibold text-text-primary">Request void</h2>
           <p className="mt-1 text-sm text-text-secondary">
             A reason of at least 10 characters is required. Accounting reviews
             the request.
@@ -1337,9 +1344,9 @@ function PaymentWorkflow({
         />
       )}
       {selectedStudent ? (
-        <div className="grid gap-3 rounded-md border border-brand-green-light bg-[#F4FAF5] p-4 text-sm md:grid-cols-5">
+        <div className="grid gap-3 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm md:grid-cols-5">
           <div>
-            <span className="block text-xs font-medium uppercase text-text-secondary">
+            <span className="block text-sm font-semibold text-text-secondary">
               Student
             </span>
             <span className="mt-1 block font-semibold text-text-primary">
@@ -1347,7 +1354,7 @@ function PaymentWorkflow({
             </span>
           </div>
           <div>
-            <span className="block text-xs font-medium uppercase text-text-secondary">
+            <span className="block text-sm font-semibold text-text-secondary">
               Grade & section
             </span>
             <span className="mt-1 block font-semibold text-text-primary">
@@ -1355,7 +1362,7 @@ function PaymentWorkflow({
             </span>
           </div>
           <div>
-            <span className="block text-xs font-medium uppercase text-text-secondary">
+            <span className="block text-sm font-semibold text-text-secondary">
               Fee name
             </span>
             <span className="mt-1 block font-semibold text-text-primary">
@@ -1363,7 +1370,7 @@ function PaymentWorkflow({
             </span>
           </div>
           <div>
-            <span className="block text-xs font-medium uppercase text-text-secondary">
+            <span className="block text-sm font-semibold text-text-secondary">
               Next due record
             </span>
             <span className="mt-1 block font-semibold text-text-primary">
@@ -1371,7 +1378,7 @@ function PaymentWorkflow({
             </span>
           </div>
           <div>
-            <span className="block text-xs font-medium uppercase text-text-secondary">
+            <span className="block text-sm font-semibold text-text-secondary">
               Amount due
             </span>
             <span className="mt-1 block font-semibold text-text-primary">
@@ -1430,7 +1437,7 @@ function PaymentWorkflow({
                 setIsSaving(false);
               }}
               className="w-full"
-              contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+
               align="start"
               disabled={isSaving}
             />
@@ -1473,14 +1480,14 @@ function PaymentWorkflow({
             </span>
           </label>
         </div>
-        <p className="mt-3 rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm text-text-primary">
+        <p className="mt-3 rounded-md border border-status-warning bg-status-warning/5 p-3 text-sm text-text-primary">
           <span className="font-medium">SMS load fee:</span> Not configured. Any configured carrier/load cost is recorded with the SMS notification and is not added to this payment or the student's balance.
         </p>
       </fieldset>
       {error && (
         <p
           role="alert"
-          className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error"
+          className="rounded-md border border-status-error/40 bg-status-error/10 p-3 text-sm text-status-error"
         >
           {error}
         </p>
@@ -1540,7 +1547,7 @@ function PaymentWorkflow({
       )}
       {stage === "saved" && selectedStudent && (
         <div
-          className="rounded-md border border-status-success bg-[#EAF6EC] p-4"
+          className="rounded-md border border-status-success bg-status-success/10 p-4"
           role="status"
         >
           <h2 className="text-base font-semibold text-brand-green-dark">
@@ -1740,22 +1747,7 @@ function SectionTabs({
   items: { label: string; to: string; active: boolean }[];
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-2" role="tablist">
-      {items.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          role="tab"
-          aria-selected={item.active}
-          className={cn(
-            item.active ? primaryLinkClass : secondaryLinkClass,
-            "min-h-10",
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
-    </div>
+    <ViewTabs label="Close-out views" className="mb-4" items={items.map((item) => ({ key: item.to, label: item.label, selected: item.active, to: item.to }))} />
   );
 }
 
@@ -1856,7 +1848,6 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
         }
       />
       {workspaceSwitch}
-      <TableFilters scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onReset={filters.reset} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />
       {sent && (
         <p role="status" className="mb-4 text-sm font-medium text-brand-green-dark">
           {`Reminder${recipientAccounts.length === 1 ? "" : "s"} sent today to ${recipientAccounts.length} guardian${recipientAccounts.length === 1 ? "" : "s"}.`}
@@ -1866,7 +1857,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
         </p>
       )}
       <ListCard
-            toolbar={can(user, "followup.send") ? (
+            toolbar={<div className="space-y-3"><TableFilters embedded scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onReset={filters.reset} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />{can(user, "followup.send") ? (
               <div className="flex w-full flex-wrap items-center gap-2">
                 <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
               <input
@@ -1904,7 +1895,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
                   Select all listed accounts
                 </label>
           </div>
-            ) : undefined}
+            ) : null}</div>}
             headers={[
               "Student",
               "Guardian email",
@@ -1961,7 +1952,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
           Message preview: Your student has an overdue installment. Please contact the billing office for assistance.
         </p>
         {notificationChannels.includes("sms") && (
-          <p className="mt-3 rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm">
+          <p className="mt-3 rounded-md border border-status-warning bg-status-warning/5 p-3 text-sm">
             <span className="font-medium">SMS load fee:</span> not configured. It will not be added to a student balance.
           </p>
         )}
@@ -1994,7 +1985,7 @@ export function ClearancePage({ user }: { user: AuthenticatedUser }) {
         description="Search a student to review enrollment and exam-period clearance."
       />
       <Card className="mb-4">
-        <h2 className="font-semibold">Find a student</h2>
+        <h2 className="text-base font-semibold text-text-primary">Find a student</h2>
         <p className="mt-1 text-sm text-text-secondary">
           Select a student to review their current clearance status.
         </p>
@@ -2027,7 +2018,7 @@ export function PermitPage() {
         action={<Button onClick={() => window.print()}>Print permit</Button>}
       />
       <Card className="border-2 border-black">
-        <h2 className="text-xl font-semibold">Amara Villanueva (sample)</h2>
+        <h2 className="text-base font-semibold text-text-primary">Amara Villanueva (sample)</h2>
         <p className="mt-2">Grade 7 · Olive</p>
         <p className="mt-4">Midterm examination permit</p>
       </Card>
@@ -2056,10 +2047,10 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   const varianceSummary = variance === null
     ? { label: "Waiting for count", detail: "Enter the drawer count to compare it with the system total.", className: "border-border bg-surface" }
     : variance === 0
-      ? { label: "Balanced", detail: "The counted cash matches the system total.", className: "border-status-success bg-[#F4FAF5]" }
+      ? { label: "Balanced", detail: "The counted cash matches the system total.", className: "border-status-success bg-status-success/5" }
       : variance > 0
-        ? { label: "Over", detail: "Explain why the drawer count is higher than the system total.", className: "border-status-warning bg-[#FFF8E8]" }
-        : { label: "Short", detail: "Explain why the drawer count is lower than the system total.", className: "border-status-error bg-[#FFF5F5]" };
+        ? { label: "Over", detail: "Explain why the drawer count is higher than the system total.", className: "border-status-warning bg-status-warning/5" }
+        : { label: "Short", detail: "Explain why the drawer count is lower than the system total.", className: "border-status-error bg-status-error/5" };
   return (
     <>
       <PageHeader
@@ -2070,7 +2061,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
       <Card className="p-4 sm:p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <div>
-            <h2 className="font-semibold">Today's close-out</h2>
+            <h2 className="text-base font-semibold text-text-primary">Today's close-out</h2>
             <p className="mt-1 text-sm text-text-secondary">
               Count the cash in the drawer, then review the difference before locking today.
             </p>
@@ -2085,8 +2076,11 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
           }}
         >
           <div className="grid gap-4 lg:grid-cols-3">
-            <Metric label="System cash total" value={format(systemCashTotal)} />
-            <label className="block rounded-md border border-border bg-white p-4 text-sm font-medium shadow-card">
+            <section className="rounded-md border border-border p-4">
+              <p className="text-sm font-semibold text-text-secondary">System cash total</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-text-primary">{format(systemCashTotal)}</p>
+            </section>
+            <label className="block rounded-md border border-border p-4 text-sm font-semibold text-text-secondary">
               Counted cash
               <input
                 autoFocus
@@ -2104,9 +2098,9 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
                 Enter the amount counted in the cash drawer.
               </span>
             </label>
-            <section className={cn("rounded-md border p-4 shadow-card", varianceSummary.className)} aria-live="polite">
-              <p className="text-sm font-medium text-text-secondary">Variance</p>
-              <p className="mt-1 text-xl font-semibold text-text-primary">
+            <section className={cn("rounded-md border p-4", varianceSummary.className)} aria-live="polite">
+              <p className="text-sm font-semibold text-text-secondary">Variance</p>
+              <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-text-primary">
                 {variance === null ? "—" : format(variance)}
               </p>
               <p className="mt-2 text-sm font-medium text-text-primary">{varianceSummary.label}</p>
@@ -2142,8 +2136,8 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
             </Button>
           </div>
         </form>
-        {needsNewDaySession ? <div className="mt-4 rounded-md border border-status-success bg-[#F4FAF5] p-4"><p className="font-medium text-brand-green-dark">Start a new close-out for {formatDate(getMockToday())}.</p><p className="mt-1 text-sm text-text-secondary">The previous close-out remains finalized and unchanged.</p><div className="mt-4 flex justify-end"><Button type="button" onClick={() => { try { reopenMockCloseOutForNewDay(user.id); } catch (cause) { setVarianceReason(cause instanceof Error ? cause.message : "Unable to open a new day."); } }}>Reopen for New Day</Button></div></div> : closed ? (
-          <div className="mt-4 rounded-md border border-status-success bg-[#F4FAF5] p-4">
+        {needsNewDaySession ? <div className="mt-4 rounded-md border border-status-success bg-status-success/5 p-4"><p className="font-medium text-brand-green-dark">Start a new close-out for {formatDate(getMockToday())}.</p><p className="mt-1 text-sm text-text-secondary">The previous close-out remains finalized and unchanged.</p><div className="mt-4 flex justify-end"><Button type="button" onClick={() => { try { reopenMockCloseOutForNewDay(user.id); } catch (cause) { setVarianceReason(cause instanceof Error ? cause.message : "Unable to open a new day."); } }}>Reopen for New Day</Button></div></div> : closed ? (
+          <div className="mt-4 rounded-md border border-status-success bg-status-success/5 p-4">
             <p role="status" className="font-medium text-brand-green-dark">Closed for {formatDate(currentCloseout!.businessDate)}.</p>
             <p className="mt-1 text-sm text-text-secondary">Your closing record has been finalized. It cannot be reopened or changed.</p>
           </div>
@@ -2261,11 +2255,11 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
           .filter((report) => canViewReport(user, report.kind) && (!isLiveCashierApiEnabled() || report.kind !== "monthly"))
           .map((report) => (
             <Link
-              className="block rounded-md border border-border border-l-4 border-l-brand-green bg-white p-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+              className="block rounded-md bg-white p-5 shadow-card transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
               key={report.name}
               to={report.route}
             >
-              <h2 className="font-semibold">{report.name}</h2>
+              <h2 className="text-base font-semibold text-text-primary">{report.name}</h2>
               <p className="mt-1 text-sm text-text-secondary">
                 {report.detail}
               </p>
@@ -2275,9 +2269,10 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
     </>
   );
 }
-function StudentStatementTable({ query = "", item = "" }: { query?: string; item?: string }) {
+function StudentStatementTable({ query = "", item = "", toolbar }: { query?: string; item?: string; toolbar?: ReactNode }) {
   return (
     <ListCard
+      toolbar={toolbar}
       headers={["Item", "Due date", "Amount", "Paid"]}
       rows={[
         ["Tuition installment", "Oct 01, 2026", "₱2,500.00", "₱1,250.00"],
@@ -2429,6 +2424,11 @@ function MockReportPage({
       && (!filters.applied.minimumBalance || balance >= Number(filters.applied.minimumBalance))
       && (!filters.applied.status || row[3] === filters.applied.status);
   });
+  const reportFilters = <TableFilters embedded scope={`Sample ${type} report`} defaults={reportFilterDefaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
+        { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
+        { key: "minimumBalance", label: "Minimum balance", type: "number", min: "0", step: "0.01" },
+        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Overdue", label: "Overdue" }, { value: "Due soon", label: "Due soon" }] },
+      ] : [{ key: "reportDate", label: type === "monthly" ? "Reporting month" : "Reporting date", type: "date" }, { key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
   return (
     <>
       <PageHeader
@@ -2441,21 +2441,15 @@ function MockReportPage({
           </Button>
         }
       />
-      <TableFilters scope={`Sample ${type} report`} defaults={reportFilterDefaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search report rows" }} fields={type === "outstanding" ? [
-        { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
-        { key: "minimumBalance", label: "Minimum balance", type: "number", min: "0", step: "0.01" },
-        { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Overdue", label: "Overdue" }, { value: "Due soon", label: "Due soon" }] },
-      ] : [{ key: "reportDate", label: type === "monthly" ? "Reporting month" : "Reporting date", type: "date" }, { key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
-      <Card>
-        {type === "statement" ? (
-          <StudentStatementTable query={filters.applied.query} item={filters.applied.category} />
-        ) : (
-          <ListCard
-            headers={[...report.headers]}
-            rows={reportRows.map((row) => [...row])}
-          />
-        )}
-      </Card>
+      {type === "statement" ? (
+        <StudentStatementTable toolbar={reportFilters} query={filters.applied.query} item={filters.applied.category} />
+      ) : (
+        <ListCard
+          toolbar={reportFilters}
+          headers={[...report.headers]}
+          rows={reportRows.map((row) => [...row])}
+        />
+      )}
       <PrintSurface className="report-print-root">
         <PrintDocumentHeader title={report.printTitle} subtitle={report.period} details={["Development sample data", `Prepared by: ${preparedBy}`]} />
         {type === "statement"
@@ -2511,82 +2505,24 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
         description="View email and SMS notification attempts, including any configured SMS load fee."
       />
       {workspaceSwitch}
-      <TableFilters scope="Sample notification log" defaults={defaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[
+      <ListCard
+        title="Notification log"
+        toolbar={<TableFilters embedded scope="Sample notification log" defaults={defaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[
         { key: "status", label: "Status", type: "select", options: notificationStatusOptions },
         { key: "channel", label: "Channel", type: "select", options: [{ value: "", label: "All channels" }, { value: "Email", label: "Email" }, { value: "SMS", label: "SMS" }] },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onReset={filters.reset} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />
-      <Card className="overflow-hidden p-0">
-        <div className="border-b border-border p-4">
-          <h2 className="font-semibold">Notification log</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b bg-surface">
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Student
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Type
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Channel
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Recipient
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  SMS load fee
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Attempts
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  className="border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus-within:bg-surface/70"
-                  key={`${row.student}-${row.type}`}
-                >
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.student}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.type}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.channel}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.recipient}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.loadFee}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {renderTableCell(row.status)}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {row.attempts}
-                  </td>
-                  <td className="px-4 py-3 align-middle text-text-primary">
-                    {renderTableCell(
-                      row.status === "Failed" && can(user, "notification.retry")
-                        ? "Retry"
-                        : "View",
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onReset={filters.reset} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />}
+        headers={["Student", "Type", "Channel", "Recipient", "SMS load fee", "Status", "Attempts", "Action"]}
+        rows={rows.map((row) => [
+          row.student,
+          row.type,
+          row.channel,
+          row.recipient,
+          row.loadFee,
+          row.status,
+          row.attempts,
+          row.status === "Failed" && can(user, "notification.retry") ? "Retry" : "View",
+        ])}
+      />
     </>
   );
 }
@@ -2659,7 +2595,6 @@ export function SettingsPage({
       "Active",
     ]);
   });
-  const feePagination = useClientPagination(feeRows, "fee items", true);
   const schoolRows: [string, string, string][] = [
     ...schoolYears.map((year) => ["School year", `${year.label}${year.current ? " current" : ""}`, "Active"] as [string, string, string]),
     ...gradeLevels.map((grade) => ["Grade level", grade, "Active"] as [string, string, string]),
@@ -2847,7 +2782,8 @@ export function SettingsPage({
         <ListCard
           className="mt-4"
           headers={[...current.headers]}
-          rows={(section === "fees" ? feePagination.items : current.rows).map((row) => [...row])}
+          paginate={section === "fees" ? { label: "fee items", fixedPageSize: true } : undefined}
+          rows={(section === "fees" ? feeRows : current.rows).map((row) => [...row])}
           centeredColumns={
             section === "fees"
               || section === "plans"
@@ -2859,7 +2795,6 @@ export function SettingsPage({
               : []
           }
         />
-        {section === "fees" && feePagination.controls}
         {feeSavedMessage && <p role="status" className="mt-4 text-sm text-status-success">{feeSavedMessage}</p>}
       </Card>
       {section === "fees" && editable && (
@@ -2871,14 +2806,14 @@ export function SettingsPage({
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium">
                 School year
-                <span className="mt-1 block"><DropdownSelect aria-label="School year" value={feeSchoolYearId} options={[{ value: "", label: "Select school year" }, ...schoolYears.map((year) => ({ value: year.id, label: year.label }))]} onChange={(value) => { setFeeSchoolYearId(value); setFeeError(""); }} disabled={schoolYears.length === 0} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
+                <span className="mt-1 block"><DropdownSelect aria-label="School year" value={feeSchoolYearId} options={[{ value: "", label: "Select school year" }, ...schoolYears.map((year) => ({ value: year.id, label: year.label }))]} onChange={(value) => { setFeeSchoolYearId(value); setFeeError(""); }} disabled={schoolYears.length === 0} className="w-full" align="start" /></span>
               </label>
               <label className="block text-sm font-medium">
                 Grade level
-                <span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={feeGradeLevel} options={[{ value: "", label: "Select grade level" }, ...asDropdownOptions(gradeLevels)]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} disabled={gradeLevels.length === 0} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
+                <span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={feeGradeLevel} options={[{ value: "", label: "Select grade level" }, ...asDropdownOptions(gradeLevels)]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} disabled={gradeLevels.length === 0} className="w-full" align="start" /></span>
               </label>
             </div>
-            {gradeLevels.length === 0 && <p role="status" className="rounded-md border border-status-warning bg-[#FFF8E8] p-3 text-sm text-text-primary">No grade levels configured. Add grade levels in School Settings before creating fee items.</p>}
+            {gradeLevels.length === 0 && <p role="status" className="rounded-md border border-status-warning bg-status-warning/5 p-3 text-sm text-text-primary">No grade levels configured. Add grade levels in School Settings before creating fee items.</p>}
             <label className="block text-sm font-medium" htmlFor="fee-name">
               Fee item name
               <input id="fee-name" name="name" required className={inputClass} value={feeName} onChange={(event) => { setFeeName(event.target.value); setFeeError(""); }} />
@@ -2886,7 +2821,7 @@ export function SettingsPage({
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium">
                 Category
-                <span className="mt-1 block"><DropdownSelect aria-label="Category" value={feeCategory} options={asDropdownOptions(["Tuition", "Miscellaneous", "Other"])} onChange={(value) => { setFeeCategory(value); setFeeError(""); }} className="w-full" contentClassName="min-w-[var(--radix-dropdown-menu-trigger-width)]" align="start" /></span>
+                <span className="mt-1 block"><DropdownSelect aria-label="Category" value={feeCategory} options={asDropdownOptions(["Tuition", "Miscellaneous", "Other"])} onChange={(value) => { setFeeCategory(value); setFeeError(""); }} className="w-full" align="start" /></span>
               </label>
               <label className="block text-sm font-medium" htmlFor="fee-amount">
                 Amount
@@ -3008,7 +2943,6 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
     && (!filters.applied.status || (user.active ? "Active" : "Inactive") === filters.applied.status)
     && (archivedView ? Boolean(user.archivedAt) : !user.archivedAt)
   ));
-  const userPagination = useClientPagination(visibleUsers, "users");
 
   function closeEditDialog() {
     setEditingUserId(null);
@@ -3111,19 +3045,22 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           <Button onClick={() => { setCreated(false); setCreateError(""); setCreateRole(defaultCreateRole); setCreateOpen(true); }}>Create user</Button>
         }
       />
-      <div role="tablist" aria-label="User account view" className="mb-4 flex gap-2">
-        <Button type="button" role="tab" aria-selected={!archivedView} variant={archivedView ? "secondary" : "primary"} onClick={() => setArchivedView(false)}>Current users</Button>
-        <Button type="button" role="tab" aria-selected={archivedView} variant={archivedView ? "primary" : "secondary"} onClick={() => setArchivedView(true)}>Archived users</Button>
-      </div>
-      <TableFilters scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
+      <ViewTabs label="User account view" className="mb-4" items={[
+        { key: "current", label: "Current users", selected: !archivedView, onSelect: () => setArchivedView(false) },
+        { key: "archived", label: "Archived users", selected: archivedView, onSelect: () => setArchivedView(true) },
+      ]} />
+        <ListCard
+          key={archivedView ? "archived" : "current"}
+          className="animate-screen-in motion-reduce:animate-none"
+          toolbar={<TableFilters embedded scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
         { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Accounting Officer", label: "Accounting Officer" }, { value: "Auditor", label: "Auditor" }, { value: "Registrar", label: "Registrar" }, ...(user?.role === "super_admin" ? [{ value: "Super Admin", label: "Super Admin" }] : [])] },
         ...(archivedView ? [] : [{ key: "status" as const, label: "Status", type: "select" as const, options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]),
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
-      {visibleUsers.length > 0 ? (
-        <ListCard
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />}
+          paginate={{ label: "users" }}
+          empty={<p role="status" className="text-sm text-text-secondary">{archivedView ? "No archived users match that search." : "No users match that name or username."}</p>}
           headers={archivedView ? ["Name", "Username", "Role", "Archived", "Scheduled anonymization", "Action"] : ["Name", "Username", "Role", "State", "Actions"]}
           centeredColumns={archivedView ? [3, 4, 5] : [3, 4]}
-          rows={userPagination.items.map((user) => [
+          rows={visibleUsers.map((user) => [
             user.name,
             user.username,
             user.role,
@@ -3137,14 +3074,6 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
             ]),
           ])}
         />
-      ) : (
-        <Card>
-          <p role="status" className="text-sm text-text-secondary">
-            {archivedView ? "No archived users match that search." : "No users match that name or username."}
-          </p>
-        </Card>
-      )}
-      {visibleUsers.length > 0 && userPagination.controls}
       <Card className="mt-5">
         <p className="text-sm text-text-secondary">
           Temporary passwords are shown once after creation or reset. An
@@ -3282,15 +3211,15 @@ export function RolesPage() {
       <Card className="overflow-x-auto" tabIndex={0}>
         <p className="mb-4 text-sm text-text-secondary">Allowed indicates a role capability. Some workflows remain unavailable until their live APIs are ready; API permission checks remain authoritative.</p>
         <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-          <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">
-            <th scope="col" className="px-3 py-3">Area</th>
-            <th scope="col" className="px-3 py-3">Action</th>
-            {roles.map(({ role, label }) => <th key={role} scope="col" className="px-3 py-3">{label}</th>)}
+          <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
+            <th scope="col" className="px-3 py-2">Area</th>
+            <th scope="col" className="px-3 py-2">Action</th>
+            {roles.map(({ role, label }) => <th key={role} scope="col" className="px-3 py-2">{label}</th>)}
           </tr></thead>
           <tbody>{permissions.map(({ area, action, capability }) => <tr key={`${area}-${capability}`} className="border-b last:border-0">
-            <th scope="row" className="px-3 py-3 font-medium">{area}</th>
-            <td className="px-3 py-3">{action}</td>
-            {roleUsers.map((user) => <td key={user.role} className="px-3 py-3">{can(user, capability) ? "Allowed" : "Unavailable"}</td>)}
+            <th scope="row" className="px-3 py-2 font-medium">{area}</th>
+            <td className="px-3 py-2">{action}</td>
+            {roleUsers.map((user) => <td key={user.role} className="px-3 py-2">{can(user, capability) ? "Allowed" : "Unavailable"}</td>)}
           </tr>)}</tbody>
         </table>
       </Card>
@@ -3302,7 +3231,7 @@ export function RolesPage() {
   const [selectedChange, setSelectedChange] = useState<{ receipt: string; action: string; before: string; after: string } | null>(null);
   const matchesAuditRow = (row: string[]) => row.some((value) => value.toLowerCase().includes(filters.applied.query.trim().toLowerCase()))
     && (!filters.applied.event || row.some((value) => value.toLowerCase().includes(filters.applied.event.toLowerCase())));
-  const filterBar = <TableFilters scope={security ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: security
+  const filterBar = <TableFilters embedded={security} scope={security ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: security
     ? [{ value: "", label: "All events" }, { value: "Sign-in", label: "Sign-in" }, { value: "Sign-out", label: "Sign-out" }, { value: "Password reset", label: "Password reset" }, { value: "deactivated", label: "Deactivation" }, { value: "reactivated", label: "Reactivation" }]
     : [{ value: "", label: "All events" }, { value: "payment", label: "Payment" }, { value: "void", label: "Void" }, { value: "sign-off", label: "Close-out sign-off" }] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
   if (security)
@@ -3312,8 +3241,8 @@ export function RolesPage() {
         title="Security events"
           description="Review authentication and account-administration events. Entries cannot be changed or deleted."
         />
-        {filterBar}
         <ListCard
+        toolbar={filterBar}
         headers={["When", "Account", "Event", "Status", "Details"]}
         centeredColumns={[3]}
         rows={[
@@ -3371,10 +3300,8 @@ export function RolesPage() {
       />
       {filterBar}
       <div className="space-y-5">
-        <Card>
-          <h2 className="font-semibold">Transaction and void history</h2>
           <ListCard
-            className="mt-3"
+            title="Transaction and void history"
             headers={[
               "Receipt",
               "Recorded action",
@@ -3396,11 +3323,8 @@ export function RolesPage() {
               ],
             ].filter(matchesAuditRow)}
           />
-        </Card>
-        <Card>
-          <h2 className="font-semibold">Close-out reconciliation history</h2>
           <ListCard
-            className="mt-3"
+            title="Close-out reconciliation history"
             headers={["Business date", "Cashier", "Variance", "Review state"]}
             rows={[
               [
@@ -3411,11 +3335,8 @@ export function RolesPage() {
               ],
             ].filter(matchesAuditRow)}
           />
-        </Card>
-        <Card>
-          <h2 className="font-semibold">Recorded changes</h2>
           <ListCard
-            className="mt-3"
+            title="Recorded changes"
             headers={["When", "User", "Action", "Entity", "Details"]}
             rows={[
               { when: "Sep 27, 2026, 9:00 AM", user: "Casey Cashier (sample)", action: "Recorded payment", receipt: "OR-2026-001000", before: "Balance: ₱2,500.00", after: "Balance: ₱1,250.00" },
@@ -3428,7 +3349,6 @@ export function RolesPage() {
               <Button key={`${change.receipt}-view`} type="button" variant="secondary" size="sm" onClick={() => setSelectedChange(change)}>View change</Button>,
             ])}
           />
-        </Card>
       </div>
       <MockDialog open={selectedChange !== null} onOpenChange={(open) => !open && setSelectedChange(null)} title="Recorded change">
         {selectedChange && <><dl className="mt-3 grid gap-3 text-sm"><div><dt className="font-medium text-text-secondary">Before</dt><dd className="mt-1">{selectedChange.before}</dd></div><div><dt className="font-medium text-text-secondary">After</dt><dd className="mt-1">{selectedChange.after}</dd></div></dl><div className="mt-5 flex justify-end"><Button type="button" variant="secondary" onClick={() => setSelectedChange(null)}>Close</Button></div></>}
@@ -3447,43 +3367,27 @@ export function BackupPage() {
         title="Backups"
         description="Review the latest recorded backups and their results."
       />
-      {backups.isPending && <LoadingState message="Loading backup history…" />}
+      {backups.isPending && <LoadingState message="Loading backup history…" layout="table" columns={4} />}
       {backups.isError && <ErrorState message={backups.error.message} onRetry={() => void backups.refetch()} />}
       {backups.data && (
         <div className="space-y-5">
           <Card>
-            <h2 className="font-semibold">Recovery readiness</h2>
+            <h2 className="text-base font-semibold text-text-primary">Recovery readiness</h2>
             <p className="mt-2 text-sm text-text-secondary">
               No restore-test date or recovery procedure has been recorded. Restore operations are performed outside this application.
             </p>
           </Card>
-          <Card className="overflow-x-auto p-0">
-            <h2 className="px-4 pb-0 pt-4 font-semibold">Recent backups</h2>
-            {backups.data.length === 0 ? (
-              <p className="px-4 pb-4 pt-3 text-sm text-text-secondary">No backup has been recorded.</p>
-            ) : (
-              <table className="mt-3 w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-y bg-surface text-xs uppercase text-text-secondary">
-                    <th scope="col" className="px-4 py-3">Completed</th>
-                    <th scope="col" className="px-4 py-3">Result</th>
-                    <th scope="col" className="px-4 py-3 text-right">Size</th>
-                    <th scope="col" className="px-4 py-3">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {backups.data.map((backup) => (
-                    <tr key={backup.id} className="border-b last:border-0">
-                      <td className="px-4 py-3">{formatDateTime(backup.completedAt)}</td>
-                      <td className="px-4 py-3 capitalize">{backup.result}</td>
-                      <td className="px-4 py-3 text-right font-mono">{backup.sizeBytes === null ? "Not recorded" : formatBackupSize(backup.sizeBytes)}</td>
-                      <td className="px-4 py-3">{backup.error ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
+          <ListCard
+            title="Recent backups"
+            empty={<p className="text-sm text-text-secondary">No backup has been recorded.</p>}
+            headers={["Completed", "Result", "Size", "Details"]}
+            rows={backups.data.map((backup) => [
+              formatDateTime(backup.completedAt),
+              <span key={`${backup.id}-result`} className="capitalize">{backup.result}</span>,
+              backup.sizeBytes === null ? "Not recorded" : formatBackupSize(backup.sizeBytes),
+              backup.error ?? "—",
+            ])}
+          />
         </div>
       )}
     </>
@@ -3498,11 +3402,9 @@ function formatBackupSize(bytes: number): string {
 
 function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Card className="group flex min-h-[96px] flex-col border-l-4 border-l-brand-green p-3 transition-shadow hover:shadow-md">
-      <div className="flex min-h-7 items-start">
-        <CardLabel className="leading-5">{label}</CardLabel>
-      </div>
-      <CardValue className="truncate">{value}</CardValue>
+    <Card className="flex flex-col gap-2 p-5">
+      <CardLabel className="font-semibold">{label}</CardLabel>
+      <CardValue className="mt-0 truncate text-3xl font-bold tracking-tight">{value}</CardValue>
     </Card>
   );
 }
@@ -3514,6 +3416,8 @@ function ListCard({
   toolbar,
   className,
   centeredColumns = [],
+  paginate,
+  empty,
 }: {
   headers: string[];
   rows: ReactNode[][];
@@ -3521,33 +3425,43 @@ function ListCard({
   toolbar?: ReactNode;
   className?: string;
   centeredColumns?: number[];
+  /** Paginate inside the card, after sorting, so a sort orders the whole list rather than one page. */
+  paginate?: { label: string; fixedPageSize?: boolean };
+  /** Shown in place of the table when there are no rows, so the toolbar stays usable. */
+  empty?: ReactNode;
 }) {
+  const sorting = useTableSort();
+  const sortedRows = sortTableRows(rows, sorting.sort, (row, key) => cellSortValue(row[Number(key)]));
+  const pagination = useClientPagination(sortedRows, paginate?.label ?? "records", paginate?.fixedPageSize);
+  const shownRows = paginate ? pagination.items : sortedRows;
+  function sortBy(key: string) {
+    sorting.toggle(key);
+    pagination.setPage(1);
+  }
   return (
-    <Card className={cn("overflow-hidden p-0", className)}>
-      {title && <div className="border-b border-border p-4"><h2 className="font-semibold">{title}</h2></div>}
-      {toolbar && <div className="border-b border-border bg-surface/40 p-3">{toolbar}</div>}
-      <div className="overflow-x-auto">
+    <Card className={cn("p-0", className)}>
+      {title && <div className="border-b border-border px-5 pb-3 pt-5"><h2 className="text-base font-semibold text-text-primary">{title}</h2></div>}
+      {toolbar && <div className="border-b border-border px-5 py-3">{toolbar}</div>}
+      {empty && rows.length === 0 ? <div className="px-5 py-6">{empty}</div> : <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b bg-surface">
-              {headers.map((header, index) => (
-                <th
-                  className={cn(
-                    "px-4 py-3 text-left text-xs font-medium uppercase text-text-secondary",
-                    centeredColumns.includes(index) && "text-center",
-                  )}
-                  key={header}
-                >
+            <tr className="border-b border-border">
+              {headers.map((header, index) => isSortableHeader(header) ? (
+                <SortableHeader key={header} sortKey={String(index)} label={header} sort={sorting.sort} onSort={sortBy} className={cn(centeredColumns.includes(index) && "text-center")}>
+                  {header}
+                </SortableHeader>
+              ) : (
+                <th scope="col" className={cn("px-3 py-2 text-left text-xs font-semibold text-text-secondary", centeredColumns.includes(index) && "text-center")} key={header || index}>
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
+            {shownRows.map((row) => (
               <tr
                 className="border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus-within:bg-surface/70"
-                key={index}
+                key={rows.indexOf(row)}
               >
                 {row.map((cell, itemIndex) => (
                   <td
@@ -3564,9 +3478,15 @@ function ListCard({
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
+      {paginate && (rows.length > 0 || !empty) && pagination.controls}
     </Card>
   );
+}
+
+/** Action columns (no header, or "Actions") have nothing to order by. */
+function isSortableHeader(header: string) {
+  return header.trim() !== "" && !/^actions?$/i.test(header.trim());
 }
 
 function renderTableCell(cell: ReactNode, header?: string) {

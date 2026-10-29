@@ -22,11 +22,11 @@ import { centavos, format, parse } from "@/lib/money";
 
 function FinanceSettingsHeader({ title, editable, section }: { title: string; editable: boolean; section: "fees" | "plans" }) {
   return <>
-    <div className="mb-5">
-      <h1 className="text-2xl font-semibold">{title}</h1>
+    <div className="page-header-card mb-5">
+      <h1 className="text-2xl font-bold tracking-tight text-text-primary">{title}</h1>
       <p className="mt-1 text-sm text-text-secondary">Persisted finance configuration for the school.</p>
     </div>
-    <Card className="mb-4 border-l-4 border-l-brand-green">
+    <Card className="mb-4 p-5">
       <p className="text-sm text-text-secondary">
         {section === "fees" && editable
           ? "Your role may manage fee items. Changes create a new version and apply to new accounts only."
@@ -76,25 +76,25 @@ function FeeItemEditorDialog({
 
   return <Dialog.Root open onOpenChange={onOpenChange}>
     <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
-      <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(92vw,34rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md border border-border bg-white p-6 shadow-card focus:outline-none">
+      <Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" />
+      <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(92vw,34rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-6 shadow-raised focus:outline-none">
         <Dialog.Title className="text-xl font-semibold">{item ? "Revise fee item" : "Add fee item"}</Dialog.Title>
         <Dialog.Description className="mt-1 text-sm text-text-secondary">
           {schedule.schoolYear} · {schedule.gradeLevel}. Revisions preserve the previous version for existing accounts.
         </Dialog.Description>
         <form className="mt-5 space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium" htmlFor="fee-item-name">Name
-            <input id="fee-item-name" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark" />
+            <input id="fee-item-name" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} className="form-control mt-1" />
           </label>
           <label className="block text-sm font-medium" htmlFor="fee-item-category">Category
-            <select id="fee-item-category" value={category} onChange={(event) => setCategory(event.target.value as FeeItemInput["category"])} className="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">
+            <select id="fee-item-category" value={category} onChange={(event) => setCategory(event.target.value as FeeItemInput["category"])} className="form-control mt-1">
               <option value="tuition">Tuition</option>
               <option value="miscellaneous">Miscellaneous</option>
               <option value="other">Other</option>
             </select>
           </label>
           <label className="block text-sm font-medium" htmlFor="fee-item-amount">Amount (PHP)
-            <input id="fee-item-amount" type="number" min="0" step="0.01" required value={amount} onChange={(event) => { setAmount(event.target.value); setAmountError(""); }} className="mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark" />
+            <input id="fee-item-amount" type="number" min="0" step="0.01" required value={amount} onChange={(event) => { setAmount(event.target.value); setAmountError(""); }} className="form-control mt-1" />
           </label>
           {amountError && <p role="alert" className="text-sm text-status-error">{amountError}</p>}
           {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
@@ -144,7 +144,7 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
   return <Card className="overflow-x-auto">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">{schedule.name}</h2>
+          <h2 className="text-base font-semibold text-text-primary">{schedule.name}</h2>
           <p className="mt-1 text-sm text-text-secondary">{schedule.schoolYear} · {schedule.gradeLevel}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -155,23 +155,23 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
       {schedule.items.length === 0
         ? <EmptyState message="No fee items are configured for this schedule." />
         : <table className="w-full min-w-[820px] border-collapse text-left text-sm">
-            <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">
-              <th scope="col" className="px-3 py-3">Fee item</th>
-              <th scope="col" className="px-3 py-3">Category</th>
-              <th scope="col" className="px-3 py-3 text-right">Amount</th>
-              <th scope="col" className="px-3 py-3">Required</th>
-              <th scope="col" className="px-3 py-3">Version</th>
-              <th scope="col" className="px-3 py-3">Status</th>
-              {editable && <th scope="col" className="px-3 py-3">Actions</th>}
+            <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
+              <th scope="col" className="px-3 py-2">Fee item</th>
+              <th scope="col" className="px-3 py-2">Category</th>
+              <th scope="col" className="px-3 py-2 text-right">Amount</th>
+              <th scope="col" className="px-3 py-2">Required</th>
+              <th scope="col" className="px-3 py-2">Version</th>
+              <th scope="col" className="px-3 py-2">Status</th>
+              {editable && <th scope="col" className="px-3 py-2">Actions</th>}
             </tr></thead>
             <tbody>{pagination.items.map((item) => <tr key={item.id} className="border-b last:border-0">
-              <td className="px-3 py-3">{item.name}</td>
-              <td className="px-3 py-3">{item.category}</td>
-              <td className="px-3 py-3 text-right font-mono">{format(centavos(item.amountCents))}</td>
-              <td className="px-3 py-3">{item.required ? "Yes" : "No"}</td>
-              <td className="px-3 py-3 font-mono">{item.version}</td>
-              <td className="px-3 py-3"><StatusBadge status={schedule.active && item.active ? "active" : "inactive"} /></td>
-              {editable && <td className="px-3 py-3"><div className="flex gap-2">
+              <td className="px-3 py-2">{item.name}</td>
+              <td className="px-3 py-2">{item.category}</td>
+              <td className="px-3 py-2 text-right font-mono">{format(centavos(item.amountCents))}</td>
+              <td className="px-3 py-2">{item.required ? "Yes" : "No"}</td>
+              <td className="px-3 py-2 font-mono">{item.version}</td>
+              <td className="px-3 py-2"><StatusBadge status={schedule.active && item.active ? "active" : "inactive"} /></td>
+              {editable && <td className="px-3 py-2"><div className="flex gap-2">
                 <Button type="button" size="sm" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onEdit(schedule, item)}>Edit</Button>
                 <Button type="button" size="sm" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onDeactivate(item)}>Deactivate</Button>
               </div></td>}
@@ -194,7 +194,7 @@ function PaymentPlanCard({ plan }: { plan: FinancePaymentPlan }) {
   return <Card>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">{plan.name}</h2>
+          <h2 className="text-base font-semibold text-text-primary">{plan.name}</h2>
           <p className="mt-1 text-sm text-text-secondary">
             Down payment rule: {plan.downPaymentType} · configured value {plan.downPaymentValue}
           </p>
@@ -205,7 +205,7 @@ function PaymentPlanCard({ plan }: { plan: FinancePaymentPlan }) {
         ? <p className="mt-4 text-sm text-text-secondary">No installment steps are configured.</p>
         : <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-left text-sm">
-              <thead><tr className="border-b text-xs uppercase text-text-secondary">
+              <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
                 <th scope="col" className="py-2 pr-4">Sequence</th>
                 <th scope="col" className="py-2 pr-4">Installment</th>
                 <th scope="col" className="py-2 pr-4">Due day offset</th>
@@ -266,7 +266,7 @@ export function LiveFinanceSettingsPage({
   return <>
     <FinanceSettingsHeader title={title} editable={editable} section={section} />
     {section === "fees" && <>
-      {fees.isPending && <LoadingState message="Loading fee schedules…" />}
+      {fees.isPending && <LoadingState message="Loading fee schedules…" layout="table" columns={4} />}
       {fees.isError && <ErrorState message={fees.error.message} onRetry={() => void fees.refetch()} />}
       {fees.data && <FeeSchedulesTable
         schedules={fees.data}
@@ -288,7 +288,7 @@ export function LiveFinanceSettingsPage({
       />}
     </>}
     {section === "plans" && <>
-      {plans.isPending && <LoadingState message="Loading payment plans…" />}
+      {plans.isPending && <LoadingState message="Loading payment plans…" layout="table" columns={4} />}
       {plans.isError && <ErrorState message={plans.error.message} onRetry={() => void plans.refetch()} />}
       {plans.data && <PaymentPlanCards plans={plans.data} />}
     </>}

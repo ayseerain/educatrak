@@ -1,13 +1,12 @@
-import {
-  AlertTriangle,
-  CalendarClock,
-} from "lucide-react";
+import { ChevronRight, ListChecks } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Card, CardLabel } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { en } from "@/i18n/en";
 import { cn } from "@/lib/cn";
 import { format } from "@/lib/money";
-import { STATUS_TONE_STYLES } from "@/lib/status";
 import type { CashierAttentionAccount } from "@/api/dashboardTypes";
 
 interface AccountStatusOverviewProps {
@@ -15,63 +14,64 @@ interface AccountStatusOverviewProps {
   className?: string;
 }
 
+/** CLINIQ list card: header with a count, divided rows with a status badge and a plain amount. */
 export function AccountStatusOverview({
   accountsNeedingAttention,
   className,
 }: AccountStatusOverviewProps) {
+  const count = accountsNeedingAttention.length;
   return (
     <Card
       className={cn("flex flex-col p-0", className)}
       aria-labelledby="accounts-needing-attention-heading"
     >
-      <div className="border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <CardLabel id="accounts-needing-attention-heading" className="text-base font-semibold text-text-primary">
+      <CardHeader
+        titleId="accounts-needing-attention-heading"
+        icon={<ListChecks aria-hidden="true" />}
+        title={
+          <span className="flex items-center gap-2 whitespace-nowrap">
             {en.dashboard.accountsNeedingAttention}
-          </CardLabel>
+            <Badge tone="neutral" label={String(count)} />
+          </span>
+        }
+        actions={
           <Link
             to="/followup"
-            className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
+            className="text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green"
           >
             {en.dashboard.viewAll}
           </Link>
-        </div>
-      </div>
-      <div className="divide-y divide-border">
-        {accountsNeedingAttention.length > 0 ? (
-          accountsNeedingAttention.map((account) => (
+        }
+      />
+      {count > 0 ? (
+        <ul className="divide-y divide-border border-t border-border">
+          {accountsNeedingAttention.map((account) => (
             <AttentionAccountRow key={account.id} account={account} />
-          ))
-        ) : (
-          <p className="px-4 py-5 text-sm text-text-secondary">{en.dashboard.noAccountsNeedingAttention}</p>
-        )}
-      </div>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState message={en.dashboard.noAccountsNeedingAttention} />
+      )}
     </Card>
   );
 }
 
 function AttentionAccountRow({ account }: { account: CashierAttentionAccount }) {
   const isOverdue = account.severity === "error";
-  const amountTone = isOverdue ? STATUS_TONE_STYLES.error : STATUS_TONE_STYLES.warning;
-  const amountClass = `${amountTone.soft} ${amountTone.text}`;
-  const Icon = isOverdue ? AlertTriangle : CalendarClock;
-  const status = isOverdue ? en.status.overdue : en.status.dueSoon;
 
   return (
-    <Link
-      to={`/followup?status=${isOverdue ? "overdue" : "due_soon"}`}
-      className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface focus-visible:bg-surface"
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${amountClass}`}>
-          <Icon aria-hidden="true" className="h-4 w-4" />
-        </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-text-primary">{account.studentName}</span>
-          <span className="mt-0.5 block text-sm text-text-secondary">{status}</span>
-        </span>
+    <li className="flex items-center justify-between gap-3 px-5 py-3">
+      <Link
+        to={`/followup?status=${isOverdue ? "overdue" : "due_soon"}`}
+        className="inline-flex min-w-0 items-center gap-1 text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green motion-reduce:transition-none"
+      >
+        <span className="min-w-0 truncate">{account.studentName}</span>
+        <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+      </Link>
+      <span className="flex shrink-0 flex-col items-end gap-1 text-right">
+        <StatusBadge status={isOverdue ? en.status.overdue : en.status.dueSoon} />
+        <span className="text-sm font-semibold tabular-nums text-text-primary">{format(account.amountDue)}</span>
       </span>
-      <span className={`shrink-0 rounded-sm px-2 py-1 text-sm font-semibold ${amountClass}`}>{format(account.amountDue)}</span>
-    </Link>
+    </li>
   );
 }

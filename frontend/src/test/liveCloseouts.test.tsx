@@ -77,7 +77,7 @@ describe("live daily close-out", () => {
     render(<QueryClientProvider client={queryClient}><LiveDailyCloseOut user={cashier} /></QueryClientProvider>);
 
     expect(await screen.findByLabelText("Counted cash")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "History" }));
+    await user.click(screen.getByRole("tab", { name: "History" }));
     expect(await screen.findByRole("heading", { name: "Close-outs" })).toBeInTheDocument();
     expect(await screen.findByText("No close-outs have been submitted.")).toBeInTheDocument();
   });

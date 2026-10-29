@@ -85,10 +85,12 @@ interface TableFiltersProps<Values extends TableFilterValues> {
   onRemove: (key: keyof Values & string) => void;
   error?: string;
   validate?: (draft: Values) => string | undefined;
+  /** Render only the toolbar row, for the top of the table's own card (CLINIQ list card). */
+  embedded?: boolean;
 }
 
 export function TableFilters<Values extends TableFilterValues>({
-  scope, fields, draft, applied, defaults, search, searchSlot, onChange, onSearch, onApply, onReset, onClear, onRemove, error, validate,
+  scope, fields, draft, applied, defaults, search, searchSlot, onChange, onSearch, onApply, onReset, onClear, onRemove, error, validate, embedded = false,
 }: TableFiltersProps<Values>) {
   const [open, setOpen] = useState(false);
   const [validationError, setValidationError] = useState("");
@@ -131,8 +133,7 @@ export function TableFilters<Values extends TableFilterValues>({
     setOpen(false);
   }
 
-  return <Card className="no-print mb-4">
-    <div className="flex flex-wrap items-end gap-3">
+  const toolbar = <div className="no-print flex flex-wrap items-end gap-3">
       {searchSlot ?? (search && <div className="min-w-[min(100%,16rem)] flex-1">
         <input type="search" aria-label={search.label} value={draft[search.key]} placeholder={search.placeholder ?? search.label} onChange={(event) => (onSearch ?? onChange)(search.key, event.target.value)} className={searchInputClass} />
       </div>)}
@@ -140,7 +141,7 @@ export function TableFilters<Values extends TableFilterValues>({
         <Button ref={triggerRef} type="button" variant="secondary" aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
           <Filter aria-hidden="true" className="h-4 w-4" />Filter{activeCount ? ` (${activeCount})` : ""}
         </Button>
-        {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className="absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] w-[min(90vw,28rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-xl sm:left-auto sm:right-0">
+        {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className="absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] w-[min(90vw,28rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-raised sm:left-auto sm:right-0">
           {activeCount > 0 && <div aria-label="Active filters" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-4">
             {searchActive && <Chip label={`${search.label}: ${applied[search.key]}`} onClick={() => { setValidationError(""); onRemove(search.key); }} />}
             {activeFields.map((field) => <Chip key={field.key} label={`${field.label}: ${field.type === "checkbox" ? "Yes" : field.options?.find((option) => option.value === applied[field.key])?.label ?? applied[field.key]}`} onClick={() => { setValidationError(""); onRemove(field.key); }} />)}
@@ -158,8 +159,8 @@ export function TableFilters<Values extends TableFilterValues>({
           </form>
         </div>}
       </div>
-    </div>
-  </Card>;
+    </div>;
+  return embedded ? toolbar : <Card className="no-print mb-4">{toolbar}</Card>;
 }
 
 function FilterInput<Key extends string>({ field, value, onChange }: { field: TableFilterField<Key>; value: string; onChange: (value: string) => void }) {
@@ -172,11 +173,11 @@ function FilterInput<Key extends string>({ field, value, onChange }: { field: Ta
 }
 
 function Chip({ label, onClick }: { label: string; onClick: () => void }) {
-  return <button type="button" aria-label={`Remove ${label} filter`} onClick={onClick} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface px-3 text-xs text-text-primary hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">{label}<X aria-hidden="true" className="h-3 w-3" /></button>;
+  return <button type="button" aria-label={`Remove ${label} filter`} onClick={onClick} className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-sm border border-border bg-surface px-3 text-xs font-semibold text-text-primary transition-colors hover:border-brand-green hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">{label}<X aria-hidden="true" className="h-3 w-3" /></button>;
 }
 
-const inputClass = "mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-green-dark";
-const searchInputClass = "h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-green-dark";
+const inputClass = "form-control mt-1";
+const searchInputClass = "form-control";
 
 export function dateRangeError(from: string, to: string): string | undefined {
   return from && to && to < from ? "End date must be on or after start date." : undefined;

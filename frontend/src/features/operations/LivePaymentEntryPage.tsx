@@ -149,8 +149,8 @@ export function LivePaymentEntryPage() {
 
   return (
     <>
-      <div className="mb-5">
-        <h1 className="text-2xl font-semibold text-text-primary">Record payment</h1>
+      <div className="page-header-card mb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Record payment</h1>
         <p className="mt-1 text-sm text-text-secondary">Search the live student register, review the current account balance, then confirm the cash payment.</p>
       </div>
       {saved ? (
@@ -162,7 +162,7 @@ export function LivePaymentEntryPage() {
       ) : (
         <Card>
           {!selectedStudent && linkedStudentId ? (
-            contextQuery.isPending ? <LoadingState message="Loading selected student and billing account…" />
+            contextQuery.isPending ? <LoadingState message="Loading selected student and billing account…" layout="form" />
               : contextQuery.isError ? <ErrorState message={contextQuery.error.message} onRetry={() => void contextQuery.refetch()} />
                 : null
           ) : !selectedStudent ? (
@@ -170,7 +170,7 @@ export function LivePaymentEntryPage() {
               <label htmlFor="live-payment-student-search" className="block text-sm font-medium">Student name or number</label>
               <input id="live-payment-student-search" type="search" autoComplete="off" value={search} onChange={(event) => { setSearch(event.target.value); setError(""); }} className={inputClass} placeholder="Enter at least two characters" />
               {normalizedSearch.length > 0 && normalizedSearch.length < 2 && <p className="mt-2 text-sm text-text-secondary">Enter at least two characters to search.</p>}
-              {searchQuery.isFetching && <LoadingState message="Searching live student records…" />}
+              {searchQuery.isFetching && <LoadingState message="Searching live student records…" layout="list" />}
               {searchQuery.isError && <ErrorState message={searchQuery.error.message} onRetry={() => void searchQuery.refetch()} />}
               {searchQuery.data?.length === 0 && <EmptyState message="No matching students were found." />}
               {searchQuery.data && searchQuery.data.length > 0 && (
@@ -185,7 +185,7 @@ export function LivePaymentEntryPage() {
                 <div><p className="font-medium">{selectedStudent.name}</p><p className="text-sm text-text-secondary">{selectedStudent.number}{selectedStudent.grade ? ` · ${selectedStudent.grade}` : ""}{selectedStudent.section ? ` · ${selectedStudent.section}` : ""}</p></div>
                 <Button type="button" variant="secondary" onClick={resetDraft}>Change student</Button>
               </div>
-              {contextQuery.isPending ? <LoadingState message="Loading current billing account…" /> : null}
+              {contextQuery.isPending ? <LoadingState message="Loading current billing account…" layout="list" /> : null}
               {contextQuery.isError ? <ErrorState message={contextQuery.error.message} onRetry={() => void contextQuery.refetch()} /> : null}
               {context && !contextQuery.isError && (
                 <form className="mt-5 space-y-5" onSubmit={review}>
@@ -220,7 +220,7 @@ export function LivePaymentEntryPage() {
                   {error && <p role="alert" className="rounded-md border border-status-error p-3 text-sm text-status-error">{error}</p>}
                   {reviewing ? (
                     <div className="rounded-md border border-border p-4" aria-label="Payment confirmation">
-                      <h2 className="font-semibold">Confirm cash payment</h2>
+                      <h2 className="text-base font-semibold text-text-primary">Confirm cash payment</h2>
                       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2"><div><dt className="text-text-secondary">Student</dt><dd>{context.student.name} · {context.student.number}</dd></div><div><dt className="text-text-secondary">Amount</dt><dd>{format(centavos(amountCents))}</dd></div><div><dt className="text-text-secondary">Date of payment</dt><dd>{paidOn}</dd></div><div><dt className="text-text-secondary">Balance after payment</dt><dd>{format(centavos(balanceAfter))}</dd></div><div><dt className="text-text-secondary">Method</dt><dd>Cash</dd></div>{notes.trim() && <div><dt className="text-text-secondary">Note</dt><dd>{notes.trim()}</dd></div>}</dl>
                       <div className="mt-4 flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => setReviewing(false)}>Edit</Button><Button type="button" disabled={saveMutation.isPending} onClick={() => void savePayment()}>{saveMutation.isPending ? "Saving…" : "Confirm and save"}</Button></div>
                     </div>
@@ -236,7 +236,7 @@ export function LivePaymentEntryPage() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border border-border p-4"><p className="text-xs font-medium uppercase text-text-secondary">{label}</p><p className="mt-1 font-semibold">{value}</p></div>;
+  return <div className="rounded-md border border-border p-4"><p className="text-sm font-semibold text-text-secondary">{label}</p><p className="mt-1 font-semibold">{value}</p></div>;
 }
 
 function makeIdempotencyKey(): string {
@@ -257,5 +257,5 @@ function manilaToday(): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
-const inputClass = "mt-1 h-11 w-full rounded-md border border-border bg-white px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-green-dark";
+const inputClass = "form-control mt-1";
 const textAreaClass = "mt-1 min-h-24 w-full rounded-md border border-border bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-green-dark";

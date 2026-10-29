@@ -45,3 +45,22 @@ describe("live session restoration", () => {
     expect(await screen.findByText("Signed out")).toBeInTheDocument();
   });
 });
+
+describe("mock session restoration", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps the signed-in mock user after a refresh and drops an expired one", () => {
+    vi.stubEnv("VITE_DATA_SOURCE", "mock");
+    const user = { id: "user-1", name: "Casey Cashier", role: "cashier" };
+    window.sessionStorage.setItem("educatrak.mockSession", JSON.stringify({ user, expiresAt: Date.now() + 60_000 }));
+    const { unmount } = render(<SessionProvider><SessionStatus /></SessionProvider>);
+    expect(screen.getByText("Casey Cashier")).toBeInTheDocument();
+    unmount();
+
+    window.sessionStorage.setItem("educatrak.mockSession", JSON.stringify({ user, expiresAt: Date.now() - 1 }));
+    render(<SessionProvider><SessionStatus /></SessionProvider>);
+    expect(screen.getByText("Signed out")).toBeInTheDocument();
+  });
+});

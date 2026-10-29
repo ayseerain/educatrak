@@ -10,6 +10,7 @@ export function useClientPagination<T>(items: T[], label: string, fixedPageSize 
 
   return {
     items: visibleItems,
+    setPage: setCurrentPage,
     controls: <PaginationControls
       currentPage={page}
       lastPage={lastPage}

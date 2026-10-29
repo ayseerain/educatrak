@@ -27,29 +27,31 @@ export function LiveAdminLog() {
   });
 
   return <>
-    <div className="mb-5"><h1 className="text-2xl font-semibold">Security</h1><p className="mt-1 text-sm text-text-secondary">Review authentication and account-administration events. Entries cannot be changed or deleted.</p></div>
-    <TableFilters scope="Security events" defaults={securityFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "user", label: "User" }} fields={[
+    <div className="page-header-card mb-5"><h1 className="text-2xl font-bold tracking-tight text-text-primary">Security</h1><p className="mt-1 text-sm text-text-secondary">Review authentication and account-administration events. Entries cannot be changed or deleted.</p></div>
+    <Card className="p-0">
+      <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Security events" defaults={securityFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "user", label: "User" }} fields={[
       { key: "action", label: "Action" }, { key: "dateFrom", label: "From", type: "date" }, { key: "dateTo", label: "To", type: "date" },
-    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onReset={tableFilters.reset} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} />
-    {eventsQuery.isPending && <LoadingState message="Loading security events…" />}
-    {eventsQuery.isError && <ErrorState message={eventsQuery.error.message} onRetry={() => void eventsQuery.refetch()} />}
-    {eventsQuery.data && (eventsQuery.data.data.length === 0 ? <Card><EmptyState message="No security events are recorded." /></Card> : <Card className="overflow-x-auto p-0">
+    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onReset={tableFilters.reset} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
+      {eventsQuery.isPending && <LoadingState message="Loading security events…" layout="table" bare columns={6} />}
+      {eventsQuery.isError && <ErrorState message={eventsQuery.error.message} onRetry={() => void eventsQuery.refetch()} />}
+      {eventsQuery.data && (eventsQuery.data.data.length === 0 ? <EmptyState message="No security events are recorded." /> : <div className="overflow-x-auto">
       <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-        <thead><tr className="border-b bg-surface text-xs uppercase text-text-secondary">{["When", "Actor", "Account / target", "Event", "Status", "Details"].map((heading) => <th key={heading} scope="col" className="px-4 py-3">{heading}</th>)}</tr></thead>
+        <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["When", "Actor", "Account / target", "Event", "Status", "Details"].map((heading) => <th key={heading} scope="col" className="px-3 py-2">{heading}</th>)}</tr></thead>
         <tbody>{eventsQuery.data.data.map((event) => {
           const details = safeDetails(event.details);
           const account = [event.accountName, event.account].filter((item): item is string => Boolean(item)).join(" · ");
           return <tr key={event.id} className="border-b align-top last:border-0">
-            <td className="whitespace-nowrap px-4 py-3">{formatTimestamp(event.occurredAt)}</td>
-            <td className="px-4 py-3">{event.actorName ?? "Unauthenticated / unavailable"}</td>
-            <td className="px-4 py-3">{account || (event.entityType && event.entityId ? `${event.entityType} ${event.entityId}` : "Unavailable")}</td>
-            <td className="px-4 py-3">{labels[event.action] ?? event.action}</td>
-            <td className="px-4 py-3">{event.action === "auth.login_failed" ? "Denied" : "Recorded"}</td>
-            <td className="max-w-md whitespace-normal px-4 py-3">{details.summary ?? details.changes ?? "Event recorded"}</td>
+            <td className="whitespace-nowrap px-3 py-2">{formatTimestamp(event.occurredAt)}</td>
+            <td className="px-3 py-2">{event.actorName ?? "Unauthenticated / unavailable"}</td>
+            <td className="px-3 py-2">{account || (event.entityType && event.entityId ? `${event.entityType} ${event.entityId}` : "Unavailable")}</td>
+            <td className="px-3 py-2">{labels[event.action] ?? event.action}</td>
+            <td className="px-3 py-2">{event.action === "auth.login_failed" ? "Denied" : "Recorded"}</td>
+            <td className="max-w-md whitespace-normal px-3 py-2">{details.summary ?? details.changes ?? "Event recorded"}</td>
           </tr>;
         })}</tbody>
       </table>
-      <PaginationControls currentPage={eventsQuery.data.currentPage} lastPage={eventsQuery.data.lastPage} perPage={eventsQuery.data.perPage} total={eventsQuery.data.total} label="events" busy={eventsQuery.isFetching} onPageChange={tableFilters.setPage} onPerPageChange={tableFilters.changePerPage} /></Card>)}
+      <PaginationControls currentPage={eventsQuery.data.currentPage} lastPage={eventsQuery.data.lastPage} perPage={eventsQuery.data.perPage} total={eventsQuery.data.total} label="events" busy={eventsQuery.isFetching} onPageChange={tableFilters.setPage} onPerPageChange={tableFilters.changePerPage} /></div>)}
+    </Card>
   </>;
 }
 

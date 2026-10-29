@@ -31,19 +31,19 @@ export function AuditActivityPreview({
 
   return (
     <Card className={cn("p-0", className)} aria-labelledby={headingId}>
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 pb-3 pt-5">
         <div>
           <CardLabel id={headingId} className="text-base font-semibold text-text-primary">{title}</CardLabel>
           <p className="mt-1 text-sm text-text-secondary">{description}</p>
         </div>
-        {to && actionLabel && <Link to={to} className="inline-flex min-h-11 items-center text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark">
+        {to && actionLabel && <Link to={to} className="inline-flex min-h-11 items-center text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark">
           {actionLabel}
         </Link>}
       </div>
       {visibleEntries.length > 0 ? (
         <ol className="divide-y divide-border">
           {visibleEntries.map((entry) => (
-            <li key={entry.id} className="px-4 py-3">
+            <li key={entry.id} className="px-5 py-3">
               <p className="text-sm font-medium text-text-primary">{entry.label}</p>
               <p className="mt-1 text-sm text-text-secondary">
                 {entry.actor ?? en.dashboard.unknownActor} · <time dateTime={entry.occurredAt}>{formatDateTime(entry.occurredAt)}</time>
@@ -52,7 +52,7 @@ export function AuditActivityPreview({
           ))}
         </ol>
       ) : (
-        <p className={cn("px-4 py-5 text-sm text-text-secondary", emptyStateClassName)}>{emptyMessage}</p>
+        <p className={cn("px-5 py-5 text-sm text-text-secondary", emptyStateClassName)}>{emptyMessage}</p>
       )}
     </Card>
   );

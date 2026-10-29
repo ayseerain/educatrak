@@ -64,9 +64,9 @@ describe("role scoped user filters", () => {
     await user.click(archiveButton);
     const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
     expect(archiveDialog).toBeVisible();
-    expect(archiveDialog).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-8", "shadow-2xl");
+    expect(archiveDialog).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-6", "shadow-raised");
     expect(archiveDialog).toHaveTextContent(/restored for 30 days/);
-    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    expect(document.querySelector('[class~="bg-text-primary/40"]')).toBeInTheDocument();
     await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
 
     await waitFor(() => expect(archiveStaffUser).toHaveBeenCalledWith("cashier-1", expect.anything()));
@@ -94,8 +94,8 @@ describe("role scoped user filters", () => {
     await user.click(screen.getByRole("button", { name: "Deactivate account" }));
 
     const confirmation = screen.getByRole("dialog", { name: "Deactivate account?" });
-    expect(confirmation).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-8", "shadow-2xl");
-    expect(document.querySelector(".backdrop-blur-sm")).toBeInTheDocument();
+    expect(confirmation).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-6", "shadow-raised");
+    expect(document.querySelector('[class~="bg-text-primary/40"]')).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Deactivate" }));
     await waitFor(() => expect(updateStaffUser).toHaveBeenCalledWith("cashier-1", { active: false }));
   });

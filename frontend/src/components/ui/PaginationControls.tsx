@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "./Button";
+import { DropdownSelect } from "./DropdownSelect";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -11,6 +12,9 @@ interface PaginationControlsProps {
   onPerPageChange?: (perPage: number) => void;
 }
 
+const PER_PAGE_OPTIONS = ["10", "25", "50"].map((size) => ({ value: size, label: size }));
+
+/** Compact pager in CLINIQ's style: a count, optional rows-per-page, and Previous / Next. */
 export function PaginationControls({
   currentPage,
   lastPage,
@@ -27,20 +31,27 @@ export function PaginationControls({
 
   return (
     <div className="no-print flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-sm">
-      <p className="text-text-secondary" aria-live="polite">Showing {from}–{to} of {total} {label}</p>
-      <div className="flex flex-wrap items-center gap-2">
-        {onPerPageChange && <label className="flex items-center gap-2 text-text-secondary">Rows per page
-          <select aria-label="Rows per page" value={perPage} disabled={busy} onChange={(event) => onPerPageChange(Number(event.target.value))} className="h-11 rounded-md border border-border bg-white px-2 text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">
-            {[10, 25, 50].map((size) => <option key={size} value={size}>{size}</option>)}
-          </select>
-        </label>}
-        <button type="button" aria-label="Previous page" disabled={currentPage <= 1 || busy} onClick={() => onPageChange(Math.max(1, currentPage - 1))} className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-white text-text-primary hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark disabled:cursor-not-allowed disabled:opacity-50">
-          <ChevronLeft aria-hidden="true" className="h-4 w-4" />
-        </button>
-        <span aria-label={`Page ${currentPage} of ${safeLastPage}`} className="min-w-14 text-center tabular-nums">{currentPage} / {safeLastPage}</span>
-        <button type="button" aria-label="Next page" disabled={currentPage >= safeLastPage || busy} onClick={() => onPageChange(Math.min(safeLastPage, currentPage + 1))} className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-white text-text-primary hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark disabled:cursor-not-allowed disabled:opacity-50">
-          <ChevronRight aria-hidden="true" className="h-4 w-4" />
-        </button>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="text-text-secondary" aria-live="polite">Showing {from}–{to} of {total} {label}</p>
+        {onPerPageChange && <span className="flex items-center gap-2 text-text-secondary">Rows per page
+          <DropdownSelect
+            aria-label="Rows per page"
+            value={String(perPage)}
+            options={PER_PAGE_OPTIONS}
+            disabled={busy}
+            onChange={(value) => onPerPageChange(Number(value))}
+            className="min-w-20"
+          />
+        </span>}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" size="sm" aria-label="Previous page" disabled={currentPage <= 1 || busy} onClick={() => onPageChange(Math.max(1, currentPage - 1))}>
+          Previous
+        </Button>
+        <span aria-label={`Page ${currentPage} of ${safeLastPage}`} className="whitespace-nowrap font-semibold tabular-nums text-text-primary">Page {currentPage} of {safeLastPage}</span>
+        <Button variant="secondary" size="sm" aria-label="Next page" disabled={currentPage >= safeLastPage || busy} onClick={() => onPageChange(Math.min(safeLastPage, currentPage + 1))}>
+          Next
+        </Button>
       </div>
     </div>
   );

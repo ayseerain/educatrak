@@ -13,14 +13,14 @@ interface StaffAccountOverviewProps {
 export function StaffAccountOverview({ summary, title, description, className }: StaffAccountOverviewProps) {
   return (
     <Card className={cn("p-0", className)} aria-labelledby="staff-account-overview-heading">
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border px-5 pb-3 pt-5">
         <CardLabel id="staff-account-overview-heading" className="text-base font-semibold text-text-primary">
           {title}
         </CardLabel>
         <p className="mt-1 text-sm text-text-secondary">{description}</p>
       </div>
       {summary ? (
-        <div className="space-y-4 px-4 py-4">
+        <div className="space-y-4 p-5">
           <dl className="grid grid-cols-3 gap-3">
             <AccountCount label={en.dashboard.activeAccounts} value={summary.active} />
             <AccountCount label={en.dashboard.inactiveAccounts} value={summary.inactive} />
@@ -39,7 +39,7 @@ export function StaffAccountOverview({ summary, title, description, className }:
           </div>
         </div>
       ) : (
-        <p className="px-4 py-5 text-sm text-text-secondary">{en.dashboard.accountOverviewUnavailable}</p>
+        <p className="px-5 py-5 text-sm text-text-secondary">{en.dashboard.accountOverviewUnavailable}</p>
       )}
     </Card>
   );
