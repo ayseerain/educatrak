@@ -9,7 +9,8 @@ Use with `educatrak-interactive-states`.
 
 ## One control look
 
-- Every input uses the `form-control` class from `frontend/src/index.css`: 44px tall (`h-11`), `rounded-md`, `border-border`, `shadow-card`, semibold 14px value, normal-weight `text-muted-readable` placeholder, `hover:border-brand-green`, and the global focus ring. It matches `.dropdown-trigger`, so an input and a select side by side line up.
+- Every input uses the `form-control` class from `frontend/src/index.css`: 44px tall (`h-11`), `rounded-md`, `border-border`, `shadow-card`, semibold 14px value, normal-weight `text-muted-readable` placeholder, `hover:border-brand-green`, and the global focus ring only (the border does not also darken on focus; border + offset outline read as a heavy double ring). It matches `.dropdown-trigger`, so an input and a select side by side line up.
+- **Filter panel exception (project owner, Thursday, October 29, 2026 â€” 12:48:18 +08:00):** inside the `TableFilters` popover, fields are compact: 40px (`h-10`) inputs and dropdowns, 12px semibold `text-secondary` labels, `size="sm"` action buttons above a hairline, and a panel sized to its fields (one field: single column, `19.5rem`; more: two columns, `26rem`). The toolbar's own search keeps 44px.
 - Add spacing with utilities next to it (`form-control mt-1`); don't copy its border/height classes onto a page.
 - A textarea uses `form-control` too (height becomes auto).
 - Login and First Login keep their own independent field design; don't apply this there.

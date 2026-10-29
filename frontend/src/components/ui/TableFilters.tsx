@@ -3,6 +3,7 @@ import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import { cn } from "@/lib/cn";
 
 export type TableFilterValues = Record<string, string>;
 
@@ -141,20 +142,20 @@ export function TableFilters<Values extends TableFilterValues>({
         <Button ref={triggerRef} type="button" variant="secondary" aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
           <Filter aria-hidden="true" className="h-4 w-4" />Filter{activeCount ? ` (${activeCount})` : ""}
         </Button>
-        {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className="absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] w-[min(90vw,28rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-raised sm:left-auto sm:right-0">
+        {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className={cn("absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-raised sm:left-auto sm:right-0", fields.length > 1 ? "w-[min(90vw,26rem)]" : "w-[min(90vw,19.5rem)]")}>
           {activeCount > 0 && <div aria-label="Active filters" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-4">
             {searchActive && <Chip label={`${search.label}: ${applied[search.key]}`} onClick={() => { setValidationError(""); onRemove(search.key); }} />}
             {activeFields.map((field) => <Chip key={field.key} label={`${field.label}: ${field.type === "checkbox" ? "Yes" : field.options?.find((option) => option.value === applied[field.key])?.label ?? applied[field.key]}`} onClick={() => { setValidationError(""); onRemove(field.key); }} />)}
           </div>}
           <form aria-label={`${scope} filter fields`} onSubmit={submit}>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={cn("grid gap-3", fields.length > 1 && "sm:grid-cols-2")}>
               {fields.map((field) => <FilterInput key={field.key} field={field} value={draft[field.key] ?? ""} onChange={(value) => { setValidationError(""); onChange(field.key, value); }} />)}
             </div>
             {(error || validationError) && <p role="alert" className="mt-3 text-sm text-status-error">{error || validationError}</p>}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="submit">Apply filters</Button>
-              <Button type="button" variant="secondary" onClick={() => { setValidationError(""); onReset(); }}>Reset</Button>
-              <Button type="button" variant="ghost" onClick={() => { setValidationError(""); onClear(); }}>Clear all</Button>
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <Button type="submit" size="sm">Apply filters</Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => { setValidationError(""); onReset(); }}>Reset</Button>
+              <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => { setValidationError(""); onClear(); }}>Clear all</Button>
             </div>
           </form>
         </div>}
@@ -165,9 +166,9 @@ export function TableFilters<Values extends TableFilterValues>({
 
 function FilterInput<Key extends string>({ field, value, onChange }: { field: TableFilterField<Key>; value: string; onChange: (value: string) => void }) {
   if (field.type === "checkbox") return <label className="flex items-center gap-2 self-end pb-3 text-sm font-medium"><input type="checkbox" checked={value === "true"} onChange={(event) => onChange(event.target.checked ? "true" : "")} />{field.label}</label>;
-  return <label className="block text-sm font-medium">{field.label}
+  return <label className="block text-xs font-semibold text-text-secondary">{field.label}
     {field.type === "select"
-      ? <DropdownSelect aria-label={field.label} value={value} options={[...(field.options ?? [])]} onChange={onChange} className="mt-1 w-full" align="start" />
+      ? <DropdownSelect aria-label={field.label} value={value} options={[...(field.options ?? [])]} onChange={onChange} className="mt-1 h-10 w-full" align="start" />
       : <input aria-label={field.label} type={field.type ?? "text"} value={value} placeholder={field.placeholder} min={field.min} step={field.step} onChange={(event) => onChange(event.target.value)} className={inputClass} />}
   </label>;
 }
@@ -176,7 +177,8 @@ function Chip({ label, onClick }: { label: string; onClick: () => void }) {
   return <button type="button" aria-label={`Remove ${label} filter`} onClick={onClick} className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-sm border border-border bg-surface px-3 text-xs font-semibold text-text-primary transition-colors hover:border-brand-green hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">{label}<X aria-hidden="true" className="h-3 w-3" /></button>;
 }
 
-const inputClass = "form-control mt-1";
+// Compact inside the filter panel (CLINIQ's 40px control); the toolbar's own search keeps 44px.
+const inputClass = "form-control mt-1 h-10";
 const searchInputClass = "form-control";
 
 export function dateRangeError(from: string, to: string): string | undefined {

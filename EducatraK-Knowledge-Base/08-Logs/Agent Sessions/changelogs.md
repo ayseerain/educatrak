@@ -25,6 +25,18 @@
 
 ## Entries
 
+### Thursday, October 29, 2026 â€” 12:48:18 +08:00 | Compact filter panel and single focus ring
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** The project owner said the open Filter panel looked big and asked to check the other panels too. All filter panels share `TableFilters`, so one change covers every list.
+  - The panel is now sized to its fields: one field gets a single column, `19.5rem` wide; more fields get two columns, `26rem` wide.
+  - Fields inside the panel are 40px (CLINIQ's control height), with 12px semibold labels. The action buttons are compact (`sm`) above a hairline, with "Clear all" on the right.
+  - Focused inputs and native selects no longer darken their border on top of the focus outline. That pairing read as a heavy double ring; CLINIQ uses the outline only.
+  - This is an owner-requested exception to the 44px control minimum for the filter popover only. The toolbar search stays 44px. The exception is recorded in `educatrak-input-patterns`.
+- **Files:** Modified `frontend/src/components/ui/TableFilters.tsx`, `frontend/src/index.css`, `.agents/skills/educatrak-input-patterns/SKILL.md`.
+- **Validation:** `npx tsc --noEmit -p .` passed. `npx vitest run`: 211 of 213 passed; the 2 failures are the pre-existing ₱8,500.00 fixture assertions. Playwright with local Chromium (no Edge): screenshots of the Follow-up (one field) and Payments (five fields) panels checked.
+- **Commit/PR:** Not available at time of entry (the project owner commits).
+- **Follow-ups:** None.
+
 ### Thursday, October 29, 2026 â€” 12:19:09 +08:00 | Agent instructions: use project skills; create skills for reusable patterns
 - **Agent:** Claude Code (Opus 5.5)
 - **Summary:** On the project owner's request ("copy the instruction from cliniq like use the available skills for similar request, but if not available create the skill"), `AGENTS.md` and `CLAUDE.md` gained two items under "During the Task", adapted from CLINIQ's `CLAUDE.md`:

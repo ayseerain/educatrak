@@ -42,9 +42,6 @@
     @apply font-normal text-text-muted-readable;
   }
 
-  .form-control:focus-visible {
-    @apply border-brand-green-dark;
-  }
 
   textarea.form-control {
     @apply h-auto py-2;
@@ -59,9 +56,6 @@
     background-size: 0.875rem 0.875rem;
   }
 
-  .dropdown-select:focus-visible {
-    @apply border-brand-green-dark;
-  }
 
   /* The one dropdown look, taken from CLINIQ's date-range control: semibold trigger, small
      brand-green-dark chevron, compact rows; the selected row is marked by tint and weight. */
