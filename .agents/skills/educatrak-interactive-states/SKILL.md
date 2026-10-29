@@ -28,6 +28,10 @@ Use the shared `Button` (`frontend/src/components/ui/Button.tsx`) for buttons, a
 - Status inside a row or card is a `StatusBadge` / `Badge` (soft tint, colored icon, `text-primary` label), never a tinted icon tile.
 - Dashboard widgets use the shared pieces: `DashboardStatCard` (semibold label, 32px tinted icon chip, 32px bold figure), `CardHeader` from `Card.tsx` (icon + 16px semibold title), and divided rows `px-5 py-3`. No accent stripes (`border-l-4`, `border-t-2`), no tinted panel backgrounds, no hover shadows.
 
+## Selectable rows
+
+A row with a selection checkbox toggles on a click anywhere in the row, not only on the box (`ListCard`'s `onRowClick` / `isRowSelected`; `isRowControlClick` in `features/followup/reminderChannels.ts` skips the row's own links and controls). Selected rows get a soft `brand-green-light/15` tint. "Select all" is the shared `SelectAllCheckbox` (`components/ui/SelectAllCheckbox.tsx`) at the **left** of the toolbar, above the row checkboxes, showing a partial (indeterminate) state when only some rows are selected. A choice between fixed options (Email / SMS / Email and SMS) is a `DropdownSelect`, not a row of checkboxes.
+
 ## View tabs
 
 Switching a page between whole views (Follow-up / Notification log, Today's close-out / History, Current / Archived users) uses the shared `ViewTabs` (`frontend/src/components/ui/ViewTabs.tsx`): one `surface` track, the selected option a raised white chip with a green ring and heavier weight, ARIA tabs with Arrow/Home/End. Never two independent primary/secondary buttons.

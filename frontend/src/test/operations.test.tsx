@@ -560,8 +560,10 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
     render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
 
-    await user.click(screen.getByRole("checkbox", { name: "SMS" }));
-    await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
+    await user.click(screen.getByRole("button", { name: "Send reminders by" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Email and SMS" }));
+    await user.click(screen.getByRole("cell", { name: "₱8,500.00" }));
+    expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Send reminder details" }));
 

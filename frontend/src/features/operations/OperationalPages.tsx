@@ -28,6 +28,8 @@ import { Card, CardLabel, CardValue } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import { SelectAllCheckbox } from "@/components/ui/SelectAllCheckbox";
+import { channelsFromValue, channelsValue, isRowControlClick, REMINDER_CHANNEL_OPTIONS } from "@/features/followup/reminderChannels";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
 import {
   students,
@@ -1858,44 +1860,31 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
       )}
       <ListCard
             toolbar={<div className="space-y-3"><TableFilters embedded scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onReset={filters.reset} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />{can(user, "followup.send") ? (
-              <div className="flex w-full flex-wrap items-center gap-2">
-                <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
-              <input
-                className="h-3.5 w-3.5 accent-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
-                type="checkbox"
-                checked={notificationChannels.includes("email")}
-                disabled={sent}
-                onChange={(event) => setNotificationChannels((channels) => (
-                  event.target.checked ? [...channels, "email"] : channels.filter((channel) => channel !== "email")
-                ))}
-              />
-              Email
-                </label>
-                <label className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-sm">
-              <input
-                className="h-3.5 w-3.5 accent-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
-                type="checkbox"
-                checked={notificationChannels.includes("sms")}
-                disabled={sent}
-                onChange={(event) => setNotificationChannels((channels) => (
-                  event.target.checked ? [...channels, "sms"] : channels.filter((channel) => channel !== "sms")
-                ))}
-              />
-              SMS
-                </label>
-                <label className="ml-auto inline-flex min-h-8 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={allAccountsSelected}
+              <div className="flex w-full flex-wrap items-center gap-3">
+                <SelectAllCheckbox
+                  label="Select all listed accounts"
+                  checked={allAccountsSelected}
+                  indeterminate={!allAccountsSelected && visibleFollowupAccounts.some((account) => selectedAccountIds.includes(account.id))}
+                  disabled={sent}
+                  onChange={(checked) => setSelectedAccountIds(checked ? visibleFollowupAccounts.map((account) => account.id) : [])}
+                />
+                <span className="ml-auto flex items-center gap-2 text-sm font-medium text-text-secondary">Send by
+                  <DropdownSelect
+                    aria-label="Send reminders by"
+                    value={channelsValue(notificationChannels)}
+                    options={REMINDER_CHANNEL_OPTIONS}
                     disabled={sent}
-                    onChange={(event) => setSelectedAccountIds(
-                      event.target.checked ? visibleFollowupAccounts.map((account) => account.id) : [],
-                    )}
+                    onChange={(value) => setNotificationChannels(channelsFromValue(value))}
+                    className="min-w-40"
                   />
-                  Select all listed accounts
-                </label>
-          </div>
+                </span>
+              </div>
             ) : null}</div>}
+            onRowClick={can(user, "followup.send") && !sent ? (index) => {
+              const account = visibleFollowupAccounts[index];
+              if (account) toggleAccountSelection(account.id, !selectedAccountIds.includes(account.id));
+            } : undefined}
+            isRowSelected={(index) => selectedAccountIds.includes(visibleFollowupAccounts[index]?.id ?? "")}
             headers={[
               "Student",
               "Guardian email",
@@ -1908,6 +1897,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    className="h-4 w-4 cursor-pointer accent-brand-green-dark"
                     aria-label={`Select reminder for ${account.student}`}
                     checked={selectedAccountIds.includes(account.id)}
                     disabled={sent}
@@ -3418,6 +3408,8 @@ function ListCard({
   centeredColumns = [],
   paginate,
   empty,
+  onRowClick,
+  isRowSelected,
 }: {
   headers: string[];
   rows: ReactNode[][];
@@ -3429,6 +3421,9 @@ function ListCard({
   paginate?: { label: string; fixedPageSize?: boolean };
   /** Shown in place of the table when there are no rows, so the toolbar stays usable. */
   empty?: ReactNode;
+  /** Selectable rows: a click anywhere on the row (except its own controls) toggles it. Index is into `rows`. */
+  onRowClick?: (rowIndex: number) => void;
+  isRowSelected?: (rowIndex: number) => boolean;
 }) {
   const sorting = useTableSort();
   const sortedRows = sortTableRows(rows, sorting.sort, (row, key) => cellSortValue(row[Number(key)]));
@@ -3458,10 +3453,17 @@ function ListCard({
             </tr>
           </thead>
           <tbody>
-            {shownRows.map((row) => (
+            {shownRows.map((row) => {
+              const rowIndex = rows.indexOf(row);
+              return (
               <tr
-                className="border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus-within:bg-surface/70"
-                key={rows.indexOf(row)}
+                className={cn(
+                  "border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus-within:bg-surface/70",
+                  onRowClick && "cursor-pointer",
+                  isRowSelected?.(rowIndex) && "bg-brand-green-light/15 hover:bg-brand-green-light/25",
+                )}
+                key={rowIndex}
+                onClick={onRowClick ? (event) => { if (!isRowControlClick(event.target)) onRowClick(rowIndex); } : undefined}
               >
                 {row.map((cell, itemIndex) => (
                   <td
@@ -3475,7 +3477,8 @@ function ListCard({
                   </td>
                 ))}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>}

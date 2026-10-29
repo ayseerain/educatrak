@@ -25,6 +25,21 @@
 
 ## Entries
 
+### Thursday, October 29, 2026 â€” 12:06:53 +08:00 | Sidebar active-state flicker, Follow-up selection controls, favicon
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** These changes were requested by the project owner.
+  - Sidebar active-state flicker: a per-frame probe showed a 150ms cross-fade between the old and new active nav links, with grey text on half-green mid-way. The clicked link also brightened under the cursor. Nav links now swap the active fill instantly, with no hover change on the active link.
+  - Follow-up (sample and live): the Email / SMS checkboxes became one "Send by" dropdown (Email, SMS, Email and SMS). A click anywhere on an eligible row toggles its checkbox, and selected rows are tinted. "Select all" moved to the left of the toolbar as a shared `SelectAllCheckbox`, with a partial-selection state.
+  - Favicon: `index.html` now uses the Mendez Christian Academy seal (the sidebar logo), which also removes the `/favicon.ico` 404.
+- **Files:** Added `frontend/src/components/ui/SelectAllCheckbox.tsx`, `frontend/src/features/followup/reminderChannels.ts`. Modified `frontend/index.html`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/features/operations/OperationalPages.tsx` (`FollowupPage`, `ListCard` row selection), `frontend/src/features/followup/LiveFollowupPage.tsx`, `frontend/src/test/operations.test.tsx` (SMS test uses the dropdown and a whole-row click), skills `educatrak-interactive-states` and `educatrak-sidebar-patterns`.
+- **Validation:** `npx tsc --noEmit -p .` passed. `npx vitest run`: 211 of 213 passed; the 2 failures are the pre-existing ₱8,500.00 fixture assertions. Playwright with local Chromium (no Edge):
+  - The sidebar probe after the fix shows a one-frame swap.
+  - On Follow-up, a click on a row's email cell ticked that row, and "Select all" showed its partial state.
+  - The dropdown listed Email, SMS, and Email and SMS.
+  - The favicon URL returned 200.
+- **Commit/PR:** Not available at time of entry (the project owner commits).
+- **Follow-ups:** None.
+
 ### Thursday, October 29, 2026 — 11:38:35 +08:00 | Tables: built-in search/filter, column sorting; screen and tab transitions
 - **Agent:** Claude Code (Opus 5.5)
 - **Summary:** On the project owner's request, every list table now has its search box and Filter button inside the table's own card, not in a separate card above it. Each data column in the mock-mode lists can be sorted (accessible header buttons, `aria-sort`, whole list sorted before paging). Route and role switches now show a 250ms screen-shaped skeleton, then fade in. This removes the one-frame skeleton flash seen on a role switch. View tabs slide their selection and fade their panel. Live-mode lists got the built-in toolbar; their column sorting waits on API sort parameters.
