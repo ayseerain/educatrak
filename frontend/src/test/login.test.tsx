@@ -74,7 +74,6 @@ describe("LoginPage", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByText(/use your educatrak account to continue/i)).toBeInTheDocument();
     expect(screen.getAllByText("Simplifying School Billing & Payments")).toHaveLength(2);
     const logos = screen.getAllByRole("img", { name: "Mendez Christian Academy seal" });
     expect(logos).toHaveLength(2);

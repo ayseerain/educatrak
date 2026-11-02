@@ -1416,3 +1416,47 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests); `npm.cmd run build` passed; `git diff --check` passed. Local Chrome review at 1440×900 confirmed the final desktop composition. Headless Chrome enforces a 500px minimum CSS viewport, so its 390px capture was cropped and is not used as mobile evidence; the responsive layout was checked from the rendered component's breakpoint and width constraints.
 - **Commit/PR:** Not created.
 - **Follow-ups:** None for this conversion. A real-device or browser-devtools mobile viewport review remains advisable before release.
+
+### Monday, November 02, 2026 — 15:21:44 +08:00 | Login full-screen stretch
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** The login card now fills the viewport. The centered 1120px card is gone, along with its outer gray padding and 620px minimum heights, so the image and form panels stretch to full width and height. Added the reference's slanted right edge to the desktop image panel with a CSS `clip-path` polygon (92.5% at the bottom). No content or behavior changed: the earlier conversion had already removed the unused reference components.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npx vitest run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. No rendered browser review was done.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Check the result in a browser at desktop and mobile widths.
+
+### Monday, November 02, 2026 — 15:25:58 +08:00 | Login split, lockup, and redundant copy
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** Owner feedback on the full-screen login:
+  - The divider moved so the form takes the right third. The desktop grid changed from `53fr_47fr` to `2fr_1fr`.
+  - The left-panel brand lockup now fits its content (`w-fit`) instead of a fixed `max-w-sm` box that left empty space on the right.
+  - Removed the "Use the username and temporary password issued by the administrator." hint from both panels and deleted the `en.login.mockHint` key.
+  - Removed the redundant "Use your EducaTrak account to continue." subtitle, at the owner's request.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx` (dropped the subtitle assertion), and this changelog.
+- **Validation:** `npx tsc --noEmit -p .` passed. `npx vitest run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. No rendered browser review was done.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Check the result in a browser at desktop and mobile widths.
+
+### Monday, November 02, 2026 — 15:28:29 +08:00 | Login image blur, green gradient, lockup box removed
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** Applied the owner-supplied image treatment, taken from another project's login panel, to the left login photo:
+  - The photo has `scale-105 blur-[3px] object-[50%_40%]`, on a `brand-green-dark` base.
+  - The flat `bg-black/45` overlay is replaced by `bg-gradient-to-t from-brand-green-dark/75 via-brand-green-dark/30 to-brand-green-dark/45`. The source snippet's `via` value was truncated, so the `via` and `to` stops were chosen here, and the top stop is darkened to keep the white lockup text readable.
+  - At the owner's request, the solid green box behind the seal and name is removed (it was added at 14:39:58 as a contrast safeguard) and replaced with a subtle text shadow.
+  - Converted the Tailwind v4 `bg-linear-to-t` class to v3 `bg-gradient-to-t`.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npx vitest run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. Lockup contrast over the blurred photo was not measured: there was no rendered browser review.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Check the lockup's legibility over the photo in a browser.
+
+### Monday, November 02, 2026 — 15:31:06 +08:00 | Login image rounded slanted corners
+
+- **Agent:** Claude Code (Opus 5.5)
+- **Summary:** The desktop login image's slanted right edge had square corners, because the `polygon()` clip-path cut off the `rounded-lg` corners. It is now clipped by an inline SVG `clipPath` (`#login-art-clip`, `objectBoundingBox` units) with quadratic-curve corners on all four sides, about 12px at a 1240×925 panel. Because the radius is in relative units, it stretches slightly at unusual aspect ratios. A code comment notes the upgrade path: build a `path()` with a ResizeObserver.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npx vitest run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. No rendered browser review was done.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Check the corners in a browser.

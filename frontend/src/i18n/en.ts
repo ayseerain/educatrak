@@ -23,7 +23,6 @@ export const en = {
     secondsWait: "{seconds} seconds",
     minuteWait: "{minutes} minute",
     minutesWait: "{minutes} minutes",
-    mockHint: "Use the username and temporary password issued by the administrator.",
   },
   session: {
     title: "Session expiring soon",

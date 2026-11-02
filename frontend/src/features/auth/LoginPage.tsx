@@ -98,26 +98,32 @@ export function LoginPage() {
   const disabled = Boolean(lockedUntil && lockedUntil > Date.now()) || isSubmitting;
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-surface p-4 sm:p-6 lg:p-8">
+    <main className="flex min-h-[100dvh] bg-white">
+      {/* ponytail: radius is in bounding-box units (~12px at 1240x925), so it stretches slightly on unusual aspect ratios. Switch to a ResizeObserver-built path() if that shows. */}
+      <svg aria-hidden="true" className="absolute h-0 w-0">
+        <clipPath id="login-art-clip" clipPathUnits="objectBoundingBox">
+          <path d="M0.01,0 L0.99,0 Q1,0 0.999,0.013 L0.926,0.987 Q0.925,1 0.915,1 L0.01,1 Q0,1 0,0.987 L0,0.013 Q0,0 0.01,0 Z" />
+        </clipPath>
+      </svg>
       <section
-        className="grid w-full max-w-[1120px] overflow-hidden rounded-xl bg-white p-1.5 lg:min-h-[620px] lg:grid-cols-[53fr_47fr]"
+        className="grid w-full bg-white p-1.5 lg:grid-cols-[2fr_1fr]"
         aria-labelledby="login-title"
       >
-        <div className="relative hidden min-h-[620px] overflow-hidden rounded-lg lg:block">
+        <div className="relative hidden overflow-hidden rounded-lg bg-brand-green-dark lg:block lg:[clip-path:url(#login-art-clip)]">
           <img
             src="/loginpage_bg.jpg"
             alt="Mendez Christian Academy campus"
             width={1392}
             height={768}
             {...highPriorityImageProps}
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="absolute inset-0 h-full w-full scale-105 object-cover object-[50%_40%] blur-[3px]"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-black/45"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-green-dark/75 via-brand-green-dark/30 to-brand-green-dark/45"
           />
-          <div className="relative z-10 flex h-full flex-col justify-between p-8 text-white lg:p-10">
-            <div className="flex max-w-sm items-center gap-4 rounded-md bg-brand-green-dark p-5 text-left">
+          <div className="relative z-10 flex h-full flex-col p-8 text-white lg:p-10">
+            <div className="flex w-fit items-center gap-4 text-left [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
               <img
                 src="/mendez-christian-academy-seal.png"
                 alt="Mendez Christian Academy seal"
@@ -128,9 +134,6 @@ export function LoginPage() {
                 <p className="ml-[2px] mt-0.5 text-xs leading-4 text-white/85">{en.app.tagline}</p>
               </div>
             </div>
-            {import.meta.env.DEV && (
-              <p className="max-w-sm text-lg font-semibold leading-7">{en.login.mockHint}</p>
-            )}
           </div>
         </div>
 
@@ -150,7 +153,6 @@ export function LoginPage() {
                 </div>
               </div>
                 <h1 id="login-title" className="text-[42px] font-semibold leading-none tracking-[-0.035em] text-text-primary">{en.login.title}</h1>
-                <p className="mt-3 text-sm text-text-secondary">Use your EducaTrak account to continue.</p>
               </div>
 
               <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
@@ -237,10 +239,6 @@ export function LoginPage() {
                   </p>
                 )}
               </div>
-
-              {import.meta.env.DEV && (
-                <p className="mt-6 text-xs leading-5 text-text-muted-readable">{en.login.mockHint}</p>
-              )}
             </div>
           </div>
         </div>
