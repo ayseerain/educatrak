@@ -108,9 +108,9 @@ describe("LoginPage", () => {
     await user.tab();
     expect(visibility).toHaveFocus();
     await user.tab();
-    expect(submit).toHaveFocus();
-    await user.tab();
     expect(forgotPassword).toHaveFocus();
+    await user.tab();
+    expect(submit).toHaveFocus();
   });
 
   it("explains the administrator-led password reset path", async () => {

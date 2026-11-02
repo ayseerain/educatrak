@@ -123,15 +123,15 @@ export function LoginPage() {
             className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-green-dark/75 via-brand-green-dark/30 to-brand-green-dark/45"
           />
           <div className="relative z-10 flex h-full flex-col p-8 text-white lg:p-10">
-            <div className="flex w-fit items-center gap-4 text-left [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
+            <div className="animate-login-brand-in flex w-fit items-center gap-6 text-left [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
               <img
                 src="/mendez-christian-academy-seal.png"
                 alt="Mendez Christian Academy seal"
-                className="h-16 w-16 shrink-0 object-contain"
+                className="h-24 w-24 shrink-0 object-contain"
               />
               <div className="min-w-0">
-                <p className="text-[38px] font-semibold leading-none tracking-[-0.025em]">{en.app.name}</p>
-                <p className="ml-[2px] mt-0.5 text-xs leading-4 text-white/85">{en.app.tagline}</p>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.025em]">{en.app.name}</p>
+                <p className="ml-[2px] mt-1 text-base leading-6 text-white/85">{en.app.tagline}</p>
               </div>
             </div>
           </div>
@@ -139,36 +139,36 @@ export function LoginPage() {
 
         <div className="flex min-h-[590px] flex-col px-7 py-8 sm:px-12 lg:px-14 lg:py-10">
           <div className="flex flex-1 items-center justify-center">
-            <div className="w-full max-w-[330px]">
-              <div className="mb-9 text-center">
+            <div className="w-full max-w-[400px]">
+              <div className="mb-12 text-center">
                 <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
                 <img
                   src="/mendez-christian-academy-seal.png"
                   alt="Mendez Christian Academy seal"
-                  className="h-12 w-12 shrink-0 object-contain"
+                  className="h-[72px] w-[72px] shrink-0 object-contain"
                 />
                 <div>
-                  <p className="text-xl font-semibold leading-tight tracking-tight text-brand-green-dark">{en.app.name}</p>
-                  <p className="mt-0.5 text-xs leading-4 text-text-secondary">{en.app.tagline}</p>
+                  <p className="text-[32px] font-semibold leading-tight tracking-tight text-brand-green-dark">{en.app.name}</p>
+                  <p className="mt-1 text-[13px] leading-5 text-text-secondary">{en.app.tagline}</p>
                 </div>
               </div>
                 <h1 id="login-title" className="text-[42px] font-semibold leading-none tracking-[-0.035em] text-text-primary">{en.login.title}</h1>
               </div>
 
-              <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
+              <form className="space-y-7" onSubmit={handleSubmit(submit)} noValidate>
                 <div>
-                  <label htmlFor="username" className="mb-2 block text-sm font-medium text-text-primary">{en.login.username}</label>
-                  <div className="relative">
+                  <label htmlFor="username" className="mb-3 block text-sm font-medium text-text-primary">{en.login.username}</label>
+                  <div className="group relative">
                     <UserRound
                       aria-hidden="true"
-                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary transition-[color,transform] duration-150 motion-reduce:transition-none group-focus-within:scale-110 group-focus-within:text-brand-green-dark"
                     />
                     <input
                       id="username"
                       autoComplete="username"
                       aria-invalid={Boolean(errors.username)}
                       aria-describedby={errors.username ? "username-error" : undefined}
-                      className="h-11 w-full rounded-md border border-border bg-white px-10 text-base transition-colors duration-150 hover:border-brand-green focus-visible:border-brand-green-dark motion-reduce:transition-none disabled:cursor-not-allowed"
+                      className="h-11 w-full rounded-md border border-border bg-white px-10 text-base transition-[border-color,box-shadow] duration-150 hover:border-brand-green focus-visible:border-brand-green-dark focus-visible:shadow-[0_0_0_3px_rgb(3_153_53_/_0.12)] motion-reduce:transition-none disabled:cursor-not-allowed"
                       disabled={disabled}
                       {...usernameField}
                       ref={(element) => {
@@ -184,11 +184,11 @@ export function LoginPage() {
                   )}
                 </div>
                 <div>
-                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
-                  <div className="relative">
+                  <label htmlFor="password" className="mb-3 block text-sm font-medium text-text-primary">{en.login.password}</label>
+                  <div className="group relative">
                     <LockKeyhole
                       aria-hidden="true"
-                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary transition-[color,transform] duration-150 motion-reduce:transition-none group-focus-within:scale-110 group-focus-within:text-brand-green-dark"
                     />
                     <input
                       id="password"
@@ -196,7 +196,7 @@ export function LoginPage() {
                       autoComplete="current-password"
                       aria-invalid={Boolean(errors.password)}
                       aria-describedby={errors.password ? "password-error" : undefined}
-                      className="h-11 w-full rounded-md border border-border bg-white px-10 pr-12 text-base transition-colors duration-150 hover:border-brand-green focus-visible:border-brand-green-dark motion-reduce:transition-none disabled:cursor-not-allowed"
+                      className="h-11 w-full rounded-md border border-border bg-white px-10 pr-12 text-base transition-[border-color,box-shadow] duration-150 hover:border-brand-green focus-visible:border-brand-green-dark focus-visible:shadow-[0_0_0_3px_rgb(3_153_53_/_0.12)] motion-reduce:transition-none disabled:cursor-not-allowed"
                       disabled={disabled}
                       {...passwordField}
                     />
@@ -209,8 +209,25 @@ export function LoginPage() {
                       aria-pressed={showPassword}
                       aria-label={showPassword ? en.login.hidePassword : en.login.showPassword}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                      {showPassword ? <EyeOff className="animate-login-icon-swap h-4 w-4" aria-hidden="true" /> : <Eye className="animate-login-icon-swap h-4 w-4" aria-hidden="true" />}
                     </Button>
+                  </div>
+                  <div className="mt-4 text-right">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="px-1 text-sm text-brand-green-dark hover:text-brand-green"
+                      aria-expanded={isForgotPasswordHelpOpen}
+                      aria-controls="forgot-password-help"
+                      onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
+                    >
+                      {en.login.forgotPassword}
+                    </Button>
+                    {isForgotPasswordHelpOpen && (
+                      <p id="forgot-password-help" role="status" className="mt-2 text-left text-sm text-text-secondary">
+                        {en.login.forgotPasswordHelp}
+                      </p>
+                    )}
                   </div>
                   {errors.password?.message && (
                     <p id="password-error" role="alert" className="mt-2 text-sm text-status-error">
@@ -219,26 +236,9 @@ export function LoginPage() {
                   )}
                 </div>
                 {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
-                <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
+                <Button type="submit" className="w-full transition-transform active:scale-[0.985] motion-reduce:transition-none motion-reduce:active:scale-100" disabled={disabled}>{en.login.submit}</Button>
               </form>
 
-              <div className="mt-3 text-right">
-                <Button
-                  variant="ghost"
-                  type="button"
-                  className="px-1 text-sm underline decoration-brand-green-dark/40 underline-offset-4 hover:text-brand-green"
-                  aria-expanded={isForgotPasswordHelpOpen}
-                  aria-controls="forgot-password-help"
-                  onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
-                >
-                  {en.login.forgotPassword}
-                </Button>
-                {isForgotPasswordHelpOpen && (
-                  <p id="forgot-password-help" role="status" className="mt-2 text-left text-sm text-text-secondary">
-                    {en.login.forgotPasswordHelp}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>
