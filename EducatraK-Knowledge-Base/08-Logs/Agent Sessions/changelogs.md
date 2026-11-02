@@ -1460,3 +1460,75 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npx vitest run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. No rendered browser review was done.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Check the corners in a browser.
+
+### Monday, November 02, 2026 — 15:36:14 +08:00 | Forgot-password control placement
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Moved the existing `Forgot password?` disclosure control from below the sign-in button to immediately below the password field, and removed its underline classes. The administrator-reset help behavior and accessible disclosure attributes are unchanged.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- login.test.tsx` passed (24 tests across 2 files); `npm.cmd run build` passed; `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, November 02, 2026 — 15:47:57 +08:00 | Larger login brand lockup
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Enlarged the school seal, EducaTrak wordmark, and supporting tagline in the desktop photo-panel lockup and its compact layout counterpart. The adjustment preserves the existing content, structure, and responsive behavior.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `git diff --check` passed. `npm.cmd run build` could not complete because the Node process terminated with an out-of-memory error (`exit 134`) during `tsc -b && vite build`.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Re-run the production build where additional Node memory is available.
+
+### Monday, November 02, 2026 — 16:01:18 +08:00 | Double desktop login lockup and interaction feedback
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Doubled the desktop academy seal from 72px to 144px and enlarged the accompanying EducaTrak lockup. Added a brief entrance for that lockup, focused-field icon and focus-halo feedback, a 150ms password-visibility icon swap, and a pressed state for Sign in. All nonessential movement is omitted when the user requests reduced motion; authentication behavior is unchanged.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/index.css`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed. The compiled production CSS contains the login-motion rules. Browser screenshot capture could not run because headless Chrome and Edge both terminated after GPU-process initialization failed in this environment.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Review the login screen in a browser with a functioning GPU renderer at 1366×768 and 1024×768.
+
+### Monday, November 02, 2026 — 16:08:38 +08:00 | Set exact login lockup sizes
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Set both desktop and compact login lockups to the requested sizing: 80px school seal, 36px EducaTrak title, and 14px tagline. Existing motion, layout, and sign-in behavior are unchanged.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, November 02, 2026 — 16:11:30 +08:00 | Rebalance login lockup scale
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Reduced the desktop and compact lockups one measured step for a calmer visual balance with the sign-in form: the school seal is 72px, EducaTrak title 32px, and tagline 13px. Motion and authentication behavior remain unchanged.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, November 02, 2026 — 16:14:16 +08:00 | Fit desktop login lockup to photo panel
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Sized the desktop photo-panel lockup to occupy its intended top-left visual area without crowding its edges: 96px seal, 48px EducaTrak title, and 16px tagline. The compact/mobile lockup remains at its smaller 72px / 32px / 13px scale to avoid narrow-screen overflow.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, November 02, 2026 — 16:17:03 +08:00 | Fit sign-in form to its panel
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Expanded the sign-in form's desktop maximum width from 330px to 400px so its heading, fields, help control, and primary action use the available panel width with consistent side margins. The `w-full` base keeps the form responsive below that width; authentication behavior is unchanged.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Monday, November 02, 2026 — 16:19:17 +08:00 | Increase sign-in panel vertical rhythm
+
+- **Agent:** Codex (GPT-5)
+- **Summary:** Expanded the vertical spacing in the centered sign-in section: title-to-form spacing, form group gaps, label-to-field gaps, and the recovery-link offset. This lets the form use more of its panel height while preserving its centered, responsive layout and all sign-in behavior.
+- **Files:** `frontend/src/features/auth/LoginPage.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
