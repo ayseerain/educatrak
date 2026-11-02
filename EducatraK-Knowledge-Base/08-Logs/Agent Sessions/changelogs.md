@@ -1379,3 +1379,40 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - Playwright/Chromium (no Edge) screenshots of the Cashier, Accounting, Administrator and Registrar screens at 1440px.
 - **Commit/PR:** Not created (the project owner commits).
 - **Follow-ups:** The CLINIQ max-width page containers (1200px / 720px) were not applied; they need an owner decision.
+## Monday, November 02, 2026 — 14:15:00 +08:00
+
+- Added `anti-slop/audit-001-2026-11-02.md`, a requested pre-implementation audit of the current login screen against the supplied two-column layout direction and EducatraK design system. The audit identifies four scoped issues and awaits explicit approval before UI code changes, as required by the selected antislop after-audit workflow.
+- Validation: inspected `frontend/src/features/auth/LoginPage.tsx`, its login tests, the design system, project interaction guidance, and authentication-related requirements. No application code or tests were changed or run.
+- Follow-up: implement only the user-approved audit findings; preserve existing authentication behavior and add/update focused tests.
+### Monday, November 02, 2026 — 14:37:38 +08:00 | Full-screen login refinement
+- **Agent:** Codex
+- **Summary:** Replaced the centered login card with the subsequently requested full-screen two-column layout. The left panel now uses the supplied school photograph with a restrained dark gradient and edge-only blur behind the restored EducaTrak brand lockup; the right panel remains a full-height, scrolling-safe white sign-in surface. Preserved validation, login, lockout, routing, password visibility, and recovery-help behavior. Replaced the custom password visibility control with the shared button behavior.
+- **Files:** Added `frontend/public/loginpage_bg.jpg`; modified `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, and `anti-slop/audit-001-2026-11-02.md`.
+- **Validation:** `npm test -- --run src/test/login.test.tsx` passed (21 tests). `npm run build` passed. `git diff --check` initially reported the changelog's trailing blank line; it was corrected in this entry and checked again afterward. Chrome headless screenshot capture was attempted with an isolated profile, but the installed executable did not produce image files; rendered visual verification could not be completed in this environment.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** Run a browser visual review at desktop, tablet, and mobile breakpoints when a functioning headless or interactive browser capture is available.
+### Monday, November 02, 2026 — 14:39:58 +08:00 | Login brand-lockup contrast safeguard
+- **Agent:** Codex
+- **Summary:** Added a compact solid `brand-green-dark` surface to the restored left-panel EducaTrak branding container. This retains the approved logo/name/tagline hierarchy while ensuring the white branding text remains legible regardless of the photograph behind it.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx`.
+- **Validation:** `npm test -- --run src/test/login.test.tsx` passed (21 tests); `npm run build` passed; `git diff --check` passed.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** Browser viewport review remains pending because the local Chrome headless capture produced no screenshot files.
+
+### Monday, November 02, 2026 — 14:51:46 +08:00 | Login disabled-input affordance
+
+- **Agent:** Codex
+- **Summary:** Applied the approved anti-slop audit follow-up: disabled username and password inputs now show `cursor-not-allowed`, matching the shared interactive-state convention during login lockout or submission.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, `anti-slop/audit-001-2026-11-02.md`, and this changelog.
+- **Validation:** `npm test -- --run src/test/login.test.tsx` passed (21 tests); `npm run build` passed; `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Rendered browser review remains unavailable in this environment because headless Edge fails before producing screenshots.
+
+### Monday, November 02, 2026 — 15:13:55 +08:00 | Login reference-layout conversion
+
+- **Agent:** Codex
+- **Summary:** Converted the supplied `uisocial-login.html` reference into EducatraK's React/Tailwind login screen. Adopted its centered two-panel card, proportional image/form panels, compact centered form, and right-aligned recovery action while retaining only EducatraK's existing username/password sign-in, validation, lockout countdown, password visibility control, recovery help, school identity, and campus image. Omitted the unsupported reference controls and fictional content: third-party sign-in, registration, language selection, social links, portfolio navigation, carousel controls, and creator profile.
+- **Files:** Modified `frontend/src/features/auth/LoginPage.tsx`; retained the existing in-progress login test, school-photo asset, and earlier changelog changes.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests); `npm.cmd run build` passed; `git diff --check` passed. Local Chrome review at 1440×900 confirmed the final desktop composition. Headless Chrome enforces a 500px minimum CSS viewport, so its 390px capture was cropped and is not used as mobile evidence; the responsive layout was checked from the rendered component's breakpoint and width constraints.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None for this conversion. A real-device or browser-devtools mobile viewport review remains advisable before release.
