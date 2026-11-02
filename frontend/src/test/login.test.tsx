@@ -74,7 +74,7 @@ describe("LoginPage", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.queryByText(/use your educatrak account to continue/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/use your educatrak account to continue/i)).toBeInTheDocument();
     expect(screen.getAllByText("Simplifying School Billing & Payments")).toHaveLength(2);
     const logos = screen.getAllByRole("img", { name: "Mendez Christian Academy seal" });
     expect(logos).toHaveLength(2);
@@ -82,6 +82,9 @@ describe("LoginPage", () => {
       "/mendez-christian-academy-seal.png",
       "/mendez-christian-academy-seal.png",
     ]);
+    const campusPhoto = screen.getByRole("img", { name: "Mendez Christian Academy campus" });
+    expect(campusPhoto).toHaveAttribute("src", "/loginpage_bg.jpg");
+    expect(campusPhoto).toHaveAttribute("fetchpriority", "high");
     const username = screen.getByLabelText(/username/i);
     const password = screen.getByLabelText("Password", { selector: "input" });
     expect(username).toHaveFocus();
@@ -117,7 +120,6 @@ describe("LoginPage", () => {
 
     const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
     expect(forgotPassword).toHaveAttribute("aria-expanded", "false");
-    expect(forgotPassword.parentElement).toHaveClass("min-h-28");
     expect(screen.queryByText(/contact an administrator to reset your password/i)).not.toBeInTheDocument();
 
     await user.click(forgotPassword);
@@ -134,7 +136,7 @@ describe("LoginPage", () => {
     const visibilityButton = screen.getByRole("button", { name: /show password/i });
 
     expect(passwordInput).toHaveAttribute("type", "password");
-    expect(visibilityButton).toHaveClass("rounded-full", "focus-visible:outline-offset-[-2px]");
+    expect(visibilityButton).toHaveClass("rounded-md", "disabled:cursor-not-allowed");
     expect(screen.queryByText(/show password/i)).not.toBeInTheDocument();
 
     await user.click(visibilityButton);
@@ -289,6 +291,8 @@ describe("LoginPage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/account locked\. try again in 1 minute/i);
     expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
+    expect(screen.getByLabelText(/username/i)).toHaveClass("disabled:cursor-not-allowed");
+    expect(screen.getByLabelText("Password", { selector: "input" })).toHaveClass("disabled:cursor-not-allowed");
   });
 
   it("shows the lockout wait time after repeated failed attempts", async () => {
