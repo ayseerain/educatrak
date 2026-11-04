@@ -651,7 +651,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
             <div className="flex flex-wrap gap-2">
               {can(user, "payment.record") && <Link to={`/payments/new?student=${student.id}`} className={primaryLinkClass}>Record payment</Link>}
               {can(user, "account.view") && <Link to={`/accounts/${getCurrentBillingAccount(student.id)?.id ?? "new"}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
-              {can(user, "account.create") && (renewalYears.length ? <Link to={`/accounts/new?student=${student.id}&mode=renew`} className={secondaryLinkClass}>Renew Billing Account</Link> : <div><Button type="button" variant="secondary" disabled title="Every configured school year already has an account for this student.">Renew Billing Account</Button><p className="mt-1 max-w-xs text-xs text-text-secondary">No configured school year is available for renewal.</p></div>)}
+              {can(user, "account.create") && (renewalYears.length ? <Link to={`/accounts/new?student=${student.id}&mode=renew`} className={secondaryLinkClass}>Renew Billing Account</Link> : <Button type="button" variant="secondary" disabled title="Every configured school year already has an account for this student.">Renew Billing Account</Button>)}
               {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
             </div>
           ) : undefined

@@ -1532,3 +1532,30 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (21 tests). `npm.cmd run build` passed. `git diff --check` passed.
 - **Commit/PR:** Not created.
 - **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 01:44:06 +08:00 | Align unavailable renewal action with profile controls
+
+- **Agent:** Codex
+- **Summary:** Top-aligned page-header actions so the unavailable billing-account renewal message no longer vertically centers the surrounding profile buttons. The unavailable renewal control now remains aligned with the other contextual actions.
+- **Files:** Updated `frontend/src/components/layout/PageHeader.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "keeps the student profile focused on identity and permitted context"` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed before this changelog entry.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 01:47:02 +08:00 | Keep unavailable renewal help inside its action column
+
+- **Agent:** Codex
+- **Summary:** Constrained the unavailable renewal control and its explanatory message to the same 208px action column. This removes the oversized gap that separated `Edit student` from the other Student Profile actions while retaining the disabled-control reason.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "keeps the student profile focused on identity and permitted context"` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed before this changelog entry.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 01:48:53 +08:00 | Simplify unavailable renewal action
+
+- **Agent:** Codex
+- **Summary:** Removed the unnecessary inline renewal-availability message. The unavailable state now uses the same disabled `Renew Billing Account` button footprint as the available state; its existing tooltip retains the reason for unavailability. Restored the shared header's standard vertically centered action alignment because all profile controls again have one height.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/components/layout/PageHeader.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "keeps the student profile focused on identity and permitted context"` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed before this changelog entry.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
