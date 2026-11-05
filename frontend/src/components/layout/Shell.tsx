@@ -1,5 +1,6 @@
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { Sidebar } from "./Sidebar";
+import { BusinessDateSimulator } from "./BusinessDateSimulator";
 import type { AuthenticatedUser, Role } from "@/lib/types";
 import { en } from "@/i18n/en";
 
@@ -62,6 +63,7 @@ export function Shell({ user, onLogout, onRoleChange, children }: ShellProps) {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
         <header className="no-print flex h-16 shrink-0 items-center gap-2 border-b border-border bg-white px-4 sm:px-6">
           <LiveClock />
+          {import.meta.env.DEV && user.role === "cashier" && <div className="ml-auto"><BusinessDateSimulator /></div>}
         </header>
         <main id="main-content" className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8">
           {children}

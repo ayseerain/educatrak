@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BackupController;
 use App\Http\Controllers\Api\BillingAccountController;
+use App\Http\Controllers\Api\BusinessDateSimulatorController;
 use App\Http\Controllers\Api\CloseOutController;
 use App\Http\Controllers\Api\DailyReportController;
 use App\Http\Controllers\Api\DashboardController;
@@ -77,10 +78,14 @@ Route::middleware('web')->group(function (): void {
 
             Route::get('/students', [StudentController::class, 'index'])
                 ->middleware('capability:students.view');
-            Route::get('/clearance/students', [StudentController::class, 'index'])
-                ->middleware('capability:clearance.lookup');
+            Route::post('/students', [StudentController::class, 'store'])
+                ->middleware('capability:students.manage');
+            Route::get('/student-record-options', [StudentController::class, 'recordOptions'])
+                ->middleware('capability:students.manage');
             Route::get('/students/{student}', [StudentController::class, 'show'])
                 ->middleware('capability:students.view');
+            Route::patch('/students/{student}', [StudentController::class, 'update'])
+                ->middleware('capability:students.manage');
             Route::get('/billing-accounts', [BillingAccountController::class, 'index'])
                 ->middleware('capability:accounts.view');
             Route::get('/billing-accounts/{billingAccount}', [BillingAccountController::class, 'show'])
@@ -105,6 +110,12 @@ Route::middleware('web')->group(function (): void {
             Route::patch('/void-requests/{voidRequest}', [VoidRequestController::class, 'update'])
                 ->middleware('capability:void.approve');
             Route::get('/close-outs/today', [CloseOutController::class, 'today'])
+                ->middleware('capability:closeout.submit');
+            Route::get('/close-outs/business-date', [BusinessDateSimulatorController::class, 'show'])
+                ->middleware('capability:closeout.submit');
+            Route::post('/close-outs/business-date', [BusinessDateSimulatorController::class, 'store'])
+                ->middleware('capability:closeout.submit');
+            Route::delete('/close-outs/business-date', [BusinessDateSimulatorController::class, 'destroy'])
                 ->middleware('capability:closeout.submit');
             Route::get('/close-outs', [CloseOutController::class, 'index'])
                 ->middleware('capability:closeout.view');
