@@ -14,6 +14,7 @@ Use with `educatrak-interactive-states` and `educatrak-pagination-patterns`.
 - Every data column is sortable (see `educatrak-sorting-patterns`). Pagination sits inside the card, after sorting.
 - Header row: no fill, no uppercase, no letter-spacing. `text-xs font-semibold text-text-secondary`, a single `border-b border-border` under it.
 - Cells: compact `px-3 py-2`, `text-sm text-text-primary`; rows divided by `border-b border-border last:border-b-0`; money and counts right-aligned with `tabular-nums`.
+- The shared `TABLE_SCROLL_CLASS`, `TABLE_CLASS`, `TABLE_HEADER_CELL_CLASS`, and `TABLE_BODY_CELL_CLASS` in `components/ui/Table.tsx` are the source-level table tokens. Reuse them in shared table code; `index.css` enforces the same edge and cell rhythm for every unprinted table in `#main-content`. Page code may add only semantic alignment or a responsive minimum width.
 - Statuses in a table use `StatusBadge` (soft tint, icon + label), never color alone.
 - `frontend/src/index.css` enforces the header and cell look for every on-screen table inside `#main-content`, so a table built with old classes still renders correctly. Still write the new classes; don't rely on the override.
 - Printed tables keep their own print rules (receipts, reports); don't apply this look to `PrintDocumentTable`.

@@ -4,6 +4,12 @@
 
 ## 28. Technical Architecture / Frontend Conventions
 
+### Development-only close-out business-date simulator
+
+The live close-out API obtains its business date from the injectable `BusinessDateProvider`. In normal operation it returns the real Asia/Manila date and time. In local or testing only, with `BUSINESS_DATE_SIMULATOR_ENABLED=true`, a Cashier may set or clear a session-scoped Manila date-time through `GET`, `POST`, and `DELETE /api/close-outs/business-date`. A Cashier-only `Test date & time` button in the development top bar opens the control for both the live API and MockDB. The MockDB override changes only its effective business date-time and preserves its payment records; the backend independently returns 404 outside local/testing.
+
+The simulator affects only close-out retrieval and submission, which consume its Manila calendar date. It never changes system time, creates or edits payments, alters historical records, bypasses the unique `(business_date, cashier_id)` lock, or changes Accounting sign-off and audit behavior. Prepare fictional date-matched payments in the isolated test database before testing each simulated date.
+
 ### 28.1 Folder structure
 
 ```
@@ -13,9 +19,8 @@ src/
   components/     # ui/ (buttons, inputs, dialog, table, badge, toast), layout/ (Shell, Sidebar, Header)
   features/
     dashboard/ students/ accounts/ payments/ voids/ followup/
-    clearance/ closeout/ reports/ notifications/ import/
-    settings/ admin/ receipts/
-  lib/            # money.ts, dates.ts, schedule.ts, clearance.ts (pure, unit-tested)
+    closeout/ reports/ notifications/ import/ settings/ admin/ receipts/
+  lib/            # money.ts, dates.ts, schedule.ts (pure, unit-tested)
   i18n/en.ts
   routes.tsx
   main.tsx
@@ -31,17 +36,16 @@ Base path `/api`. JSON. Cookie session (Laravel Sanctum style). Lists accept `?p
 ```
 POST /auth/login | POST /auth/logout | GET /auth/me | POST /auth/change-password
 GET/POST /users | PATCH /users/:id | POST /users/:id/reset-password
-GET/POST /students | GET/PATCH /students/:id | GET /students/:id/clearance
+GET/POST /students | GET/PATCH /students/:id | GET /student-record-options
 GET/POST /accounts | GET /accounts/:id | POST /accounts/:id/adjustments
 GET /payments | POST /payments | GET /payments/:id | POST /payments/:id/reprint
 POST /payments/:id/void-request | GET /void-requests | POST /void-requests/:id/decision
 GET /followup | POST /followup/send
-GET /clearance?q= | POST /permits/:studentId/:examPeriodId/print
 GET /closeouts | POST /closeouts | POST /closeouts/:id/signoff | GET /closeouts/today
 GET /reports/daily | /reports/monthly | /reports/outstanding | /reports/student/:id (?format=xlsx for export)
 GET /notifications | POST /notifications/:id/retry
 POST /import/preview | POST /import/commit
-GET/PUT /settings/fees | /settings/plans | /settings/clearance-rules | /settings/school | /settings/receipt | /settings/email
+GET/PUT /settings/fees | /settings/plans | /settings/school | /settings/receipt | /settings/email
 POST /settings/email/test
 GET /audit-log | GET /backups | POST /backups/run
 GET /dashboard (role-specific summary)

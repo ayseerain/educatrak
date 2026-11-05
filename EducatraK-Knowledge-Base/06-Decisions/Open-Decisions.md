@@ -25,7 +25,7 @@ These were flagged in the original handoff as assumptions to be treated as confi
 4. Receipt title ("Official Receipt" vs. "Acknowledgment Receipt") and paper size (Letter vs. A4) (M9.5).
 5. Payment methods list — default: Cash, Check, Bank deposit, all recorded manually.
 6. The role/capability permission matrix itself (Section 6.4) — proposal awaiting client confirmation.
-7. Who may add or edit student records — assumed: Admin and Cashier (M2.1).
+7. Who may add or edit student records — resolved by the approved November 5, 2026 role reassignment: Registrar manages approved basic student records; Cashier and Accounting do not edit them. Guardian-data ownership remains unresolved.
 8. Due-soon window (default 7 days) and the duplicate-payment time window (default 10 minutes) (Section 25, rules 4–5).
 9. Whether the backend uses Inertia.js or a separate REST API — default assumed here: SPA + REST (Section 28.2); components should stay presentational so either works.
 

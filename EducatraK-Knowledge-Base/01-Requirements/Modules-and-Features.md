@@ -1,5 +1,7 @@
 # Modules and Features
 
+> **Approved operational reassignment — November 5, 2026.** Clearance and Exam Permit are retired from active delivery. The shared Students module is Registrar's student-record workspace and remains Cashier's billing-context workspace. Registrar has basic-record create/edit access and the same read-only student-page financial and guardian context as Cashier; Cashier has no student-mutation access; Accounting remains read-only for student records.
+
 > Source-derived module requirements extracted from the canonical Project Specification. No new requirements are introduced here.
 
 ## 7. Module Summary
@@ -98,17 +100,17 @@ Routes: `/admin/users` (`user.manage`), `/admin/roles` (`user.manage`).
 
 ## 10. M2 — Students & Guardians (Must)
 
-Registrar (`REG`) is **limited**: name, student number, grade and section, and clearance status only.
+Registrar (`REG`) can view the same financial balance and guardian-contact context as Cashier on the student list and profile, while retaining only Registrar's existing student-management actions.
 
 ### M2.1 Student records
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search students | Search by name or student number; filter by grade, section, status | CSH, ACC |
-| View student profile | Student data for cashier workflow and finance context | CSH, ACC |
-| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | CSH (currently unavailable pending authority) |
-| Edit student | Change name, grade, section, guardian links | CSH (currently unavailable pending authority) |
-| Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | CSH (currently unavailable pending authority) |
+| List and search students | Search by name or student number; filter by grade, section, status | REG, CSH, ACC |
+| View student profile | Student data with read-only balance and guardian context | REG, CSH, ACC |
+| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | REG |
+| Edit student | Change name, grade, section, guardian links | REG |
+| Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | REG |
 | Delete student | **Not allowed.** Use Set inactive | - |
 | Bulk add students | Through the Ledger Import wizard (M12) | - (import policy and authority unresolved) |
 | Jump to Create account / Record payment | Shortcuts on the profile | CSH |
@@ -117,14 +119,14 @@ Registrar (`REG`) is **limited**: name, student number, grade and section, and c
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View guardian details | Name, relationship, email, mobile, email status | CSH, ACC |
+| View guardian details | Name, relationship, email, mobile, email status | REG, CSH, ACC |
 | Add guardian to a student | Name, relationship, email (validated), mobile (optional) | CSH |
 | Edit guardian | Fix email or contact details; resets email status to "unverified" | CSH |
 | Unlink guardian from student | Removes the link only; the guardian record stays | CSH |
 | Flag missing or bounced email | Automatic badge on the student and guardian | system |
 | Delete guardian | **Not allowed** if they have notification history; unlink instead | - |
 
-**Routes:** `/students` and `/students/:id` (`student.view`; Cashier and Accounting, with Accounting use limited to finance context); `/students/new` and `/students/:id/edit` (`student.edit`; Cashier only). Registrar identity search is a separate amount-free clearance workflow under M10, not a general directory.
+**Routes:** `/students` and `/students/:id` (`student.view`; Registrar, Cashier, and Accounting); `/students/new` and `/students/:id/edit` (`student.edit`; Registrar only). Registrar receives `student.financial.view` and `guardianContact.view` on student pages only; those capabilities do not grant account or payment actions.
 
 ---
 ---

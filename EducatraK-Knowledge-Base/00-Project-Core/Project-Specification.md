@@ -1,5 +1,9 @@
 # EducatraK — Unified System & Frontend Specification
 
+> **Approved operational reassignment — November 5, 2026.** This notice supersedes every conflicting active provision in this historical consolidated specification. Mendez Christian Academy does not use financial-clearance or examination-permit procedures. Clearance and permit routes, permissions, calculations, printing, thresholds, settings, dashboard widgets, and active terminology are retired. Retained database structures are historical records only and must not be destructively migrated without separate approval. Registrar owns basic student records in the shared Students module (list, search, filter, view, create, edit, grade, section, and existing enrollment status) without financial, guardian-contact, or reporting access. Cashier retains the shared Students module for approved billing and payment work but cannot create or edit student records. Accounting retains its existing financial oversight without student-record editing.
+
+> **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.
+
 > **How this document was built.** This is a merge of two prior specifications — the *Frontend Agent Handoff* and the *Modules, Submodules, Operations, and Access Control* breakdown — plus a new Color Branding and Typography system. Where the two source documents overlapped, they were reconciled rather than concatenated, using this precedence order: (1) an explicit business/security/privacy rule, (2) an explicit technical constraint, (3) a detailed operation-level requirement, (4) a detailed access-control rule, (5) a specific screen/route behavior, (6) a general UX guideline, (7) a general visual guideline. Genuine contradictions that could not be safely resolved this way are listed in **Section 31, Open Decisions and Clarifications**, not silently decided. Section 30 documents every place the two sources were merged or where one source updated the other.
 
 ---
@@ -358,8 +362,10 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 | `user.manage` (controlled lifecycle; bootstrap Super Admin excluded) | F | F | | | | |
 | `settings.system` (school info, receipt, email, school year) | | F | | R | | |
 | `settings.finance` (fees, plans, clearance rules) | | | | F | | |
-| `student.view` | | | F | F | | |
-| `student.edit` (basic info, guardian) | | | F | | | |
+| `student.view` | | | F | F | | F |
+| `student.edit` (basic student info) | | | | | | F |
+| `student.financial.view` (student list/profile balance only) | | | F | F | | F |
+| `guardianContact.view` (student profile contact details) | | | F | F | | F |
 | `account.view` | | | F | F | | |
 | `account.create` | | | F | | | |
 | `payment.record` | | | F | | | |

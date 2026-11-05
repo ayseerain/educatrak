@@ -25,6 +25,22 @@
 
 ## Entries
 
+### Thursday, November 05, 2026 - 18:22:24 +08:00 | Reports statement selector spacing
+- **Agent:** Copilot SDK in VS Code
+- **Summary:** Increased the gap between the Accounting reports page's Student statement label and its dropdown from 4px to 8px.
+- **Files:** Modified `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`; appended this changelog entry.
+- **Validation:** Focused Vitest test passed: 1 test passed, 53 skipped in `frontend/src/test/operations.test.tsx`.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 02:51:40 +08:00 | Accounting settings navigation label
+- **Agent:** Copilot SDK in VS Code
+- **Summary:** Renamed the Accounting role's read-only system settings sidebar item from "School settings" to "Settings" to match the Administrator role's navigation label.
+- **Files:** Modified `frontend/src/i18n/en.ts`, `frontend/src/test/operations.test.tsx`; append-only changelog entry in `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "shows only permitted primary pages"` passed (1 test; 52 skipped). The complete operations test file ran with 51 passing and 2 known fixture failures: the mock account total expected `₱8,500.00` but the current fixture returns `₱12,500.00`.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** None.
+
 ### Thursday, October 29, 2026 â€” 12:48:18 +08:00 | Compact filter panel and single focus ring
 - **Agent:** Claude Code (Opus 5.5)
 - **Summary:** The project owner said the open Filter panel looked big and asked to check the other panels too. All filter panels share `TableFilters`, so one change covers every list.
@@ -1151,6 +1167,14 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Files:** Updated frontend feature/shared/test files and the audit findings and issue records.
 - **Validation:** `npm.cmd test -- --run` passed (31 files, 195 tests); `npm.cmd run build` passed; `git diff --check` reported no whitespace errors (with Git line-ending warnings). `npm.cmd run verify:production-assets` was run but reported MockDB fixture markers in the production bundle, an accepted consequence of the requested MockDB-default behavior rather than a pass.
 - **Commit/PR:** Not created.
+
+### Thursday, November 05, 2026 — 19:23:21 +08:00 | Move Close-out simulator to the navigation bar
+
+- **Agent:** Codex
+- **Summary:** Replaced the close-out-page date control with a Cashier-only `Test date & time` button in the development live-API top bar. Its dialog sets or resets a session-scoped Manila date-time; close-out refreshes after either action and continues to consume only the resulting business date.
+- **Files:** Added `frontend/src/components/layout/BusinessDateSimulator.tsx`; updated Shell, close-out refresh handling, simulator API contract/provider/controller, close-out tests, layout tests, implementation guidance, and this changelog.
+- **Validation:** `php artisan test --filter=CashierOperationsTest` passed (19 tests, 234 assertions). `npm.cmd test -- --run src/test/layout.test.tsx src/test/liveCloseouts.test.tsx` passed (5 tests). `npm.cmd run build` passed. `git diff --check` found no whitespace errors, only existing line-ending warnings.
+- **Commit/PR:** Not created.
 - **Follow-ups:** Browser viewport and axe acceptance were explicitly skipped by the user. Live API/backend verification remains outside the frontend-only scope. Before a live deployment, switch to live data and require a clean production asset scan.
 
 ### Monday, October 26, 2026 — 04:43:29 +08:00 | Prevent create actions from submitting enclosing forms
@@ -1559,3 +1583,170 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "keeps the student profile focused on identity and permitted context"` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed before this changelog entry.
 - **Commit/PR:** Not created.
 - **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 02:06:00 +08:00 | Persistent sign-in preference
+
+- **Agent:** Codex
+- **Summary:** Added an unchecked `Remember me` checkbox on the left side of the login recovery row. In live mode, the login request now sends a validated `remember` value and Laravel passes it to the web guard, allowing the framework to issue its secure persistent remember token. In mock mode, only selected sign-ins are restored from the existing per-tab session storage; no credential is stored.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/auth/session.tsx`, `frontend/src/api/cashierApi.ts`, `frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx`, `backend/app/Http/Requests/LoginRequest.php`, `backend/app/Http/Controllers/Api/AuthController.php`, `backend/tests/Feature/AuthenticationTest.php`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (22 tests). `php artisan test --filter=AuthenticationTest` passed (9 tests, 35 assertions). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 02:26:46 +08:00 | Emphasize archive confirmation
+
+- **Agent:** Codex
+- **Summary:** Made the irreversible Archive account confirmation more prominent in both MockDB and live user management. Its backdrop now dims and blurs the background, while the dialog adds a subtle destructive border and stronger shadow. Ordinary dialogs remain unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/operations.test.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, `.agents/skills/educatrak-modal-patterns/SKILL.md`, `08-Logs/2026-11-05-archive-confirmation-emphasis.md`, and this changelog.
+- **Validation:** Archive-specific MockDB and live UI tests passed. `npm.cmd run build` passed. `git diff --check` passed. The combined `operations.test.tsx` plus `liveUsersFilters.test.tsx` run has two unrelated existing mock billing/statement expectation failures: expected `850000` but received `1250000`, and expected `₱8,500.00` was absent.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Visual browser review was not run in this environment.
+
+### Thursday, November 05, 2026 — 02:40:35 +08:00 | Add fee and grade settings edit/archive controls
+
+- **Agent:** Codex
+- **Summary:** Added Accounting-only MockDB fee-item editing and non-destructive archiving. Updated items apply to future billing-account configuration only; archived items are excluded from future schedules while existing account snapshots remain unchanged. Added Administrator grade-level rename and archive controls in School Settings; grade archival retains the configured record and linked history while removing it from new configuration choices. Both paths write audit entries and require an emphasized archive confirmation.
+- **Files:** Updated `frontend/src/api/mock/selectors.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/mockDatabase.test.ts`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/mockDatabase.test.ts` passed (13 tests). `npm.cmd run build` passed. `git diff --check` passed. `npm.cmd test -- --run src/test/operations.test.tsx` exercised the settings assertions successfully but finished with two existing order-dependent mock-balance failures: expected `850000` but received `1250000`, and expected `₱8,500.00` was absent.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Live settings APIs remain unavailable by existing scope; this change covers the MockDB settings flow.
+
+### Thursday, November 05, 2026 — 12:32:54 +08:00 | Reassign student records and retire clearance workflows
+
+- **Agent:** Codex
+- **Summary:** Retired active Clearance and Exam Permit workflows while preserving their historical database structures. Reassigned basic student-record maintenance to Registrar: Registrar can list, view, create, and edit identity, grade, section, and enrollment status, but receives no billing, payment, balance, or guardian-contact data. Cashier retains student visibility for billing and payments without create/edit access; Accounting remains read-only for student records and financial oversight.
+- **Files:** Updated frontend routes, navigation, permissions, dashboards, student forms/profiles, mock selectors, API client, translations, and focused tests; backend capabilities, student routes/controller/request, demo seeder, feature/unit tests, and dashboard expectation; requirements, architecture, design, development, testing, decision, and issue-tracker records. Added `EducatraK-Knowledge-Base/06-Decisions/2026-11-05-student-record-role-reassignment.md`.
+- **Validation:** `npm.cmd run build` passed. Registrar/student-focused frontend tests passed (13 tests). The combined frontend run exercised 65 tests; two pre-existing `operations.test.tsx` fixture assertions remain failing (expected balance `850000` vs actual `1250000`, and expected `₱8,500.00`), unrelated to this change. Full Laravel suite passed (141 tests, 967 assertions). `vendor\\bin\\pint --dirty --format agent` and `git diff --check` passed. Active-source scan found only retained clearance models; no active frontend or API clearance/permit workflow remains.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Guardian-data ownership remains unresolved; no change was made to retained historical clearance data.
+
+### Thursday, November 05, 2026 — 14:38:44 +08:00 | Expand Registrar student profile widgets
+
+- **Agent:** Codex
+- **Summary:** Added Registrar-only, read-only student-number, grade-level, and section widgets to the student profile. Together with the existing enrollment-status widget, the Registrar now sees all permitted enrollment-record fields without any billing, balance, or guardian-contact data.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/students/LiveStudentsPage.tsx`, `frontend/src/test/liveStudents.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveStudents.test.tsx` passed (11 tests). `npm.cmd run build` passed. `git diff --check` passed. Browser screenshot review could not run because the available headless browser launched but could not create a page.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 15:37:19 +08:00 | Give Registrar read-only student financial and guardian context
+
+- **Agent:** Codex
+- **Summary:** Registrar now sees the same read-only balance and guardian-contact context as Cashier on the shared student list and profile. Registrar retains its existing Add student and Edit student controls; it receives no account, payment, report, or other finance-workspace capability.
+- **Files:** Updated frontend student permissions, profile/list widgets, and role tests; backend capability mapping, student response scoping, and access tests; the current student-record decision and applicable core/requirements records; and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveStudents.test.tsx src/test/operations.test.tsx -t "Registrar|guardian contact access"` passed (13 tests). `npm.cmd run build` passed. `php artisan test --filter=StudentAccessTest` passed (8 tests, 59 assertions). `php artisan test --filter=CapabilityMapTest` passed (57 tests, 225 assertions). `git diff --check` passed (only existing LF-to-CRLF warnings). Browser screenshot review remains unavailable because the available headless browser could not create a page.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 15:55:55 +08:00 | Match Registrar student-profile layout to Cashier
+
+- **Agent:** Codex
+- **Summary:** Removed Registrar-only student-number, grade-level, and section summary tiles so the Registrar profile uses the same balance, student-status, and billing-status card row as Cashier. Student identity and placement remain in the profile heading, and Registrar actions are unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/students/LiveStudentsPage.tsx`, `frontend/src/test/liveStudents.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveStudents.test.tsx` passed (11 tests). `npm.cmd test -- --run src/test/operations.test.tsx -t "Registrar open"` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed (only existing LF-to-CRLF warnings). Browser screenshot review remains unavailable because the available headless browser could not create a page.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 17:20:06 Asia/Manila | Make notification entry actions functional
+
+- **Agent:** Codex
+- **Summary:** Replaced inert notification-table action text with a functional `View entry` button in the MockDB and live notification views. Each button opens an accessible detail dialog containing the approved notification-entry information. Live failed-reminder retry remains available only when the existing Cashier capability and delivery-policy switch permit it; MockDB clearly reports that retry remains unavailable pending approval.
+- **Files:** Updated `frontend/src/api/mock/selectors.ts`, `frontend/src/features/operations/LiveNotificationLog.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveNotificationLog.test.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused MockDB and live `View entry` tests passed (one test each). `npm.cmd run build` passed. `git diff --check` passed with only existing LF-to-CRLF warnings. The combined `operations.test.tsx` run still has three unrelated, order-dependent failures in existing registrar/billing fixtures; the notification action test passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 18:26:26 +08:00 | Synchronize added fees with billing accounts
+
+- **Agent:** Codex
+- **Summary:** Adding a fee now updates existing billing accounts on the matching grade-level schedule: it adds the fee snapshot, increases total due and balance, and appends one unpaid fee installment without altering past payments or allocations. Accounting can select All grades in the same school year while adding or revising a fee. Duplicate fee names are rejected case-insensitively before an operation makes changes.
+- **Files:** Added `backend/app/Actions/ApplyFeeItemToBillingAccountsAction.php` and `EducatraK-Knowledge-Base/06-Decisions/2026-11-05-fee-assignment-synchronization.md`. Updated finance-settings API/controller/model coverage, MockDB fee selectors, live and MockDB fee dialogs, frontend API contract/tests, `backend/tests/Feature/FinanceSettingsMutationTest.php`, and this changelog.
+- **Validation:** `npm.cmd test -- src/test/mockDatabase.test.ts src/test/liveFinanceSettings.test.tsx` passed (19 tests). The targeted MockDB fee-dialog test in `operations.test.tsx` passed (1 test). `npm.cmd run build` passed. `php artisan test --filter=FinanceSettingsMutationTest` passed (3 tests, 51 assertions). Scoped `vendor\\bin\\pint --test` and PHP syntax checks passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 18:30:07 +08:00 | Increase Student Statement selector spacing
+
+- **Agent:** Codex
+- **Summary:** Increased the gap between the Accounting Reports page's `Student statement` label and its dropdown from 8px to 12px, preserving the shared dropdown component and all behavior.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted selector-spacing test passed (1 test). `npm.cmd run build` passed. `git diff --check` passed with only existing LF-to-CRLF warnings. The full `operations.test.tsx` run has three unrelated existing failures: Registrar guardian visibility and two stale mock-statement amount expectations.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 18:39:32 +08:00 | Correct Reports student-statement selector layout
+
+- **Agent:** Codex
+- **Summary:** Moved the Student statement trigger into a block below its label so the intended spacing takes effect, de-duplicated options by student ID, and removed selected-row emphasis for this Reports-only selector.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted selector test passed (1 test). `npm.cmd run build` passed. The full `operations.test.tsx` run retained three unrelated failures from concurrent student-profile and mock-statement changes; 51 of 54 tests passed. Scoped `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 18:46:46 +08:00 | Keep student selection within Student Statement
+
+- **Agent:** Codex
+- **Summary:** Moved the MockDB Student statement selector out of the Reports hub and into the dedicated statement route. Selecting another student now changes the statement route and displayed statement in place, while the Reports hub opens the first available statement directly.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted statement-selector route test passed (1 test). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings. The full `operations.test.tsx` run retains three pre-existing failures in concurrent registrar and billing/mock-fixture work; the new selector test passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The live statement route already requires a selected student and has no equivalent selector; its API-backed student-switching flow remains outside this MockDB report-hub change.
+
+### Thursday, November 05, 2026 — 18:52:25 +08:00 | Center Users table action controls
+
+- **Agent:** Codex
+- **Summary:** Centered the Users-table action button group beneath its centered Actions header, retaining the existing wrapped layout on narrow table widths. The same alignment now applies to both the MockDB and live API views.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/operations.test.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, and this changelog.
+- **Validation:** Targeted MockDB and live action-group alignment tests passed. `npm.cmd run build` passed. `git diff --check` passed. The combined targeted user test run had three unrelated existing failures in registrar guardian visibility and mock billing/statement fixture expectations; the new alignment tests passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Thursday, November 05, 2026 — 18:59:13 +08:00 | Anchor pagination controls across shared lists
+
+- **Agent:** Codex
+- **Summary:** Anchored the shared pagination controls at the bottom of each immediate paginated-list container. The container now reserves the compact ten-row table area, so a short current or final page no longer pulls Previous/Next controls upward; larger 25- and 50-row pages retain their natural height.
+- **Files:** Updated `frontend/src/components/ui/PaginationControls.tsx`, `frontend/src/index.css`, `frontend/src/test/paginationControls.test.tsx`, `.agents/skills/educatrak-pagination-patterns/SKILL.md`, and this changelog.
+- **Validation:** `npm.cmd test -- paginationControls.test.tsx` passed (2 tests). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Visual browser inspection was not run; the CSS contract is covered by the shared component test and production build.
+
+### Thursday, November 05, 2026 — 19:06:29 +08:00 | Centralize table spacing and scroll structure
+
+- **Agent:** Codex
+- **Summary:** Established shared table scroll, table, header-cell, and body-cell tokens in `components/ui/Table.tsx`. The MockDB `ListCard` now uses these compact `px-3 py-2` body cells instead of its larger local spacing, while `index.css` centrally enforces zero outer table margin and the same cell rhythm for all on-screen tables. Removed the duplicate horizontal-scroll wrapper from the live Payments list.
+- **Files:** Updated `frontend/src/components/ui/Table.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LivePaymentsPage.tsx`, `frontend/src/index.css`, `.agents/skills/educatrak-table-patterns/SKILL.md`, added `frontend/src/test/tableStyles.test.tsx`, and updated this changelog.
+- **Validation:** `npm.cmd test -- tableStyles.test.tsx paginationControls.test.tsx` passed (3 tests). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Visual browser inspection was not run.
+
+### Thursday, November 05, 2026 — 19:11:18 +08:00 | Add development-only Close-out Business Date Simulator
+
+- **Agent:** Codex
+- **Summary:** Added a Cashier-facing Business Date Simulator for development builds and an injectable, session-scoped backend business-date provider. Close-out retrieval, duplicate locking, and submission now use the same provider. The override can only run when both the application is local/testing and `BUSINESS_DATE_SIMULATOR_ENABLED` is true; production requests receive 404. Changing dates does not create or modify payments, change system time, reopen locks, or alter Accounting sign-off/audit behavior.
+- **Files:** Added `backend/app/Contracts/BusinessDateProvider.php`, `backend/app/Services/SessionBusinessDateProvider.php`, `backend/app/Http/Controllers/Api/BusinessDateSimulatorController.php`, and `backend/config/business_date_simulator.php`. Updated close-out action/controller/routes, provider registration, local/test configuration, close-out API/UI tests, `04-Development/Implementation-Guide.md`, and this changelog.
+- **Validation:** `php artisan test --filter=CashierOperationsTest` passed (19 tests, 232 assertions); PHP syntax checks passed for the new provider and simulator controller. `npm.cmd test -- --run src/test/liveCloseouts.test.tsx` passed (4 tests); `npm.cmd run build` passed. The focused backend coverage verifies two consecutive dates, fictional date-matched payments, balanced/unbalanced counts, duplicate lock preservation, sign-off, and production rejection.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The UI is deliberately available only when the frontend is built in development mode; backend enforcement remains the authoritative production safeguard.
+
+### Thursday, November 05, 2026 — 19:13:30 +08:00 | Verify simulator date restoration
+
+- **Agent:** Codex
+- **Summary:** Added explicit API coverage that clearing the session-scoped simulated date restores the actual-date provider path.
+- **Validation:** Final `php artisan test --filter=CashierOperationsTest` passed (19 tests, 234 assertions). `git diff --check` reported no whitespace errors, only pre-existing line-ending warnings.
+- **Commit/PR:** Not created.
+
+### Thursday, November 05, 2026 — 19:31:27 +08:00 | Expose date simulator in MockDB development mode
+
+- **Agent:** Codex
+- **Summary:** Corrected the top-bar `Test date & time` control so it is visible to Cashiers in development MockDB as well as the live API. MockDB now keeps a separate effective business-date-time override, preserving its payments and close-out history when the date is changed or restored.
+- **Affected files:** `frontend/src/api/mock/store.ts`, `frontend/src/components/layout/Shell.tsx`, `frontend/src/components/layout/BusinessDateSimulator.tsx`, `frontend/src/test/layout.test.tsx`, `EducatraK-Knowledge-Base/04-Development/Implementation-Guide.md`.
+- **Validation:** `npm.cmd test -- --run src/test/layout.test.tsx src/test/liveCloseouts.test.tsx` passed (2 files, 6 tests). `npm.cmd run build` passed. `git diff --check` reported no whitespace errors; it emitted existing line-ending warnings.
+- **Commit/PR:** Not created.
+### Thursday, November 05, 2026 — 19:37:47 +08:00 | Restore daily MockDB close-out availability
+
+- **Agent:** Codex
+- **Summary:** Corrected MockDB business-date handling so a legacy persisted session date cannot keep Close-out locked after Manila advances to a new calendar day. A finalized record remains locked only for its own business date; the next date can be closed without a misleading reopen step.
+- **Files:** Updated `frontend/src/api/mock/store.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/mockDatabase.test.ts`, and this changelog.
+- **Validation:** `npm.cmd test -- mockDatabase.test.ts` passed (15 tests). `npm.cmd run build` passed. The targeted existing `operations.test.tsx` close-out test failed because it expects a ₱1,250 system-cash fixture, while the concurrently changed fixture returned ₱0.00. `git diff --check` has no whitespace errors apart from the pre-existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Reconcile the stale ₱1,250 component-test expectation with the current fixture separately.

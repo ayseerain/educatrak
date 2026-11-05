@@ -39,9 +39,8 @@ src/
   components/     # ui/ (buttons, inputs, dialog, table, badge, toast), layout/ (Shell, Sidebar, Header)
   features/
     dashboard/ students/ accounts/ payments/ voids/ followup/
-    clearance/ closeout/ reports/ notifications/ import/
-    settings/ admin/ receipts/
-  lib/            # money.ts, dates.ts, schedule.ts, clearance.ts (pure, unit-tested)
+    closeout/ reports/ notifications/ import/ settings/ admin/ receipts/
+  lib/            # money.ts, dates.ts, schedule.ts (pure, unit-tested)
   i18n/en.ts
   routes.tsx
   main.tsx
@@ -57,17 +56,16 @@ Base path `/api`. JSON. Cookie session (Laravel Sanctum style). Lists accept `?p
 ```
 POST /auth/login | POST /auth/logout | GET /auth/me | POST /auth/change-password
 GET/POST /users | PATCH /users/:id | POST /users/:id/reset-password
-GET/POST /students | GET/PATCH /students/:id | GET /students/:id/clearance
+GET/POST /students | GET/PATCH /students/:id | GET /student-record-options
 GET/POST /accounts | GET /accounts/:id | POST /accounts/:id/adjustments
 GET /payments | POST /payments | GET /payments/:id | POST /payments/:id/reprint
 POST /payments/:id/void-request | GET /void-requests | POST /void-requests/:id/decision
 GET /followup | POST /followup/send
-GET /clearance?q= | POST /permits/:studentId/:examPeriodId/print
 GET /closeouts | POST /closeouts | POST /closeouts/:id/signoff | GET /closeouts/today
 GET /reports/daily | /reports/monthly | /reports/outstanding | /reports/student/:id (?format=xlsx for export)
 GET /notifications | POST /notifications/:id/retry
 POST /import/preview | POST /import/commit
-GET/PUT /settings/fees | /settings/plans | /settings/clearance-rules | /settings/school | /settings/receipt | /settings/email
+GET/PUT /settings/fees | /settings/plans | /settings/school | /settings/receipt | /settings/email
 POST /settings/email/test
 GET /audit-log | GET /backups | POST /backups/run
 GET /dashboard (role-specific summary)

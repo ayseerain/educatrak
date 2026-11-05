@@ -116,7 +116,7 @@ For each screen below:
 - **Documented access:** CSH / ACC
 - **Build scope:** Search/filter student records; REG receives only the documented limited fields.
 - **Build status:** [x] Built
-- **Resume Note:** Production `/students` uses `LiveStudentsPage` and the role-protected `/api/students` search/filter/pagination endpoint. Registrar receives only enrollment fields, without balances or guardian data; other documented reader roles may see the current school-year balance. Coverage: `frontend/src/test/liveStudents.test.tsx` and `backend/tests/Feature/StudentAccessTest.php`. Editing/import remain separate and unresolved; formal Phase 2 audit remains pending.
+- **Resume Note:** Production `/students` uses `LiveStudentsPage` and the role-protected `/api/students` search/filter/pagination endpoint. Registrar, Cashier, and Accounting receive the current school-year balance in this shared student-page context; Registrar retains student-record management while Cashier and Accounting retain their own role capabilities. Coverage: `frontend/src/test/liveStudents.test.tsx` and `backend/tests/Feature/StudentAccessTest.php`. Editing/import remain separate and unresolved; formal Phase 2 audit remains pending.
 
 ### B08. New Student — M2
 
@@ -140,7 +140,7 @@ For each screen below:
 - **Documented access:** CSH / ACC
 - **Build scope:** Student overview and guardian contacts for CSH/ACC; contextual actions stay in their dedicated workspaces.
 - **Build status:** [x] Built
-- **Resume Note:** Production `/students/:id` uses `LiveStudentProfilePage` and the role-limited server serializer. It shows guardian name, relationship, email, mobile, and email status only to CSH/ACC under the current role simplification; Registrar receives no guardian or balance fields. Production new/edit routes are disabled so sample forms cannot report a false save. Guardian privacy coverage is in `StudentAccessTest.php` and `liveStudents.test.tsx`; formal Phase 2 audit remains pending.
+- **Resume Note:** Production `/students/:id` uses `LiveStudentProfilePage` and the role-limited server serializer. Registrar, Cashier, and Accounting receive read-only guardian-contact and current-balance context on the shared student page; Registrar retains its student-management actions and does not gain account, payment, report, or other finance-workspace access. The Registrar summary layout matches Cashier's, without extra role-only identity tiles. Guardian privacy coverage is in `StudentAccessTest.php` and `liveStudents.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B11. Account List — M3
 

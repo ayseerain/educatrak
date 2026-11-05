@@ -15,5 +15,6 @@ Reuse `frontend/src/components/ui/PaginationControls.tsx` (with `useClientPagina
 - Reset to page 1 when a filter or search changes, so a user never lands on an empty later page.
 - A print or export action covers the full filtered result, not only the visible page.
 - The pager never prints (`no-print`).
+- Keep the pager at the bottom of its immediate list container. Reserve the compact ten-row table area so a short final page does not move the controls; 25- and 50-row pages may grow naturally.
 
 Follow `educatrak-interactive-states` for cursor, hover, focus, and reduced motion.

@@ -1,5 +1,7 @@
 # Screens, Routes, and User Flows
 
+> **Approved operational reassignment — November 5, 2026.** `/clearance`, `/permits/:studentId/:period/print`, and `/settings/clearance-rules` are retired. Registrar and Cashier both use `/students`; only Registrar may use `/students/new` and `/students/:id/edit`. On student list and profile screens, Registrar receives the same read-only financial and guardian context as Cashier, while retaining only Registrar's existing student-management buttons. Cashier continues from an existing student to approved billing-account and payment workflows.
+
 > Source-derived screen, route, and flow inventory extracted from the canonical Project Specification.
 
 ## 23. Screens, Routes, and Key Flows

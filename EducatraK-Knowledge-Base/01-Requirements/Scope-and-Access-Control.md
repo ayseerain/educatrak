@@ -1,5 +1,9 @@
 # Scope and Access Control
 
+> **Approved operational reassignment — November 5, 2026.** Older clearance, permit, and Cashier student-editing provisions are superseded. Registrar may view and manage the shared Students module's basic records, grade, section, and enrollment status without financial or guardian data. Cashier may view the shared module and perform approved billing actions, but cannot create or edit students. Accounting keeps its financial oversight permissions. Clearance and exam permits are not active features.
+
+> **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.
+
 > Source-derived view extracted from the canonical Project Specification. Do not edit independently of the master specification.
 
 ## 2. Scope
@@ -84,8 +88,10 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 | `user.manage` (controlled lifecycle; bootstrap Super Admin excluded) | F | F | | | | |
 | `settings.system` (school info, receipt, email, school year) | | F | | R | | |
 | `settings.finance` (fees, plans, clearance rules) | | | | F | | |
-| `student.view` | | | F | F | | |
-| `student.edit` (basic info, guardian) | | | F | | | |
+| `student.view` | | | F | F | | F |
+| `student.edit` (basic student info) | | | | | | F |
+| `student.financial.view` (student list/profile balance only) | | | F | F | | F |
+| `guardianContact.view` (student profile contact details) | | | F | F | | F |
 | `account.view` | | | F | F | | |
 | `account.create` | | | F | | | |
 | `payment.record` | | | F | | | |

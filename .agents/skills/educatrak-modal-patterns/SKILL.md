@@ -22,7 +22,7 @@ Use with `educatrak-interactive-states`.
 ## One look
 
 - Dialogs are Radix `Dialog` (`@radix-ui/react-dialog`), which gives focus trap, Escape to close, and focus return.
-- Overlay: `fixed inset-0 bg-text-primary/40`, no blur.
+- Standard overlay: `fixed inset-0 bg-text-primary/40`, no blur. Archive confirmations are the exception: use `bg-text-primary/55 backdrop-blur-sm` and a `border-status-error/40` surface with a stronger shadow, so the irreversible action is clearly foregrounded.
 - Surface: `rounded-md bg-white shadow-raised`, no outline, `p-5` or `p-6`, centered, `max-h-[90vh] overflow-y-auto`, width capped with a 16px viewport gutter (`w-[min(32rem,calc(100vw-2rem))]`).
 - Title `text-lg font-semibold text-text-primary`; description `text-sm text-text-secondary`; actions right-aligned (`flex justify-end gap-2`).
 - A dialog opened from another dialog stacks above it with a higher z-index; it keeps the same surface.
