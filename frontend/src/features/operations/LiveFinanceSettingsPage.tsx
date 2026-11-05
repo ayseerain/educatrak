@@ -13,6 +13,7 @@ import {
 } from "@/api/financeSettingsApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -29,7 +30,7 @@ function FinanceSettingsHeader({ title, editable, section }: { title: string; ed
     <Card className="mb-4 p-5">
       <p className="text-sm text-text-secondary">
         {section === "fees" && editable
-          ? "Your role may manage fee items. Changes create a new version and apply to new accounts only."
+          ? "New fee items update existing accounts in the selected grade. Revisions create a new version for future accounts."
           : section === "plans" && editable
             ? "Your role may manage finance settings, but payment plan changes are not available yet."
             : "These finance settings are read-only for your role."}
@@ -61,6 +62,7 @@ function FeeItemEditorDialog({
   );
   const [amount, setAmount] = useState(item ? (item.amountCents / 100).toFixed(2) : "");
   const [required, setRequired] = useState(item?.required ?? true);
+  const [applyToAll, setApplyToAll] = useState(false);
   const [amountError, setAmountError] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -68,7 +70,7 @@ function FeeItemEditorDialog({
     try {
       const amountCents = parse(amount);
       setAmountError("");
-      onSave({ name: name.trim(), category, amountCents, required });
+      onSave({ name: name.trim(), category, amountCents, required, applyToAll });
     } catch {
       setAmountError("Enter a valid non-negative amount.");
     }
@@ -80,18 +82,24 @@ function FeeItemEditorDialog({
       <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(92vw,34rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-6 shadow-raised focus:outline-none">
         <Dialog.Title className="text-xl font-semibold">{item ? "Revise fee item" : "Add fee item"}</Dialog.Title>
         <Dialog.Description className="mt-1 text-sm text-text-secondary">
-          {schedule.schoolYear} · {schedule.gradeLevel}. Revisions preserve the previous version for existing accounts.
+          {schedule.schoolYear} · {schedule.gradeLevel}. New fee items update existing accounts; revisions preserve existing account terms.
         </Dialog.Description>
         <form className="mt-5 space-y-4" onSubmit={submit}>
           <label className="block text-sm font-medium" htmlFor="fee-item-name">Name
             <input id="fee-item-name" required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} className="form-control mt-1" />
           </label>
-          <label className="block text-sm font-medium" htmlFor="fee-item-category">Category
-            <select id="fee-item-category" value={category} onChange={(event) => setCategory(event.target.value as FeeItemInput["category"])} className="form-control mt-1">
-              <option value="tuition">Tuition</option>
-              <option value="miscellaneous">Miscellaneous</option>
-              <option value="other">Other</option>
-            </select>
+          <label className="block text-sm font-medium">Apply to
+            <span className="mt-1 block"><DropdownSelect aria-label="Apply to" value={applyToAll ? "all" : "selected"} options={[
+              { value: "selected", label: schedule.gradeLevel },
+              { value: "all", label: "All grades" },
+            ]} onChange={(value) => setApplyToAll(value === "all")} className="w-full" align="start" /></span>
+          </label>
+          <label className="block text-sm font-medium">Category
+            <span className="mt-1 block"><DropdownSelect aria-label="Category" value={category} options={[
+              { value: "tuition", label: "Tuition" },
+              { value: "miscellaneous", label: "Miscellaneous" },
+              { value: "other", label: "Other" },
+            ]} onChange={setCategory} className="w-full" align="start" /></span>
           </label>
           <label className="block text-sm font-medium" htmlFor="fee-item-amount">Amount (PHP)
             <input id="fee-item-amount" type="number" min="0" step="0.01" required value={amount} onChange={(event) => { setAmount(event.target.value); setAmountError(""); }} className="form-control mt-1" />
@@ -101,7 +109,7 @@ function FeeItemEditorDialog({
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={required} onChange={(event) => setRequired(event.target.checked)} />Required fee</label>
           <div className="flex justify-end gap-2 pt-2">
             <Dialog.Close asChild><Button type="button" variant="neutral">Cancel</Button></Dialog.Close>
-            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving…" : item ? "Save new version" : "Add fee item"}</Button>
+            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving…" : item ? "Save changes" : "Add fee item"}</Button>
           </div>
         </form>
         <Dialog.Close aria-label="Close fee item dialog" className="absolute right-4 top-4 rounded px-2 py-1 text-text-secondary hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">×</Dialog.Close>

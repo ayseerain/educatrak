@@ -46,6 +46,7 @@ export interface FeeItemInput {
   category: "tuition" | "miscellaneous" | "other";
   amountCents: number;
   required: boolean;
+  applyToAll: boolean;
 }
 
 export async function createFinanceFeeItem(scheduleId: string, input: FeeItemInput): Promise<void> {
@@ -56,6 +57,7 @@ export async function createFinanceFeeItem(scheduleId: string, input: FeeItemInp
       category: input.category,
       amount_cents: input.amountCents,
       required: input.required,
+      apply_to_all: input.applyToAll,
     }),
   });
 }
@@ -68,6 +70,7 @@ export async function reviseFinanceFeeItem(feeItemId: string, input: FeeItemInpu
       category: input.category,
       amount_cents: input.amountCents,
       required: input.required,
+      apply_to_all: input.applyToAll,
     }),
   });
 }

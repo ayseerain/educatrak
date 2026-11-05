@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\ApplyFeeItemToBillingAccountsAction;
 use App\Actions\ReviseFeeItemAction;
 use App\Http\Controllers\Controller;
 use App\Models\FeeItem;
@@ -10,6 +11,7 @@ use App\Models\PaymentPlan;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class FinanceSettingsController extends Controller
@@ -69,32 +71,68 @@ class FinanceSettingsController extends Controller
         return response()->json(['data' => $plans->values()]);
     }
 
-    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, AuditLogger $auditLogger): JsonResponse
+    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, ApplyFeeItemToBillingAccountsAction $applyFeeItem, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
-        $feeItem = DB::transaction(function () use ($request, $feeSchedule, $auditLogger, $validated): FeeItem {
-            $feeItem = $feeSchedule->items()->create([
-                ...$validated,
-                'active' => true,
-                'version' => 1,
-            ]);
-            $auditLogger->record($request, 'finance.fee_item.created', $feeItem, null, $this->feeItemData($feeItem));
+        $applyToAll = $request->boolean('apply_to_all');
+        [$feeItem, $updatedAccounts] = DB::transaction(function () use ($request, $feeSchedule, $applyFeeItem, $auditLogger, $validated, $applyToAll): array {
+            $created = [];
+            $updatedAccountIds = [];
 
-            return $feeItem;
+            foreach ($this->targetSchedules($feeSchedule, $applyToAll) as $schedule) {
+                $this->ensureFeeNameAvailable($schedule, $validated['name']);
+                $item = $schedule->items()->create([
+                    ...$validated,
+                    'active' => true,
+                    'version' => 1,
+                ]);
+                $created[] = $item;
+                $updatedAccountIds = [...$updatedAccountIds, ...$applyFeeItem->handle($schedule, $item)];
+                $auditLogger->record($request, 'finance.fee_item.created', $item, null, $this->feeItemData($item));
+            }
+
+            return [$created[0], $updatedAccountIds];
         });
 
-        return response()->json(['data' => $this->feeItemData($feeItem)], 201);
+        return response()->json(['data' => [...$this->feeItemData($feeItem), 'updatedAccountCount' => count($updatedAccounts)]], 201);
     }
 
-    public function reviseFeeItem(Request $request, FeeItem $feeItem, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
+    public function reviseFeeItem(Request $request, FeeItem $feeItem, ApplyFeeItemToBillingAccountsAction $applyFeeItem, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
-        $revisedFeeItem = DB::transaction(function () use ($request, $feeItem, $reviseFeeItem, $auditLogger, $validated): FeeItem {
-            $before = $this->feeItemData($feeItem->fresh());
-            $revised = $reviseFeeItem->handle($feeItem, $validated);
-            $auditLogger->record($request, 'finance.fee_item.revised', $revised, $before, $this->feeItemData($revised));
+        $applyToAll = $request->boolean('apply_to_all');
+        $revisedFeeItem = DB::transaction(function () use ($request, $feeItem, $applyFeeItem, $reviseFeeItem, $auditLogger, $validated, $applyToAll): FeeItem {
+            $feeItem->loadMissing('schedule');
+            $revisedForSelectedSchedule = null;
 
-            return $revised;
+            foreach ($this->targetSchedules($feeItem->schedule, $applyToAll) as $schedule) {
+                $current = $schedule->id === $feeItem->fee_schedule_id
+                    ? FeeItem::query()->whereKey($feeItem->id)->lockForUpdate()->firstOrFail()
+                    : FeeItem::query()
+                        ->where('fee_schedule_id', $schedule->id)
+                        ->where('active', true)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($feeItem->name)])
+                        ->lockForUpdate()
+                        ->first();
+
+                if ($current === null) {
+                    $this->ensureFeeNameAvailable($schedule, $validated['name']);
+                    $revised = $schedule->items()->create([...$validated, 'active' => true, 'version' => 1]);
+                    $applyFeeItem->handle($schedule, $revised);
+                    $before = null;
+                } else {
+                    $this->ensureFeeNameAvailable($schedule, $validated['name'], $current->id);
+                    $before = $this->feeItemData($current);
+                    $revised = $reviseFeeItem->handle($current, $validated);
+                }
+
+                $auditLogger->record($request, 'finance.fee_item.revised', $revised, $before, $this->feeItemData($revised));
+                if ($schedule->id === $feeItem->fee_schedule_id) {
+                    $revisedForSelectedSchedule = $revised;
+                }
+            }
+
+            return $revisedForSelectedSchedule ?? $feeItem;
         });
 
         return response()->json(['data' => $this->feeItemData($revisedFeeItem)]);
@@ -127,6 +165,31 @@ class FinanceSettingsController extends Controller
             'amount_cents' => ['required', 'integer', 'min:0'],
             'required' => ['required', 'boolean'],
         ]);
+    }
+
+    /** @return Collection<int, FeeSchedule> */
+    private function targetSchedules(FeeSchedule $feeSchedule, bool $applyToAll)
+    {
+        return FeeSchedule::query()
+            ->where('school_year_id', $feeSchedule->school_year_id)
+            ->when(! $applyToAll, fn ($schedules) => $schedules->whereKey($feeSchedule->id))
+            ->where('active', true)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    private function ensureFeeNameAvailable(FeeSchedule $schedule, string $name, ?int $exceptId = null): void
+    {
+        $duplicate = FeeItem::query()
+            ->where('fee_schedule_id', $schedule->id)
+            ->whereRaw('LOWER(name) = ?', [strtolower(trim($name))])
+            ->when($exceptId !== null, fn ($items) => $items->whereKeyNot($exceptId))
+            ->exists();
+
+        if ($duplicate) {
+            abort(422, "A fee item named {$name} is already configured for {$schedule->gradeLevel->name}.");
+        }
     }
 
     /** @return array<string, mixed> */
