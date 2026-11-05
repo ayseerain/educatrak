@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
-import { StudentFormPage } from "@/features/operations/OperationalPages";
+import { StudentFormPage, StudentProfilePage } from "@/features/operations/OperationalPages";
 import { can } from "@/lib/permissions";
 import type { AuthenticatedUser } from "@/lib/types";
 
@@ -18,9 +18,12 @@ describe("live Registrar student list", () => {
     vi.unstubAllEnvs();
   });
 
-  it("does not grant the Registrar general student-directory access", () => {
+  it("grants the Registrar student-directory access with student financial and guardian visibility", () => {
     const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };
-    expect(can(registrar, "student.view")).toBe(false);
+    expect(can(registrar, "student.view")).toBe(true);
+    expect(can(registrar, "student.edit")).toBe(true);
+    expect(can(registrar, "student.financial.view")).toBe(true);
+    expect(can(registrar, "guardianContact.view")).toBe(true);
   });
 
   it.each([
@@ -28,8 +31,8 @@ describe("live Registrar student list", () => {
     ["Accounting Officer", "accounting", true],
     ["Administrator", "administrator", false],
     ["Auditor", "auditor", false],
-    ["Registrar", "registrar", false],
-  ] as const)("shows student balances only to assigned finance-read roles (%s)", async (_label, role, maySeeBalance) => {
+    ["Registrar", "registrar", true],
+  ] as const)("shows student balances only to assigned student-finance roles (%s)", async (_label, role, maySeeBalance) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -59,6 +62,18 @@ describe("live Registrar student list", () => {
     expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
   });
 
+  it("shows financial and guardian context while retaining Registrar student-record widgets", () => {
+    const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };
+    render(<MemoryRouter initialEntries={["/students/sample-1001"]}><Routes><Route path="/students/:id" element={<StudentProfilePage user={registrar} />} /></Routes></MemoryRouter>);
+
+    expect(screen.queryByText("Student number")).not.toBeInTheDocument();
+    expect(screen.queryByText("Grade level")).not.toBeInTheDocument();
+    expect(screen.queryByText("Section")).not.toBeInTheDocument();
+    expect(screen.getByText("Student status")).toBeInTheDocument();
+    expect(screen.getByText("Account balance")).toBeInTheDocument();
+    expect(screen.getByText("Guardian details")).toBeInTheDocument();
+  });
+
   it("links a Cashier live student profile to payment entry only", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
@@ -76,17 +91,21 @@ describe("live Registrar student list", () => {
     expect(screen.getByText("Email status: unverified")).toBeInTheDocument();
   });
 
-  it("does not render guardian contacts for Registrar", async () => {
+  it("renders guardian contacts and financial context for Registrar", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: { id: "student-2", studentNo: "SAMPLE-4002", fullName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", guardians: [{ fullName: "Alex Sample Guardian", relationship: "Parent", email: "alex.guardian@example.test", mobile: "00000000000", emailStatus: "verified" }] } }),
+      json: async () => ({ data: { id: "student-2", studentNo: "SAMPLE-4002", fullName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", balanceCents: 5000, guardians: [{ fullName: "Alex Sample Guardian", relationship: "Parent", email: "alex.guardian@example.test", mobile: "00000000000", emailStatus: "verified" }] } }),
     }));
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };
     render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/students/student-2"]}><Routes><Route path="/students/:id" element={<LiveStudentProfilePage user={registrar} />} /></Routes></MemoryRouter></QueryClientProvider>);
 
     expect(await screen.findByText("Avery Sample Student")).toBeInTheDocument();
-    expect(screen.queryByText("Alex Sample Guardian")).not.toBeInTheDocument();
+    expect(screen.getByText("Grade")).toBeInTheDocument();
+    expect(screen.getByText("Section")).toBeInTheDocument();
+    expect(screen.getByText("Enrollment status")).toBeInTheDocument();
+    expect(screen.getByText("Alex Sample Guardian")).toBeInTheDocument();
+    expect(screen.getByText("Current school-year balance")).toBeInTheDocument();
   });
 });

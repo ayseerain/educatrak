@@ -23,19 +23,19 @@ describe("live Registrar dashboard search", () => {
 
     render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/"]}><Routes>
       <Route path="/" element={<LiveRegistrarStudentSearch />} />
-      <Route path="/clearance" element={<p>Registrar clearance lookup</p>} />
+      <Route path="/students/:id" element={<p>Student record</p>} />
     </Routes><CurrentPath /></MemoryRouter></QueryClientProvider>);
 
     const search = screen.getByRole("combobox", { name: "Search for a student" });
     fireEvent.change(search, { target: { value: "Jordan" } });
     await screen.findByRole("option", { name: /Jordan Sample Student SAMPLE-4001/ });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/clearance/students?query=Jordan&page=1&per_page=10", expect.objectContaining({ credentials: "include" })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/students?query=Jordan&page=1&per_page=10", expect.objectContaining({ credentials: "include" })));
     fireEvent.keyDown(search, { key: "ArrowDown" });
     expect(search).toHaveAttribute("aria-activedescendant", "registrar-student-option-0");
     fireEvent.keyDown(search, { key: "Enter" });
 
-    expect(screen.getByText("Registrar clearance lookup")).toBeInTheDocument();
-    expect(screen.getByLabelText("Current path")).toHaveTextContent("/clearance");
+    expect(screen.getByText("Student record")).toBeInTheDocument();
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/student-1");
   });
 
   it("lets keyboard users dismiss results with Escape", async () => {

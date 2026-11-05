@@ -2,7 +2,7 @@ import { useDeferredValue, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { listClearanceStudents } from "@/api/cashierApi";
+import { listStudents } from "@/api/cashierApi";
 import { en } from "@/i18n/en";
 
 export function LiveRegistrarStudentSearch() {
@@ -13,7 +13,7 @@ export function LiveRegistrarStudentSearch() {
   const navigate = useNavigate();
   const students = useQuery({
     queryKey: ["registrar-student-search", deferredQuery],
-    queryFn: () => listClearanceStudents({ query: deferredQuery, page: 1 }),
+    queryFn: () => listStudents({ query: deferredQuery, page: 1, perPage: 10 }),
     enabled: deferredQuery.length >= 2,
     staleTime: 15_000,
   });
@@ -22,7 +22,7 @@ export function LiveRegistrarStudentSearch() {
 
   function openStudent(id: string) {
     setIsOpen(false);
-    navigate(`/clearance?studentId=${encodeURIComponent(id)}`);
+    navigate(`/students/${encodeURIComponent(id)}`);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {

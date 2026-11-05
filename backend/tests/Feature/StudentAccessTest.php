@@ -13,28 +13,28 @@ class StudentAccessTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_registrar_clearance_lookup_requires_search_text_and_cannot_list_the_directory(): void
+    public function test_registrar_can_list_the_student_directory_with_financial_context(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        Student::factory()->create(['student_no' => 'SAMPLE-1000', 'full_name' => 'Rory Sample Student']);
 
-        $this->actingAs($registrar)->getJson('/api/clearance/students')
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('query');
-        $this->actingAs($registrar)->getJson('/api/clearance/students?query=%20%20')
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('query');
+        $this->actingAs($registrar)->getJson('/api/students')
+            ->assertOk()
+            ->assertJsonPath('data.0.studentNo', 'SAMPLE-1000')
+            ->assertJsonPath('data.0.balanceCents', 0)
+            ->assertJsonMissingPath('data.0.guardians');
     }
 
-    public function test_only_registrar_can_use_the_clearance_student_lookup_endpoint(): void
+    public function test_only_student_roles_can_open_the_student_directory(): void
     {
-        foreach ([UserRole::SuperAdmin, UserRole::Admin, UserRole::Cashier, UserRole::Accounting, UserRole::Auditor] as $role) {
+        foreach ([UserRole::SuperAdmin, UserRole::Admin, UserRole::Auditor] as $role) {
             $user = User::factory()->create(['role' => $role]);
-            $this->actingAs($user)->getJson('/api/clearance/students?query=SAMPLE')
+            $this->actingAs($user)->getJson('/api/students?query=SAMPLE')
                 ->assertForbidden();
         }
     }
 
-    public function test_registrar_student_search_returns_only_enrollment_fields_without_financial_or_guardian_data(): void
+    public function test_registrar_student_search_returns_financial_context_without_guardians(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
         $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 4', 'sort_order' => 4, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
@@ -47,13 +47,13 @@ class StudentAccessTest extends TestCase
             'status' => 'enrolled',
         ]);
 
-        $this->actingAs($registrar)->getJson('/api/clearance/students?query=SAMPLE-4001&grade=Grade%204&section=Orchid')
+        $this->actingAs($registrar)->getJson('/api/students?query=SAMPLE-4001&grade=Grade%204&section=Orchid')
             ->assertOk()
             ->assertJsonPath('data.0.id', (string) $student->id)
             ->assertJsonPath('data.0.fullName', 'Jordan Sample Student')
             ->assertJsonPath('data.0.gradeLevel', 'Grade 4')
             ->assertJsonPath('data.0.section', 'Orchid')
-            ->assertJsonMissingPath('data.0.balanceCents')
+            ->assertJsonPath('data.0.balanceCents', 0)
             ->assertJsonMissingPath('data.0.guardians');
     }
 
@@ -111,7 +111,7 @@ class StudentAccessTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        foreach ([UserRole::Cashier, UserRole::Accounting] as $role) {
+        foreach ([UserRole::Cashier, UserRole::Accounting, UserRole::Registrar] as $role) {
             $user = User::factory()->create(['role' => $role]);
             $response = $this->actingAs($user)->getJson('/api/students?query=SAMPLE-2002')->assertOk();
             $response->assertJsonPath('data.0.balanceCents', 12_345);
@@ -124,13 +124,6 @@ class StudentAccessTest extends TestCase
         $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin]);
         $this->actingAs($superAdmin)->getJson('/api/students?query=SAMPLE-2002')->assertForbidden();
         $this->actingAs($superAdmin)->getJson('/api/students/'.$student->id)->assertForbidden();
-        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        $this->actingAs($registrar)->getJson('/api/students?query=SAMPLE-2002')->assertForbidden();
-        $this->actingAs($registrar)->getJson('/api/clearance/students?query=SAMPLE-2002')
-            ->assertOk()
-            ->assertJsonPath('data.0.fullName', 'Morgan Sample Student')
-            ->assertJsonMissingPath('data.0.balanceCents')
-            ->assertJsonMissingPath('data.0.guardians');
     }
 
     public function test_approved_roles_receive_guardian_contact_details_on_student_profile(): void
@@ -153,7 +146,7 @@ class StudentAccessTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        foreach ([UserRole::Cashier, UserRole::Accounting] as $role) {
+        foreach ([UserRole::Cashier, UserRole::Accounting, UserRole::Registrar] as $role) {
             $user = User::factory()->create(['role' => $role]);
 
             $this->actingAs($user)->getJson('/api/students/'.$student->id)
@@ -171,7 +164,7 @@ class StudentAccessTest extends TestCase
         $this->actingAs($superAdmin)->getJson('/api/students/'.$student->id)->assertForbidden();
     }
 
-    public function test_registrar_cannot_open_student_profiles_or_guardian_contacts(): void
+    public function test_registrar_can_open_student_profiles_with_guardian_and_financial_context(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
         $student = Student::factory()->create(['student_no' => 'SAMPLE-3002', 'full_name' => 'Avery Sample Student']);
@@ -192,6 +185,36 @@ class StudentAccessTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->actingAs($registrar)->getJson('/api/students/'.$student->id)->assertForbidden();
+        $this->actingAs($registrar)->getJson('/api/students/'.$student->id)
+            ->assertOk()
+            ->assertJsonPath('data.fullName', 'Avery Sample Student')
+            ->assertJsonPath('data.balanceCents', 0)
+            ->assertJsonPath('data.guardians.0.fullName', 'Alex Sample Guardian');
+    }
+
+    public function test_registrar_can_create_and_update_a_student_while_cashier_cannot(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+        $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 6', 'sort_order' => 6, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $sectionId = DB::table('sections')->insertGetId(['grade_level_id' => $gradeId, 'name' => 'Cedar', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $payload = ['student_no' => 'SAMPLE-6001', 'full_name' => 'Taylor Sample Student', 'grade_level_id' => $gradeId, 'section_id' => $sectionId, 'status' => 'enrolled'];
+
+        $this->actingAs($cashier)->postJson('/api/students', $payload)->assertForbidden();
+        $created = $this->actingAs($registrar)->postJson('/api/students', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.studentNo', 'SAMPLE-6001')
+            ->assertJsonPath('data.balanceCents', 0)
+            ->json('data.id');
+
+        $this->actingAs($cashier)->patchJson('/api/students/'.$created, [...$payload, 'full_name' => 'Changed by Cashier'])
+            ->assertForbidden();
+        $this->actingAs($registrar)->patchJson('/api/students/'.$created, [...$payload, 'full_name' => 'Updated Sample Student', 'status' => 'inactive'])
+            ->assertOk()
+            ->assertJsonPath('data.fullName', 'Updated Sample Student')
+            ->assertJsonPath('data.status', 'inactive');
+
+        $this->assertDatabaseHas('audit_entries', ['action' => 'student.created', 'entity_id' => (string) $created, 'user_id' => $registrar->id]);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'student.updated', 'entity_id' => (string) $created, 'user_id' => $registrar->id]);
     }
 }
