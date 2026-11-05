@@ -10,6 +10,7 @@ const cashier: AuthenticatedUser = { id: "cashier-1", name: "Taylor Sample Cashi
 describe("live daily close-out", () => {
   beforeEach(() => {
     vi.stubEnv("PROD", true);
+    vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_USE_LIVE_API", "");
   });
 

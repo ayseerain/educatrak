@@ -1,5 +1,5 @@
 import { ViewTabs } from "@/components/ui/ViewTabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTodayCloseOut, listCloseOuts, signOffCloseOut, submitCloseOut } from "@/api/cashierApi";
@@ -31,6 +31,11 @@ function DailyCloseOutForm() {
   const [varianceReason, setVarianceReason] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const closeOutQuery = useQuery({ queryKey: ["close-out-today"], queryFn: getTodayCloseOut });
+  useEffect(() => {
+    const refresh = () => { void queryClient.invalidateQueries({ queryKey: ["close-out-today"] }); };
+    window.addEventListener("educatrak:business-date-change", refresh);
+    return () => window.removeEventListener("educatrak:business-date-change", refresh);
+  }, [queryClient]);
   const mutation = useMutation({
     mutationFn: () => {
       const cents = parseCash(counted);

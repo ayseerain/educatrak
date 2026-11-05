@@ -353,6 +353,62 @@ class CashierOperationsTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('close_out');
     }
 
+    public function test_business_date_simulator_uses_date_matched_fictional_payments_and_preserves_locks_and_sign_off(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $firstDate = '2026-11-03';
+        $secondDate = '2026-11-04';
+
+        $this->actingAs($cashier)->postJson('/api/close-outs/business-date', ['business_datetime' => $firstDate.'T09:30'])
+            ->assertOk()
+            ->assertJsonPath('data.business_date', $firstDate)
+            ->assertJsonPath('data.simulated_at', $firstDate.'T09:30:00+08:00');
+        $this->recordPayment($cashier, $account, 1_000)->update(['paid_on' => $firstDate]);
+        $this->actingAs($cashier)->getJson('/api/close-outs/today')
+            ->assertOk()
+            ->assertJsonPath('data.business_date', $firstDate)
+            ->assertJsonPath('data.system_cash_cents', 1_000);
+        $firstCloseOut = $this->actingAs($cashier)->postJson('/api/close-outs', ['counted_cash_cents' => 1_000])
+            ->assertCreated()
+            ->assertJsonPath('data.variance_cents', 0);
+
+        $this->actingAs($cashier)->postJson('/api/close-outs/business-date', ['business_datetime' => $secondDate.'T15:45'])->assertOk();
+        $this->recordPayment($cashier, $account, 2_000)->update(['paid_on' => $secondDate]);
+        $secondCloseOut = $this->actingAs($cashier)->getJson('/api/close-outs/today')
+            ->assertOk()
+            ->assertJsonPath('data.business_date', $secondDate)
+            ->assertJsonPath('data.system_cash_cents', 2_000);
+        $submitted = $this->actingAs($cashier)->postJson('/api/close-outs', [
+            'counted_cash_cents' => 2_500,
+            'variance_reason' => 'Fictional overage used to test the second business day.',
+        ])->assertCreated()
+            ->assertJsonPath('data.variance_cents', 500);
+
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $this->actingAs($accounting)->postJson('/api/close-outs/'.$submitted->json('data.id').'/sign-off')->assertOk();
+
+        $this->actingAs($cashier)->postJson('/api/close-outs/business-date', ['business_datetime' => $firstDate.'T09:30'])->assertOk();
+        $this->actingAs($cashier)->getJson('/api/close-outs/today')
+            ->assertJsonPath('data.close_out.id', (string) $firstCloseOut->json('data.id'));
+        $this->actingAs($cashier)->postJson('/api/close-outs', ['counted_cash_cents' => 1_000])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('close_out');
+
+        $this->assertDatabaseHas('close_outs', ['business_date' => $secondDate.' 00:00:00', 'signed_off_by' => $accounting->id]);
+        $this->actingAs($cashier)->deleteJson('/api/close-outs/business-date')
+            ->assertOk()
+            ->assertJsonPath('data.simulated_at', null);
+    }
+
+    public function test_business_date_simulator_is_rejected_outside_local_or_testing(): void
+    {
+        [$cashier] = $this->createBillingContext();
+        config(['app.env' => 'production', 'business_date_simulator.enabled' => true]);
+
+        $this->actingAs($cashier)->getJson('/api/close-outs/business-date')->assertNotFound();
+        $this->actingAs($cashier)->postJson('/api/close-outs/business-date', ['business_datetime' => '2026-11-03T09:30'])->assertNotFound();
+    }
+
     public function test_cashier_close_out_history_is_limited_to_their_own_records(): void
     {
         [$cashier] = $this->createBillingContext();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\SubmitCloseOutAction;
+use App\Contracts\BusinessDateProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCloseOutRequest;
 use App\Models\CloseOut;
@@ -15,11 +16,11 @@ use Illuminate\Http\Request;
 
 class CloseOutController extends Controller
 {
-    public function today(Request $request): JsonResponse
+    public function today(Request $request, BusinessDateProvider $businessDate): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
-        $businessDate = today('Asia/Manila')->toDateString();
+        $businessDate = $businessDate->current()->toDateString();
         $systemCashCents = (int) Payment::query()
             ->where('recorded_by', $user->id)
             ->whereDate('paid_on', $businessDate)

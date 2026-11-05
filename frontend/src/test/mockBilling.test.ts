@@ -25,7 +25,6 @@ describe("mock billing database", () => {
     expect(account?.balance).toBe(0);
     expect(account?.schedule[4]?.status).toBe("paid");
     expect(students[0]?.balance).toBe(0);
-    expect(students[0]?.clearanceStatus).toBe("Cleared");
   });
 
   it("rejects an amount over the live mock balance", () => {

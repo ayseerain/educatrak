@@ -142,10 +142,15 @@ class DashboardTest extends TestCase
             ->assertJsonMissingPath('data.recentActivity');
     }
 
-    public function test_registrar_is_denied_and_unknown_ranges_are_rejected(): void
+    public function test_registrar_receives_a_limited_dashboard_and_unknown_ranges_are_rejected(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        $this->actingAs($registrar)->getJson('/api/dashboard')->assertForbidden();
+        $this->actingAs($registrar)->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.role', 'registrar')
+            ->assertJsonMissingPath('data.todayCollectionsTotal')
+            ->assertJsonMissingPath('data.collectionTrend')
+            ->assertJsonMissingPath('data.recentActivity');
 
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $this->actingAs($cashier)->getJson('/api/dashboard?range=all_time')->assertUnprocessable();

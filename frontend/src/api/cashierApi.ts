@@ -251,6 +251,34 @@ export async function getTodayCloseOut(): Promise<{ businessDate: string; system
   };
 }
 
+export interface BusinessDateSimulation {
+  businessDate: string;
+  businessDateTime: string;
+  simulatedAt: string | null;
+}
+
+function mapBusinessDateSimulation(data: { business_date: string; business_datetime: string; simulated_at: string | null }): BusinessDateSimulation {
+  return { businessDate: data.business_date, businessDateTime: data.business_datetime, simulatedAt: data.simulated_at };
+}
+
+export async function getBusinessDateSimulation(): Promise<BusinessDateSimulation> {
+  const result = await request<{ data: { business_date: string; business_datetime: string; simulated_at: string | null } }>("/close-outs/business-date");
+  return mapBusinessDateSimulation(result.data);
+}
+
+export async function simulateBusinessDate(businessDateTime: string): Promise<BusinessDateSimulation> {
+  const result = await request<{ data: { business_date: string; business_datetime: string; simulated_at: string | null } }>("/close-outs/business-date", {
+    method: "POST",
+    body: JSON.stringify({ business_datetime: businessDateTime }),
+  });
+  return mapBusinessDateSimulation(result.data);
+}
+
+export async function restoreBusinessDate(): Promise<BusinessDateSimulation> {
+  const result = await request<{ data: { business_date: string; business_datetime: string; simulated_at: string | null } }>("/close-outs/business-date", { method: "DELETE" });
+  return mapBusinessDateSimulation(result.data);
+}
+
 export async function submitCloseOut(countedCashCents: number, varianceReason?: string): Promise<CloseOutRecord> {
   const result = await request<{ data: Parameters<typeof mapCloseOut>[0] }>("/close-outs", {
     method: "POST",
@@ -304,6 +332,19 @@ export interface StudentListItem {
   guardians?: { fullName: string; relationship: string; email: string | null; mobile: string | null; emailStatus: string }[];
 }
 
+export interface StudentRecordOptions {
+  grades: { id: string; name: string; sections: { id: string; name: string }[] }[];
+  statuses: string[];
+}
+
+export interface StudentRecordInput {
+  studentNo: string;
+  fullName: string;
+  gradeLevelId: string;
+  sectionId: string;
+  status: string;
+}
+
 export async function listStudents(filters: { query?: string; grade?: string; section?: string; status?: string; page?: number; perPage?: number }): Promise<{ data: StudentListItem[]; currentPage: number; lastPage: number; total: number; perPage: number }> {
   const params = new URLSearchParams();
   for (const key of ["query", "grade", "section", "status"] as const) if (filters[key]?.trim()) params.set(key, filters[key]!.trim());
@@ -314,19 +355,34 @@ export async function listStudents(filters: { query?: string; grade?: string; se
   return { data: result.data, ...result.meta };
 }
 
-export async function listClearanceStudents(filters: { query?: string; grade?: string; section?: string; status?: string; page?: number; perPage?: number }): Promise<{ data: StudentListItem[]; currentPage: number; lastPage: number; total: number; perPage: number }> {
-  const params = new URLSearchParams();
-  for (const key of ["query", "grade", "section", "status"] as const) if (filters[key]?.trim()) params.set(key, filters[key]!.trim());
-  if (filters.page) params.set("page", String(filters.page));
-  params.set("per_page", String(filters.perPage ?? 10));
-  const query = params.toString();
-  const result = await request<{ data: StudentListItem[]; meta: { currentPage: number; lastPage: number; total: number; perPage: number } }>(`/clearance/students${query ? `?${query}` : ""}`);
-  return { data: result.data, ...result.meta };
-}
-
 export async function getStudent(studentId: string): Promise<StudentListItem> {
   const result = await request<{ data: StudentListItem }>(`/students/${encodeURIComponent(studentId)}`);
   return result.data;
+}
+
+export async function getStudentRecordOptions(): Promise<StudentRecordOptions> {
+  const result = await request<{ data: StudentRecordOptions }>("/student-record-options");
+  return result.data;
+}
+
+export async function createStudent(input: StudentRecordInput): Promise<StudentListItem> {
+  const result = await request<{ data: StudentListItem }>("/students", { method: "POST", body: JSON.stringify(toStudentPayload(input)) });
+  return result.data;
+}
+
+export async function updateStudent(studentId: string, input: StudentRecordInput): Promise<StudentListItem> {
+  const result = await request<{ data: StudentListItem }>(`/students/${encodeURIComponent(studentId)}`, { method: "PATCH", body: JSON.stringify(toStudentPayload(input)) });
+  return result.data;
+}
+
+function toStudentPayload(input: StudentRecordInput) {
+  return {
+    student_no: input.studentNo,
+    full_name: input.fullName,
+    grade_level_id: Number(input.gradeLevelId),
+    section_id: Number(input.sectionId),
+    status: input.status,
+  };
 }
 
 export interface BillingAccountSummary {
@@ -416,10 +472,10 @@ async function csrfHeader(): Promise<Record<string, string>> {
   return token ? { "X-XSRF-TOKEN": decodeURIComponent(token) } : {};
 }
 
-export async function signInWithLiveApi(username: string, password: string): Promise<AuthenticatedUser> {
+export async function signInWithLiveApi(username: string, password: string, rememberMe = false): Promise<AuthenticatedUser> {
   const response = await request<{ data: { id: string; fullName: string; role: string; mustChangePassword?: boolean; lastLoginAt?: string | null } }>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, remember: rememberMe }),
   });
   return mapLiveUser(response.data);
 }
