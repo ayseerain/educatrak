@@ -20,11 +20,10 @@ export interface AuthenticatedUser {
  */
 export type Capability =
   | "dashboard.view"
-  | "student.view" | "student.edit"
+  | "student.view" | "student.edit" | "student.financial.view"
   | "account.view" | "account.create"
   | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.view" | "payment.void.approve" | "receipt.reprint"
   | "followup.view" | "followup.send"
-  | "clearance.lookup" | "clearance.view" | "permit.print"
   | "report.view" | "statement.print"
   | "notification.view" | "notification.retry"
   | "settings.finance.view" | "settings.finance.manage"

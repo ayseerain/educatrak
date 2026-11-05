@@ -3,7 +3,7 @@ import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
-import { AccountDetailPage, AccountsPage, AccountWizardPage, AuditPage, ClearancePage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
+import { AccountDetailPage, AccountsPage, AccountWizardPage, AuditPage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
 import { getBillingAccount, getCurrentBillingAccount, getDueInstallments, getMockFeeSchedule, loadMockSnapshot, mockSnapshot } from "@/api/mock";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Shell } from "@/components/layout/Shell";
@@ -83,12 +83,6 @@ describe("operational page navigation", () => {
     expect(within(paymentEntry).getAllByText("Allowed")).toHaveLength(1);
     expect(within(paymentEntry).getAllByText("Unavailable")).toHaveLength(5);
 
-    const clearance = screen.getByRole("row", { name: /Clearance View clearance status/ });
-    expect(within(clearance).getAllByText("Allowed")).toHaveLength(1);
-    const clearanceSearch = screen.getByRole("row", { name: /Clearance Search limited student identity/ });
-    expect(within(clearanceSearch).getAllByText("Allowed")).toHaveLength(1);
-    const permitPrinting = screen.getByRole("row", { name: /Exam permits Print exam permits/ });
-    expect(within(permitPrinting).getAllByText("Allowed")).toHaveLength(1);
     const administratorVoidQueue = screen.getByRole("row", { name: /Payments Review payment voids/ });
     expect(within(administratorVoidQueue).getAllByText("Allowed")).toHaveLength(1);
     const receiptReprint = screen.getByRole("row", { name: /Receipts Reprint receipts/ });
@@ -110,7 +104,7 @@ describe("operational page navigation", () => {
     expect(can(accounting, "guardianContact.view")).toBe(true);
     expect(can(superAdmin, "guardianContact.view")).toBe(false);
     expect(can(auditor, "guardianContact.view")).toBe(false);
-    expect(can(registrar, "guardianContact.view")).toBe(false);
+    expect(can(registrar, "guardianContact.view")).toBe(true);
   });
 
   it("uses the available workflow width for the student form", () => {
@@ -139,8 +133,6 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
     await user.click(screen.getByRole("button", { name: "Section" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Olive" }));
-    await user.type(screen.getByLabelText(/^Name/), "Taylor Guardian");
-    await user.type(screen.getByLabelText(/Relationship/), "Parent");
     await user.click(screen.getByRole("button", { name: "Create student" }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent(/\/students\/mock-student-/);
@@ -210,6 +202,7 @@ describe("operational page navigation", () => {
     expect(screen.getByText("Riley Registrar (sample)")).toBeInTheDocument();
     expect(screen.queryByText("Morgan Super Admin (sample)")).not.toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Actions" })).toHaveClass("text-center");
+    expect(within(screen.getByRole("row", { name: /Alex Administrator \(sample\)/ })).getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-center");
     administratorUsers.unmount();
 
     render(<MemoryRouter><UsersPage user={superAdmin} /></MemoryRouter>);
@@ -237,16 +230,17 @@ describe("operational page navigation", () => {
   });
 
   it("aligns status heading and values on configuration pages", () => {
-    for (const section of ["fees", "plans", "clearance", "school", "receipt", "email"] as const) {
+    for (const section of ["fees", "plans", "school", "receipt", "email"] as const) {
       const { unmount } = render(<MemoryRouter><SettingsPage section={section} editable /></MemoryRouter>);
 
       const statusHeader = screen.getByRole("columnheader", { name: "Status" });
       expect(statusHeader).toHaveClass("text-center");
+      const statusIndex = screen.getAllByRole("columnheader").indexOf(statusHeader);
       const dataRows = screen.getAllByRole("row").slice(1);
       expect(dataRows.length).toBeGreaterThan(0);
       expect(dataRows.every((row) => {
         const cells = within(row).getAllByRole("cell");
-        const statusCell = cells[cells.length - 1];
+        const statusCell = cells[statusIndex];
         return statusCell?.classList.contains("text-center");
       })).toBe(true);
       unmount();
@@ -288,7 +282,7 @@ describe("operational page navigation", () => {
 
     await user.click(within(dialog).getByRole("button", { name: "Grade level" }));
     expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
-      "Select grade level", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+      "Select grade level", "All grades", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
       "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
     ]);
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 11" }));
@@ -463,8 +457,8 @@ describe("operational page navigation", () => {
     expect(within(editDialog).getByRole("button", { name: "Archive account" }).parentElement).toHaveClass("flex", "justify-end", "gap-3");
     await user.click(within(editDialog).getByRole("button", { name: "Archive account" }));
     const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
-    expect(archiveDialog).toHaveClass("z-[61]", "max-w-2xl", "p-6", "shadow-raised");
-    expect(document.querySelector('[class~="bg-text-primary/40"]')).toBeInTheDocument();
+    expect(archiveDialog).toHaveClass("z-[61]", "max-w-2xl", "border", "border-status-error/40", "p-6", "shadow-[0_20px_60px_rgba(0,0,0,0.3)]");
+    expect(document.querySelector('[class~="bg-text-primary/55"][class~="backdrop-blur-sm"]')).toBeInTheDocument();
     await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
     expect(screen.queryByRole("row", { name: /Casey Cashier \(sample\)/ })).not.toBeInTheDocument();
 
@@ -478,23 +472,6 @@ describe("operational page navigation", () => {
     expect(within(administratorRow).getByRole("button", { name: "Deactivate account" })).toBeDisabled();
   });
 
-  it("renders Clearance for registrars", async () => {
-    const user = userEvent.setup();
-    render(<MemoryRouter><ClearancePage user={registrar} /></MemoryRouter>);
-
-    expect(screen.getByRole("heading", { name: "Clearance" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Search for a student");
-
-    await user.type(screen.getByRole("combobox", { name: "Search student" }), "Basil");
-    await user.click(screen.getByRole("option", { name: /Basil Mercado.*S-1002/i }));
-
-    expect(screen.getByRole("combobox", { name: "Search student" })).toHaveValue("Basil Mercado (sample)");
-    expect(screen.getByText(/Basil Mercado \(sample\).*Grade 8.*Maple/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Clearance details" })).toBeInTheDocument();
-    expect(screen.getByText("Enrollment")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /print exam permit/i })).toHaveAttribute("href", "/permits/sample-1002/midterm/print");
-    expect(screen.queryByText(/balance due/i)).not.toBeInTheDocument();
-  });
 
   it("selects follow-up accounts individually and reviews selected reminder details", async () => {
     const user = userEvent.setup();
@@ -699,7 +676,6 @@ describe("operational page navigation", () => {
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1001");
     expect(screen.getByRole("heading", { name: /Amara Villanueva/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /clearance details/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /record payment/i })).not.toBeInTheDocument();
@@ -838,6 +814,20 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("cell", { name: /queued/i })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: /sent/i })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: /failed/i })).toBeInTheDocument();
+  });
+
+  it("opens a notification entry from the functional action button", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/followup?view=notifications"]}>
+        <MockNotificationsPage user={cashier} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getAllByRole("button", { name: "View entry" })[0]!);
+
+    expect(screen.getByRole("dialog", { name: "Notification entry" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
   it("updates the notification status filter query from the shared panel", async () => {
@@ -992,14 +982,34 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("status", { name: "Current path" })).toHaveTextContent("/reports/monthly");
   });
 
+  it("keeps the student selector in the statement report and switches its route", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/reports/student/sample-1001"]}>
+        <Routes><Route path="/reports/student/:id" element={<StudentStatementPage user={accounting} />} /></Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Student statement" });
+    expect(trigger.parentElement).toHaveClass("mt-1", "block");
+
+    await user.click(trigger);
+
+    expect(screen.getAllByRole("menuitemradio", { name: /Amara Villanueva.*S-1001/i })).toHaveLength(1);
+    await user.click(screen.getByRole("menuitemradio", { name: /Basil Mercado.*S-1002/i }));
+    expect(screen.getByRole("status", { name: "Current path" })).toHaveTextContent("/reports/student/sample-1002");
+    expect(screen.getAllByText(/Basil Mercado/i, { ignore: ".print-root *, script, style" }).length).toBeGreaterThan(0);
+  });
+
   it("shows only permitted primary pages for each of the six account roles", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
       [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security"]],
       [cashier, ["Dashboard", "Students", "Payments", "Follow-up", "Close-out"]],
-      [accounting, ["Dashboard", "Payment review", "Finance", "School settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
+      [accounting, ["Dashboard", "Payment review", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
       [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],
       [auditor, ["Dashboard", "Audit"]],
-      [registrar, ["Dashboard", "Clearance"]],
+      [registrar, ["Dashboard", "Students"]],
     ]);
 
     for (const [user, links] of expectedLinks) {
@@ -1084,16 +1094,14 @@ describe("operational page navigation", () => {
     expect(can(superAdmin, "notification.view")).toBe(false);
     expect(can(superAdmin, "notification.retry")).toBe(false);
     expect(can(superAdmin, "report.view")).toBe(false);
-    expect(can(superAdmin, "clearance.view")).toBe(false);
-    expect(can(superAdmin, "permit.print")).toBe(false);
     expect(can(superAdmin, "closeout.submit")).toBe(false);
     expect(can(superAdmin, "closeout.view")).toBe(false);
     expect(can(superAdmin, "backup.manage")).toBe(false);
     expect(can(superAdmin, "import.run")).toBe(false);
 
     expect(can(cashier, "payment.record")).toBe(true);
-    expect(can(cashier, "clearance.view")).toBe(false);
-    expect(can(cashier, "permit.print")).toBe(false);
+    expect(can(cashier, "student.view")).toBe(true);
+    expect(can(cashier, "student.edit")).toBe(false);
     expect(can(cashier, "report.view")).toBe(false);
     expect(can(cashier, "notification.retry")).toBe(true);
     expect(can(cashier, "import.run")).toBe(false);
@@ -1104,8 +1112,6 @@ describe("operational page navigation", () => {
     expect(can(accounting, "notification.view")).toBe(true);
     expect(can(accounting, "notification.retry")).toBe(false);
     expect(can(accounting, "import.run")).toBe(false);
-    expect(can(accounting, "clearance.view")).toBe(false);
-    expect(can(accounting, "permit.print")).toBe(false);
     expect(can(administrator, "user.manage")).toBe(true);
     expect(can(administrator, "security.events.view")).toBe(true);
     expect(can(administrator, "audit.view")).toBe(false);
@@ -1113,18 +1119,16 @@ describe("operational page navigation", () => {
     expect(can(administrator, "notification.retry")).toBe(false);
     expect(can(administrator, "import.run")).toBe(false);
     expect(can(administrator, "report.view")).toBe(false);
-    expect(can(administrator, "clearance.view")).toBe(false);
-    expect(can(administrator, "permit.print")).toBe(false);
     expect(can(auditor, "audit.view")).toBe(true);
     expect(can(auditor, "notification.view")).toBe(false);
     expect(can(auditor, "payment.record")).toBe(false);
     expect(can(auditor, "notification.retry")).toBe(false);
     expect(can(auditor, "import.run")).toBe(false);
-    expect(can(auditor, "clearance.view")).toBe(false);
-    expect(can(auditor, "permit.print")).toBe(false);
-    expect(can(registrar, "student.view")).toBe(false);
-    expect(can(registrar, "clearance.lookup")).toBe(true);
-    expect(can(registrar, "permit.print")).toBe(true);
+    expect(can(registrar, "student.view")).toBe(true);
+    expect(can(registrar, "student.edit")).toBe(true);
+    expect(can(registrar, "student.financial.view")).toBe(true);
+    expect(can(registrar, "guardianContact.view")).toBe(true);
+    expect(can(registrar, "account.view")).toBe(false);
     expect(can(registrar, "notification.view")).toBe(false);
     expect(can(registrar, "followup.send")).toBe(false);
     expect(can(registrar, "notification.retry")).toBe(false);
@@ -1143,7 +1147,7 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
   });
 
-  it("keeps the Registrar in the clearance workspace instead of the student directory", () => {
+  it("lets the Registrar open the student directory with read-only financial and guardian context", () => {
     render(
       <MemoryRouter initialEntries={["/students/sample-1001"]}>
         <Routes>
@@ -1159,8 +1163,12 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Access denied" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: /amara villanueva/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Access denied" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
+    expect(screen.getByText(/account balance/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit student" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /record payment/i })).not.toBeInTheDocument();
   });
 
   it("renders not found for unknown student and account routes", () => {
@@ -1191,7 +1199,7 @@ describe("operational page navigation", () => {
     render(
       <MemoryRouter initialEntries={["/reports/student/sample-1003"]}><Routes><Route path="/reports/student/:id" element={<StudentStatementPage user={cashier} />} /></Routes></MemoryRouter>,
     );
-    expect(screen.getByText(/cora navarro/i, { ignore: ".print-root *, script, style" })).toBeInTheDocument();
+    expect(screen.getAllByText(/cora navarro/i, { ignore: ".print-root *, script, style" }).length).toBeGreaterThan(0);
     expect(screen.getByText("₱8,500.00", { ignore: ".print-root *, script, style" })).toBeInTheDocument();
   });
 });

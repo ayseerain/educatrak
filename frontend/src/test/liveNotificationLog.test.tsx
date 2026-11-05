@@ -66,6 +66,16 @@ describe("live notification log", () => {
     expect(screen.getByRole("button", { name: "Status" })).toHaveTextContent("Failed");
   });
 
+  it("opens a notification entry from the functional action button", async () => {
+    const user = userEvent.setup();
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={["/followup?view=notifications"]}><LiveNotificationLog user={cashier} /></MemoryRouter></QueryClientProvider>);
+
+    await user.click(await screen.findByRole("button", { name: "View entry" }));
+
+    expect(screen.getByRole("dialog", { name: "Notification entry" })).toHaveTextContent("Casey Sample Student");
+    expect(screen.getByRole("dialog", { name: "Notification entry" })).toHaveTextContent("guardian@example.test");
+  });
+
   it("keeps retry unavailable while the delivery switch is off", async () => {
     vi.mocked(listNotificationLogs).mockResolvedValue({
       data: [{

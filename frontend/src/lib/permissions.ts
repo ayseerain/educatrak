@@ -14,7 +14,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   ]),
   cashier: new Set<Capability>([
     "dashboard.view",
-    "student.view", "student.edit", "guardianContact.view",
+    "student.view", "student.financial.view", "guardianContact.view",
     "account.view", "account.create",
     "payment.view", "payment.record", "payment.void.request", "receipt.reprint",
     "followup.view", "followup.send",
@@ -23,7 +23,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   ]),
   accounting: new Set<Capability>([
     "dashboard.view",
-    "student.view", "guardianContact.view",
+    "student.view", "student.financial.view", "guardianContact.view",
     "account.view",
     "payment.view",
     "payment.void.view", "payment.void.approve", "receipt.reprint",
@@ -45,8 +45,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   ]),
   registrar: new Set<Capability>([
     "dashboard.view",
-    "clearance.lookup", "clearance.view",
-    "permit.print",
+    "student.view", "student.edit", "student.financial.view", "guardianContact.view",
   ]),
 };
 

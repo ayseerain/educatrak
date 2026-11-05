@@ -11,7 +11,6 @@ export interface Student {
   section: string;
   studentStatus: string;
   billingStatus: "Current" | "Due soon" | "Overdue";
-  clearanceStatus: "Cleared" | "Not cleared";
   balance: Centavos;
 }
 
@@ -30,6 +29,7 @@ export interface MockFeeItem {
   category: string;
   amount: Centavos;
   required: boolean;
+  active?: boolean;
 }
 
 export interface MockPaymentPlan {
@@ -67,6 +67,7 @@ export interface MockPayment {
 }
 
 export interface MockNotificationRow {
+  id: string;
   student: string;
   type: string;
   channel: string;
@@ -74,6 +75,7 @@ export interface MockNotificationRow {
   loadFee: string;
   status: string;
   attempts: string;
+  sentAt: string;
 }
 
 export interface MockStaffUser {
@@ -103,8 +105,9 @@ export interface MockStudentInput {
   name: string;
   grade: string;
   section: string;
-  guardianName: string;
-  guardianRelationship: string;
+  studentStatus?: string;
+  guardianName?: string;
+  guardianRelationship?: string;
   guardianEmail?: string;
   guardianMobile?: string;
 }
@@ -125,6 +128,14 @@ export interface MockFeeItemInput {
   required: boolean;
 }
 
+export interface MockFeeItemUpdate {
+  name: string;
+  category: string;
+  amountCents: number;
+  required: boolean;
+  applyToAll?: boolean;
+}
+
 function nextId(prefix: string, rows: ReadonlyArray<{ id: string }>): string {
   let value = rows.length + 1;
   while (rows.some((row) => row.id === `${prefix}-${value}`)) value += 1;
@@ -139,12 +150,13 @@ function gradeLevelOrder(label: string): number | undefined {
 
 /** Returns the configured active grade labels once, in the school's natural grade order. */
 export function getMockGradeLevels(): string[] {
+  const archived = new Set(((getMockState().config as { archivedGrades?: string[] }).archivedGrades ?? []).map((grade) => grade.toLocaleLowerCase()));
   const seen = new Set<string>();
   return getMockState().config.grades
     .map((grade) => grade.trim())
     .filter((grade) => {
       const key = grade.toLocaleLowerCase();
-      if (!grade || seen.has(key)) return false;
+      if (!grade || archived.has(key) || seen.has(key)) return false;
       seen.add(key);
       return true;
     })
@@ -248,7 +260,6 @@ export function selectStudents(): Student[] {
     return {
       ...student,
       billingStatus: account?.status ?? "Current",
-      clearanceStatus: account && account.balance === 0 ? "Cleared" : "Not cleared",
       balance: account?.balance ?? centavos(0),
     };
   });
@@ -324,7 +335,9 @@ export function getSuggestedRenewalSchoolYear(studentId: string) {
 
 export function getMockFeeSchedule(schoolYearId: string, gradeLevel: string): MockFeeItem[] | undefined {
   const schedule = getMockState().feeSchedules.find((item) => item.schoolYearId === schoolYearId && item.gradeLevel === gradeLevel);
-  return schedule?.items.map((item) => ({ ...item, amount: centavos(item.amountCents) }));
+  return schedule?.items
+    .filter((item) => (item as { active?: boolean }).active !== false)
+    .map((item) => ({ ...item, amount: centavos(item.amountCents), active: (item as { active?: boolean }).active !== false }));
 }
 
 export function createMockFeeItem(input: MockFeeItemInput, actorId = "user-accounting"): MockFeeItem {
@@ -334,33 +347,96 @@ export function createMockFeeItem(input: MockFeeItemInput, actorId = "user-accou
   const actor = getMockState().staffUsers.find((user) => user.id === actorId);
   if (!actor || !actor.active || actor.role !== "accounting") throw new Error("Only an active Accounting Officer can manage fee items.");
   if (!getMockState().schoolYears.some((year) => year.id === input.schoolYearId)) throw new Error("Select a configured school year.");
-  if (!getMockGradeLevels().includes(gradeLevel)) throw new Error("Select a configured grade level.");
+  const targetGrades = gradeLevel === "All" ? getMockGradeLevels() : [gradeLevel];
+  if (!targetGrades.length || targetGrades.some((grade) => !getMockGradeLevels().includes(grade))) throw new Error("Select a configured grade level.");
   if (!name || !category || !Number.isInteger(input.amountCents) || input.amountCents < 1) throw new Error("Enter a fee name, category, and amount greater than zero.");
 
   let created: MockFeeItem | undefined;
   updateMockState((state) => {
-    let schedule = state.feeSchedules.find((item) => item.schoolYearId === input.schoolYearId && item.gradeLevel === gradeLevel);
-    if (!schedule) {
-      schedule = {
-        id: nextId("mock-fee-schedule", state.feeSchedules),
-        schoolYearId: input.schoolYearId,
-        gradeLevel,
-        items: [],
+    const schedules = targetGrades.map((targetGrade) => state.feeSchedules.find((item) => item.schoolYearId === input.schoolYearId && item.gradeLevel === targetGrade));
+    if (schedules.some((schedule) => schedule?.items.some((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase()))) throw new Error("A fee item with this name is already configured for at least one selected grade.");
+
+    targetGrades.forEach((targetGrade, index) => {
+      let schedule = schedules[index];
+      if (!schedule) {
+        schedule = {
+          id: nextId("mock-fee-schedule", state.feeSchedules),
+          schoolYearId: input.schoolYearId,
+          gradeLevel: targetGrade,
+          items: [],
+        };
+        state.feeSchedules.push(schedule);
+      }
+      const feeItem = {
+        id: nextId("mock-fee-item", schedule.items),
+        name,
+        category,
+        amount: centavos(input.amountCents),
+        required: input.required,
+        active: true,
       };
-      state.feeSchedules.push(schedule);
-    }
-    if (schedule.items.some((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("A fee item with this name is already configured for the selected schedule.");
-    created = {
-      id: nextId("mock-fee-item", schedule.items),
-      name,
-      category,
-      amount: centavos(input.amountCents),
-      required: input.required,
-    };
-    schedule.items.push({ ...created, amountCents: created.amount });
-    appendAudit("fee_item.created", created.id, actorId);
+      schedule.items.push({ ...feeItem, amountCents: feeItem.amount });
+      syncMockFeeItemToBillingAccounts(state, input.schoolYearId, targetGrade, feeItem);
+      created ??= feeItem;
+    });
+    appendAudit("fee_item.created", created!.id, actorId);
   });
   return created!;
+}
+
+export function updateMockFeeItem(scheduleId: string, itemId: string, input: MockFeeItemUpdate, actorId = "user-accounting"): MockFeeItem {
+  const name = input.name.trim();
+  const category = input.category.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "accounting") throw new Error("Only an active Accounting Officer can manage fee items.");
+  if (!name || !category || !Number.isInteger(input.amountCents) || input.amountCents < 1) throw new Error("Enter a fee name, category, and amount greater than zero.");
+
+  let updated: MockFeeItem | undefined;
+  updateMockState((state) => {
+    const schedule = state.feeSchedules.find((candidate) => candidate.id === scheduleId);
+    const item = schedule?.items.find((candidate) => candidate.id === itemId) as ({ id: string; name: string; category: string; amountCents: number; required: boolean; active?: boolean } | undefined);
+    if (!schedule || !item || item.active === false) throw new Error("That fee item is no longer available.");
+    const targetSchedules = input.applyToAll
+      ? state.feeSchedules.filter((candidate) => candidate.schoolYearId === schedule.schoolYearId && getMockGradeLevels().includes(candidate.gradeLevel))
+      : [schedule];
+    const matchingItems = targetSchedules.map((targetSchedule) => targetSchedule.items.find((candidate) => (candidate as { active?: boolean }).active !== false && candidate.name.toLocaleLowerCase() === item.name.toLocaleLowerCase()));
+    if (targetSchedules.some((targetSchedule, index) => targetSchedule.items.some((candidate) => candidate.id !== matchingItems[index]?.id && candidate.name.toLocaleLowerCase() === name.toLocaleLowerCase()))) throw new Error("A fee item with this name is already configured for at least one selected grade.");
+    targetSchedules.forEach((targetSchedule, index) => {
+      const targetItem = matchingItems[index];
+      if (targetItem) Object.assign(targetItem, { name, category, amountCents: input.amountCents, required: input.required });
+      else targetSchedule.items.push({ id: nextId("mock-fee-item", targetSchedule.items), name, category, amountCents: input.amountCents, required: input.required, active: true } as typeof targetSchedule.items[number]);
+    });
+    updated = { id: item.id, name, category, amount: centavos(item.amountCents), required: item.required, active: true };
+    appendAudit("fee_item.updated", item.id, actorId);
+  });
+  return updated!;
+}
+
+function syncMockFeeItemToBillingAccounts(
+  state: ReturnType<typeof getMockState>,
+  schoolYearId: string,
+  gradeLevel: string,
+  feeItem: MockFeeItem,
+): void {
+  (state.billingAccounts as Array<{ id: string; schoolYearId: string; totalDueCents: number; gradeLevel?: string; studentId: string; feeItems?: Array<{ id: string; name: string; category: string; amountCents: number; required: boolean }> }>).forEach((account) => {
+    const accountGrade = account.gradeLevel ?? state.students.find((student) => student.id === account.studentId)?.grade;
+    if (account.schoolYearId !== schoolYearId || accountGrade !== gradeLevel || account.feeItems?.some((item) => item.name.toLocaleLowerCase() === feeItem.name.toLocaleLowerCase())) return;
+    (account.feeItems ??= []).push({ id: feeItem.id, name: feeItem.name, category: feeItem.category, amountCents: feeItem.amount, required: feeItem.required });
+    account.totalDueCents += feeItem.amount;
+    state.installments.push({ id: nextId("mock-fee-installment", state.installments), accountId: account.id, label: `Fee: ${feeItem.name}`, dueDate: getMockToday(), amountCents: feeItem.amount });
+  });
+}
+
+export function archiveMockFeeItem(scheduleId: string, itemId: string, actorId = "user-accounting"): void {
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "accounting") throw new Error("Only an active Accounting Officer can manage fee items.");
+  updateMockState((state) => {
+    const schedule = state.feeSchedules.find((item) => item.id === scheduleId);
+    const item = schedule?.items.find((candidate) => candidate.id === itemId) as ({ id: string; active?: boolean } | undefined);
+    if (!item || item.active === false) throw new Error("That fee item is already archived or unavailable.");
+    item.active = false;
+    appendAudit("fee_item.archived", item.id, actorId);
+  });
 }
 
 export function createMockGradeLevel(label: string, actorId = "user-admin"): string {
@@ -374,6 +450,46 @@ export function createMockGradeLevel(label: string, actorId = "user-admin"): str
     appendAudit("grade_level.created", name, actorId);
   });
   return name;
+}
+
+export function updateMockGradeLevel(previousLabel: string, label: string, actorId = "user-admin"): string {
+  const previous = previousLabel.trim();
+  const name = label.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
+  if (!previous || !name) throw new Error("Enter a grade-level name.");
+  if (!getMockState().config.grades.includes(previous)) throw new Error("That grade level is no longer available.");
+  if (previous.toLocaleLowerCase() !== name.toLocaleLowerCase() && getMockState().config.grades.some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already configured.");
+  updateMockState((state) => {
+    const index = state.config.grades.indexOf(previous);
+    state.config.grades[index] = name;
+    state.students.forEach((student) => { if (student.grade === previous) student.grade = name; });
+    state.feeSchedules.forEach((schedule) => { if (schedule.gradeLevel === previous) schedule.gradeLevel = name; });
+    (state.billingAccounts as Array<{ gradeLevel?: string }>).forEach((account) => { if (account.gradeLevel === previous) account.gradeLevel = name; });
+    const sections = state.config.sectionsByGrade as Record<string, string[]>;
+    if (sections[previous]) {
+      sections[name] = sections[previous];
+      delete sections[previous];
+    }
+    const config = state.config as typeof state.config & { archivedGrades?: string[] };
+    if (config.archivedGrades) config.archivedGrades = config.archivedGrades.map((grade) => grade === previous ? name : grade);
+    appendAudit("grade_level.updated", name, actorId);
+  });
+  return name;
+}
+
+export function archiveMockGradeLevel(label: string, actorId = "user-admin"): void {
+  const name = label.trim();
+  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
+  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
+  if (!getMockState().config.grades.includes(name)) throw new Error("That grade level is no longer available.");
+  updateMockState((state) => {
+    const config = state.config as typeof state.config & { archivedGrades?: string[] };
+    const archived = config.archivedGrades ?? [];
+    if (archived.some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already archived.");
+    config.archivedGrades = [...archived, name];
+    appendAudit("grade_level.archived", name, actorId);
+  });
 }
 
 export function createMockSchoolYear(label: string, current: boolean, actorId = "user-admin"): { id: string; label: string; current: boolean } {
@@ -456,6 +572,7 @@ export function getMockGuardianContact(studentId: string): { email: string | nul
 
 export function selectMockNotificationRows(): MockNotificationRow[] {
   return getMockState().notificationAttempts.map((attempt) => ({
+    id: attempt.id,
     student: getStudentById(attempt.studentId)?.name ?? "Unavailable student",
     type: attempt.type,
     channel: attempt.channel,
@@ -463,6 +580,7 @@ export function selectMockNotificationRows(): MockNotificationRow[] {
     loadFee: "—",
     status: attempt.status,
     attempts: String(attempt.attempts),
+    sentAt: attempt.sentAt,
   }));
 }
 
@@ -544,31 +662,28 @@ export function restoreMockStaffUser(userId: string, actorId = "user-admin"): Mo
   return restored!;
 }
 
-export function createMockStudent(input: MockStudentInput, actorId = "user-cashier"): Student {
+export function createMockStudent(input: MockStudentInput, actorId = "user-registrar"): Student {
   const number = input.number.trim();
-  if (!number || !input.name.trim() || !input.grade || !input.section || !input.guardianName.trim() || !input.guardianRelationship.trim()) throw new Error("Complete the required student and guardian fields.");
+  if (!number || !input.name.trim() || !input.grade || !input.section) throw new Error("Complete the required student fields.");
   if (getMockState().students.some((student) => student.number.toLocaleLowerCase() === number.toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
   const id = nextId("mock-student", getMockState().students);
-  const guardianId = nextId("mock-guardian", getMockState().guardians);
   updateMockState((state) => {
-    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active" });
-    state.guardians.push({ id: guardianId, name: input.guardianName.trim(), email: input.guardianEmail?.trim() || null, mobile: input.guardianMobile?.trim() || "" });
-    state.studentGuardianLinks.push({ id: `link-${id}`, studentId: id, guardianId, relationship: input.guardianRelationship.trim() });
+    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: input.studentStatus ?? "Active" });
     appendAudit("student.created", id, actorId);
   });
   return getStudentById(id)!;
 }
 
-export function updateMockStudent(studentId: string, input: MockStudentInput, actorId = "user-cashier"): Student {
+export function updateMockStudent(studentId: string, input: MockStudentInput, actorId = "user-registrar"): Student {
   let found = false;
   updateMockState((state) => {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
     if (state.students.some((item) => item.id !== studentId && item.number.toLocaleLowerCase() === input.number.trim().toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
-    Object.assign(student, { number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section });
+    Object.assign(student, { number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section, ...(input.studentStatus ? { studentStatus: input.studentStatus } : {}) });
     const link = state.studentGuardianLinks.find((item) => item.studentId === studentId);
     const guardian = link && state.guardians.find((item) => item.id === link.guardianId);
-    if (link && guardian) {
+    if (link && guardian && input.guardianName && input.guardianRelationship) {
       guardian.name = input.guardianName.trim();
       guardian.email = input.guardianEmail?.trim() || null;
       guardian.mobile = input.guardianMobile?.trim() || "";

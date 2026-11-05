@@ -21,7 +21,7 @@ import { ViewTabs } from "@/components/ui/ViewTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
 import { useClientPagination } from "@/components/ui/useClientPagination";
-import { SortableHeader, useTableSort } from "@/components/ui/Table";
+import { SortableHeader, TABLE_BODY_CELL_CLASS, TABLE_CLASS, TABLE_HEADER_CELL_CLASS, TABLE_SCROLL_CLASS, useTableSort } from "@/components/ui/Table";
 import { cellSortValue, sortTableRows } from "@/lib/tableSort";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Card, CardLabel, CardValue } from "@/components/ui/Card";
@@ -55,8 +55,12 @@ import {
   createMockStaffUser,
   archiveMockStaffUser,
   createMockFeeItem,
+  updateMockFeeItem,
+  archiveMockFeeItem,
   createMockGradeLevel,
   createMockSchoolYear,
+  updateMockGradeLevel,
+  archiveMockGradeLevel,
   createMockStudent,
   createMockBillingAccount,
   previewMockInstallmentSchedule,
@@ -65,7 +69,6 @@ import {
   updateMockStudent,
   mockSystemCashTotal,
   recordMockCloseOut,
-  reopenMockCloseOutForNewDay,
   requestMockVoid,
   decideMockVoid,
   selectMockCloseOuts,
@@ -99,7 +102,7 @@ import { LiveDailyReport } from "@/features/reports/LiveDailyReport";
 import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
 import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
 import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettingsPage";
-import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
+import { LiveStudentFormPage, LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
 import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 
@@ -171,8 +174,8 @@ function MockDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className={cn("fixed inset-0 bg-text-primary/40", emphasis ? "z-[60]" : "z-40")} />
-        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white shadow-raised", emphasis ? "z-[61] max-w-2xl p-6" : "z-50 p-5")}>
+        <Dialog.Overlay className={cn("fixed inset-0 bg-text-primary/40", emphasis ? "z-[60] bg-text-primary/55 backdrop-blur-sm" : "z-40")} />
+        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white shadow-raised", emphasis ? "z-[61] max-w-2xl border border-status-error/40 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]" : "z-50 p-5")}>
           <Dialog.Title className="text-lg font-semibold text-text-primary">
             {title}
           </Dialog.Title>
@@ -348,7 +351,7 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
         title="Students"
         description={
           limited
-            ? "Search student enrollment and clearance information."
+            ? "Search and filter student records."
             : "Search and filter student records."
         }
         action={
@@ -388,14 +391,14 @@ function StudentTable({
   user: AuthenticatedUser;
   data: typeof students;
 }) {
-  const limited = user.role === "registrar";
+  const canSeeFinancialContext = can(user, "student.financial.view");
   const navigate = useNavigate();
   const sorting = useTableSort();
   const rows = sortTableRows(data, sorting.sort, (student, key) => {
     if (key === "name") return student.name;
     if (key === "grade") return `${student.grade} - ${student.section}`;
     if (key === "balance") return cellSortValue(format(student.balance));
-    return student[key as "studentStatus" | "billingStatus" | "clearanceStatus"];
+    return student[key as "studentStatus" | "billingStatus"];
   });
 
   function openStudent(studentId: string) {
@@ -422,7 +425,7 @@ function StudentTable({
             <SortableHeader sortKey="grade" sort={sorting.sort} onSort={sorting.toggle}>
               Grade & section
             </SortableHeader>
-            {!limited && (
+            {canSeeFinancialContext && (
               <SortableHeader sortKey="balance" sort={sorting.sort} onSort={sorting.toggle}>
                 Balance
               </SortableHeader>
@@ -430,14 +433,9 @@ function StudentTable({
             <SortableHeader sortKey="studentStatus" sort={sorting.sort} onSort={sorting.toggle}>
               Student status
             </SortableHeader>
-            {!limited && (
+            {canSeeFinancialContext && (
               <SortableHeader sortKey="billingStatus" sort={sorting.sort} onSort={sorting.toggle}>
                 Billing status
-              </SortableHeader>
-            )}
-            {limited && (
-              <SortableHeader sortKey="clearanceStatus" sort={sorting.sort} onSort={sorting.toggle}>
-                Clearance
               </SortableHeader>
             )}
           </tr>
@@ -464,7 +462,7 @@ function StudentTable({
               <td className="px-3 py-2">
                 {student.grade} - {student.section}
               </td>
-              {!limited && (
+              {canSeeFinancialContext && (
                 <td className="px-3 py-2 font-medium">
                   {format(student.balance)}
                 </td>
@@ -472,14 +470,9 @@ function StudentTable({
               <td className="px-3 py-2">
                 <StatusBadge status={student.studentStatus} />
               </td>
-              {!limited && (
+              {canSeeFinancialContext && (
                 <td className="px-3 py-2">
                   <StatusBadge status={student.billingStatus} />
-                </td>
-              )}
-              {limited && (
-                <td className="px-3 py-2">
-                  <StatusBadge status={student.clearanceStatus} />
                 </td>
               )}
             </tr>
@@ -489,17 +482,16 @@ function StudentTable({
     </div>
   );
 }
-export function StudentFormPage({ edit }: { edit?: boolean }) {
+export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit?: boolean }) {
+  if (isLiveCashierApiEnabled()) return <LiveStudentFormPage edit={edit} />;
   const navigate = useNavigate();
   const { id } = useParams();
   const student = edit ? getStudentById(id) : undefined;
-  const contact = student ? getMockGuardianContact(student.id) : undefined;
-  const relationship = student ? getMockState().studentGuardianLinks.find((link) => link.studentId === student.id)?.relationship ?? "Parent" : "Parent";
-  const guardian = student ? getMockState().guardians.find((item) => item.id === getMockState().studentGuardianLinks.find((link) => link.studentId === student.id)?.guardianId) : undefined;
   const [error, setError] = useState("");
   const initialGrade = student?.grade ?? "";
   const [grade, setGrade] = useState(initialGrade);
   const [section, setSection] = useState(student?.section ?? "");
+  const [studentStatus, setStudentStatus] = useState(student?.studentStatus ?? "Active");
   const [strand, setStrand] = useState("");
   const seniorHigh = isSeniorHighGrade(grade);
 
@@ -515,10 +507,9 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
     try {
       const input = {
         number: String(form.get("number") ?? ""), name: String(form.get("name") ?? ""), grade, section,
-        guardianName: String(form.get("guardianName") ?? ""), guardianRelationship: String(form.get("guardianRelationship") ?? ""),
-        guardianEmail: String(form.get("guardianEmail") ?? ""), guardianMobile: String(form.get("guardianMobile") ?? ""),
+        studentStatus,
       };
-      const saved = student ? updateMockStudent(student.id, input) : createMockStudent(input);
+      const saved = student ? updateMockStudent(student.id, input, user?.id ?? "user-registrar") : createMockStudent(input, user?.id ?? "user-registrar");
       navigate(`/students/${saved.id}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The student record could not be saved.");
@@ -529,7 +520,7 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
     <>
       <PageHeader
         title={edit ? "Edit student" : "Add student"}
-        description="Student numbers must be unique. Guardian contact details are used for payment notifications."
+        description="Maintain student identity, grade level, section, and enrollment status."
         backTo={student ? `/students/${student.id}` : "/students"}
       />
       <form noValidate onSubmit={submit} className="w-full space-y-5">
@@ -582,6 +573,20 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
             </span>
             <input name="section" type="hidden" value={section} />
           </label>
+          <label className="text-sm font-medium">
+            Enrollment status
+            <span className="mt-1 block">
+              <DropdownSelect
+                aria-label="Enrollment status"
+                value={studentStatus}
+                options={[{ value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }]}
+                onChange={setStudentStatus}
+                className="w-full"
+                align="start"
+              />
+            </span>
+            <input name="studentStatus" type="hidden" value={studentStatus} />
+          </label>
           {seniorHigh && (
             <label className="text-sm font-medium">
               Strand
@@ -605,27 +610,6 @@ export function StudentFormPage({ edit }: { edit?: boolean }) {
             </p>
           )}
         </Card>
-        <Card>
-          <h2 className="text-base font-semibold text-text-primary">Guardian</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="text-sm font-medium">
-              Name <span aria-hidden="true" className="text-status-error">*</span>
-              <input name="guardianName" required defaultValue={guardian?.name ?? ""} className={inputClass} />
-            </label>
-            <label className="text-sm font-medium">
-              Relationship <span aria-hidden="true" className="text-status-error">*</span>
-              <input name="guardianRelationship" required defaultValue={relationship} className={inputClass} />
-            </label>
-            <label className="text-sm font-medium">
-              Email
-              <input name="guardianEmail" type="email" defaultValue={contact?.email ?? ""} className={inputClass} />
-            </label>
-            <label className="text-sm font-medium">
-              Mobile
-              <input name="guardianMobile" defaultValue={contact?.mobile ?? ""} className={inputClass} />
-            </label>
-          </div>
-        </Card>
         {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
         <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(student ? `/students/${student.id}` : "/students")}>Cancel</Button><Button type="submit">{edit ? "Save changes" : "Create student"}</Button></div>
       </form>
@@ -638,7 +622,6 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
   const { id } = useParams();
   const student = getStudentById(id);
   if (!student) return <NotFoundPage />;
-  const limited = user.role === "registrar";
   const renewalYears = getRenewalSchoolYears(student.id);
   return (
     <>
@@ -647,21 +630,17 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
         description={`${student.number} - ${student.grade} - ${student.section}`}
         backTo="/students"
         action={
-          !limited ? (
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            {can(user, "payment.record") || can(user, "account.view") || can(user, "account.create") ? <>
               {can(user, "payment.record") && <Link to={`/payments/new?student=${student.id}`} className={primaryLinkClass}>Record payment</Link>}
               {can(user, "account.view") && <Link to={`/accounts/${getCurrentBillingAccount(student.id)?.id ?? "new"}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
               {can(user, "account.create") && (renewalYears.length ? <Link to={`/accounts/new?student=${student.id}&mode=renew`} className={secondaryLinkClass}>Renew Billing Account</Link> : <Button type="button" variant="secondary" disabled title="Every configured school year already has an account for this student.">Renew Billing Account</Button>)}
-              {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
-            </div>
-          ) : undefined
+            </> : null}
+            {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
+          </div>
         }
       />
-      {limited ? (
-        <StudentOverviewPanel student={student} user={user} limited />
-      ) : (
-        <StudentOverviewPanel student={student} user={user} />
-      )}
+      <StudentOverviewPanel student={student} user={user} />
     </>
   );
 }
@@ -669,31 +648,30 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
 function StudentOverviewPanel({
   student,
   user,
-  limited = false,
 }: {
   student: typeof firstStudent;
   user: AuthenticatedUser;
-  limited?: boolean;
 }) {
+  const canSeeFinancialContext = can(user, "student.financial.view");
+  const canViewGuardianContacts = can(user, "guardianContact.view");
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        {!limited && (
+        {canSeeFinancialContext && (
           <Metric label="Account balance" value={format(student.balance)} />
         )}
         <Metric
           label="Student status"
           value={<StatusBadge status={student.studentStatus} />}
         />
-        {!limited && (
+        {canSeeFinancialContext && (
           <Metric
             label="Billing status"
             value={<StatusBadge status={student.billingStatus} />}
           />
         )}
       </div>
-      <ClearanceSummary student={student} user={user} compact={limited} />
-      {!limited && (
+      {canViewGuardianContacts && (
         <Card className="bg-white">
           <h2 className="text-base font-semibold text-text-primary">Guardian details</h2>
           <p className="mt-2 text-sm text-text-secondary">
@@ -707,7 +685,7 @@ function StudentOverviewPanel({
           />
         </Card>
       )}
-      {!limited && (
+      {canSeeFinancialContext && (
         <Card>
           <h2 className="text-base font-semibold text-text-primary">Billing accounts</h2>
           <p className="mt-1 text-sm text-text-secondary">Each school year remains a separate billing record. Historical balances and payments are not carried forward.</p>
@@ -725,112 +703,6 @@ function StudentOverviewPanel({
         </Card>
       )}
     </div>
-  );
-}
-
-type ClearanceResult = {
-  period: string;
-  status: string;
-  reason: string;
-  permitPeriod?: string;
-};
-
-function getClearanceResults(
-  student: typeof firstStudent,
-  user: AuthenticatedUser,
-): ClearanceResult[] {
-  const isCleared = student.clearanceStatus === "Cleared";
-  const outstandingReason = user.role === "registrar"
-    ? "Installment overdue"
-    : `Balance due: ${format(student.balance)}`;
-
-  return [
-    {
-      period: "Enrollment",
-      status: student.clearanceStatus,
-      reason: isCleared ? "All requirements met" : outstandingReason,
-    },
-    {
-      period: "Midterm",
-      status: "Cleared",
-      reason: "Requirements met",
-      permitPeriod: "midterm",
-    },
-    {
-      period: "Final",
-      status: student.clearanceStatus,
-      reason: isCleared ? "All requirements met" : outstandingReason,
-      permitPeriod: "final",
-    },
-  ];
-}
-
-function ClearanceSummary({
-  student,
-  user,
-  compact = false,
-  showPermitActions = false,
-}: {
-  student: typeof firstStudent;
-  user: AuthenticatedUser;
-  compact?: boolean;
-  showPermitActions?: boolean;
-}) {
-  const results = getClearanceResults(student, user);
-  const canPrintPermit = can(user, "permit.print");
-
-  return (
-    <section
-      aria-labelledby="clearance-details-heading"
-      className={cn("overflow-hidden rounded-md border border-border bg-white shadow-card", compact && "bg-surface")}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
-        <div>
-          <h2 id="clearance-details-heading" className="font-semibold">Clearance details</h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            {student.name} · {student.grade} - {student.section}
-          </p>
-          <p className="mt-1 text-sm text-text-secondary">
-            {compact
-              ? "Enrollment and exam-period status for this student."
-              : "Enrollment and exam-period status, computed from current requirements."}
-          </p>
-        </div>
-        <StatusBadge status={student.clearanceStatus} />
-      </div>
-      <div className="grid gap-px bg-border md:grid-cols-3">
-        {results.map((result) => (
-          <div key={result.period} className="bg-white p-4">
-            <p className="text-sm font-medium text-text-secondary">{result.period}</p>
-            <StatusBadge className="mt-2" status={result.status} />
-            <p className="mt-3 text-sm text-text-primary">{result.reason}</p>
-            {showPermitActions && result.permitPeriod && (
-              <div className="mt-4">
-                {result.status === "Cleared" && canPrintPermit ? (
-                  <Link
-                    className={inlineLinkClass}
-                    to={`/permits/${student.id}/${result.permitPeriod}/print`}
-                  >
-                    Print exam permit
-                  </Link>
-                ) : canPrintPermit ? (
-                  <>
-                    <Button type="button" variant="secondary" disabled>
-                      Print exam permit
-                    </Button>
-                    <p className="mt-2 text-sm text-text-secondary">
-                      Permit unavailable: {result.reason}.
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm text-text-secondary">View only</p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -1962,59 +1834,6 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
     </>
   );
 }
-export function ClearancePage({ user }: { user: AuthenticatedUser }) {
-  const [searchParams] = useSearchParams();
-  const [studentQuery, setStudentQuery] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState(
-    students.find((student) => student.id === searchParams.get("studentId")),
-  );
-  return (
-    <>
-      <PageHeader
-        title="Clearance"
-        description="Search a student to review enrollment and exam-period clearance."
-      />
-      <Card className="mb-4">
-        <h2 className="text-base font-semibold text-text-primary">Find a student</h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Select a student to review their current clearance status.
-        </p>
-        <StudentSearchField
-          label="Search student"
-          value={studentQuery}
-          onChange={setStudentQuery}
-          onSelect={(student) => {
-            setStudentQuery(student.name);
-            setSelectedStudent(student);
-          }}
-          autoFocus
-          placeholder="Search student name or number"
-          inputClassName={cn(inputClass, "m-0 mt-2")}
-        />
-      </Card>
-      {selectedStudent ? <ClearanceSummary student={selectedStudent} user={user} showPermitActions /> : (
-        <Card><p role="status" className="text-sm text-text-secondary">Search for a student to view clearance details and available permits.</p></Card>
-      )}
-    </>
-  );
-}
-export function PermitPage() {
-  return (
-    <div className="print-page mx-auto max-w-2xl">
-      <PageHeader
-        title="Permit"
-        description="Mendez Christian Academy"
-        backTo="/clearance"
-        action={<Button onClick={() => window.print()}>Print permit</Button>}
-      />
-      <Card className="border-2 border-black">
-        <h2 className="text-base font-semibold text-text-primary">Amara Villanueva (sample)</h2>
-        <p className="mt-2">Grade 7 · Olive</p>
-        <p className="mt-4">Midterm examination permit</p>
-      </Card>
-    </div>
-  );
-}
 export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   const [searchParams] = useSearchParams();
   if (isLiveCashierApiEnabled()) return <LiveDailyCloseOut user={user} initialView={searchParams.get("view") === "history" ? "history" : "today"} />;
@@ -2023,16 +1842,14 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
   const [reviewOpen, setReviewOpen] = useState(false);
   const history = selectMockCloseOuts(user.id);
   const currentCloseout = history.find((item) => item.businessDate === getMockToday());
-  const latestClosed = history.find((item) => item.status === "closed");
   const closed = currentCloseout?.status === "closed";
-  const needsNewDaySession = !currentCloseout && latestClosed !== undefined && latestClosed.businessDate < getMockToday();
   const systemCashTotal = mockSystemCashTotal(user.id);
   const enteredCount = Number(counted);
   const hasCountedCash = counted.trim() !== "" && Number.isFinite(enteredCount) && enteredCount >= 0;
   const countedCash = hasCountedCash ? centavos(Math.round(enteredCount * 100)) : null;
   const variance = countedCash === null ? null : centavos(countedCash - systemCashTotal);
   const requiresVarianceReason = variance !== null && variance !== 0;
-  const canReview = !closed && !needsNewDaySession && countedCash !== null && (!requiresVarianceReason || varianceReason.trim().length > 0);
+  const canReview = !closed && countedCash !== null && (!requiresVarianceReason || varianceReason.trim().length > 0);
 
   const varianceSummary = variance === null
     ? { label: "Waiting for count", detail: "Enter the drawer count to compare it with the system total.", className: "border-border bg-surface" }
@@ -2079,7 +1896,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
                 aria-label="Counted cash"
                 value={counted}
                 onChange={(e) => setCounted(e.target.value)}
-                disabled={Boolean(closed || needsNewDaySession)}
+                disabled={Boolean(closed)}
                 inputMode="decimal"
                 placeholder="0.00"
                 className={inputClass}
@@ -2104,7 +1921,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
                 className={textareaClass}
                 value={varianceReason}
                 onChange={(event) => setVarianceReason(event.target.value)}
-                disabled={Boolean(closed || needsNewDaySession)}
+                disabled={Boolean(closed)}
                 placeholder="Explain the variance"
                 required
               />
@@ -2126,7 +1943,7 @@ export function CloseoutPage({ user }: { user: AuthenticatedUser }) {
             </Button>
           </div>
         </form>
-        {needsNewDaySession ? <div className="mt-4 rounded-md border border-status-success bg-status-success/5 p-4"><p className="font-medium text-brand-green-dark">Start a new close-out for {formatDate(getMockToday())}.</p><p className="mt-1 text-sm text-text-secondary">The previous close-out remains finalized and unchanged.</p><div className="mt-4 flex justify-end"><Button type="button" onClick={() => { try { reopenMockCloseOutForNewDay(user.id); } catch (cause) { setVarianceReason(cause instanceof Error ? cause.message : "Unable to open a new day."); } }}>Reopen for New Day</Button></div></div> : closed ? (
+        {closed ? (
           <div className="mt-4 rounded-md border border-status-success bg-status-success/5 p-4">
             <p role="status" className="font-medium text-brand-green-dark">Closed for {formatDate(currentCloseout!.businessDate)}.</p>
             <p className="mt-1 text-sm text-text-secondary">Your closing record has been finalized. It cannot be reopened or changed.</p>
@@ -2186,11 +2003,7 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
 }
 
 export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
-  const statementOptions = billingAccounts.map((account) => {
-    const student = getStudentById(account.studentId);
-    return { value: account.studentId, label: student ? `${student.name} (${student.number})` : account.studentId };
-  });
-  const [statementStudentId, setStatementStudentId] = useState(statementOptions[0]?.value ?? "");
+  const statementStudentId = billingAccounts[0]?.studentId ?? "";
   const mockStatementRoute = !isLiveCashierApiEnabled()
     ? `/reports/student/${statementStudentId}`
     : undefined;
@@ -2233,13 +2046,6 @@ export function ReportsHubPage({ user }: { user: AuthenticatedUser }) {
         title="Reports"
         description="Open a report or statement. Receipts are available from payment detail."
       />
-      {!isLiveCashierApiEnabled() && canViewReport(user, "statement") && statementOptions.length > 0 && (
-        <Card className="mb-4">
-          <label className="block text-sm font-medium">Student statement
-            <DropdownSelect aria-label="Student statement" value={statementStudentId} options={statementOptions} onChange={setStatementStudentId} className="mt-1 w-full sm:max-w-md" align="start" />
-          </label>
-        </Card>
-      )}
       <div className="grid gap-4 md:grid-cols-2">
         {reports
           .filter((report) => canViewReport(user, report.kind) && (!isLiveCashierApiEnabled() || report.kind !== "monthly"))
@@ -2279,10 +2085,15 @@ export function StudentStatementPage({ user }: { user: AuthenticatedUser }) {
 }
 
 function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser; studentId: string }) {
+  const navigate = useNavigate();
   const id = studentId;
   const student = getStudentById(id);
   const account = student && getCurrentBillingAccount(student.id);
   if (!student || !account) return <NotFoundPage />;
+  const statementOptions = Array.from(new Map(billingAccounts.map((billingAccount) => {
+    const billingStudent = getStudentById(billingAccount.studentId);
+    return [billingAccount.studentId, { value: billingAccount.studentId, label: billingStudent ? `${billingStudent.name} (${billingStudent.number})` : billingAccount.studentId }];
+  })).values());
   const scheduleRows = account.schedule.map((installment) => [
     installment.label,
     installment.dueDate,
@@ -2310,6 +2121,13 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
           ) : undefined
         }
       />
+      <Card className="mb-5 p-5">
+        <label className="block text-sm font-medium">Student statement
+          <span className="mt-1 block">
+            <DropdownSelect aria-label="Student statement" value={student.id} options={statementOptions} onChange={(nextStudentId) => navigate(`/reports/student/${nextStudentId}`)} className="w-full sm:max-w-md" align="start" />
+          </span>
+        </label>
+      </Card>
       <ListCard headers={["Item", "Due date", "Amount", "Paid"]} rows={rows} />
       <PrintSurface className="report-print-root student-statement-print">
         <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${account.schoolYear}`} details={["Development sample data", `Prepared by: ${user.name}`]} />
@@ -2453,7 +2271,9 @@ function MockReportPage({
 
 export function MockNotificationsPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const notificationRows = selectMockNotificationRows();
+  const selectedEntry = notificationRows.find((row) => row.id === selectedEntryId) ?? null;
   const notificationStatusOptions = [
     { value: "all", label: "All statuses" },
     ...Array.from(new Set(notificationRows.map((row) => row.status))).map((status) => ({ value: status.toLowerCase(), label: status })),
@@ -2495,13 +2315,14 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
         description="View email and SMS notification attempts, including any configured SMS load fee."
       />
       {workspaceSwitch}
+      {can(user, "notification.retry") && <p role="status" className="mb-3 text-sm text-text-secondary">Reminder retry is unavailable until delivery policies are approved.</p>}
       <ListCard
         title="Notification log"
         toolbar={<TableFilters embedded scope="Sample notification log" defaults={defaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[
         { key: "status", label: "Status", type: "select", options: notificationStatusOptions },
         { key: "channel", label: "Channel", type: "select", options: [{ value: "", label: "All channels" }, { value: "Email", label: "Email" }, { value: "SMS", label: "SMS" }] },
       ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onReset={filters.reset} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />}
-        headers={["Student", "Type", "Channel", "Recipient", "SMS load fee", "Status", "Attempts", "Action"]}
+        headers={["Student", "Type", "Channel", "Recipient", "SMS load fee", "Status", "Attempts", "Actions"]}
         rows={rows.map((row) => [
           row.student,
           row.type,
@@ -2510,9 +2331,12 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
           row.loadFee,
           row.status,
           row.attempts,
-          row.status === "Failed" && can(user, "notification.retry") ? "Retry" : "View",
+          <Button key={`${row.id}-view`} type="button" variant="secondary" size="sm" onClick={() => setSelectedEntryId(row.id)}>View entry</Button>,
         ])}
       />
+      <MockDialog open={selectedEntry !== null} onOpenChange={(open) => !open && setSelectedEntryId(null)} title="Notification entry">
+        {selectedEntry && <><dl className="mt-4 grid gap-3 text-sm"><div><dt className="font-medium text-text-secondary">Student</dt><dd className="mt-1">{selectedEntry.student}</dd></div><div><dt className="font-medium text-text-secondary">Type</dt><dd className="mt-1 capitalize">{selectedEntry.type.replace(/_/g, " ")}</dd></div><div><dt className="font-medium text-text-secondary">Channel</dt><dd className="mt-1">{selectedEntry.channel}</dd></div><div><dt className="font-medium text-text-secondary">Recipient</dt><dd className="mt-1 break-all">{selectedEntry.recipient}</dd></div><div><dt className="font-medium text-text-secondary">Status</dt><dd className="mt-1">{selectedEntry.status}</dd></div><div><dt className="font-medium text-text-secondary">Attempts</dt><dd className="mt-1">{selectedEntry.attempts}</dd></div><div><dt className="font-medium text-text-secondary">Sent</dt><dd className="mt-1">{formatDateTime(selectedEntry.sentAt)}</dd></div></dl><div className="mt-5 flex justify-end"><Button type="button" variant="secondary" onClick={() => setSelectedEntryId(null)}>Close</Button></div></>}
+      </MockDialog>
     </>
   );
 }
@@ -2525,7 +2349,7 @@ export function SettingsPage({
   editable,
   actorId,
 }: {
-  section: "fees" | "plans" | "clearance" | "school" | "receipt" | "email";
+  section: "fees" | "plans" | "school" | "receipt" | "email";
   editable: boolean;
   actorId?: string;
 }) {
@@ -2533,7 +2357,6 @@ export function SettingsPage({
     const titles = {
       fees: "Fees",
       plans: "Plans",
-      clearance: "Clearance",
       school: "School settings",
       receipt: "Receipts",
       email: "Notifications",
@@ -2544,7 +2367,7 @@ export function SettingsPage({
     }
     return <UnavailableFeaturePage
       title={titles[section]}
-      feature={section === "clearance" ? "Clearance configuration" : "System configuration"}
+      feature="System configuration"
     />;
   }
   const [addFeeOpen, setAddFeeOpen] = useState(false);
@@ -2563,9 +2386,14 @@ export function SettingsPage({
   const [feeRequired, setFeeRequired] = useState(true);
   const [feeError, setFeeError] = useState("");
   const [feeSavedMessage, setFeeSavedMessage] = useState("");
+  const [editingFee, setEditingFee] = useState<{ scheduleId: string; itemId: string; schoolYear: string; gradeLevel: string } | null>(null);
+  const [editingGrade, setEditingGrade] = useState<string | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<{ kind: "fee"; scheduleId: string; itemId: string; name: string } | { kind: "grade"; name: string } | null>(null);
   const [, setMockRevision] = useState(0);
   const mockState = getMockState();
   const gradeLevels = getMockGradeLevels();
+  const archivedGrades = new Set(((mockState.config as { archivedGrades?: string[] }).archivedGrades ?? []).map((grade) => grade.toLocaleLowerCase()));
+  const allGradeLevels = mockState.config.grades;
   const schoolYears = mockState.schoolYears;
   const gradeOrder = new Map(gradeLevels.map((grade, index) => [grade, index]));
   const feeRows = [...mockState.feeSchedules]
@@ -2578,16 +2406,19 @@ export function SettingsPage({
     })
     .flatMap((schedule) => {
     const schoolYear = schoolYears.find((year) => year.id === schedule.schoolYearId)?.label ?? "Unavailable school year";
-    return schedule.items.map((item) => [
+    return schedule.items.map((item) => ({
+      scheduleId: schedule.id,
+      itemId: item.id,
       schoolYear,
-      schedule.gradeLevel,
-      `${item.name} - ${item.category} - ${format(centavos(item.amountCents))} - ${item.required ? "Required" : "Optional"}`,
-      "Active",
-    ]);
+      gradeLevel: schedule.gradeLevel,
+      description: `${item.name} - ${item.category} - ${format(centavos(item.amountCents))} - ${item.required ? "Required" : "Optional"}`,
+      name: item.name,
+      active: (item as { active?: boolean }).active !== false,
+    }));
   });
   const schoolRows: [string, string, string][] = [
     ...schoolYears.map((year) => ["School year", `${year.label}${year.current ? " current" : ""}`, "Active"] as [string, string, string]),
-    ...gradeLevels.map((grade) => ["Grade level", grade, "Active"] as [string, string, string]),
+    ...allGradeLevels.map((grade) => ["Grade level", grade, archivedGrades.has(grade.toLocaleLowerCase()) ? "Archived" : "Active"] as [string, string, string]),
     ...schoolSupplementRows,
   ];
   const effectiveActorId = actorId ?? (section === "fees" ? "user-accounting" : "user-admin");
@@ -2597,7 +2428,7 @@ export function SettingsPage({
     fees: {
       title: "Fees",
       description:
-        "School year and grade-level fee items apply to new accounts only.",
+        "New fee items update matching existing accounts and future accounts.",
       action: "Add fee item",
       headers: ["School year", "Grade level", "Fee item", "Status"],
       rows: feeRows,
@@ -2611,27 +2442,6 @@ export function SettingsPage({
       rows: [
         ["Monthly", "₱2,000.00", "8 due dates", "Active"],
         ["Quarterly", "25%", "4 due dates", "Active"],
-      ],
-    },
-    clearance: {
-      title: "Clearance",
-      description:
-        "Rules are computed by the server after payments, voids, and adjustments.",
-      action: "Add rule",
-      headers: ["Period", "Rule", "Preview", "Status"],
-      rows: [
-        [
-          "Enrollment",
-          "Minimum down payment",
-          "Cleared after required down payment",
-          "Active",
-        ],
-        [
-          "Midterm",
-          "Installments paid through exam start",
-          "Checks schedule before permit",
-          "Active",
-        ],
       ],
     },
     school: {
@@ -2696,10 +2506,60 @@ export function SettingsPage({
         amountCents: parseMoney(feeAmount),
         required: feeRequired,
       }, effectiveActorId);
-      setFeeSavedMessage(`Fee item saved for ${feeGradeLevel}. It will apply to new billing accounts only.`);
+      setFeeSavedMessage(`Fee item saved for ${feeGradeLevel}. Matching existing billing accounts were updated.`);
       setAddFeeOpen(false);
     } catch (cause) {
       setFeeError(cause instanceof Error ? cause.message : "The fee item could not be saved.");
+    }
+  }
+
+  function openFeeEditor(target: typeof feeRows[number]) {
+    const item = mockState.feeSchedules.find((schedule) => schedule.id === target.scheduleId)?.items.find((candidate) => candidate.id === target.itemId);
+    if (!item) return;
+    setFeeName(item.name);
+    setFeeCategory(item.category);
+    setFeeAmount(String(item.amountCents / 100));
+    setFeeRequired(item.required);
+    setFeeGradeLevel(target.gradeLevel);
+    setFeeError("");
+    setEditingFee({ scheduleId: target.scheduleId, itemId: target.itemId, schoolYear: target.schoolYear, gradeLevel: target.gradeLevel });
+  }
+
+  function saveFeeEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingFee) return;
+    try {
+      updateMockFeeItem(editingFee.scheduleId, editingFee.itemId, { name: feeName, category: feeCategory, amountCents: parseMoney(feeAmount), required: feeRequired, applyToAll: feeGradeLevel === "All" }, effectiveActorId);
+      setFeeSavedMessage(`Fee item updated for ${feeGradeLevel === "All" ? "all grades" : editingFee.gradeLevel}.`);
+      setEditingFee(null);
+    } catch (cause) {
+      setFeeError(cause instanceof Error ? cause.message : "The fee item could not be updated.");
+    }
+  }
+
+  function saveGradeEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingGrade) return;
+    try {
+      updateMockGradeLevel(editingGrade, listItemName, effectiveActorId);
+      setFeeSavedMessage(`Grade level renamed to ${listItemName.trim()}.`);
+      setEditingGrade(null);
+      setListItemName("");
+    } catch (cause) {
+      setFeeError(cause instanceof Error ? cause.message : "The grade level could not be updated.");
+    }
+  }
+
+  function archiveSettingItem() {
+    if (!archiveTarget) return;
+    try {
+      if (archiveTarget.kind === "fee") archiveMockFeeItem(archiveTarget.scheduleId, archiveTarget.itemId, effectiveActorId);
+      else archiveMockGradeLevel(archiveTarget.name, effectiveActorId);
+      setFeeSavedMessage(`${archiveTarget.kind === "fee" ? "Fee item" : "Grade level"} archived. Existing records are retained.`);
+      setArchiveTarget(null);
+    } catch (cause) {
+      setFeeError(cause instanceof Error ? cause.message : "The item could not be archived.");
+      setArchiveTarget(null);
     }
   }
 
@@ -2752,10 +2612,9 @@ export function SettingsPage({
           </Button>
         ) : undefined}
       />
-      <SectionTabs items={section === "fees" || section === "plans" || section === "clearance" ? [
+      <SectionTabs items={section === "fees" || section === "plans" ? [
         { label: "Fees", to: "/settings/fees", active: section === "fees" },
         { label: "Plans", to: "/settings/plans", active: section === "plans" },
-        { label: "Clearance rules", to: "/settings/clearance-rules", active: section === "clearance" },
       ] : [
         { label: "School", to: "/settings/school", active: section === "school" },
         { label: "Receipt", to: "/settings/receipt", active: section === "receipt" },
@@ -2771,17 +2630,27 @@ export function SettingsPage({
         </p>
         <ListCard
           className="mt-4"
-          headers={[...current.headers]}
+          headers={editable && mockActionAvailable ? [...current.headers, "Actions"] : [...current.headers]}
           paginate={section === "fees" ? { label: "fee items", fixedPageSize: true } : undefined}
-          rows={(section === "fees" ? feeRows : current.rows).map((row) => [...row])}
+          rows={section === "fees"
+            ? feeRows.map((row) => [
+              row.schoolYear,
+              row.gradeLevel,
+              row.description,
+              row.active ? "Active" : "Archived",
+              ...(editable ? [row.active ? <div key={row.itemId} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" onClick={() => openFeeEditor(row)}>Edit</Button><Button type="button" variant="destructive" size="sm" onClick={() => setArchiveTarget({ kind: "fee", scheduleId: row.scheduleId, itemId: row.itemId, name: row.name })}>Archive</Button></div> : "—"] : []),
+            ])
+            : (current.rows as ReadonlyArray<readonly string[]>).map((row) => [
+              ...row,
+              ...(editable && section === "school" ? [row[0] === "Grade level" && row[2] !== "Archived" ? <div key={row[1]} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" onClick={() => { setEditingGrade(row[1]!); setListItemName(row[1]!); setFeeError(""); }}>Edit</Button><Button type="button" variant="destructive" size="sm" onClick={() => setArchiveTarget({ kind: "grade", name: row[1]! })}>Archive</Button></div> : "—"] : []),
+            ])}
           centeredColumns={
             section === "fees"
               || section === "plans"
-              || section === "clearance"
               || section === "school"
               || section === "receipt"
               || section === "email"
-              ? [current.headers.length - 1]
+              ? editable && mockActionAvailable ? [current.headers.length - 1, current.headers.length] : [current.headers.length - 1]
               : []
           }
         />
@@ -2791,7 +2660,7 @@ export function SettingsPage({
         <MockDialog open={addFeeOpen} onOpenChange={(open) => { setAddFeeOpen(open); if (!open) setFeeError(""); }} title="Add fee item">
           <form className="mt-4 space-y-4" onSubmit={addFeeItem}>
             <p className="text-sm text-text-secondary">
-              The fee item will be available only to new accounts in the selected schedule.
+              The fee item will update matching existing accounts and be available to future accounts.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium">
@@ -2800,7 +2669,7 @@ export function SettingsPage({
               </label>
               <label className="block text-sm font-medium">
                 Grade level
-                <span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={feeGradeLevel} options={[{ value: "", label: "Select grade level" }, ...asDropdownOptions(gradeLevels)]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} disabled={gradeLevels.length === 0} className="w-full" align="start" /></span>
+                <span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={feeGradeLevel} options={[{ value: "", label: "Select grade level" }, { value: "All", label: "All grades" }, ...asDropdownOptions(gradeLevels)]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} disabled={gradeLevels.length === 0} className="w-full" align="start" /></span>
               </label>
             </div>
             {gradeLevels.length === 0 && <p role="status" className="rounded-md border border-status-warning bg-status-warning/5 p-3 text-sm text-text-primary">No grade levels configured. Add grade levels in School Settings before creating fee items.</p>}
@@ -2831,6 +2700,29 @@ export function SettingsPage({
               <Button type="submit" disabled={schoolYears.length === 0 || gradeLevels.length === 0}>Save fee item</Button>
             </div>
           </form>
+        </MockDialog>
+      )}
+      {section === "fees" && editable && (
+        <MockDialog open={editingFee !== null} onOpenChange={(open) => { if (!open) { setEditingFee(null); setFeeError(""); } }} title="Edit fee item">
+          <form className="mt-4 space-y-4" onSubmit={saveFeeEdit}>
+            <p className="text-sm text-text-secondary">Revisions preserve existing account terms. Choose All grades to update this fee across the school year.</p>
+            <label className="block text-sm font-medium">Apply to<span className="mt-1 block"><DropdownSelect aria-label="Apply to" value={feeGradeLevel} options={[{ value: editingFee?.gradeLevel ?? "", label: editingFee?.gradeLevel ?? "Selected grade" }, { value: "All", label: "All grades" }]} onChange={(value) => { setFeeGradeLevel(value); setFeeError(""); }} className="w-full" align="start" /></span></label>
+            <label className="block text-sm font-medium" htmlFor="edit-fee-name">Fee item name<input id="edit-fee-name" required className={inputClass} value={feeName} onChange={(event) => { setFeeName(event.target.value); setFeeError(""); }} /></label>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Category<span className="mt-1 block"><DropdownSelect aria-label="Edit category" value={feeCategory} options={asDropdownOptions(["Tuition", "Miscellaneous", "Other"])} onChange={(value) => { setFeeCategory(value); setFeeError(""); }} className="w-full" align="start" /></span></label><label className="block text-sm font-medium" htmlFor="edit-fee-amount">Amount<input id="edit-fee-amount" type="number" min="0.01" step="0.01" required className={inputClass} value={feeAmount} onChange={(event) => { setFeeAmount(event.target.value); setFeeError(""); }} /></label></div>
+            <fieldset><legend className="text-sm font-medium">Account requirement</legend><div className="mt-2 flex flex-wrap gap-4 text-sm"><label className="flex items-center gap-2"><input name="edit-requirement" type="radio" checked={feeRequired} onChange={() => setFeeRequired(true)} />Required</label><label className="flex items-center gap-2"><input name="edit-requirement" type="radio" checked={!feeRequired} onChange={() => setFeeRequired(false)} />Optional</label></div></fieldset>
+            {feeError && <p role="alert" className="text-sm text-status-error">{feeError}</p>}
+            <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setEditingFee(null)}>Cancel</Button><Button type="submit">Save changes</Button></div>
+          </form>
+        </MockDialog>
+      )}
+      {section === "school" && editable && (
+        <MockDialog open={editingGrade !== null} onOpenChange={(open) => { if (!open) { setEditingGrade(null); setFeeError(""); } }} title="Edit grade level">
+          <form className="mt-4 space-y-4" onSubmit={saveGradeEdit}><p className="text-sm text-text-secondary">This updates the configured grade label and its linked mock records.</p><label className="block text-sm font-medium" htmlFor="edit-grade-name">Grade level name<input id="edit-grade-name" required className={inputClass} value={listItemName} onChange={(event) => { setListItemName(event.target.value); setFeeError(""); }} /></label>{feeError && <p role="alert" className="text-sm text-status-error">{feeError}</p>}<div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setEditingGrade(null)}>Cancel</Button><Button type="submit">Save changes</Button></div></form>
+        </MockDialog>
+      )}
+      {(section === "fees" || section === "school") && editable && (
+        <MockDialog open={archiveTarget !== null} onOpenChange={(open) => { if (!open) setArchiveTarget(null); }} title={`Archive ${archiveTarget?.kind === "fee" ? "fee item" : "grade level"}?`} emphasis>
+          <div className="mt-3"><p className="text-sm text-text-secondary">{archiveTarget?.name} will no longer be available for new configuration. Existing billing records and audit history are retained.</p><div className="mt-5 flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setArchiveTarget(null)}>Cancel</Button><Button type="button" variant="destructive" onClick={archiveSettingItem}>Archive {archiveTarget?.kind === "fee" ? "fee item" : "grade level"}</Button></div></div>
         </MockDialog>
       )}
       {section === "school" && editable && (
@@ -3060,7 +2952,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               <Button key={`${user.id}-restore`} type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => setRestoreTarget(user)}>Restore</Button>,
             ] : [
               <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
-              <div key={`${user.id}-actions`} className="flex flex-wrap gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
+              <div key={`${user.id}-actions`} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
             ]),
           ])}
         />
@@ -3185,9 +3077,6 @@ export function RolesPage() {
     { area: "Close-out", action: "Submit cashier close-out", capability: "closeout.submit" },
     { area: "Close-out", action: "Review and sign off close-out", capability: "closeout.signoff" },
     { area: "Close-out", action: "View close-out history", capability: "closeout.view" },
-    { area: "Clearance", action: "Search limited student identity", capability: "clearance.lookup" },
-    { area: "Clearance", action: "View clearance status", capability: "clearance.view" },
-    { area: "Exam permits", action: "Print exam permits", capability: "permit.print" },
     { area: "Operations", action: "Manage backups", capability: "backup.manage" },
   ];
   const roleUsers = roles.map(({ role, label }) => ({ id: `role-${role}`, name: label, role }));
@@ -3437,8 +3326,8 @@ function ListCard({
     <Card className={cn("p-0", className)}>
       {title && <div className="border-b border-border px-5 pb-3 pt-5"><h2 className="text-base font-semibold text-text-primary">{title}</h2></div>}
       {toolbar && <div className="border-b border-border px-5 py-3">{toolbar}</div>}
-      {empty && rows.length === 0 ? <div className="px-5 py-6">{empty}</div> : <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+      {empty && rows.length === 0 ? <div className="px-5 py-6">{empty}</div> : <div className={TABLE_SCROLL_CLASS}>
+        <table className={cn(TABLE_CLASS, "min-w-[560px]")}>
           <thead>
             <tr className="border-b border-border">
               {headers.map((header, index) => isSortableHeader(header) ? (
@@ -3446,7 +3335,7 @@ function ListCard({
                   {header}
                 </SortableHeader>
               ) : (
-                <th scope="col" className={cn("px-3 py-2 text-left text-xs font-semibold text-text-secondary", centeredColumns.includes(index) && "text-center")} key={header || index}>
+                <th scope="col" className={cn(TABLE_HEADER_CELL_CLASS, centeredColumns.includes(index) && "text-center")} key={header || index}>
                   {header}
                 </th>
               ))}
@@ -3468,7 +3357,7 @@ function ListCard({
                 {row.map((cell, itemIndex) => (
                   <td
                     className={cn(
-                      "px-4 py-3 align-middle text-text-primary",
+                      TABLE_BODY_CELL_CLASS,
                       centeredColumns.includes(itemIndex) && "text-center",
                     )}
                     key={itemIndex}

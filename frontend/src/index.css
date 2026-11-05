@@ -127,6 +127,21 @@
    12px secondary headers, compact cells, hairline row dividers. Screen only; printed tables keep
    the print rules below. The id selector outranks the per-cell utilities every table repeats. */
 @media screen {
+  /* The central table contract owns the default table edge and cell rhythm. Individual
+     pages may only add semantic alignment or responsive minimum widths. */
+  #main-content table {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* A short final page should not pull pagination controls upward. The direct list container
+     reserves the compact ten-row table area; larger page sizes still expand naturally. */
+  #main-content :has(> .pagination-controls) {
+    display: flex;
+    flex-direction: column;
+    min-height: 33rem;
+  }
+
   #main-content thead tr {
     background-color: transparent;
     text-transform: none;

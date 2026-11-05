@@ -1,12 +1,44 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockIntegrityErrors } from "@/api/mock/integrity";
-import { archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockStaffUser, getBillingAccount, getMockFeeSchedule, getMockState, getStudentById, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockStaffUser } from "@/api/mock";
+import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser } from "@/api/mock";
 
 describe("central mock database", () => {
-  afterEach(() => resetMockStore());
+  afterEach(() => {
+    vi.useRealTimers();
+    resetMockStore();
+  });
 
   it("accepts the committed synthetic seed", () => {
     expect(mockIntegrityErrors()).toEqual([]);
+  });
+
+  it("does not reuse a legacy persisted business date after Manila advances", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-05T11:51:41+08:00"));
+    const originalLocalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
+    const values = new Map<string, string>();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
+    });
+    try {
+      window.localStorage.setItem("educatrak.mock-db.v1", JSON.stringify({
+        today: "2026-11-02",
+        state: { meta: { notice: "Synthetic test state" }, students: [], payments: [] },
+      }));
+      vi.resetModules();
+
+      const { getMockToday } = await import("@/api/mock/store");
+
+      expect(getMockToday()).toBe("2026-11-05");
+    } finally {
+      if (originalLocalStorage) Object.defineProperty(window, "localStorage", originalLocalStorage);
+      else Reflect.deleteProperty(window, "localStorage");
+    }
   });
 
   it("names dangling references, duplicate ids, absolute dates, and unsafe credentials", () => {
@@ -31,7 +63,6 @@ describe("central mock database", () => {
 
     expect(payment.balanceAfter).toBe(0);
     expect(getBillingAccount("account-1001-2026")?.balance).toBe(0);
-    expect(getStudentById("sample-1001")?.clearanceStatus).toBe("Cleared");
     expect(selectPayments().some((candidate) => candidate.id === payment.id)).toBe(true);
     expect(getMockState().auditLog).toHaveLength(beforeAuditCount + 1);
   });
@@ -84,6 +115,36 @@ describe("central mock database", () => {
     expect(() => createMockBillingAccount("sample-1003", input, "user-accounting")).toThrow(/only an active cashier/i);
   });
 
+  it("adds a grade fee to matching existing accounts once and supports all grades", () => {
+    createMockFeeItem({
+      schoolYearId: "school-year-2026-2027",
+      gradeLevel: "Grade 8",
+      name: "Laboratory fee (sample)",
+      category: "Other",
+      amountCents: 50_000,
+      required: true,
+    });
+
+    expect(getBillingAccount("account-1002-2026")).toMatchObject({
+      totalDue: 1_050_000,
+      balance: 470_000,
+      feeItems: expect.arrayContaining([expect.objectContaining({ name: "Laboratory fee (sample)", amount: 50_000 })]),
+      schedule: expect.arrayContaining([expect.objectContaining({ label: "Fee: Laboratory fee (sample)", amount: 50_000 })]),
+    });
+    expect(() => createMockFeeItem({
+      schoolYearId: "school-year-2026-2027", gradeLevel: "Grade 8", name: "laboratory FEE (sample)", category: "Other", amountCents: 50_000, required: true,
+    })).toThrow(/already configured/i);
+    expect(getBillingAccount("account-1002-2026")?.feeItems.filter((item) => item.name === "Laboratory fee (sample)")).toHaveLength(1);
+
+    createMockFeeItem({
+      schoolYearId: "school-year-2026-2027", gradeLevel: "All", name: "School supply fee (sample)", category: "Other", amountCents: 10_000, required: false,
+    });
+
+    expect(getMockFeeSchedule("school-year-2026-2027", "Grade 7")).toEqual(expect.arrayContaining([expect.objectContaining({ name: "School supply fee (sample)" })]));
+    expect(getMockFeeSchedule("school-year-2026-2027", "Grade 8")).toEqual(expect.arrayContaining([expect.objectContaining({ name: "School supply fee (sample)" })]));
+    expect(getBillingAccount("account-1002-2026")?.feeItems.filter((item) => item.name === "School supply fee (sample)")).toHaveLength(1);
+  });
+
   it("uses a newly configured fee only in the selected grade's next billing-account snapshot", () => {
     const existingAccount = getBillingAccount("account-1002-2026");
     createMockFeeItem({
@@ -105,6 +166,28 @@ describe("central mock database", () => {
     expect(account.feeItems).toEqual([expect.objectContaining({ name: "Laboratory fee (sample)", amount: 50_000 })]);
     expect(getMockFeeSchedule("school-year-2027-2028", "Grade 10")).toBeUndefined();
     expect(getBillingAccount("account-1002-2026")).toEqual(existingAccount);
+  });
+
+  it("updates and archives future fee configuration without changing account snapshots", () => {
+    const existingAccount = getBillingAccount("account-1002-2026");
+    const updated = updateMockFeeItem("fees-2026-kinder", "activity", { name: "Activity fee (updated)", category: "Other", amountCents: 60_000, required: false });
+
+    expect(updated).toMatchObject({ name: "Activity fee (updated)", amount: 60_000, active: true });
+    archiveMockFeeItem("fees-2026-kinder", "activity");
+
+    expect(getMockFeeSchedule("school-year-2026-2027", "Kinder")?.some((item) => item.id === "activity")).toBe(false);
+    expect(getBillingAccount("account-1002-2026")).toEqual(existingAccount);
+    expect((getMockState().auditLog as Array<{ action: string }>).map((item) => item.action)).toEqual(expect.arrayContaining(["fee_item.updated", "fee_item.archived"]));
+  });
+
+  it("renames and archives a configured grade without deleting its records", () => {
+    createMockGradeLevel("Preparatory (sample)");
+    updateMockGradeLevel("Preparatory (sample)", "Preparatory level (sample)");
+    archiveMockGradeLevel("Preparatory level (sample)");
+
+    expect(getMockState().config.grades).toContain("Preparatory level (sample)");
+    expect(getMockGradeLevels()).not.toContain("Preparatory level (sample)");
+    expect((getMockState().auditLog as Array<{ action: string }>).map((item) => item.action)).toEqual(expect.arrayContaining(["grade_level.updated", "grade_level.archived"]));
   });
 
   it.each(["2030-01-15", "2040-03-15", "2050-12-20"])("preserves key billing states on %s", (mockToday) => {

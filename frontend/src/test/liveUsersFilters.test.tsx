@@ -64,9 +64,9 @@ describe("role scoped user filters", () => {
     await user.click(archiveButton);
     const archiveDialog = screen.getByRole("dialog", { name: "Archive account?" });
     expect(archiveDialog).toBeVisible();
-    expect(archiveDialog).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "p-6", "shadow-raised");
+    expect(archiveDialog).toHaveClass("w-[min(520px,calc(100vw-2rem))]", "border", "border-status-error/40", "p-6", "shadow-[0_20px_60px_rgba(0,0,0,0.3)]");
     expect(archiveDialog).toHaveTextContent(/restored for 30 days/);
-    expect(document.querySelector('[class~="bg-text-primary/40"]')).toBeInTheDocument();
+    expect(document.querySelector('[class~="bg-text-primary/55"][class~="backdrop-blur-sm"]')).toBeInTheDocument();
     await user.click(within(archiveDialog).getByRole("button", { name: "Archive account" }));
 
     await waitFor(() => expect(archiveStaffUser).toHaveBeenCalledWith("cashier-1", expect.anything()));
@@ -85,6 +85,7 @@ describe("role scoped user filters", () => {
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
 
     await screen.findByRole("button", { name: "Edit" });
+    expect(screen.getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-center");
     expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Reset password" }));
     const resetDialog = await screen.findByRole("dialog", { name: "Password reset" });

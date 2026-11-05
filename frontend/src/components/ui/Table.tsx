@@ -9,6 +9,12 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toggleTableSort, type TableSortState } from "@/lib/tableSort";
 
+/** The single on-screen table layout: horizontal scroll, compact cells, and no outer table margin. */
+export const TABLE_SCROLL_CLASS = "overflow-x-auto";
+export const TABLE_CLASS = "w-full border-collapse text-left text-sm";
+export const TABLE_HEADER_CELL_CLASS = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-text-secondary";
+export const TABLE_BODY_CELL_CLASS = "px-3 py-2 align-middle text-text-primary";
+
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
@@ -27,8 +33,8 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
+    <div className={TABLE_SCROLL_CLASS}>
+      <table className={TABLE_CLASS}>
         <caption className="sr-only">{caption}</caption>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -37,7 +43,7 @@ export function DataTable<TData>({
                 <th
                   key={header.id}
                   scope="col"
-                  className="whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-text-secondary"
+                  className={TABLE_HEADER_CELL_CLASS}
                 >
                   {header.isPlaceholder
                     ? null
@@ -57,7 +63,7 @@ export function DataTable<TData>({
               className="border-b border-border last:border-b-0 focus-within:bg-surface hover:bg-surface"
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-2 align-middle tabular-nums">
+                <td key={cell.id} className={cn(TABLE_BODY_CELL_CLASS, "tabular-nums")}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -97,7 +103,7 @@ export function SortableHeader({ sortKey, sort, onSort, label, className, childr
   const name = label ?? (typeof children === "string" ? children : sortKey);
   const Icon = direction === "ascending" ? ArrowUp : direction === "descending" ? ArrowDown : ArrowUpDown;
   return (
-    <th scope="col" aria-sort={direction} className={cn("whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-text-secondary", className)}>
+    <th scope="col" aria-sort={direction} className={cn(TABLE_HEADER_CELL_CLASS, className)}>
       <button
         type="button"
         onClick={() => onSort(sortKey)}

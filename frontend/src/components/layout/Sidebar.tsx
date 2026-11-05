@@ -12,7 +12,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ReceiptText,
-  ScanSearch,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -115,8 +114,8 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
       items: [{ label: en.nav.dashboard, to: "/", capability: "dashboard.view", icon: LayoutDashboard }],
     },
     {
-      label: en.nav.clearancePermits,
-      items: [{ label: en.nav.clearanceVerification, to: "/clearance", capability: "clearance.view", icon: ScanSearch }],
+      label: en.nav.studentBilling,
+      items: [{ label: en.nav.students, to: "/students", capability: "student.view", icon: UsersRound }],
     },
   ],
 };
