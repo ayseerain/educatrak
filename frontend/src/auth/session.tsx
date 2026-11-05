@@ -22,7 +22,7 @@ interface SessionContextValue {
   sessionRestoreError: string | null;
   isExpirationWarningOpen: boolean;
   user: AuthenticatedUser | null;
-  login: (username: string, password: string) => LoginResult | Promise<LoginResult>;
+  login: (username: string, password: string, rememberMe?: boolean) => LoginResult | Promise<LoginResult>;
   logout: () => void;
   renewSession: () => void;
   switchRole: (role: Role) => void;
@@ -80,6 +80,7 @@ export function SessionProvider({
   const [restoredMockSession] = useState(readMockSession);
   const [user, setUser] = useState<AuthenticatedUser | null>(restoredMockSession?.user ?? null);
   const [expiresAt, setExpiresAt] = useState<number | null>(restoredMockSession?.expiresAt ?? null);
+  const [rememberMockSession, setRememberMockSession] = useState(Boolean(restoredMockSession));
   const [isRestoringSession, setIsRestoringSession] = useState(isLiveCashierApiEnabled());
   const [sessionRestoreError, setSessionRestoreError] = useState<string | null>(null);
   const [isExpirationWarningOpen, setExpirationWarningOpen] = useState(false);
@@ -124,15 +125,16 @@ export function SessionProvider({
     lastActivityRenewalAt.current = 0;
     setUser(null);
     setExpiresAt(null);
+    setRememberMockSession(false);
     setExpirationWarningOpen(false);
     setSessionRestoreError(null);
   }, []);
 
   const login = useCallback(
-    async (username: string, password: string): Promise<LoginResult> => {
+    async (username: string, password: string, rememberMe = false): Promise<LoginResult> => {
       if (isLiveCashierApiEnabled()) {
         try {
-          const liveUser = await signInWithLiveApi(username, password);
+          const liveUser = await signInWithLiveApi(username, password, rememberMe);
           const now = Date.now();
           setUser(liveUser);
           lastActivityRenewalAt.current = now;
@@ -170,6 +172,7 @@ export function SessionProvider({
 
       setFailedAttempts((values) => ({ ...values, [normalizedUsername]: 0 }));
       setUser(candidate.user);
+      setRememberMockSession(rememberMe);
       lastActivityRenewalAt.current = now;
       setExpiresAt(now + sessionDurationMs);
       setExpirationWarningOpen(false);
@@ -206,7 +209,7 @@ export function SessionProvider({
   useEffect(() => {
     if (isLiveCashierApiEnabled()) return;
     try {
-      if (user && expiresAt) {
+      if (user && expiresAt && rememberMockSession) {
         window.sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify({ user, expiresAt } satisfies StoredMockSession));
       } else {
         window.sessionStorage.removeItem(MOCK_SESSION_KEY);
@@ -214,7 +217,7 @@ export function SessionProvider({
     } catch {
       // Without browser storage, a refresh simply returns to the sign-in screen.
     }
-  }, [expiresAt, user]);
+  }, [expiresAt, rememberMockSession, user]);
 
   useEffect(() => {
     if (!user || !expiresAt) return;

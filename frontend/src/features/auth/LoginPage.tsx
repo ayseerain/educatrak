@@ -10,6 +10,7 @@ import { en } from "@/i18n/en";
 const loginSchema = z.object({
   username: z.string().trim().min(1, en.login.usernameRequired),
   password: z.string().min(1, en.login.passwordRequired),
+  rememberMe: z.boolean(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -40,7 +41,7 @@ export function LoginPage() {
     register,
     setError,
   } = useForm<LoginFormValues>({
-    defaultValues: { username: "", password: "" },
+    defaultValues: { username: "", password: "", rememberMe: false },
   });
   const usernameField = register("username");
   const passwordField = register("password");
@@ -85,7 +86,7 @@ export function LoginPage() {
       return;
     }
 
-    const result = await login(parsed.data.username, parsed.data.password);
+    const result = await login(parsed.data.username, parsed.data.password, parsed.data.rememberMe);
     if (result.ok) return;
     if (result.lockedUntil) {
       setLockedUntil(result.lockedUntil);
@@ -212,23 +213,34 @@ export function LoginPage() {
                       {showPassword ? <EyeOff className="animate-login-icon-swap h-4 w-4" aria-hidden="true" /> : <Eye className="animate-login-icon-swap h-4 w-4" aria-hidden="true" />}
                     </Button>
                   </div>
-                  <div className="mt-4 text-right">
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      className="px-1 text-sm text-brand-green-dark hover:text-brand-green"
-                      aria-expanded={isForgotPasswordHelpOpen}
-                      aria-controls="forgot-password-help"
-                      onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
-                    >
-                      {en.login.forgotPassword}
-                    </Button>
-                    {isForgotPasswordHelpOpen && (
-                      <p id="forgot-password-help" role="status" className="mt-2 text-left text-sm text-text-secondary">
-                        {en.login.forgotPasswordHelp}
-                      </p>
-                    )}
+                  <div className="mt-4 flex min-h-11 items-center justify-between gap-4">
+                    <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-text-primary">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer rounded border-border text-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:cursor-not-allowed"
+                        disabled={disabled}
+                        {...register("rememberMe")}
+                      />
+                      {en.login.rememberMe}
+                    </label>
+                    <div className="text-right">
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        className="px-1 text-sm text-brand-green-dark hover:text-brand-green"
+                        aria-expanded={isForgotPasswordHelpOpen}
+                        aria-controls="forgot-password-help"
+                        onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
+                      >
+                        {en.login.forgotPassword}
+                      </Button>
+                    </div>
                   </div>
+                  {isForgotPasswordHelpOpen && (
+                    <p id="forgot-password-help" role="status" className="mt-2 text-left text-sm text-text-secondary">
+                      {en.login.forgotPasswordHelp}
+                    </p>
+                  )}
                   {errors.password?.message && (
                     <p id="password-error" role="alert" className="mt-2 text-sm text-status-error">
                       {errors.password.message}

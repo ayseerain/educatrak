@@ -16,10 +16,10 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $credentials = $request->validated();
+        $credentials = $request->safe()->only(['username', 'password']);
         $guard = Auth::guard('web');
 
-        if (! $guard->attempt($credentials)) {
+        if (! $guard->attempt($credentials, $request->boolean('remember'))) {
             $auditLogger->recordAuthenticationFailure(
                 $request,
                 $credentials['username'],

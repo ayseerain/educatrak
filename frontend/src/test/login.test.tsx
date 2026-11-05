@@ -89,6 +89,7 @@ describe("LoginPage", () => {
     expect(username).toHaveFocus();
     expect(username.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(password.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).not.toBeChecked();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
   });
 
@@ -99,6 +100,7 @@ describe("LoginPage", () => {
     const username = screen.getByLabelText(/username/i);
     const password = screen.getByLabelText("Password", { selector: "input" });
     const visibility = screen.getByRole("button", { name: /show password/i });
+    const rememberMe = screen.getByRole("checkbox", { name: /remember me/i });
     const submit = screen.getByRole("button", { name: /sign in/i });
     const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
 
@@ -107,6 +109,8 @@ describe("LoginPage", () => {
     expect(password).toHaveFocus();
     await user.tab();
     expect(visibility).toHaveFocus();
+    await user.tab();
+    expect(rememberMe).toHaveFocus();
     await user.tab();
     expect(forgotPassword).toHaveFocus();
     await user.tab();
@@ -156,6 +160,17 @@ describe("LoginPage", () => {
     expect(
       await screen.findByRole("heading", { name: /good day, casey cashier/i }),
     ).toBeInTheDocument();
+  });
+
+  it("persists a mock session only when remember me is selected", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("checkbox", { name: /remember me/i }));
+    await fillLogin("sample.cashier", "demo-cashier", user);
+
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(window.sessionStorage.getItem("educatrak.mockSession")).toContain("Casey Cashier");
   });
 
   it("keeps the mock session after a persisted MockDB update", async () => {

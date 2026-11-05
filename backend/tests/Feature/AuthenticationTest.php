@@ -42,6 +42,23 @@ class AuthenticationTest extends TestCase
         $this->assertNull(Auth::guard('web')->user());
     }
 
+    public function test_login_can_request_a_persistent_remember_cookie(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'fictional.remembered',
+            'password' => 'FictionalPass123!',
+            'remember_token' => null,
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'username' => 'fictional.remembered',
+            'password' => 'FictionalPass123!',
+            'remember' => true,
+        ])->assertOk();
+
+        $this->assertNotNull($user->fresh()->remember_token);
+    }
+
     public function test_inactive_user_cannot_log_in(): void
     {
         User::factory()->inactive()->create([
