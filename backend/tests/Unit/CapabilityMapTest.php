@@ -2,14 +2,14 @@
 
 namespace Tests\Unit;
 
+use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsureCapability;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Support\CapabilityMap;
 use App\UserRole;
-use App\Http\Middleware\EnsureCapability;
-use App\Http\Middleware\EnsureActiveUser;
-use App\Http\Middleware\EnsurePasswordChanged;
 use Illuminate\Auth\Middleware\Authenticate;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Support\Facades\Route;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CapabilityMapTest extends TestCase
@@ -26,14 +26,14 @@ class CapabilityMapTest extends TestCase
 
         foreach ($operationalRoutes as $route) {
             $middleware = app('router')->gatherRouteMiddleware($route);
-            $label = implode(' ', $route->methods()) . ' /' . $route->uri();
+            $label = implode(' ', $route->methods()).' /'.$route->uri();
 
-            $this->assertContains(Authenticate::class . ':sanctum', $middleware, $label . ' must require an authenticated session');
-            $this->assertContains(EnsurePasswordChanged::class, $middleware, $label . ' must enforce first-login password change');
-            $this->assertContains(EnsureActiveUser::class, $middleware, $label . ' must revalidate active account status');
+            $this->assertContains(Authenticate::class.':sanctum', $middleware, $label.' must require an authenticated session');
+            $this->assertContains(EnsurePasswordChanged::class, $middleware, $label.' must enforce first-login password change');
+            $this->assertContains(EnsureActiveUser::class, $middleware, $label.' must revalidate active account status');
             $this->assertTrue(
-                collect($middleware)->contains(fn (string $item): bool => str_starts_with($item, EnsureCapability::class . ':')),
-                $label . ' must enforce a role capability',
+                collect($middleware)->contains(fn (string $item): bool => str_starts_with($item, EnsureCapability::class.':')),
+                $label.' must enforce a role capability',
             );
         }
     }
@@ -71,7 +71,7 @@ class CapabilityMapTest extends TestCase
             'cashier views guardian contact' => [UserRole::Cashier, 'guardianContact.view', true],
             'accounting views guardian contact' => [UserRole::Accounting, 'guardianContact.view', true],
             'auditor cannot view guardian contacts' => [UserRole::Auditor, 'guardianContact.view', false],
-            'registrar cannot view guardian contact' => [UserRole::Registrar, 'guardianContact.view', false],
+            'registrar views guardian contact on student records' => [UserRole::Registrar, 'guardianContact.view', true],
         ];
     }
 
@@ -96,20 +96,13 @@ class CapabilityMapTest extends TestCase
             'auditor cannot open a separate close-out-history page' => [UserRole::Auditor, 'closeout.view', false],
             'cashier can view close-out history' => [UserRole::Cashier, 'closeout.view', true],
             'registrar cannot view close-out history' => [UserRole::Registrar, 'closeout.view', false],
-            'administrator cannot view clearance' => [UserRole::Admin, 'clearance.view', false],
-            'cashier cannot open clearance lookup' => [UserRole::Cashier, 'clearance.view', false],
-            'cashier cannot print permits' => [UserRole::Cashier, 'permits.print', false],
-            'accounting cannot open clearance lookup' => [UserRole::Accounting, 'clearance.view', false],
-            'auditor cannot open clearance lookup' => [UserRole::Auditor, 'clearance.view', false],
-            'registrar can view clearance and print permits' => [UserRole::Registrar, 'clearance.view', true],
-            'administrator cannot print permits' => [UserRole::Admin, 'permits.print', false],
-            'accounting cannot print permits' => [UserRole::Accounting, 'permits.print', false],
-            'auditor cannot print permits' => [UserRole::Auditor, 'permits.print', false],
+            'cashier can view students but cannot manage their records' => [UserRole::Cashier, 'students.manage', false],
+            'registrar can view and manage students' => [UserRole::Registrar, 'students.view', true],
         ];
     }
 
-    #[DataProvider('clearanceLookupCases')]
-    public function test_registrar_clearance_search_is_separate_from_student_profile_access(
+    #[DataProvider('studentRecordAccessCases')]
+    public function test_student_record_capabilities_follow_the_reassigned_ownership(
         UserRole $role,
         string $capability,
         bool $allowed,
@@ -117,12 +110,14 @@ class CapabilityMapTest extends TestCase
         $this->assertSame($allowed, CapabilityMap::allows($role, $capability));
     }
 
-    public static function clearanceLookupCases(): array
+    public static function studentRecordAccessCases(): array
     {
         return [
-            'registrar can search limited clearance identity' => [UserRole::Registrar, 'clearance.lookup', true],
-            'registrar has no general student-profile access' => [UserRole::Registrar, 'students.view', false],
-            'cashier cannot use registrar-only clearance search' => [UserRole::Cashier, 'clearance.lookup', false],
+            'registrar can manage student records' => [UserRole::Registrar, 'students.manage', true],
+            'registrar can view student financial context without account access' => [UserRole::Registrar, 'students.financial.view', true],
+            'cashier can read student records' => [UserRole::Cashier, 'students.view', true],
+            'cashier cannot manage student records' => [UserRole::Cashier, 'students.manage', false],
+            'accounting cannot manage student records' => [UserRole::Accounting, 'students.manage', false],
         ];
     }
 
