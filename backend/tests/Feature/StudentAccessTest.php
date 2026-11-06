@@ -198,12 +198,13 @@ class StudentAccessTest extends TestCase
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 6', 'sort_order' => 6, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $sectionId = DB::table('sections')->insertGetId(['grade_level_id' => $gradeId, 'name' => 'Cedar', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
-        $payload = ['student_no' => 'SAMPLE-6001', 'full_name' => 'Taylor Sample Student', 'grade_level_id' => $gradeId, 'section_id' => $sectionId, 'status' => 'enrolled'];
+        $payload = ['student_no' => 'SAMPLE-6001', 'full_name' => 'Taylor Sample Student', 'grade_level_id' => $gradeId, 'section_id' => $sectionId, 'status' => 'inactive'];
 
         $this->actingAs($cashier)->postJson('/api/students', $payload)->assertForbidden();
         $created = $this->actingAs($registrar)->postJson('/api/students', $payload)
             ->assertCreated()
             ->assertJsonPath('data.studentNo', 'SAMPLE-6001')
+            ->assertJsonPath('data.status', 'enrolled')
             ->assertJsonPath('data.balanceCents', 0)
             ->json('data.id');
 

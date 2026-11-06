@@ -59,7 +59,7 @@
   "guardians": [
     { "id": "guardian-1001", "name": "Devon Villanueva (sample)", "email": "guardian@example.test", "mobile": "0917 555 0101" },
     { "id": "guardian-1002", "name": "Rory Mercado (sample)", "email": "guardian@example.test", "mobile": "0917 555 0102" },
-    { "id": "guardian-1003", "name": "Sky Navarro (sample)", "email": null, "mobile": "0917 555 0103" }
+    { "id": "guardian-1003", "name": "Sky Navarro (sample)", "email": "sky.navarro@example.test", "mobile": "0917 555 0103" }
   ],
   "studentGuardianLinks": [
     { "id": "student-guardian-1001", "studentId": "sample-1001", "guardianId": "guardian-1001", "relationship": "Parent" },

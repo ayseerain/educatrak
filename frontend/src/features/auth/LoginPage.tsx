@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { z } from "zod";
 import { useSession } from "@/auth/session";
@@ -49,6 +50,7 @@ export function LoginPage() {
   const [lockedUntil, setLockedUntil] = useState<number>();
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordHelpOpen, setIsForgotPasswordHelpOpen] = useState(false);
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
 
   useEffect(() => {
     usernameRef.current?.focus();
@@ -253,6 +255,50 @@ export function LoginPage() {
 
             </div>
           </div>
+          <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs text-text-secondary">
+            <div className="flex items-center gap-2">
+              <span
+                role="img"
+                aria-label={en.login.edukadosLogoPlaceholder}
+                className="flex h-5 w-5 items-center justify-center rounded-sm bg-brand-green-dark text-[11px] font-bold leading-none text-white"
+              >
+                E
+              </span>
+              <span>{en.login.poweredBy}</span>
+              <span className="font-semibold text-text-primary">{en.login.edukados}</span>
+            </div>
+            <span aria-hidden="true" className="hidden h-4 w-px bg-border sm:block" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-control px-1 text-xs font-semibold underline decoration-brand-green-dark/40 underline-offset-2 hover:text-brand-green"
+              aria-haspopup="dialog"
+              aria-expanded={isPrivacyPolicyOpen}
+              onClick={() => setIsPrivacyPolicyOpen(true)}
+            >
+              {en.login.privacyPolicy}
+            </Button>
+          </footer>
+          <Dialog.Root open={isPrivacyPolicyOpen} onOpenChange={setIsPrivacyPolicyOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" />
+              <Dialog.Content
+                aria-describedby="privacy-policy-description"
+                className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-6 shadow-raised"
+              >
+                <Dialog.Title className="text-lg font-semibold text-text-primary">{en.login.privacyPolicy}</Dialog.Title>
+                <Dialog.Description id="privacy-policy-description" className="mt-2 text-sm leading-6 text-text-secondary">
+                  {en.login.privacyPolicyNotice}
+                </Dialog.Description>
+                <p className="mt-4 text-sm leading-6 text-text-secondary">{en.login.privacyPolicyContact}</p>
+                <div className="mt-6 flex justify-end">
+                  <Dialog.Close asChild>
+                    <Button variant="secondary">{en.login.closePrivacyPolicy}</Button>
+                  </Dialog.Close>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
       </section>
     </main>

@@ -39,10 +39,6 @@ export function useTableFilters<Values extends TableFilterValues>(defaults: Valu
     setPage(1);
   }
 
-  function reset() {
-    setDraft({ ...applied });
-  }
-
   function clear() {
     setDraft({ ...defaults });
     setApplied({ ...defaults });
@@ -67,7 +63,7 @@ export function useTableFilters<Values extends TableFilterValues>(defaults: Valu
     setPage(1);
   }
 
-  return { draft, applied, page, perPage, update, search, apply, reset, clear, remove, replace, setPage, changePerPage };
+  return { draft, applied, page, perPage, update, search, apply, clear, remove, replace, setPage, changePerPage };
 }
 
 interface TableFiltersProps<Values extends TableFilterValues> {
@@ -81,7 +77,6 @@ interface TableFiltersProps<Values extends TableFilterValues> {
   onChange: (key: keyof Values & string, value: string) => void;
   onSearch?: (key: keyof Values & string, value: string) => void;
   onApply: () => void;
-  onReset: () => void;
   onClear: () => void;
   onRemove: (key: keyof Values & string) => void;
   error?: string;
@@ -91,7 +86,7 @@ interface TableFiltersProps<Values extends TableFilterValues> {
 }
 
 export function TableFilters<Values extends TableFilterValues>({
-  scope, fields, draft, applied, defaults, search, searchSlot, onChange, onSearch, onApply, onReset, onClear, onRemove, error, validate, embedded = false,
+  scope, fields, draft, applied, defaults, search, searchSlot, onChange, onSearch, onApply, onClear, onRemove, error, validate, embedded = false,
 }: TableFiltersProps<Values>) {
   const [open, setOpen] = useState(false);
   const [validationError, setValidationError] = useState("");
@@ -154,7 +149,6 @@ export function TableFilters<Values extends TableFilterValues>({
             {(error || validationError) && <p role="alert" className="mt-3 text-sm text-status-error">{error || validationError}</p>}
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
               <Button type="submit" size="sm">Apply filters</Button>
-              <Button type="button" variant="secondary" size="sm" onClick={() => { setValidationError(""); onReset(); }}>Reset</Button>
               <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => { setValidationError(""); onClear(); }}>Clear all</Button>
             </div>
           </form>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpsertStudentRequest;
 use App\Models\GradeLevel;
+use App\Models\Guardian;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
@@ -91,7 +92,9 @@ class StudentController extends Controller
         /** @var User $user */
         $user = $request->user();
         $attributes = $this->validatedAttributes($request);
+        $attributes['status'] = 'enrolled';
         $student = Student::query()->create($attributes);
+        $this->syncGuardian($student, $request->validated());
         $this->auditLogger->record($request, 'student.created', $student, null, $this->studentAuditData($student));
 
         return response()->json(['data' => $this->studentData($student->load(['gradeLevel:id,name', 'section:id,name']), ! CapabilityMap::allows($user->role, 'students.financial.view'))], 201);
@@ -125,6 +128,7 @@ class StudentController extends Controller
         $user = $request->user();
         $before = $this->studentAuditData($student);
         $student->update($this->validatedAttributes($request));
+        $this->syncGuardian($student, $request->validated());
         $student->refresh();
         $this->auditLogger->record($request, 'student.updated', $student, $before, $this->studentAuditData($student));
 
@@ -151,6 +155,25 @@ class StudentController extends Controller
     private function studentAuditData(Student $student): array
     {
         return $student->only(['student_no', 'full_name', 'grade_level_id', 'section_id', 'status']);
+    }
+
+    /** @param array<string, mixed> $input */
+    private function syncGuardian(Student $student, array $input): void
+    {
+        if (blank($input['guardian_name'] ?? null) || blank($input['guardian_relationship'] ?? null)) {
+            return;
+        }
+
+        $guardian = $student->guardians()->first() ?? new Guardian();
+        $guardian->fill([
+            'full_name' => trim((string) $input['guardian_name']),
+            'relationship' => trim((string) $input['guardian_relationship']),
+            'email' => filled($input['guardian_email'] ?? null) ? trim((string) $input['guardian_email']) : null,
+            'mobile' => filled($input['guardian_mobile'] ?? null) ? trim((string) $input['guardian_mobile']) : null,
+            'email_status' => filled($input['guardian_email'] ?? null) ? 'unverified' : 'missing',
+        ]);
+        $guardian->save();
+        $student->guardians()->syncWithoutDetaching([$guardian->id => ['is_primary' => true]]);
     }
 
     /** @return array<string, mixed> */

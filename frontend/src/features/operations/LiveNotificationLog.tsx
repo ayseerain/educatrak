@@ -79,7 +79,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
       <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Notification log" defaults={notificationFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "student", label: "Student name or number" }} fields={[
       { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "queued", label: "Queued" }, { value: "sent", label: "Sent" }, { value: "failed", label: "Failed" }, { value: "not_sent", label: "Not sent" }] },
       { key: "dateFrom", label: "From", type: "date" }, { key: "dateTo", label: "To", type: "date" },
-    ]} onChange={tableFilters.update} onApply={submit} onReset={tableFilters.reset} onClear={clearFilters} onRemove={removeFilter} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
+    ]} onChange={tableFilters.update} onApply={submit} onClear={clearFilters} onRemove={removeFilter} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
       {logs.isPending && <LoadingState message="Loading notification entries…" layout="table" bare columns={8} />}
       {logs.isError && <ErrorState message={logs.error.message} onRetry={() => void logs.refetch()} />}
       {logs.data && (logs.data.data.length === 0 ? <EmptyState message="No notification entries match these filters." /> : <div className="overflow-x-auto">

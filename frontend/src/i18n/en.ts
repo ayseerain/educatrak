@@ -24,6 +24,13 @@ export const en = {
     secondsWait: "{seconds} seconds",
     minuteWait: "{minutes} minute",
     minutesWait: "{minutes} minutes",
+    poweredBy: "Powered by",
+    edukados: "Edukados",
+    edukadosLogoPlaceholder: "Edukados logo placeholder",
+    privacyPolicy: "Privacy Policy",
+    privacyPolicyNotice: "This temporary privacy-policy notice will be replaced with the school-approved policy.",
+    privacyPolicyContact: "For questions about information handled in EducaTrak, contact a system administrator.",
+    closePrivacyPolicy: "Close Privacy Policy",
   },
   session: {
     title: "Session expiring soon",

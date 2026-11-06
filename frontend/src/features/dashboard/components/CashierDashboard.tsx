@@ -33,7 +33,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
         <DashboardStatCard label={en.dashboard.dueSoon} value={String(summary.accountStatusOverview.dueSoon)} helperText={en.dashboard.dueSoonAccounts} icon={Users} action={{ to: "/followup?status=due_soon", label: en.dashboard.reviewFollowups }} />
         <DashboardStatCard label={en.dashboard.failedEmails} value={String(summary.failedEmailCount)} icon={MailSearch} action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }} />
       </div>
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <CloseoutStatus done={summary.closeoutDone} />
         <AccountStatusOverview
           accountsNeedingAttention={summary.accountsNeedingAttention}

@@ -31,7 +31,7 @@ export function LiveAdminLog() {
     <Card className="p-0">
       <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Security events" defaults={securityFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "user", label: "User" }} fields={[
       { key: "action", label: "Action" }, { key: "dateFrom", label: "From", type: "date" }, { key: "dateTo", label: "To", type: "date" },
-    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onReset={tableFilters.reset} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
+    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
       {eventsQuery.isPending && <LoadingState message="Loading security events…" layout="table" bare columns={6} />}
       {eventsQuery.isError && <ErrorState message={eventsQuery.error.message} onRetry={() => void eventsQuery.refetch()} />}
       {eventsQuery.data && (eventsQuery.data.data.length === 0 ? <EmptyState message="No security events are recorded." /> : <div className="overflow-x-auto">

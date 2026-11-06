@@ -9,9 +9,9 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toggleTableSort, type TableSortState } from "@/lib/tableSort";
 
-/** The single on-screen table layout: horizontal scroll, compact cells, and no outer table margin. */
+/** The single on-screen table layout: stable columns, horizontal scroll, compact cells, and no outer table margin. */
 export const TABLE_SCROLL_CLASS = "overflow-x-auto";
-export const TABLE_CLASS = "w-full border-collapse text-left text-sm";
+export const TABLE_CLASS = "w-full table-fixed border-collapse text-left text-sm";
 export const TABLE_HEADER_CELL_CLASS = "whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-text-secondary";
 export const TABLE_BODY_CELL_CLASS = "px-3 py-2 align-middle text-text-primary";
 

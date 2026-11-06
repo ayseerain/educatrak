@@ -8,6 +8,7 @@ import {
   FileSearch,
   GraduationCap,
   LayoutDashboard,
+  Landmark,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -59,6 +60,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
       label: en.nav.dailyBilling,
       items: [
         { label: en.nav.studentsBilling, to: "/students", capability: "student.view", icon: GraduationCap },
+        { label: en.nav.accounts, to: "/accounts", capability: "account.view", icon: Landmark },
         { label: en.nav.cashPaymentsReceipts, to: "/payments", capability: "payment.view", icon: ReceiptText },
         { label: en.nav.installmentsFollowups, to: "/followup", capability: "followup.view", icon: CalendarClock },
         { label: en.nav.dailyCloseout, to: "/closeout", capability: "closeout.submit", icon: WalletCards },
@@ -73,6 +75,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
     {
       label: en.nav.financialOversight,
       items: [
+        { label: en.nav.accounts, to: "/accounts", capability: "account.view", icon: Landmark },
         { label: en.nav.paymentReview, to: "/payments", capability: "payment.view", icon: ReceiptText },
         { label: en.nav.financialPolicies, to: "/settings/fees", capability: "settings.finance.view", icon: SlidersHorizontal },
         { label: en.nav.systemSettingsReadOnly, to: "/settings/school", capability: "settings.system.view", icon: Settings },

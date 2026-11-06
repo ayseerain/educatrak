@@ -153,7 +153,7 @@ describe("live cashier payment entry", () => {
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/payments/payment-1"]}><Routes><Route path="/payments/:id" element={<LivePaymentsPage user={administrator} detail />} /></Routes></MemoryRouter></QueryClientProvider>);
 
     expect(await screen.findByRole("heading", { name: "Receipt notification status" })).toBeInTheDocument();
-    expect(screen.getByText("queued")).toBeInTheDocument();
+    expect(screen.getByText("Queued").parentElement).toHaveClass("text-xs", "font-semibold");
     expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
     expect(screen.getByText("payment recorded")).toBeInTheDocument();
     expect(getPayment).toHaveBeenCalledWith("payment-1");
@@ -222,7 +222,7 @@ describe("live payment history export", () => {
 
   it("exports all payment pages matching the active search, date, cashier, method, and status filters", async () => {
     listPayments.mockImplementation(async ({ page = 1 } = {}) => ({
-      data: [{ id: `payment-${page}`, studentId: `student-${page}`, studentName: `Sample Student ${page}`, studentNo: `SAMPLE-910${page}`, billingAccountId: "account-1", amountCents: 12500, method: "cash", paidOn: "2026-10-24", status: "valid", receiptNo: `OR-SAMPLE-910${page}`, recordedAt: "2026-10-24T10:00:00+08:00", recordedBy: "Taylor Sample Cashier", reprintCount: 0, balanceAfterCents: 0 }],
+      data: [{ id: `payment-${page}`, studentId: `student-${page}`, studentName: `Sample Student ${page}`, studentNo: `SAMPLE-910${page}`, studentGrade: "Grade 4", studentSection: "Olive", billingAccountId: "account-1", amountCents: 12500, method: "cash", paidOn: "2026-10-24", status: "valid", receiptNo: `OR-SAMPLE-910${page}`, recordedAt: "2026-10-24T10:00:00+08:00", recordedBy: "Taylor Sample Cashier", reprintCount: 0, balanceAfterCents: 0 }],
       currentPage: page,
       lastPage: 2,
       total: 2,
@@ -232,6 +232,7 @@ describe("live payment history export", () => {
     render(<QueryClientProvider client={client}><MemoryRouter><LivePaymentsPage user={administrator} /></MemoryRouter></QueryClientProvider>);
 
     await screen.findByText("Sample Student 1");
+    expect(screen.getByText("Grade 4 · Olive")).toBeInTheDocument();
     await user.type(screen.getByRole("searchbox", { name: "Search receipt or student" }), "SAMPLE");
     await user.click(screen.getByRole("button", { name: /^Filter/ }));
     await user.click(screen.getByRole("button", { name: "Status" }));

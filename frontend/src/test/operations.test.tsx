@@ -115,6 +115,18 @@ describe("operational page navigation", () => {
     expect(form).not.toHaveClass("max-w-3xl");
   });
 
+  it("shows enrollment status without allowing lifecycle changes", () => {
+    const createForm = render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
+
+    expect(screen.getByRole("button", { name: "Enrollment status" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Enrollment status" })).toHaveTextContent("Active");
+    createForm.unmount();
+
+    render(<MemoryRouter initialEntries={["/students/sample-1004/edit"]}><Routes><Route path="/students/:id/edit" element={<StudentFormPage edit />} /></Routes></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Enrollment status" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Enrollment status" })).toHaveTextContent("Inactive");
+  });
+
   it("routes to the created MockDB student record", async () => {
     const user = userEvent.setup();
     render(
@@ -146,6 +158,16 @@ describe("operational page navigation", () => {
 
     render(<MemoryRouter><AccountWizardPage /></MemoryRouter>);
     expect(screen.getByRole("button", { name: "Continue" })).toHaveAttribute("type", "button");
+    expect(screen.queryByRole("link", { name: "Cancel" })).not.toBeInTheDocument();
+  });
+
+  it("centers the account wizard at a balanced working width in both create and renewal flows", () => {
+    const createFlow = render(<MemoryRouter><AccountWizardPage /></MemoryRouter>);
+    expect(screen.getByTestId("account-wizard")).toHaveClass("mx-auto", "w-full", "max-w-5xl");
+    createFlow.unmount();
+
+    render(<MemoryRouter initialEntries={["/accounts/new?mode=renew"]}><AccountWizardPage /></MemoryRouter>);
+    expect(screen.getByTestId("account-wizard")).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   });
 
   it("limits student grade, section, and Senior High strand choices", async () => {
@@ -484,34 +506,33 @@ describe("operational page navigation", () => {
 
     expect(screen.getByRole("button", { name: "Send reminder details" })).toBeDisabled();
     expect(screen.queryByRole("heading", { level: 2, name: "Follow-up" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader")).toHaveLength(5);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
     expect(screen.queryByRole("columnheader", { name: "Select" })).not.toBeInTheDocument();
     const coraRow = screen.getByRole("row", { name: /Cora Navarro/ });
-    expect(within(coraRow).getByRole("cell", { name: /Cora Navarro/ })).toContainElement(
-      within(coraRow).getByRole("checkbox", { name: /Cora Navarro/ }),
+    expect(within(coraRow).getByText("sky.navarro@example.test")).toBeInTheDocument();
+    const basilRow = screen.getByRole("row", { name: /Basil Mercado/ });
+    expect(within(basilRow).getByRole("cell", { name: /Basil Mercado/ })).toContainElement(
+      within(basilRow).getByRole("checkbox", { name: /Basil Mercado/ }),
     );
 
-    await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Basil Mercado/ }));
     expect(screen.getByRole("button", { name: "Send reminder details" })).toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Send reminder details" }));
-    expect(screen.getByText("No selected accounts have the chosen notification contact.")).toBeInTheDocument();
-    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send 0 reminders" })).toBeDisabled();
-
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    await user.click(screen.getByRole("checkbox", { name: /Basil Mercado/ }));
-    expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeChecked();
-
-    await user.click(screen.getByRole("button", { name: "Send reminder details" }));
-    expect(screen.getByText(/Basil Mercado.*guardian@example\.test/)).toBeInTheDocument();
-    expect(screen.getByText(/₱4,200\.00 overdue for 3 days/)).toBeInTheDocument();
-    expect(screen.getByText(/Cora Navarro.*will be skipped because there is no selected notification contact/i)).toBeInTheDocument();
+    const recipientTable = screen.getByRole("table", { name: "Reminder recipients" });
+    expect(recipientTable.parentElement).toHaveClass("max-h-52", "overflow-y-auto");
+    expect(within(recipientTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+      "Student",
+      "Contact",
+      "Amount due",
+      "Status",
+    ]);
+    expect(within(recipientTable).getByRole("row", { name: /Basil Mercado.*guardian@example\.test.*₱4,200\.00.*Due soon/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Send 1 reminder" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Reminder sent today to 1 guardian. 1 account was skipped because it has no selected notification contact.",
+      "Reminder sent today to 1 guardian.",
     );
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeDisabled();
   });
@@ -524,13 +545,25 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("checkbox", { name: "Select all listed accounts" }));
     expect(screen.getByRole("button", { name: "Send reminder details" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Basil Mercado/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
 
     await user.click(screen.getByRole("checkbox", { name: /Basil Mercado/ }));
     expect(screen.getByRole("checkbox", { name: "Select all listed accounts" })).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Basil Mercado/ })).not.toBeChecked();
+  });
+
+  it("shows MockDB email contacts in the default reminder list", async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><FollowupPage user={cashier} /></MemoryRouter>);
+
+    expect(screen.getByText("Cora Navarro (sample)")).toBeInTheDocument();
+    expect(screen.getByText("sky.navarro@example.test")).toBeInTheDocument();
+    expect(screen.getByText("Basil Mercado (sample)")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Send reminders by" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "SMS" }));
+    expect(screen.getByText("Cora Navarro (sample)")).toBeInTheDocument();
+    expect(screen.getByText("0917 555 0103")).toBeInTheDocument();
   });
 
   it("offers SMS reminders and discloses the SMS load fee before sending", async () => {
@@ -539,13 +572,13 @@ describe("operational page navigation", () => {
 
     await user.click(screen.getByRole("button", { name: "Send reminders by" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Email and SMS" }));
-    await user.click(screen.getByRole("cell", { name: "₱8,500.00" }));
+    await user.click(screen.getByRole("checkbox", { name: /Cora Navarro/ }));
     expect(screen.getByRole("checkbox", { name: /Cora Navarro/ })).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Send reminder details" }));
 
     const reviewDialog = screen.getByRole("dialog", { name: "Review reminder notifications" });
-    expect(reviewDialog).toHaveClass("w-[min(32rem,calc(100vw-2rem))]");
+    expect(reviewDialog).toHaveClass("w-[min(56rem,calc(100vw-2rem))]");
     expect(reviewDialog).toHaveTextContent("SMS: 0917 555 0103");
     expect(reviewDialog).toHaveTextContent(/SMS load fee: not configured/i);
     expect(screen.getByRole("button", { name: "Send 1 reminder" })).toBeEnabled();
@@ -679,6 +712,25 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /record payment/i })).not.toBeInTheDocument();
+  });
+
+  it("prefills the account wizard student search from a profile's Create account action", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }} initialEntries={["/students/sample-1004"]}>
+        <Routes>
+          <Route path="/students/:id" element={<StudentProfilePage user={cashier} />} />
+          <Route path="/accounts/new" element={<AccountWizardPage user={cashier} />} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("link", { name: "Create account" }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/accounts/new?student=sample-1004");
+    expect(screen.getByPlaceholderText("Search student name or number")).toHaveValue("Dara Santos (sample) - S-1004");
   });
 
   it("opens the shared payment workflow route with student search", async () => {
@@ -1005,8 +1057,8 @@ describe("operational page navigation", () => {
   it("shows only permitted primary pages for each of the six account roles", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
       [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security"]],
-      [cashier, ["Dashboard", "Students", "Payments", "Follow-up", "Close-out"]],
-      [accounting, ["Dashboard", "Payment review", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
+      [cashier, ["Dashboard", "Students", "Accounts", "Payments", "Follow-up", "Close-out"]],
+      [accounting, ["Dashboard", "Accounts", "Payment review", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
       [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],
       [auditor, ["Dashboard", "Audit"]],
       [registrar, ["Dashboard", "Students"]],
@@ -1032,6 +1084,15 @@ describe("operational page navigation", () => {
 
     render(<MemoryRouter><PaymentsPage user={accounting} /></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Payment review" })).toBeInTheDocument();
+  });
+
+  it("shows grade, section, and a prominent email status on the MockDB payment detail", () => {
+    render(<MemoryRouter initialEntries={["/payments/mock-payment-4"]}><Routes><Route path="/payments/:id" element={<PaymentsPage user={cashier} detail />} /></Routes></MemoryRouter>);
+
+    expect(screen.getByText("Grade 7 · Olive")).toBeInTheDocument();
+    const emailMetric = screen.getByText("Email status").parentElement;
+    expect(emailMetric).not.toBeNull();
+    expect(within(emailMetric!).getByText("Queued").parentElement).toHaveClass("text-xl", "font-bold");
   });
 
   it("shows the cashier notification and permitted close-out tabs", () => {

@@ -25,6 +25,31 @@
 
 ## Entries
 
+### Friday, November 06, 2026 — 14:08:57 +08:00 | Add a MockDB email contact to Follow-up
+
+- **Agent:** Codex
+- **Summary:** Added the synthetic `sky.navarro@example.test` guardian address for Cora Navarro so the default Email reminder list includes her Follow-up row. Added fixture and page assertions for the MockDB-to-Follow-up contact path.
+- **Files:** Updated `frontend/src/api/mock/mock-db.json`, `frontend/src/test/mockDatabase.test.ts`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/mockDatabase.test.ts src/test/operations.test.tsx` passed MockDB coverage (17 tests) and the changed Follow-up case, but the full operations file has three unrelated existing failures (guardian visibility; Cora balance; Cora statement amount). The exact Follow-up test passed independently. `npm.cmd run build` is blocked by two existing type errors in `frontend/src/api/mock/selectors.ts` (lines 714 and 733), unrelated to this fixture. `git diff --check` reports existing line-ending warnings and a pre-existing new blank line at end of the changelog.
+- **Commit/PR:** Not created.
+- **Follow-ups:** In the running MockDB app, open once with `?mockReset=1` (or run `reset()` in its browser console) to reload the fixture if browser-local data predates this seed.
+
+### Friday, November 06, 2026 — 05:59:33 +08:00 | Fees table column balance
+- **Agent:** Copilot SDK in VS Code
+- **Summary:** Increased the fee-item column budget and resized shorter columns in mock and live `/settings/fees` tables so long fee descriptions have room without wrapping excessively.
+- **Files:** Modified `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveFinanceSettingsPage.tsx`; appended this changelog entry.
+- **Validation:** Updated Friday, November 06, 2026 — 06:00:29 +08:00. Live finance settings tests passed (5/5); targeted mock fee tests passed (4 selected). The combined operations file has 3 pre-existing fixture-balance assertion failures outside this change.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** None expected.
+
+### Friday, November 06, 2026 — 05:54:14 +08:00 | Account status sentence casing
+- **Agent:** Copilot SDK in VS Code
+- **Summary:** Formatted billing account status labels with an uppercase first letter and lowercase remainder, including live account tables and shared status badges.
+- **Files:** Modified `frontend/src/lib/status.ts`, `frontend/src/components/ui/StatusBadge.tsx`, `frontend/src/features/billing/LiveBillingAccounts.tsx`, and `frontend/src/test/liveBillingAccounts.test.tsx`; appended this changelog entry.
+- **Validation:** Updated Friday, November 06, 2026 — 05:55:00 +08:00. Focused Vitest: `npm.cmd test -- --run src/test/liveBillingAccounts.test.tsx` passed, 3 tests.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** None expected.
+
 ### Thursday, November 05, 2026 - 18:22:24 +08:00 | Reports statement selector spacing
 - **Agent:** Copilot SDK in VS Code
 - **Summary:** Increased the gap between the Accounting reports page's Student statement label and its dropdown from 4px to 8px.
@@ -1750,3 +1775,246 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- mockDatabase.test.ts` passed (15 tests). `npm.cmd run build` passed. The targeted existing `operations.test.tsx` close-out test failed because it expects a ₱1,250 system-cash fixture, while the concurrently changed fixture returned ₱0.00. `git diff --check` has no whitespace errors apart from the pre-existing line-ending warnings.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Reconcile the stale ₱1,250 component-test expectation with the current fixture separately.
+
+### Friday, November 06, 2026 — 04:56:09 +08:00 | Balance Cashier dashboard attention and close-out cards
+
+- **Agent:** Codex
+- **Summary:** Limited the Cashier dashboard's Accounts needing attention widget to its two highest-priority accounts. The Close-out widget now stretches to the same row height, aligning both cards' bottom edges above Recent activity; “View all” still opens the complete Follow-up workspace.
+- **Files:** Updated `frontend/src/features/dashboard/components/AccountStatusOverview.tsx`, `frontend/src/features/dashboard/components/CashierDashboard.tsx`, `frontend/src/test/dashboard.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- dashboard.test.tsx` passed (27 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 06:11:35 +08:00 | Match MockDB payment detail to status and student context
+
+- **Agent:** Codex
+- **Summary:** Added grade and section beneath the student name in MockDB payment history and payment detail. The MockDB email-status metric now uses the same prominent shared badge styling as MockDB Student status and Billing status.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Friday, November 06, 2026 — 06:11:05 +08:00: focused MockDB payment-detail test passed (1 test). `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:02:38 +08:00 | Stabilize MockDB table column widths
+
+- **Agent:** Codex
+- **Summary:** Changed the shared screen-table token to fixed layout so MockDB list columns retain their widths when filters or pagination replace the visible rows. The custom MockDB student table now uses that same shared token.
+- **Files:** Updated `frontend/src/components/ui/Table.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/tableStyles.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- tableStyles.test.tsx` passed (1 test). `npm.cmd run build` passed. A combined `operations.test.tsx` run had three unrelated pre-existing MockDB fixture/profile failures (guardian visibility, account balance, and statement amount); the table-style assertion passed. `git diff --check` passed with only Git's line-ending warning for the test file.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up for the table-layout change.
+
+### Friday, November 06, 2026 — 05:09:34 +08:00 | Simplify shared table filter actions
+
+- **Agent:** Codex
+- **Summary:** Removed the redundant Reset action from the shared table-filter panel. Every filter now retains Apply filters for committing draft values and Clear all for restoring page defaults; all callers were updated to the reduced shared interface.
+- **Files:** Updated `frontend/src/components/ui/TableFilters.tsx`, all `TableFilters` callers, `frontend/src/test/tableFilters.test.tsx`, `EducatraK-Knowledge-Base/04-Development/Table-Filtering.md`, `.agents/skills/educatrak-table-filters-patterns/SKILL.md`, and this changelog.
+- **Validation:** `npm.cmd run test -- tableFilters.test.tsx` passed (2 tests). `npm.cmd run build` passed. `rg` found no remaining `onReset` table-filter props. `git diff --check` passed; Git reported only existing LF-to-CRLF warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:10:38 +08:00 | Record broader filter-change validation
+
+- **Agent:** Codex
+- **Summary:** Ran the full frontend suite after removing Reset from shared table filters. The filter-specific coverage passed; four unrelated existing expectations failed in layout and operational-page tests.
+- **Files:** Updated this changelog only.
+- **Validation:** `npm.cmd test` ran 225 tests: 221 passed and 4 failed. Failures: `layout.test.tsx` expects the restored MockDB date to differ from `2026-11-06`; `operations.test.tsx` expects hidden Registrar guardian details, an ₱8,500 balance rather than the current ₱12,500 fixture, and that stale statement amount. `tableFilters.test.tsx` passed (2 tests), and `npm.cmd run build` remains passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Reconcile the existing MockDB fixture/profile expectations separately; they are outside the filter-action change.
+
+### Friday, November 06, 2026 — 05:12:46 +08:00 | Equalize student-profile status metrics
+
+- **Agent:** Codex
+- **Summary:** Matched the Student status and Billing status values to the Account balance `text-3xl` scale, including proportional badge padding and icons, in the development Student Profile summary.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveStudents.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveStudents.test.tsx` passed (11 tests). `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up. The shared badge remains compact outside this summary.
+
+### Friday, November 06, 2026 — 05:18:43 +08:00 | Refine student-profile status metric sizing
+
+- **Agent:** Codex
+- **Summary:** Reduced the Student status and Billing status values from `text-3xl` to `text-xl`, then aligned their bold weight, tight tracking, icon size, gap, and padding with the balance metric's compact visual rhythm.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveStudents.test.tsx`, and this changelog.
+- **Validation:** Friday, November 06, 2026 — 05:19:22 +08:00: `npm.cmd test -- --run src/test/liveStudents.test.tsx` passed (11 tests). `npm.cmd run build` was blocked by an unrelated current TypeScript error at `frontend/src/features/operations/OperationalPages.tsx:1689`: a follow-up reminder row no longer matches `ReminderContact`. `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:22:27 +08:00 | Filter follow-up recipients by delivery method
+
+- **Agent:** Codex
+- **Summary:** The Follow-up table now hides accounts without the selected delivery contact: Email requires a usable email, SMS requires a mobile number, and Email and SMS includes accounts reachable by either method. Changing the delivery method clears the current selection so hidden recipients cannot remain queued.
+- **Files:** Updated `frontend/src/features/followup/reminderChannels.ts`, `frontend/src/features/followup/LiveFollowupPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveFollowup.test.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted follow-up tests passed (5 tests), and `liveFollowup.test.tsx` passed in full (3 tests). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Server pagination totals remain backend-provided; delivery contact filtering is applied to the currently loaded live page.
+
+### Friday, November 06, 2026 — 05:31:02 +08:00 | Balance the Users table layout
+
+- **Agent:** Codex
+- **Summary:** Assigned the Users tables page-specific column budgets and replaced variable action-button wrapping with a stable two-column action grid plus a full-width account-state action. This keeps names, roles, statuses, and actions aligned without imposing the same widths on unrelated tables.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveUsersFilters.test.tsx src/test/tableStyles.test.tsx` passed (6 tests). The combined focused command also ran `operations.test.tsx`; 52 tests passed and 3 existing unrelated fixture/profile expectations failed. `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up for this table adjustment.
+
+### Friday, November 06, 2026 — 05:35:46 +08:00 | Keep Users actions on one row
+
+- **Agent:** Codex
+- **Summary:** Revised the Users table action area so Edit, Reset password, and Deactivate/Reactivate remain horizontal. The table now uses a wider page-local minimum and a larger Actions column, with adjacent columns reduced proportionally; narrower viewports use the table card's existing horizontal scroll rather than wrapping controls.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveUsersFilters.test.tsx src/test/tableStyles.test.tsx` passed (6 tests). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:42:53 +08:00 | Add Accounts sidebar shortcut
+
+- **Agent:** Codex
+- **Summary:** Added the existing `/accounts` route as the `Accounts` shortcut in Cashier and Accounting sidebars. The shared `account.view` capability keeps it hidden for all other roles.
+- **Files:** Updated `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "shows only permitted primary pages"` passed (1 test). `npm.cmd run build` passed. A full `operations.test.tsx` run had 52 passes and 3 unrelated failures in current student-profile/mock-account expectations. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:45:02 +08:00 | Remove redundant Account-wizard cancel action
+
+- **Agent:** Codex
+- **Summary:** Removed the New Account wizard's Cancel link because the page header already provides its shared Back action and the wizard supplies a step Back control after the first step.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/operations.test.tsx -t "uses explicit button types"` passed (1 test). `npm.cmd run build` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 05:52:48 +08:00 | Rebalance account-creation and renewal wizard
+
+- **Agent:** Codex
+- **Summary:** Centered the shared New Account wizard and increased its working width from `max-w-4xl` to `max-w-5xl`. The full-width page header remains aligned to the workspace, while the form, account-history table, and workflow actions now form a visually balanced central column in both standard creation and renewal mode.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused account-wizard layout test passed (1 test). `npm.cmd run build` passed. The broader `operations.test.tsx` run completed with 53 passes and 3 pre-existing unrelated fixture/profile failures (Registrar guardian-details visibility and two stale Cora/account-balance expectations). `git diff --check` passed with only existing LF-to-CRLF warnings. The local visual-inspection command produced no artifacts in this environment, so rendered screenshot review was unavailable.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up for this layout adjustment.
+
+### Friday, November 06, 2026 — 06:04:27 +08:00 | Preserve the selected student when creating an account from a profile
+
+- **Agent:** Codex
+- **Summary:** Updated the no-account profile shortcut to open `/accounts/new` with that profile's student ID. The existing account wizard now receives the student context and shows the shared search prefilled, while the normal unselected account-creation flow remains unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused profile-to-wizard regression test passed. `npm.cmd run build` passed. Full `operations.test.tsx` ran with 54 passes and 3 unrelated existing failures: Registrar guardian-details visibility and two stale Cora/account-balance expectations. `git diff --check` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up for this handoff.
+
+### Friday, November 06, 2026 — 06:04:04 +08:00 | Show grade and section in payment history
+
+- **Agent:** Codex
+- **Summary:** Payment-history rows now show each student's current grade and section below their name. Receipt email statuses now use the shared `StatusBadge`, matching the existing status typography, size, icon, and treatment.
+- **Files:** Updated `backend/app/Http/Controllers/Api/PaymentController.php`, `backend/tests/Feature/CashierOperationsTest.php`, `frontend/src/features/operations/LivePaymentsPage.tsx`, `frontend/src/test/livePayments.test.tsx`, and this changelog.
+- **Validation:** Friday, November 06, 2026 — 06:03:33 +08:00: `npm.cmd test -- --run src/test/livePayments.test.tsx` passed (9 tests). `npm.cmd run build` passed. `php artisan test --filter=CashierOperationsTest` passed (19 tests, 236 assertions). `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** No known follow-up.
+
+### Friday, November 06, 2026 — 06:08:24 +08:00 | Match follow-up contact details to delivery method
+
+- **Agent:** Codex
+- **Summary:** The Follow-up guardian-contact column now shows only email addresses for Email, only mobile numbers for SMS, and available selected contacts for Email and SMS. Renamed the sample column from Guardian email to Guardian contact.
+- **Files:** Updated `frontend/src/features/followup/reminderChannels.ts`, `frontend/src/features/followup/LiveFollowupPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Targeted follow-up tests passed (4 tests). `npm.cmd run build` passed. `git diff --check` passed with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Friday, November 06, 2026 — 06:11:32 +08:00 | Align the new-account confirmation control
+
+- **Agent:** Codex
+- **Summary:** Vertically centered the review-step confirmation checkbox with its label, tightened their gap slightly, and applied pointer cursors to the clickable label and checkbox.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Friday, November 06, 2026 — 06:19:48 +08:00 | Default newly created students to Active
+
+- **Agent:** Codex
+- **Summary:** Disabled the enrollment-status control for new student records, where it remains prefilled as Active/Enrolled. Existing student records retain status editing. Mock creation and the live API now force the initial status to Active/Enrolled even if a client submits an inactive value.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/students/LiveStudentsPage.tsx`, `frontend/src/api/mock/selectors.ts`, `frontend/src/test/operations.test.tsx`, `backend/app/Http/Controllers/Api/StudentController.php`, `backend/tests/Feature/StudentAccessTest.php`, and this changelog.
+- **Validation:** Focused frontend enrollment-status test passed (1 test). `php artisan test --filter=StudentAccessTest` passed (8 tests, 60 assertions). `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Friday, November 06, 2026 — 11:12:25 +08:00 | Lock enrollment status in student forms
+
+- **Agent:** Codex
+- **Summary:** Disabled the enrollment-status dropdown in both new and existing student forms. The displayed status remains visible, but cannot be opened or changed from either form.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/features/students/LiveStudentsPage.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused enrollment-status test passed (1 test). `git diff --check` passed with existing line-ending warnings only. `npm.cmd run build` is currently blocked by unrelated in-progress errors: `MockFollowUpAccount.status` typing in `frontend/src/api/mock/selectors.ts` and an unused `getMockGuardianContact` import in `frontend/src/features/operations/OperationalPages.tsx`.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Resolve the unrelated build errors before the next production build.
+
+### Friday, November 06, 2026 — 11:16:58 +08:00 | Keep mock follow-up aligned with billing attention
+
+- **Agent:** Codex
+- **Summary:** Replaced the mock follow-up page's two hard-coded accounts with a shared current-school-year projection of unpaid due-soon and overdue billing accounts. The queue now shows the actual amount due, days overdue, and status, so a newly created eligible account appears wherever it does on the dashboard.
+- **Files:** Updated `frontend/src/api/mock/selectors.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/mockDatabase.test.ts`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npx.cmd tsc --noEmit` passed. Focused MockDB and follow-up UI tests passed (5 tests). `git diff --check` passed with existing line-ending warnings only. The wider `operations.test.tsx` run still has unrelated existing failures in shared profile/statement expectations caused by in-progress mock billing-data changes.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None for this fix.
+
+### Friday, November 06, 2026 — 11:17:51 +08:00 | Validate MockDB follow-up synchronization
+
+- **Agent:** Codex
+- **Summary:** Completed production-build verification for the schedule-derived MockDB follow-up queue.
+- **Files:** Updated this changelog.
+- **Validation:** `npm.cmd run build` passed. The focused MockDB and follow-up UI tests remain passed (5 tests); `npx.cmd tsc --noEmit` and `git diff --check` passed, with only existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The known unrelated shared `operations.test.tsx` fixture/profile expectations remain outside this fix.
+
+### Friday, November 06, 2026 — 11:37:56 +08:00 | Add guardian contact fields to student record form
+
+- **Agent:** Codex
+- **Summary:** Added a dedicated live student form with guardian name, relationship, email, and mobile-number fields. Existing guardian data pre-fills the edit form and is submitted with both student creation and updates.
+- **Files:** Added `frontend/src/features/students/StudentFormPage.tsx`; updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/api/cashierApi.ts`, `backend/app/Http/Controllers/Api/StudentController.php`, `backend/app/Http/Requests/UpsertStudentRequest.php`, `backend/app/Models/Guardian.php`, and this changelog.
+- **Validation:** `npm run build` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The development MockDB form remains separate from the live API form.
+
+### Friday, November 06, 2026 — 11:51:04 +08:00 | Add guardian contact fields to the MockDB student form
+
+- **Agent:** Codex
+- **Summary:** Added guardian name, relationship, email, and mobile-number fields to MockDB student creation and editing. New MockDB students now create their guardian record and student-guardian link when the guardian name and relationship are provided.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/api/mock/selectors.ts`, `frontend/src/test/liveStudents.test.tsx`, and this changelog.
+- **Validation:** `npm test -- --run src/test/liveStudents.test.tsx` passed (11 tests); `npm run build` passed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Friday, November 06, 2026 — 11:40:45 +08:00 | Make reminder batch review recipients scannable
+
+- **Agent:** Codex
+- **Summary:** Replaced the plain recipient list in the MockDB reminder-review dialog with a compact recipient table (student, contact, amount due, and status). The table body is capped at 13rem with vertical scrolling and a sticky header, so large batches do not expand the popup beyond its initial view.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused reminder-review tests passed (2 tests). `npm.cmd run build` passed. A broader `operations.test.tsx` run had 4 pre-existing failures in unrelated shared profile and mock billing/statement expectations; its reminder-specific tests passed. `git diff --check` passed before the changelog entry was appended.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual inspection was not available in this environment; verify the dialog at narrow and desktop widths in the running application.
+
+### Friday, November 06, 2026 — 14:18:49 +08:00 | Widen reminder batch review dialog
+
+- **Agent:** Codex
+- **Summary:** Widened only the MockDB reminder-review dialog from 32rem to a responsive 56rem maximum so its recipient table fits horizontally on desktop while retaining the 16px viewport gutter on narrow screens. `MockDialog` now accepts an optional content-width override; all other dialogs keep the standard width.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Focused reminder-review test passed (1 test). The full `operations.test.tsx` run had three unrelated failures in in-progress guardian/profile and shared mock billing-statement expectations; the reminder review test passed. `npm.cmd run build` is currently blocked by unrelated existing nullability errors in `frontend/src/api/mock/selectors.ts` (lines 714 and 733). `git diff --check` passed with existing line-ending warnings only.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Browser visual inspection was not available in this environment; verify at desktop and narrow viewport widths.
+
+### Friday, November 06, 2026 — 14:24:20 +08:00 | Add login-footer attribution placeholders
+
+- **Agent:** Codex
+- **Summary:** Added a compact login-footer attribution row with “Powered by Edukados,” an explicitly labeled asset-free logo placeholder to the left of the name, and adjacent noninteractive “Privacy Policy” placeholder text. This matches the requested temporary treatment without presenting an unapproved logo or legal policy as final.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm test -- --run src/test/login.test.tsx` passed (22 tests). `git diff --check` passed with existing line-ending warnings only. `npm run build` is blocked by unrelated existing nullability errors in `frontend/src/api/mock/selectors.ts` at lines 714 and 733.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Replace both placeholders once the official Edukados logo and approved privacy-policy destination/content are available; tracked in `Issues-and-TODOs.md`.
+
+### Friday, November 06, 2026 — 14:30:20 +08:00 | Open the login privacy notice in a modal
+
+- **Agent:** Codex
+- **Summary:** Made the login footer's Privacy Policy control open a shared-pattern Radix dialog containing the temporary privacy notice and a Close action. Reordered the temporary Edukados mark so it precedes “Powered by Edukados.”
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm test -- --run src/test/login.test.tsx` passed (23 tests), including dialog open/close coverage. `git diff --check` passed with existing line-ending warnings only. `npm run build` remains blocked by unrelated existing nullability errors in `frontend/src/api/mock/selectors.ts` at lines 714 and 733.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Replace the provisional notice and placeholder mark once approved policy content and the official Edukados logo are available.

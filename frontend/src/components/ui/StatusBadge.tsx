@@ -1,6 +1,7 @@
 import { cn } from "@/lib/cn";
 import {
   STATUS_TONE_STYLES,
+  formatStatusLabel,
   getStatusPresentation,
 } from "@/lib/status";
 import { CircleDashed } from "lucide-react";
@@ -12,7 +13,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const presentation = getStatusPresentation(status) ?? {
-    label: status,
+    label: formatStatusLabel(status),
     tone: "neutral",
     icon: CircleDashed,
   };

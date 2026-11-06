@@ -163,6 +163,15 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
       {schedule.items.length === 0
         ? <EmptyState message="No fee items are configured for this schedule." />
         : <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+            <colgroup>
+              <col className="w-[26%]" />
+              <col className="w-[18%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[8%]" />
+              <col className="w-[10%]" />
+              {editable && <col className="w-[12%]" />}
+            </colgroup>
             <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
               <th scope="col" className="px-3 py-2">Fee item</th>
               <th scope="col" className="px-3 py-2">Category</th>

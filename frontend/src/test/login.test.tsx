@@ -91,6 +91,10 @@ describe("LoginPage", () => {
     expect(password.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("checkbox", { name: /remember me/i })).not.toBeChecked();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
+    expect(screen.getByText("Powered by")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Edukados logo placeholder" })).toBeInTheDocument();
+    expect(screen.getByText("Edukados")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Privacy Policy" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("supports sequential keyboard navigation through login controls", async () => {
@@ -115,6 +119,23 @@ describe("LoginPage", () => {
     expect(forgotPassword).toHaveFocus();
     await user.tab();
     expect(submit).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Privacy Policy" })).toHaveFocus();
+  });
+
+  it("opens and closes the temporary privacy policy dialog", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const privacyPolicy = screen.getByRole("button", { name: "Privacy Policy" });
+    await user.click(privacyPolicy);
+
+    expect(privacyPolicy).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("dialog", { name: "Privacy Policy" })).toBeInTheDocument();
+    expect(screen.getByText(/temporary privacy-policy notice/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close Privacy Policy" }));
+    expect(screen.queryByRole("dialog", { name: "Privacy Policy" })).not.toBeInTheDocument();
   });
 
   it("explains the administrator-led password reset path", async () => {

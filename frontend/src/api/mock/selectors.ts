@@ -54,6 +54,16 @@ export interface MockBillingAccount {
   schedule: MockInstallment[];
 }
 
+export interface MockFollowUpAccount {
+  id: string;
+  student: string;
+  guardianEmail: string | null;
+  guardianMobile: string | null;
+  amountDue: Centavos;
+  daysOverdue: number;
+  status: "Due soon" | "Overdue";
+}
+
 export interface MockPayment {
   id: string;
   accountId: string;
@@ -252,6 +262,36 @@ export function selectBillingAccounts(): MockBillingAccount[] {
       totalDue: centavos(account.totalDueCents), totalPaid: centavos(totalPaid), balance: centavos(balance), status, schedule,
     };
   });
+}
+
+/** Current-school-year accounts that need a due-soon or overdue follow-up. */
+export function selectMockFollowUpAccounts(): MockFollowUpAccount[] {
+  const currentSchoolYearId = getMockState().config.currentSchoolYearId;
+  const today = getMockToday();
+
+  return selectBillingAccounts()
+    .filter((account) => account.schoolYearId === currentSchoolYearId && account.balance > 0 && account.status !== "Current")
+    .map((account) => {
+      const student = getStudentById(account.studentId);
+      const contact = getMockGuardianContact(account.studentId);
+      const earliestOverdueDueDate = account.schedule
+        .filter((installment) => installment.status === "overdue" && installment.paid < installment.amount)
+        .map((installment) => installment.dueDate)
+        .sort()[0];
+
+      return {
+        id: account.id,
+        student: student?.name ?? "Unavailable student",
+        guardianEmail: contact?.email ?? null,
+        guardianMobile: contact?.mobile ?? null,
+        amountDue: account.balance,
+        daysOverdue: earliestOverdueDueDate === undefined
+          ? 0
+          : Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${earliestOverdueDueDate}T00:00:00Z`)) / 86_400_000)),
+        status: account.status === "Overdue" ? "Overdue" as const : "Due soon" as const,
+      };
+    })
+    .sort((left, right) => right.daysOverdue - left.daysOverdue || right.amountDue - left.amountDue || left.student.localeCompare(right.student));
 }
 
 export function selectStudents(): Student[] {
@@ -668,7 +708,12 @@ export function createMockStudent(input: MockStudentInput, actorId = "user-regis
   if (getMockState().students.some((student) => student.number.toLocaleLowerCase() === number.toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
   const id = nextId("mock-student", getMockState().students);
   updateMockState((state) => {
-    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: input.studentStatus ?? "Active" });
+    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active" });
+    if (input.guardianName?.trim() && input.guardianRelationship?.trim()) {
+      const guardianId = nextId("mock-guardian", state.guardians);
+      state.guardians.push({ id: guardianId, name: input.guardianName.trim(), email: input.guardianEmail?.trim() || null, mobile: input.guardianMobile?.trim() || "" });
+      state.studentGuardianLinks.push({ id: nextId("mock-student-guardian", state.studentGuardianLinks), studentId: id, guardianId, relationship: input.guardianRelationship.trim() });
+    }
     appendAudit("student.created", id, actorId);
   });
   return getStudentById(id)!;

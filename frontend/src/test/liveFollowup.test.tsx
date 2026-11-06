@@ -75,7 +75,8 @@ describe("live installment follow-up", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveFollowupPage user={cashier} /></MemoryRouter></QueryClientProvider>);
 
-    await screen.findByText("Jamie Sample Student");
+    await screen.findByText("Avery Sample Student");
+    expect(screen.queryByText("Jamie Sample Student")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all eligible on current page" }));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Send reminders (1)" }));

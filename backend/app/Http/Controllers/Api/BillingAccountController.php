@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\ApplyBillingAdjustmentAction;
 use App\Http\Controllers\Controller;
+use App\Models\Adjustment;
 use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\Payment;
+use App\Models\SchoolYear;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,6 +24,7 @@ class BillingAccountController extends Controller
             'query' => ['nullable', 'string', 'max:120'],
             'school_year' => ['nullable', 'string', 'max:40'],
             'school_year_id' => ['nullable', 'integer', Rule::exists('school_years', 'id')],
+            'school_year_scope' => ['nullable', Rule::in(['current', 'all'])],
             'grade' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(['current', 'due_soon', 'overdue', 'paid'])],
             'minimum_balance_cents' => ['nullable', 'integer', 'min:0'],
@@ -32,6 +37,7 @@ class BillingAccountController extends Controller
         if ($maximumBalance !== null && (int) $maximumBalance < $minimumBalance) {
             throw ValidationException::withMessages(['maximum_balance_cents' => 'Maximum balance must be greater than or equal to minimum balance.']);
         }
+        $currentSchoolYearId = SchoolYear::query()->where('is_current', true)->value('id');
         $accounts = BillingAccount::query()
             ->with(['student.gradeLevel:id,name', 'student.section:id,name', 'schoolYear:id,label'])
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
@@ -40,6 +46,7 @@ class BillingAccountController extends Controller
             })
             ->when(isset($filters['school_year']) && trim($filters['school_year']) !== '', fn ($query) => $query->whereHas('schoolYear', fn ($years) => $years->where('label', 'like', '%' . trim($filters['school_year']) . '%')))
             ->when(isset($filters['school_year_id']), fn ($query) => $query->where('school_year_id', $filters['school_year_id']))
+            ->when(($filters['school_year_scope'] ?? null) === 'current' && $currentSchoolYearId !== null, fn ($query) => $query->where('school_year_id', $currentSchoolYearId))
             ->when(isset($filters['grade']) && trim($filters['grade']) !== '', fn ($query) => $query->whereHas('student.gradeLevel', fn ($grades) => $grades->where('name', 'like', '%' . trim($filters['grade']) . '%')))
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['minimum_balance_cents']), fn ($query) => $query->where('balance_cents', '>=', $minimumBalance))
@@ -49,8 +56,36 @@ class BillingAccountController extends Controller
 
         return response()->json([
             'data' => $accounts->getCollection()->map(fn (BillingAccount $account): array => $this->accountSummary($account)),
-                'meta' => ['currentPage' => $accounts->currentPage(), 'lastPage' => $accounts->lastPage(), 'total' => $accounts->total(), 'perPage' => $accounts->perPage()],
+                'meta' => [
+                    'currentPage' => $accounts->currentPage(), 'lastPage' => $accounts->lastPage(), 'total' => $accounts->total(), 'perPage' => $accounts->perPage(),
+                    'currentSchoolYearId' => $currentSchoolYearId === null ? null : (string) $currentSchoolYearId,
+                    'schoolYears' => SchoolYear::query()->orderByDesc('is_current')->orderByDesc('starts_on')->get(['id', 'label'])->map(fn (SchoolYear $year): array => ['id' => (string) $year->id, 'label' => $year->label])->all(),
+                ],
         ]);
+    }
+
+    public function storeAdjustment(Request $request, BillingAccount $billingAccount, ApplyBillingAdjustmentAction $applyAdjustment, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $request->validate([
+            'type' => ['required', Rule::in(['discount', 'scholarship', 'correction'])],
+            'amount_cents' => ['required', 'integer', 'not_in:0'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+        /** @var User $user */
+        $user = $request->user();
+        $before = ['total_due_cents' => (int) $billingAccount->total_due_cents, 'balance_cents' => (int) $billingAccount->balance_cents];
+        $adjustment = $applyAdjustment->handle($billingAccount, $validated['type'], $validated['amount_cents'], $validated['reason'], $user);
+        $account = $billingAccount->freshOrFail();
+        $auditLogger->record($request, 'adjustment.created', $adjustment, $before, [
+            'billing_account_id' => $account->id,
+            'type' => $adjustment->type,
+            'amount_cents' => (int) $adjustment->amount_cents,
+            'reason' => $adjustment->reason,
+            'total_due_cents' => (int) $account->total_due_cents,
+            'balance_cents' => (int) $account->balance_cents,
+        ]);
+
+        return response()->json(['data' => $this->adjustmentData($adjustment)], 201);
     }
 
     public function show(BillingAccount $billingAccount): JsonResponse
@@ -233,6 +268,19 @@ class BillingAccountController extends Controller
             'totalDueCents' => (int) $account->total_due_cents,
             'totalPaidCents' => (int) $account->total_paid_cents,
             'balanceCents' => (int) $account->balance_cents,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function adjustmentData(Adjustment $adjustment): array
+    {
+        return [
+            'id' => (string) $adjustment->id,
+            'type' => $adjustment->type,
+            'amountCents' => (int) $adjustment->amount_cents,
+            'reason' => $adjustment->reason,
+            'effectiveAt' => $adjustment->effective_at?->toISOString(),
+            'createdBy' => $adjustment->createdBy?->full_name,
         ];
     }
 }

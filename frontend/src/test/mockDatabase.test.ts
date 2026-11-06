@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockIntegrityErrors } from "@/api/mock/integrity";
-import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser } from "@/api/mock";
+import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, createMockStudent, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockFollowUpAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser } from "@/api/mock";
 
 describe("central mock database", () => {
   afterEach(() => {
@@ -105,6 +105,26 @@ describe("central mock database", () => {
     expect(account.schedule.reduce((sum, installment) => sum + installment.amount, 0)).toBe(account.totalDue);
     expect(getBillingAccount("account-1002-2026")).toEqual(earlierAccount);
     expect(getMockState().auditLog).toEqual(expect.arrayContaining([expect.objectContaining({ action: "billing_account.created", entityId: account.id, actorId: "user-cashier" })]));
+  });
+
+  it("includes newly created due-soon accounts in the shared follow-up queue", () => {
+    const student = createMockStudent({ number: "S-FOLLOW-UP-NEW", name: "Harper Sample", grade: "Grade 7", section: "Olive" });
+    const account = createMockBillingAccount(student.id, {
+      schoolYearId: "school-year-2026-2027",
+      gradeLevel: "Grade 7",
+      feeItemIds: ["tuition", "miscellaneous"],
+      paymentPlanId: "plan-full",
+    });
+
+    expect(selectMockFollowUpAccounts()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: account.id, student: "Harper Sample", status: "Due soon", daysOverdue: 0, amountDue: account.balance }),
+    ]));
+  });
+
+  it("exposes seeded guardian email contacts in the follow-up queue", () => {
+    expect(selectMockFollowUpAccounts()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ student: "Cora Navarro (sample)", guardianEmail: "sky.navarro@example.test" }),
+    ]));
   });
 
   it("blocks duplicate renewals and non-Cashier account creation in the MockDB service", () => {

@@ -94,7 +94,7 @@ export function LiveDailyReport({ user }: { user: AuthenticatedUser }) {
     {printError && <p className="mb-4 text-sm text-error" role="alert">{printError}</p>}
     {user.role === "cashier"
       ? <Card className="mb-5 text-sm">Report date: {date}</Card>
-      : <TableFilters scope="Daily report" defaults={{ date: manilaToday() }} draft={tableFilters.draft} applied={tableFilters.applied} fields={[{ key: "date", label: "Report date", type: "date" }]} onChange={tableFilters.update} onApply={() => { tableFilters.apply(); setPage(1); setVoidPage(1); }} onReset={tableFilters.reset} onClear={() => { tableFilters.clear(); setPage(1); setVoidPage(1); }} onRemove={(key) => { tableFilters.remove(key); setPage(1); setVoidPage(1); }} />}
+      : <TableFilters scope="Daily report" defaults={{ date: manilaToday() }} draft={tableFilters.draft} applied={tableFilters.applied} fields={[{ key: "date", label: "Report date", type: "date" }]} onChange={tableFilters.update} onApply={() => { tableFilters.apply(); setPage(1); setVoidPage(1); }} onClear={() => { tableFilters.clear(); setPage(1); setVoidPage(1); }} onRemove={(key) => { tableFilters.remove(key); setPage(1); setVoidPage(1); }} />}
     {report.isPending && <LoadingState message="Loading daily report…" layout="detail" />}
     {report.isError && <ErrorState message={report.error.message} onRetry={() => void report.refetch()} />}
     {report.data && <>

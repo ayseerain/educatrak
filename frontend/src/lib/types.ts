@@ -21,7 +21,7 @@ export interface AuthenticatedUser {
 export type Capability =
   | "dashboard.view"
   | "student.view" | "student.edit" | "student.financial.view"
-  | "account.view" | "account.create"
+  | "account.view" | "account.create" | "account.adjust"
   | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.view" | "payment.void.approve" | "receipt.reprint"
   | "followup.view" | "followup.send"
   | "report.view" | "statement.print"

@@ -25,7 +25,7 @@ export function LiveAuditLog() {
       <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Audit log" defaults={auditFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "user", label: "User" }} fields={[
       { key: "action", label: "Action" }, { key: "entityType", label: "Entity type" }, { key: "entityId", label: "Entity ID" },
       { key: "dateFrom", label: "From", type: "date" }, { key: "dateTo", label: "To", type: "date" },
-    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onReset={tableFilters.reset} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
+    ]} onChange={tableFilters.update} onSearch={tableFilters.search} onApply={tableFilters.apply} onClear={tableFilters.clear} onRemove={tableFilters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo)} /></div>
       {entries.isPending && <LoadingState message="Loading audit entries…" layout="table" bare columns={6} />}
       {entries.isError && <ErrorState message={entries.error.message} onRetry={() => void entries.refetch()} />}
       {entries.data && (entries.data.data.length === 0 ? <EmptyState message="No audit entries match these filters." /> : <div className="overflow-x-auto">

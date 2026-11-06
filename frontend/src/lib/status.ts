@@ -100,21 +100,22 @@ const NEUTRAL_STATUSES = new Set([
 export function getStatusPresentation(status: string): StatusPresentation | null {
   const label = status.trim();
   const normalized = normalizeStatus(label);
+  const formattedLabel = formatStatusLabel(label);
 
   if (SUCCESS_STATUSES.has(normalized)) {
-    return { label, tone: "success", icon: CheckCircle2 };
+    return { label: formattedLabel, tone: "success", icon: CheckCircle2 };
   }
 
   if (WARNING_STATUSES.has(normalized)) {
-    return { label, tone: "warning", icon: Clock3 };
+    return { label: formattedLabel, tone: "warning", icon: Clock3 };
   }
 
   if (ERROR_STATUSES.has(normalized)) {
-    return { label, tone: "error", icon: AlertTriangle };
+    return { label: formattedLabel, tone: "error", icon: AlertTriangle };
   }
 
   if (NEUTRAL_STATUSES.has(normalized)) {
-    return { label, tone: "neutral", icon: CircleDashed };
+    return { label: formattedLabel, tone: "neutral", icon: CircleDashed };
   }
 
   return null;
@@ -122,4 +123,9 @@ export function getStatusPresentation(status: string): StatusPresentation | null
 
 export function normalizeStatus(status: string) {
   return status.trim().toLowerCase().replace(/_/g, " ");
+}
+
+export function formatStatusLabel(status: string): string {
+  const normalized = normalizeStatus(status);
+  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "";
 }

@@ -30,7 +30,7 @@ export function LiveStudentsPage({ user }: { user: AuthenticatedUser }) {
       { key: "grade", label: "Filter by grade", placeholder: "Grade name" },
       { key: "section", label: "Filter by section", placeholder: "Section name" },
       { key: "status", label: "Filter by enrollment status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "enrolled", label: "Enrolled" }, { value: "inactive", label: "Inactive" }] },
-    ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} /></div>
+    ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} /></div>
       {result.isPending && <LoadingState message="Loading students…" layout="table" bare columns={5} />}
       {result.isError && <ErrorState message={result.error.message} onRetry={() => void result.refetch()} />}
       {result.data && (result.data.data.length === 0 ? <EmptyState message="No students match these filters." /> : <div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse text-left text-sm"><thead><tr className="border-b border-border text-xs font-semibold text-text-secondary"><th scope="col" className="px-3 py-2">Student</th><th scope="col" className="px-3 py-2">Student no.</th><th scope="col" className="px-3 py-2">Grade & section</th>{canSeeAmounts && <th scope="col" className="px-3 py-2 text-right">Current school-year balance</th>}<th scope="col" className="px-3 py-2">Status</th></tr></thead><tbody>{result.data.data.map((student) => <tr key={student.id} className="border-b last:border-0"><td className="px-3 py-2 font-medium"><Link className="text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark" to={`/students/${student.id}`}>{student.fullName}</Link></td><td className="px-3 py-2 font-mono">{student.studentNo}</td><td className="px-3 py-2">{[student.gradeLevel, student.section].filter(Boolean).join(" · ") || "Unassigned"}</td>{canSeeAmounts && <td className="px-3 py-2 text-right font-mono">{student.balanceCents === undefined ? "Unavailable" : format(centavos(student.balanceCents))}</td>}<td className="px-3 py-2 capitalize">{student.status.replace(/_/g, " ")}</td></tr>)}</tbody></table><PaginationControls currentPage={result.data.currentPage} lastPage={result.data.lastPage} perPage={result.data.perPage} total={result.data.total} label="students" busy={result.isFetching} onPageChange={filters.setPage} onPerPageChange={filters.changePerPage} /></div>)}
@@ -62,6 +62,10 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
   const [gradeLevelId, setGradeLevelId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [status, setStatus] = useState("enrolled");
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianRelationship, setGuardianRelationship] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState("");
+  const [guardianMobile, setGuardianMobile] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const grade = options.data?.grades.find((item) => item.id === gradeLevelId);
@@ -74,6 +78,11 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
     const matchedGrade = options.data.grades.find((item) => item.name === current.data.gradeLevel);
     setGradeLevelId(matchedGrade?.id ?? "");
     setSectionId(matchedGrade?.sections.find((item) => item.name === current.data.section)?.id ?? "");
+    const guardian = current.data.guardians?.[0];
+    setGuardianName(guardian?.fullName ?? "");
+    setGuardianRelationship(guardian?.relationship ?? "");
+    setGuardianEmail(guardian?.email ?? "");
+    setGuardianMobile(guardian?.mobile ?? "");
   }, [current.data, options.data]);
 
   if (options.isPending || current.isPending) return <LoadingState message="Loading student record form…" layout="detail" />;
@@ -85,7 +94,7 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
     setError("");
     setSaving(true);
     try {
-      const input = { studentNo, fullName, gradeLevelId, sectionId, status };
+      const input = { studentNo, fullName, gradeLevelId, sectionId, status: edit ? status : "enrolled", guardianName, guardianRelationship, guardianEmail, guardianMobile };
       const saved = edit ? await updateStudent(id, input) : await createStudent(input);
       navigate(`/students/${saved.id}`);
     } catch (cause) {
@@ -99,5 +108,5 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
   const sectionOptions = [{ value: "", label: grade ? "Select section" : "Select grade first" }, ...(grade?.sections.map((item) => ({ value: item.id, label: item.name })) ?? [])];
   const statusOptions = options.data?.statuses.map((item) => ({ value: item, label: item.replace(/_/g, " ") })) ?? [];
 
-  return <><BackButton to={edit ? `/students/${id}` : "/students"} label="Back to students" className="mb-2" /><div className="page-header-card mb-5"><h1 className="text-2xl font-bold tracking-tight text-text-primary">{edit ? "Edit student" : "Add student"}</h1><p className="mt-1 text-sm text-text-secondary">Maintain student identity, grade level, section, and enrollment status.</p></div><form className="space-y-5" onSubmit={submit}><Card className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Student number<input required value={studentNo} onChange={(event) => setStudentNo(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-border px-3" /></label><label className="text-sm font-medium">Student name<input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-border px-3" /></label><label className="text-sm font-medium">Grade level<span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={gradeLevelId} options={gradeOptions} onChange={(value) => { setGradeLevelId(value); setSectionId(""); }} className="w-full" align="start" /></span></label><label className="text-sm font-medium">Section<span className="mt-1 block"><DropdownSelect aria-label="Section" value={sectionId} options={sectionOptions} onChange={setSectionId} disabled={!grade} className="w-full" align="start" /></span></label><label className="text-sm font-medium">Enrollment status<span className="mt-1 block"><DropdownSelect aria-label="Enrollment status" value={status} options={statusOptions} onChange={setStatus} className="w-full" align="start" /></span></label></Card>{error && <p role="alert" className="text-sm text-status-error">{error}</p>}<div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(edit ? `/students/${id}` : "/students")}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : edit ? "Save changes" : "Create student"}</Button></div></form></>;
+  return <><BackButton to={edit ? `/students/${id}` : "/students"} label="Back to students" className="mb-2" /><div className="page-header-card mb-5"><h1 className="text-2xl font-bold tracking-tight text-text-primary">{edit ? "Edit student" : "Add student"}</h1><p className="mt-1 text-sm text-text-secondary">Maintain student identity, grade level, section, and enrollment status.</p></div><form className="space-y-5" onSubmit={submit}><Card className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Student number<input required value={studentNo} onChange={(event) => setStudentNo(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-border px-3" /></label><label className="text-sm font-medium">Student name<input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="mt-1 h-11 w-full rounded-md border border-border px-3" /></label><label className="text-sm font-medium">Grade level<span className="mt-1 block"><DropdownSelect aria-label="Grade level" value={gradeLevelId} options={gradeOptions} onChange={(value) => { setGradeLevelId(value); setSectionId(""); }} className="w-full" align="start" /></span></label><label className="text-sm font-medium">Section<span className="mt-1 block"><DropdownSelect aria-label="Section" value={sectionId} options={sectionOptions} onChange={setSectionId} disabled={!grade} className="w-full" align="start" /></span></label><label className="text-sm font-medium">Enrollment status<span className="mt-1 block"><DropdownSelect aria-label="Enrollment status" value={status} options={statusOptions} onChange={setStatus} disabled className="w-full" align="start" /></span></label></Card>{error && <p role="alert" className="text-sm text-status-error">{error}</p>}<div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(edit ? `/students/${id}` : "/students")}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : edit ? "Save changes" : "Create student"}</Button></div></form></>;
 }

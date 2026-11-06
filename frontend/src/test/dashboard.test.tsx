@@ -179,13 +179,14 @@ describe("DashboardPage", () => {
     renderWithProviders(cashier);
 
     expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
-    expect(screen.getByText("Amara Villanueva (sample)")).toBeInTheDocument();
-    expect(screen.getByText("Basil Mercado (sample)")).toBeInTheDocument();
-    expect(screen.getByText("Cora Navarro (sample)")).toBeInTheDocument();
     const summary = await mockAdapter.fetchDashboardSummary(cashier, "today");
     if (summary.role !== "cashier") throw new Error("Cashier dashboard summary expected");
-    for (const account of summary.accountsNeedingAttention) {
+    for (const account of summary.accountsNeedingAttention.slice(0, 2)) {
+      expect(screen.getByText(account.studentName)).toBeInTheDocument();
       expect(screen.getByText(new RegExp((account.amountDue / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", "\\.")))).toBeInTheDocument();
+    }
+    for (const account of summary.accountsNeedingAttention.slice(2)) {
+      expect(screen.queryByText(account.studentName)).not.toBeInTheDocument();
     }
   });
 

@@ -90,6 +90,8 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:accounts.view');
             Route::get('/billing-accounts/{billingAccount}', [BillingAccountController::class, 'show'])
                 ->middleware('capability:accounts.view');
+            Route::post('/billing-accounts/{billingAccount}/adjustments', [BillingAccountController::class, 'storeAdjustment'])
+                ->middleware('capability:accounts.manage');
 
             Route::get('/payment-students', [PaymentController::class, 'searchStudents'])
                 ->middleware('capability:payments.record');

@@ -32,7 +32,9 @@ class CashierOperationsTest extends TestCase
             $this->actingAs($reader)->getJson('/api/payments')
                 ->assertOk()
                 ->assertJsonPath('meta.total', 1)
-                ->assertJsonPath('data.0.student_no', 'S-TEST-1001');
+                ->assertJsonPath('data.0.student_no', 'S-TEST-1001')
+                ->assertJsonPath('data.0.student_grade', 'Test Grade')
+                ->assertJsonPath('data.0.student_section', 'Test Section');
             $this->actingAs($reader)->getJson("/api/payments/{$payment->id}")->assertOk();
             $this->actingAs($reader)->withHeader('Idempotency-Key', 'read-only-'.strtolower($role->value))->postJson('/api/payments', [
                 'billing_account_id' => $account->id,

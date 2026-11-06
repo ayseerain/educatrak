@@ -15,7 +15,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   cashier: new Set<Capability>([
     "dashboard.view",
     "student.view", "student.financial.view", "guardianContact.view",
-    "account.view", "account.create",
+    "account.view", "account.create", "account.adjust",
     "payment.view", "payment.record", "payment.void.request", "receipt.reprint",
     "followup.view", "followup.send",
     "notification.view", "notification.retry",

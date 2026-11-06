@@ -47,7 +47,7 @@ class PaymentController extends Controller
         $user = $request->user();
 
         $payments = Payment::query()
-            ->with(['receipt', 'student', 'recordedBy'])
+            ->with(['receipt', 'student.gradeLevel', 'student.section', 'recordedBy'])
             ->when($user->role->value === 'cashier', fn ($query) => $query->where('recorded_by', $user->id))
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
                 $search = trim($filters['query']);
@@ -315,6 +315,8 @@ class PaymentController extends Controller
             'student_id' => (string) $payment->student_id,
             'student_name' => $payment->student?->full_name,
             'student_no' => $payment->student?->student_no,
+            'student_grade' => $payment->student?->gradeLevel?->name,
+            'student_section' => $payment->student?->section?->name,
             'billing_account_id' => (string) $payment->billing_account_id,
             'amount_cents' => $payment->amount_cents,
             'method' => $payment->method,
@@ -329,8 +331,6 @@ class PaymentController extends Controller
         ];
 
         if ($includeAllocations) {
-            $data['student_grade'] = $payment->student?->gradeLevel?->name;
-            $data['student_section'] = $payment->student?->section?->name;
             $data['school_year'] = $payment->billingAccount?->schoolYear?->label;
             $data['allocations'] =$payment->allocations->map(fn ($allocation): array => [
                 'installment_label' => $allocation->installment->label,

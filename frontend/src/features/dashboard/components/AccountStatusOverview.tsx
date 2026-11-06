@@ -14,12 +14,15 @@ interface AccountStatusOverviewProps {
   className?: string;
 }
 
+const ATTENTION_ACCOUNT_LIMIT = 2;
+
 /** CLINIQ list card: header with a count, divided rows with a status badge and a plain amount. */
 export function AccountStatusOverview({
   accountsNeedingAttention,
   className,
 }: AccountStatusOverviewProps) {
-  const count = accountsNeedingAttention.length;
+  const visibleAccounts = accountsNeedingAttention.slice(0, ATTENTION_ACCOUNT_LIMIT);
+  const count = visibleAccounts.length;
   return (
     <Card
       className={cn("flex flex-col p-0", className)}
@@ -45,7 +48,7 @@ export function AccountStatusOverview({
       />
       {count > 0 ? (
         <ul className="divide-y divide-border border-t border-border">
-          {accountsNeedingAttention.map((account) => (
+          {visibleAccounts.map((account) => (
             <AttentionAccountRow key={account.id} account={account} />
           ))}
         </ul>

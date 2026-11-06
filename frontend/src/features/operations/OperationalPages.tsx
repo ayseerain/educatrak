@@ -29,7 +29,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { SelectAllCheckbox } from "@/components/ui/SelectAllCheckbox";
-import { channelsFromValue, channelsValue, isRowControlClick, REMINDER_CHANNEL_OPTIONS } from "@/features/followup/reminderChannels";
+import { channelsFromValue, channelsValue, hasSelectedReminderContact, isRowControlClick, REMINDER_CHANNEL_OPTIONS, selectedReminderContacts } from "@/features/followup/reminderChannels";
 import { StudentSearchField } from "@/features/students/StudentSearchField";
 import {
   students,
@@ -47,9 +47,10 @@ import {
   getSuggestedRenewalSchoolYear,
   getStudentById,
   getStudentBillingAccounts,
-  getMockGuardianContact,
   getMockState,
+  getMockGuardianContact,
   getMockToday,
+  selectMockFollowUpAccounts,
   selectMockNotificationRows,
   selectMockStaffUsers,
   createMockStaffUser,
@@ -102,7 +103,8 @@ import { LiveDailyReport } from "@/features/reports/LiveDailyReport";
 import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
 import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
 import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettingsPage";
-import { LiveStudentFormPage, LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
+import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
+import { StudentFormPage as LiveStudentFormPage } from "@/features/students/StudentFormPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
 import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
 
@@ -164,18 +166,20 @@ function MockDialog({
   title,
   children,
   emphasis = false,
+  contentClassName,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   children: ReactNode;
   emphasis?: boolean;
+  contentClassName?: string;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className={cn("fixed inset-0 bg-text-primary/40", emphasis ? "z-[60] bg-text-primary/55 backdrop-blur-sm" : "z-40")} />
-        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white shadow-raised", emphasis ? "z-[61] max-w-2xl border border-status-error/40 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]" : "z-50 p-5")}>
+        <Dialog.Content className={cn("fixed left-1/2 top-1/2 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white shadow-raised", emphasis ? "z-[61] max-w-2xl border border-status-error/40 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]" : "z-50 p-5", contentClassName)}>
           <Dialog.Title className="text-lg font-semibold text-text-primary">
             {title}
           </Dialog.Title>
@@ -376,7 +380,7 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
             labelClassName="sr-only"
             inputClassName={cn(inputClass, "m-0")}
           />
-      } fields={[{ key: "grade", label: "Grade" }, { key: "section", label: "Section" }, { key: "status", label: "Enrollment status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]} onChange={filters.update} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />
+      } fields={[{ key: "grade", label: "Grade" }, { key: "section", label: "Section" }, { key: "status", label: "Enrollment status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]} onChange={filters.update} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} />
         </div>
         <StudentTable user={user} data={shown} />
       </Card>
@@ -416,7 +420,7 @@ function StudentTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[680px] text-left text-sm">
+      <table className={cn(TABLE_CLASS, "min-w-[680px]")}>
         <thead>
           <tr className="border-b border-border">
             <SortableHeader sortKey="name" sort={sorting.sort} onSort={sorting.toggle}>
@@ -507,7 +511,11 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
     try {
       const input = {
         number: String(form.get("number") ?? ""), name: String(form.get("name") ?? ""), grade, section,
-        studentStatus,
+        studentStatus: student ? studentStatus : "Active",
+        guardianName: String(form.get("guardianName") ?? ""),
+        guardianRelationship: String(form.get("guardianRelationship") ?? ""),
+        guardianEmail: String(form.get("guardianEmail") ?? ""),
+        guardianMobile: String(form.get("guardianMobile") ?? ""),
       };
       const saved = student ? updateMockStudent(student.id, input, user?.id ?? "user-registrar") : createMockStudent(input, user?.id ?? "user-registrar");
       navigate(`/students/${saved.id}`);
@@ -520,7 +528,7 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
     <>
       <PageHeader
         title={edit ? "Edit student" : "Add student"}
-        description="Maintain student identity, grade level, section, and enrollment status."
+        description="Maintain student identity, grade level, section, enrollment status, and guardian contact."
         backTo={student ? `/students/${student.id}` : "/students"}
       />
       <form noValidate onSubmit={submit} className="w-full space-y-5">
@@ -581,6 +589,7 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
                 value={studentStatus}
                 options={[{ value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }]}
                 onChange={setStudentStatus}
+                disabled
                 className="w-full"
                 align="start"
               />
@@ -610,6 +619,16 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
             </p>
           )}
         </Card>
+        <Card>
+          <h2 className="text-base font-semibold text-text-primary">Guardian contact</h2>
+          <p className="mt-1 text-sm text-text-secondary">Add or update the guardian details used for notices and receipts.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-medium">Guardian name<input name="guardianName" defaultValue={getMockState().guardians.find((guardian) => guardian.id === getMockState().studentGuardianLinks.find((link) => link.studentId === student?.id)?.guardianId)?.name ?? ""} className={inputClass} /></label>
+            <label className="text-sm font-medium">Relationship<input name="guardianRelationship" defaultValue={getMockState().studentGuardianLinks.find((link) => link.studentId === student?.id)?.relationship ?? ""} className={inputClass} /></label>
+            <label className="text-sm font-medium">Email<input name="guardianEmail" type="email" defaultValue={getMockGuardianContact(student?.id ?? "")?.email ?? ""} className={inputClass} /></label>
+            <label className="text-sm font-medium">Mobile number<input name="guardianMobile" type="tel" defaultValue={getMockGuardianContact(student?.id ?? "")?.mobile ?? ""} className={inputClass} /></label>
+          </div>
+        </Card>
         {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
         <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate(student ? `/students/${student.id}` : "/students")}>Cancel</Button><Button type="submit">{edit ? "Save changes" : "Create student"}</Button></div>
       </form>
@@ -633,7 +652,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
           <div className="flex flex-wrap gap-2">
             {can(user, "payment.record") || can(user, "account.view") || can(user, "account.create") ? <>
               {can(user, "payment.record") && <Link to={`/payments/new?student=${student.id}`} className={primaryLinkClass}>Record payment</Link>}
-              {can(user, "account.view") && <Link to={`/accounts/${getCurrentBillingAccount(student.id)?.id ?? "new"}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
+              {can(user, "account.view") && <Link to={getCurrentBillingAccount(student.id) ? `/accounts/${getCurrentBillingAccount(student.id)?.id}` : `/accounts/new?student=${student.id}`} className={secondaryLinkClass}>{getCurrentBillingAccount(student.id) ? "View account" : "Create account"}</Link>}
               {can(user, "account.create") && (renewalYears.length ? <Link to={`/accounts/new?student=${student.id}&mode=renew`} className={secondaryLinkClass}>Renew Billing Account</Link> : <Button type="button" variant="secondary" disabled title="Every configured school year already has an account for this student.">Renew Billing Account</Button>)}
             </> : null}
             {can(user, "student.edit") && <Link to={`/students/${student.id}/edit`} className={secondaryLinkClass}>Edit student</Link>}
@@ -662,12 +681,12 @@ function StudentOverviewPanel({
         )}
         <Metric
           label="Student status"
-          value={<StatusBadge status={student.studentStatus} />}
+          value={<StatusBadge className={PROMINENT_STATUS_BADGE_CLASS} status={student.studentStatus} />}
         />
         {canSeeFinancialContext && (
           <Metric
             label="Billing status"
-            value={<StatusBadge status={student.billingStatus} />}
+            value={<StatusBadge className={PROMINENT_STATUS_BADGE_CLASS} status={student.billingStatus} />}
           />
         )}
       </div>
@@ -741,7 +760,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
         { key: "status", label: "Billing status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Current", label: "Current" }, { value: "Due soon", label: "Due soon" }, { value: "Overdue", label: "Overdue" }] },
         { key: "minimumBalance", label: "Minimum balance (PHP)", type: "number", min: "0", step: "0.01" },
         { key: "maximumBalance", label: "Maximum balance (PHP)", type: "number", min: "0", step: "0.01" },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />}
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />}
         rows={visibleAccounts.map((account) => [
           <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>{getStudentById(account.studentId)?.name ?? "Unknown student"}</Link>,
           account.schoolYear,
@@ -834,7 +853,7 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
   return (
     <>
       <PageHeader title="New account" description={renewalMode ? "Create a new school-year billing account without changing earlier financial records." : "Set up an account for one student and one school year."} backTo="/accounts" />
-      <Card className="max-w-4xl">
+      <Card data-testid="account-wizard" className="mx-auto w-full max-w-5xl">
         <ol className="mb-6 flex flex-wrap gap-2 text-sm">{steps.map((label, index) => <li key={label} className={cn("rounded-md border px-3 py-2", index + 1 === step ? "border-brand-green-light bg-status-success/10 font-semibold text-brand-green-dark" : "border-border bg-white text-text-secondary")}>{index + 1}. {label}</li>)}</ol>
         <h2 className="text-base font-semibold text-text-primary">{steps[step - 1]}</h2>
         <p className="mt-2 text-sm text-text-secondary">{step === 1 ? "Confirm the student, target school year, and grade level." : step === 2 ? "Configured fee items and active payment plans load from the shared mock database." : step === 3 ? "Review installment due dates and amounts before saving." : "Confirm the new account. Earlier financial records will remain unchanged."}</p>
@@ -842,9 +861,9 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
         {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
         {step === 2 && <div className="mt-5 space-y-5">{!feeItems?.length ? <p role="status" className="rounded-md border border-status-warning bg-status-warning/5 p-4 text-sm text-text-primary">No fee schedule is configured for {gradeLevel || "this grade"} in the selected school year. Go back and choose a configured grade or year.</p> : <fieldset><legend className="font-medium">Fee items</legend><p className="mt-1 text-sm text-text-secondary">Required fees are locked. Selected amounts are copied into this billing account.</p><div className="mt-3 space-y-2">{feeItems.map((item) => <label key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface p-3 text-sm"><span className="flex items-center gap-3"><input type="checkbox" checked={feeItemIds.includes(item.id)} disabled={item.required} onChange={(event) => setFeeItemIds((selected) => event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><span><span className="font-medium">{item.name}</span><span className="ml-2 text-text-secondary">{item.category} · {item.required ? "Required" : "Optional"}</span></span></span><span className="font-medium">{format(item.amount)}</span></label>)}</div><p className="mt-3 text-sm font-semibold">Selected total: {format(totalDue)}</p></fieldset>}<fieldset><legend className="font-medium">Installment plan</legend><div className="mt-3 grid gap-3 md:grid-cols-3">{paymentPlans.map((plan) => <label key={plan.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-white p-3 text-sm"><input type="radio" name="paymentPlan" checked={paymentPlanId === plan.id} onChange={() => setPaymentPlanId(plan.id)} /><span><span className="block font-medium">{plan.name}</span><span className="mt-1 block text-text-secondary">Down payment: {format(plan.downPayment)} · {plan.installmentCount} scheduled payment{plan.installmentCount === 1 ? "" : "s"}</span></span></label>)}</div></fieldset></div>}
         {step === 3 && <div className="mt-5"><ListCard rows={schedule.map((installment) => [installment.label, formatDate(installment.dueDate), format(installment.amount)])} headers={["Installment", "Due date", "Amount"]} /><p className="mt-3 text-right text-sm font-semibold">Billing total: {format(totalDue)}</p></div>}
-        {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex items-start gap-3"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
+        {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex cursor-pointer items-center gap-2"><input className="shrink-0 cursor-pointer" type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
         {error && <p role="alert" className="mt-4 text-sm text-status-error">{error}{duplicateAccount && <> <Link className={inlineLinkClass} to={`/accounts/${duplicateAccount.id}`}>View existing billing account</Link></>}</p>}
-        <div className="mt-6 flex justify-end gap-3"><Link className={secondaryLinkClass} to="/accounts">Cancel</Link>{step > 1 && <Button type="button" variant="secondary" disabled={created} onClick={() => { setStep((current) => current - 1); setError(""); }}>Back</Button>}<Button type="button" disabled={created} onClick={continueWizard}>{created ? "Creating account..." : step === 4 ? "Create account" : "Continue"}</Button></div>
+        <div className="mt-6 flex justify-end gap-3">{step > 1 && <Button type="button" variant="secondary" disabled={created} onClick={() => { setStep((current) => current - 1); setError(""); }}>Back</Button>}<Button type="button" disabled={created} onClick={continueWizard}>{created ? "Creating account..." : step === 4 ? "Create account" : "Continue"}</Button></div>
       </Card>
     </>
   );
@@ -940,14 +959,14 @@ export function PaymentsPage({
         { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Posted", label: "Posted" }, { value: "Void pending", label: "Void pending" }, { value: "Voided", label: "Voided" }] },
         { key: "dateFrom", label: "Paid on or after", type: "date" }, { key: "dateTo", label: "Paid on or before", type: "date" },
         { key: "amountMinimum", label: "Minimum amount (PHP)", type: "number", min: "0", step: "0.01" }, { key: "amountMaximum", label: "Maximum amount (PHP)", type: "number", min: "0", step: "0.01" },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />}
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => dateRangeError(draft.dateFrom, draft.dateTo) || moneyRangeError(draft.amountMinimum, draft.amountMaximum)} />}
         paginate={{ label: "payments" }}
         headers={["Receipt", "Student", "Date", "Amount", "Method", "Status"]}
         rows={visiblePayments.map((payment) => [
           <Link className={inlineLinkClass} to={`/payments/${payment.id}`}>
             {payment.receiptNo}
           </Link>,
-          getStudentById(payment.studentId)?.name ?? "Unknown student",
+          <><span className="block">{getStudentById(payment.studentId)?.name ?? "Unknown student"}</span><span className="mt-0.5 block text-xs text-text-secondary">{[getStudentById(payment.studentId)?.grade, getStudentById(payment.studentId)?.section].filter(Boolean).join(" · ")}</span></>,
           payment.paidOn,
           format(payment.amount),
           "Cash",
@@ -992,10 +1011,10 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
         }
       />
       <div className="grid gap-4 md:grid-cols-4">
-        <Metric label="Student" value={student.name} />
+        <Metric label="Student" value={<><span className="block">{student.name}</span><span className="mt-1 block text-sm font-medium tracking-normal text-text-secondary">{student.grade} · {student.section}</span></>} />
         <Metric label="Amount" value={format(payment.amount)} />
         <Metric label="Recorder" value="Casey Cashier (sample)" />
-        <Metric label="Email status" value={<StatusBadge status="Queued" />} />
+        <Metric label="Email status" value={<StatusBadge className={PROMINENT_STATUS_BADGE_CLASS} status="Queued" />} />
       </div>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <ListCard
@@ -1052,6 +1071,7 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
 }
 
 const paymentMethodOptions = [{ value: "Cash", label: "Cash" }];
+const PROMINENT_STATUS_BADGE_CLASS = "gap-1.5 px-2.5 py-0.5 text-xl font-bold leading-tight tracking-tight [&_svg]:h-5 [&_svg]:w-5";
 
 function dueRecordForAccount(account: ReturnType<typeof getBillingAccount>) {
   const installment = account?.schedule.find((item) => item.paid < item.amount);
@@ -1658,34 +1678,17 @@ function CloseoutTabs({
 
 export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUser; workspaceSwitch?: ReactNode }) {
   const filters = useTableFilters({ query: "", daysMinimum: "" });
-  const followupAccounts = [
-    {
-      id: students[2]!.id,
-      student: students[2]!.name,
-      guardianEmail: null,
-      guardianMobile: "0917 555 0103",
-      amountOverdue: "₱8,500.00",
-      daysOverdue: "12",
-      lastReminder: "Never",
-    },
-    {
-      id: students[1]!.id,
-      student: students[1]!.name,
-      guardianEmail: getMockGuardianContact(students[1]!.id)?.email ?? "No guardian email",
-      guardianMobile: getMockGuardianContact(students[1]!.id)?.mobile ?? "No guardian mobile number",
-      amountOverdue: "₱4,200.00",
-      daysOverdue: "3",
-      lastReminder: "Sep 20, 2026",
-    },
-  ];
-  const visibleFollowupAccounts = followupAccounts.filter((account) => (
-    account.student.toLowerCase().includes(filters.applied.query.trim().toLowerCase())
-    && (!filters.applied.daysMinimum || Number(account.daysOverdue) >= Number(filters.applied.daysMinimum))
-  ));
+  const canSendReminders = can(user, "followup.send");
+  const followupAccounts = selectMockFollowUpAccounts();
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>(["email"]);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  const visibleFollowupAccounts = followupAccounts.filter((account) => (
+    account.student.toLowerCase().includes(filters.applied.query.trim().toLowerCase())
+    && (!filters.applied.daysMinimum || account.daysOverdue >= Number(filters.applied.daysMinimum))
+    && (!canSendReminders || hasSelectedReminderContact(notificationChannels, { email: account.guardianEmail, mobile: account.guardianMobile }))
+  ));
   const selectedAccounts = followupAccounts.filter((account) =>
     selectedAccountIds.includes(account.id),
   );
@@ -1731,7 +1734,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
         </p>
       )}
       <ListCard
-            toolbar={<div className="space-y-3"><TableFilters embedded scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onReset={filters.reset} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />{can(user, "followup.send") ? (
+            toolbar={<div className="space-y-3"><TableFilters embedded scope="Sample follow-up queue" defaults={{ query: "", daysMinimum: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[{ key: "daysMinimum", label: "Minimum days overdue", type: "number", min: "0" }]} onChange={filters.update} onSearch={searchFollowup} onApply={applyFollowupFilters} onClear={clearFollowupFilters} onRemove={removeFollowupFilter} />{can(user, "followup.send") ? (
               <div className="flex w-full flex-wrap items-center gap-3">
                 <SelectAllCheckbox
                   label="Select all listed accounts"
@@ -1746,7 +1749,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
                     value={channelsValue(notificationChannels)}
                     options={REMINDER_CHANNEL_OPTIONS}
                     disabled={sent}
-                    onChange={(value) => setNotificationChannels(channelsFromValue(value))}
+                    onChange={(value) => { setSelectedAccountIds([]); setNotificationChannels(channelsFromValue(value)); }}
                     className="min-w-40"
                   />
                 </span>
@@ -1759,9 +1762,10 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
             isRowSelected={(index) => selectedAccountIds.includes(visibleFollowupAccounts[index]?.id ?? "")}
             headers={[
               "Student",
-              "Guardian email",
-              "Amount overdue",
+              "Guardian contact",
+              "Amount due",
               "Days overdue",
+              "Status",
               "Last reminder",
             ]}
             rows={visibleFollowupAccounts.map((account) => [
@@ -1778,31 +1782,49 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
                   <span>{account.student}</span>
                 </div>
               ) : account.student,
-              account.guardianEmail ?? "missing email",
-              account.amountOverdue,
+              selectedReminderContacts(notificationChannels, { email: account.guardianEmail, mobile: account.guardianMobile }).join(" · "),
+              format(account.amountDue),
               account.daysOverdue,
-              account.lastReminder,
+              <StatusBadge status={account.status} />,
+              "Not recorded",
             ])}
           />
-      <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title={notificationChannels.includes("sms") ? "Review reminder notifications" : "Review reminder emails"}>
+      <MockDialog open={reviewOpen} onOpenChange={setReviewOpen} title={notificationChannels.includes("sms") ? "Review reminder notifications" : "Review reminder emails"} contentClassName="w-[min(56rem,calc(100vw-2rem))]">
         <div className="mt-2 space-y-3 text-sm text-text-secondary">
-          <div>
-            <p className="font-medium text-text-primary">
-              {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"} will be sent by {notificationChannels.includes("email") && notificationChannels.includes("sms") ? "email and SMS" : notificationChannels.includes("sms") ? "SMS" : "email"}:
-            </p>
-            {recipientAccounts.length > 0 ? (
-              <ul className="mt-1 list-disc pl-5">
-                {recipientAccounts.map((account) => (
-                  <li key={account.id}>
-                    {account.student} — {notificationChannels.includes("email") && account.guardianEmail ? `Email: ${account.guardianEmail}` : ""}{notificationChannels.includes("email") && account.guardianEmail && notificationChannels.includes("sms") && account.guardianMobile ? "; " : ""}{notificationChannels.includes("sms") && account.guardianMobile ? `SMS: ${account.guardianMobile}` : ""}; {account.amountOverdue} overdue
-                    {" "}for {account.daysOverdue} days
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1">No selected accounts have the chosen notification contact.</p>
-            )}
-          </div>
+          <p className="font-medium text-text-primary">
+            {recipientAccounts.length} reminder{recipientAccounts.length === 1 ? "" : "s"} will be sent by {notificationChannels.includes("email") && notificationChannels.includes("sms") ? "email and SMS" : notificationChannels.includes("sms") ? "SMS" : "email"}.
+          </p>
+          {recipientAccounts.length > 0 ? (
+            <div className="max-h-52 overflow-y-auto rounded-md border border-border p-1">
+              <table className="w-full table-fixed border-collapse text-left text-sm">
+                <caption className="sr-only">Reminder recipients</caption>
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b border-border">
+                    <th scope="col" className="px-3 py-2 text-xs font-semibold text-text-secondary">Student</th>
+                    <th scope="col" className="px-3 py-2 text-xs font-semibold text-text-secondary">Contact</th>
+                    <th scope="col" className="px-3 py-2 text-right text-xs font-semibold text-text-secondary">Amount due</th>
+                    <th scope="col" className="px-3 py-2 text-xs font-semibold text-text-secondary">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recipientAccounts.map((account) => (
+                    <tr key={account.id} className="border-b border-border last:border-b-0">
+                      <th scope="row" className="px-3 py-2 font-medium text-text-primary">{account.student}</th>
+                      <td className="px-3 py-2 break-words">
+                        {notificationChannels.includes("email") && account.guardianEmail ? `Email: ${account.guardianEmail}` : ""}
+                        {notificationChannels.includes("email") && account.guardianEmail && notificationChannels.includes("sms") && account.guardianMobile ? " · " : ""}
+                        {notificationChannels.includes("sms") && account.guardianMobile ? `SMS: ${account.guardianMobile}` : ""}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right font-medium tabular-nums text-text-primary">{format(account.amountDue)}</td>
+                      <td className="whitespace-nowrap px-3 py-2">{account.status}{account.status === "Overdue" ? ` (${account.daysOverdue} days)` : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No selected accounts have the chosen notification contact.</p>
+          )}
           {skippedAccounts.length > 0 && (
             <p>
               {skippedAccounts.map((account) => account.student).join(", ")} will be skipped because
@@ -2236,7 +2258,7 @@ function MockReportPage({
         { key: "grade", label: "Grade" }, { key: "section", label: "Section" },
         { key: "minimumBalance", label: "Minimum balance", type: "number", min: "0", step: "0.01" },
         { key: "status", label: "Status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Overdue", label: "Overdue" }, { value: "Due soon", label: "Due soon" }] },
-      ] : [{ key: "reportDate", label: type === "monthly" ? "Reporting month" : "Reporting date", type: "date" }, { key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
+      ] : [{ key: "reportDate", label: type === "monthly" ? "Reporting month" : "Reporting date", type: "date" }, { key: "category", label: type === "monthly" ? "Fee category" : type === "statement" ? "Item" : "Section", type: "select", options: [{ value: "", label: "All rows" }, ...(type === "statement" ? ["Tuition installment", "Payment OR-2026-001000", "Balance"].map((value) => ({ value, label: value })) : report.rows.map((row) => ({ value: row[0], label: row[0] }))) ] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} />;
   return (
     <>
       <PageHeader
@@ -2321,7 +2343,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
         toolbar={<TableFilters embedded scope="Sample notification log" defaults={defaults} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search student" }} fields={[
         { key: "status", label: "Status", type: "select", options: notificationStatusOptions },
         { key: "channel", label: "Channel", type: "select", options: [{ value: "", label: "All channels" }, { value: "Email", label: "Email" }, { value: "SMS", label: "SMS" }] },
-      ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onReset={filters.reset} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />}
+      ]} onChange={filters.update} onSearch={filters.search} onApply={applyNotificationFilters} onClear={clearNotificationFilters} onRemove={removeNotificationFilter} />}
         headers={["Student", "Type", "Channel", "Recipient", "SMS load fee", "Status", "Attempts", "Actions"]}
         rows={rows.map((row) => [
           row.student,
@@ -2632,6 +2654,7 @@ export function SettingsPage({
           className="mt-4"
           headers={editable && mockActionAvailable ? [...current.headers, "Actions"] : [...current.headers]}
           paginate={section === "fees" ? { label: "fee items", fixedPageSize: true } : undefined}
+          columnClassNames={section === "fees" ? ["w-[20%]", "w-[14%]", "w-[36%]", "w-[12%]", editable ? "w-[18%]" : ""] : []}
           rows={section === "fees"
             ? feeRows.map((row) => [
               row.schoolYear,
@@ -2937,10 +2960,12 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           toolbar={<TableFilters embedded scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
         { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Accounting Officer", label: "Accounting Officer" }, { value: "Auditor", label: "Auditor" }, { value: "Registrar", label: "Registrar" }, ...(user?.role === "super_admin" ? [{ value: "Super Admin", label: "Super Admin" }] : [])] },
         ...(archivedView ? [] : [{ key: "status" as const, label: "Status", type: "select" as const, options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]),
-      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />}
+      ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} />}
           paginate={{ label: "users" }}
           empty={<p role="status" className="text-sm text-text-secondary">{archivedView ? "No archived users match that search." : "No users match that name or username."}</p>}
           headers={archivedView ? ["Name", "Username", "Role", "Archived", "Scheduled anonymization", "Action"] : ["Name", "Username", "Role", "State", "Actions"]}
+          tableClassName="min-w-[1000px]"
+          columnClassNames={archivedView ? ["w-[22%]", "w-[16%]", "w-[18%]", "w-[15%]", "w-[19%]", "w-[10%]"] : ["w-[21%]", "w-[16%]", "w-[19%]", "w-[12%]", "w-[32%]"]}
           centeredColumns={archivedView ? [3, 4, 5] : [3, 4]}
           rows={visibleUsers.map((user) => [
             user.name,
@@ -2952,7 +2977,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
               <Button key={`${user.id}-restore`} type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => setRestoreTarget(user)}>Restore</Button>,
             ] : [
               <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
-              <div key={`${user.id}-actions`} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
+              <div key={`${user.id}-actions`} className="flex flex-nowrap justify-center gap-2 whitespace-nowrap"><Button type="button" variant="secondary" size="sm" className="min-h-control shrink-0" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control shrink-0" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control shrink-0" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
             ]),
           ])}
         />
@@ -3112,7 +3137,7 @@ export function RolesPage() {
     && (!filters.applied.event || row.some((value) => value.toLowerCase().includes(filters.applied.event.toLowerCase())));
   const filterBar = <TableFilters embedded={security} scope={security ? "Sample security log" : "Sample audit log"} defaults={{ query: "", event: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search log entries" }} fields={[{ key: "event", label: "Event", type: "select", options: security
     ? [{ value: "", label: "All events" }, { value: "Sign-in", label: "Sign-in" }, { value: "Sign-out", label: "Sign-out" }, { value: "Password reset", label: "Password reset" }, { value: "deactivated", label: "Deactivation" }, { value: "reactivated", label: "Reactivation" }]
-    : [{ value: "", label: "All events" }, { value: "payment", label: "Payment" }, { value: "void", label: "Void" }, { value: "sign-off", label: "Close-out sign-off" }] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onReset={filters.reset} onClear={filters.clear} onRemove={filters.remove} />;
+    : [{ value: "", label: "All events" }, { value: "payment", label: "Payment" }, { value: "void", label: "Void" }, { value: "sign-off", label: "Close-out sign-off" }] }]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} />;
   if (security)
     return (
       <>
@@ -3295,6 +3320,8 @@ function ListCard({
   toolbar,
   className,
   centeredColumns = [],
+  columnClassNames = [],
+  tableClassName,
   paginate,
   empty,
   onRowClick,
@@ -3306,6 +3333,10 @@ function ListCard({
   toolbar?: ReactNode;
   className?: string;
   centeredColumns?: number[];
+  /** Page-specific column budgets keep dissimilar content balanced without changing other tables. */
+  columnClassNames?: string[];
+  /** An individual table can set a wider minimum when its controls must remain on one line. */
+  tableClassName?: string;
   /** Paginate inside the card, after sorting, so a sort orders the whole list rather than one page. */
   paginate?: { label: string; fixedPageSize?: boolean };
   /** Shown in place of the table when there are no rows, so the toolbar stays usable. */
@@ -3327,7 +3358,8 @@ function ListCard({
       {title && <div className="border-b border-border px-5 pb-3 pt-5"><h2 className="text-base font-semibold text-text-primary">{title}</h2></div>}
       {toolbar && <div className="border-b border-border px-5 py-3">{toolbar}</div>}
       {empty && rows.length === 0 ? <div className="px-5 py-6">{empty}</div> : <div className={TABLE_SCROLL_CLASS}>
-        <table className={cn(TABLE_CLASS, "min-w-[560px]")}>
+        <table className={cn(TABLE_CLASS, tableClassName ?? "min-w-[560px]")}>
+          {columnClassNames.length > 0 && <colgroup>{headers.map((header, index) => <col key={`${header}-${index}`} className={columnClassNames[index]} />)}</colgroup>}
           <thead>
             <tr className="border-b border-border">
               {headers.map((header, index) => isSortableHeader(header) ? (

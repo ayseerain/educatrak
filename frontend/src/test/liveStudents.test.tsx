@@ -53,6 +53,7 @@ describe("live Registrar student list", () => {
 
     expect(screen.getByRole("heading", { name: "Add student" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
   });
 
   it("shows the MockDB existing-student edit form when mock mode is active", () => {
@@ -60,6 +61,7 @@ describe("live Registrar student list", () => {
 
     expect(screen.getByRole("heading", { name: "Edit student" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
   });
 
   it("shows financial and guardian context while retaining Registrar student-record widgets", () => {
@@ -71,6 +73,7 @@ describe("live Registrar student list", () => {
     expect(screen.queryByText("Section")).not.toBeInTheDocument();
     expect(screen.getByText("Student status")).toBeInTheDocument();
     expect(screen.getByText("Account balance")).toBeInTheDocument();
+    expect(screen.getByText("Active").parentElement).toHaveClass("text-xl", "font-bold", "tracking-tight");
     expect(screen.getByText("Guardian details")).toBeInTheDocument();
   });
 

@@ -24,21 +24,21 @@ describe("live billing account pages", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: [summary], meta: { currentPage: 1, lastPage: 1, total: 1 } }),
+      json: async () => ({ data: [summary], meta: { currentPage: 1, lastPage: 1, total: 1, perPage: 10, currentSchoolYearId: "year-1", schoolYears: [{ id: "year-1", label: "SY 2026-2027" }, { id: "year-0", label: "SY 2025-2026" }] } }),
     });
     vi.stubGlobal("fetch", fetchMock);
     renderPage(<LiveBillingAccounts />);
 
     expect(await screen.findByText("Morgan Sample Student")).toBeInTheDocument();
     expect(screen.getByText("₱350.00")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/billing-accounts?page=1&per_page=10", expect.objectContaining({ credentials: "include" }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/billing-accounts?school_year_scope=current&page=1&per_page=10", expect.objectContaining({ credentials: "include" }));
   });
 
   it("sends the selected search, school-year, grade and status filters and resets pagination", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: [summary], meta: { currentPage: 1, lastPage: 3, total: 51 } }),
+      json: async () => ({ data: [summary], meta: { currentPage: 1, lastPage: 3, total: 51, perPage: 10, currentSchoolYearId: "year-1", schoolYears: [{ id: "year-1", label: "SY 2026-2027" }, { id: "year-0", label: "SY 2025-2026" }] } }),
     });
     const user = userEvent.setup();
     vi.stubGlobal("fetch", fetchMock);
@@ -47,13 +47,14 @@ describe("live billing account pages", () => {
     expect(await screen.findByText("Morgan Sample Student")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Next page" }));
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith(
-      "/api/billing-accounts?page=2&per_page=10",
+      "/api/billing-accounts?school_year_scope=current&page=2&per_page=10",
       expect.objectContaining({ credentials: "include" }),
     ));
 
     await user.type(screen.getByRole("searchbox", { name: "Search billing accounts" }), "SAMPLE-4002");
     await user.click(screen.getByRole("button", { name: /^Filter/ }));
-    await user.type(screen.getByRole("textbox", { name: "Filter by school year" }), "SY 2026-2027");
+    await user.click(screen.getByRole("button", { name: "School year" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "SY 2025-2026" }));
     await user.type(screen.getByRole("textbox", { name: "Filter by grade" }), "Grade 4");
     await user.click(screen.getByRole("button", { name: "Filter by billing status" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Due soon" }));
@@ -62,7 +63,7 @@ describe("live billing account pages", () => {
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith(
-      "/api/billing-accounts?query=SAMPLE-4002&school_year=SY+2026-2027&grade=Grade+4&status=due_soon&minimum_balance_cents=10000&maximum_balance_cents=50000&page=1&per_page=10",
+      "/api/billing-accounts?query=SAMPLE-4002&school_year_id=year-0&grade=Grade+4&status=due_soon&minimum_balance_cents=10000&maximum_balance_cents=50000&page=1&per_page=10",
       expect.objectContaining({ credentials: "include" }),
     ));
   });
@@ -88,10 +89,27 @@ describe("live billing account pages", () => {
     expect(screen.getByText("First installment")).toBeInTheDocument();
     expect(screen.getByText("OR-2026-001050")).toBeInTheDocument();
     expect(screen.getByText("Approved sample grant")).toBeInTheDocument();
+    expect(screen.getAllByText("Current").length).toBeGreaterThan(0);
+    expect(screen.getByText("Valid")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Account activity" })).toBeInTheDocument();
     expect(screen.getByText("Receipt reprinted")).toBeInTheDocument();
     expect(screen.getByText("Receipt OR-2026-001050 · Reprints 1")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Record payment" })).toHaveAttribute("href", "/payments/new?student=student-1");
+  });
+
+  it("lets a cashier add an auditable adjustment without exposing the action to accounting", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: { ...summary, items: [], installments: [], payments: [], adjustments: [], activity: [] } }) })
+      .mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: { ...summary, items: [], installments: [], payments: [], adjustments: [], activity: [] } }) });
+    vi.stubGlobal("fetch", fetchMock); const user = userEvent.setup();
+    renderPage(<LiveBillingAccountDetail user={cashier} />, "/accounts/account-1");
+    await user.click(await screen.findByRole("button", { name: "Manage adjustments" }));
+    await user.type(screen.getByRole("textbox", { name: "Adjustment amount" }), "50.00");
+    await user.type(screen.getByRole("textbox", { name: "Adjustment reason" }), "Approved sample discount");
+    await user.click(screen.getByRole("button", { name: "Save adjustment" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/sanctum/csrf-cookie", expect.anything()));
+    expect(fetchMock).toHaveBeenCalledWith("/api/billing-accounts/account-1/adjustments", expect.objectContaining({ method: "POST", body: JSON.stringify({ type: "discount", amount_cents: -5000, reason: "Approved sample discount" }) }));
   });
 });
 

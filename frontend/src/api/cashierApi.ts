@@ -343,6 +343,10 @@ export interface StudentRecordInput {
   gradeLevelId: string;
   sectionId: string;
   status: string;
+  guardianName: string;
+  guardianRelationship: string;
+  guardianEmail: string;
+  guardianMobile: string;
 }
 
 export async function listStudents(filters: { query?: string; grade?: string; section?: string; status?: string; page?: number; perPage?: number }): Promise<{ data: StudentListItem[]; currentPage: number; lastPage: number; total: number; perPage: number }> {
@@ -382,6 +386,10 @@ function toStudentPayload(input: StudentRecordInput) {
     grade_level_id: Number(input.gradeLevelId),
     section_id: Number(input.sectionId),
     status: input.status,
+    guardian_name: input.guardianName,
+    guardian_relationship: input.guardianRelationship,
+    guardian_email: input.guardianEmail,
+    guardian_mobile: input.guardianMobile,
   };
 }
 
@@ -408,10 +416,21 @@ export interface BillingAccountDetail extends BillingAccountSummary {
   activity: { id: string; action: string; occurredAt: string; actor: string | null; details: { amountCents?: number; receiptNo?: string | null; status?: string; reason?: string; decision?: string; decisionNote?: string; reprintCount?: number; adjustmentType?: string } }[];
 }
 
-export async function listBillingAccounts(filters: { query?: string; schoolYear?: string; grade?: string; status?: string; minimumBalanceCents?: number; maximumBalanceCents?: number; page?: number; perPage?: number }): Promise<{ data: BillingAccountSummary[]; currentPage: number; lastPage: number; total: number; perPage: number }> {
+export interface BillingAccountPage {
+  data: BillingAccountSummary[];
+  currentPage: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
+  currentSchoolYearId: string | null;
+  schoolYears: { id: string; label: string }[];
+}
+
+export async function listBillingAccounts(filters: { query?: string; schoolYearId?: string; schoolYearScope?: "current" | "all"; grade?: string; status?: string; minimumBalanceCents?: number; maximumBalanceCents?: number; page?: number; perPage?: number }): Promise<BillingAccountPage> {
   const params = new URLSearchParams();
   if (filters.query?.trim()) params.set("query", filters.query.trim());
-  if (filters.schoolYear?.trim()) params.set("school_year", filters.schoolYear.trim());
+  if (filters.schoolYearId) params.set("school_year_id", filters.schoolYearId);
+  if (filters.schoolYearScope) params.set("school_year_scope", filters.schoolYearScope);
   if (filters.grade?.trim()) params.set("grade", filters.grade.trim());
   if (filters.status?.trim()) params.set("status", filters.status.trim());
   if (filters.minimumBalanceCents !== undefined) params.set("minimum_balance_cents", String(filters.minimumBalanceCents));
@@ -419,8 +438,12 @@ export async function listBillingAccounts(filters: { query?: string; schoolYear?
   if (filters.page) params.set("page", String(filters.page));
   params.set("per_page", String(filters.perPage ?? 10));
   const query = params.toString();
-  const result = await request<{ data: BillingAccountSummary[]; meta: { currentPage: number; lastPage: number; total: number; perPage: number } }>(`/billing-accounts${query ? `?${query}` : ""}`);
-  return { data: result.data, ...result.meta };
+  const result = await request<{ data: BillingAccountSummary[]; meta: { currentPage: number; lastPage: number; total: number; perPage: number; currentSchoolYearId?: string | null; schoolYears?: { id: string; label: string }[] } }>(`/billing-accounts${query ? `?${query}` : ""}`);
+  return { data: result.data, ...result.meta, currentSchoolYearId: result.meta.currentSchoolYearId ?? null, schoolYears: result.meta.schoolYears ?? [] };
+}
+
+export async function createBillingAdjustment(accountId: string, input: { type: "discount" | "scholarship" | "correction"; amountCents: number; reason: string }): Promise<void> {
+  await request(`/billing-accounts/${encodeURIComponent(accountId)}/adjustments`, { method: "POST", body: JSON.stringify({ type: input.type, amount_cents: input.amountCents, reason: input.reason }) });
 }
 
 export async function getBillingAccount(accountId: string): Promise<BillingAccountDetail> {
