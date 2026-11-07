@@ -390,6 +390,14 @@ Updated: Monday, October 26, 2026 — 10:26:27 +08:00. The MockDB archive confir
 - **Build scope:** Backup status/history, run backup, restore-test date and restore instructions.
 - **Build status:** [x] Built
 - **Resume Note:** The development mock retains backup-status and restore-instruction examples. Production now shows an unavailable state because backup ownership, retention, storage, and restore-drill evidence are not configured; formal Phase 2 audit remains pending.
+
+### B41. Student Masterlist Import — M2
+
+- **Route:** `/students/import`
+- **Documented access:** Registrar (`student.edit`); MockDB only.
+- **Build scope:** Phase 1 interface for CSV/XLSX selection, column-mapping and review waiting states, row-warning preview structure, and final confirmation affordance.
+- **Build status:** [x] Phase 1 UI built
+- **Resume Note:** Registrar-only route and Students-page entry implemented. File selection checks CSV/XLSX extension and rejects empty files; no file contents are parsed and no MockDB data changes. Mapping and review remain waiting states for later approved phases. Student Number-to-LRN replacement is a separate task and must precede parsing/apply work.
 ---
 
 # 2. Cross-Check & Audit Phase
@@ -889,6 +897,8 @@ A screen is never marked audited merely because it was previously built.
   - **Resume Note:** Production Administrator security events and the separate Auditor-only financial-change audit read persisted events through their role-specific APIs; Accounting is denied the latter. See B39 evidence above; focused audit authorization tests and the full Laravel suite pass when bundled PHP extensions are loaded, and formal Phase 2 audit remains pending.
 - [x] B40 — **Backup & Recovery** (`/admin/backup`)
   - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
+- [x] B41 — **Student Masterlist Import** (`/students/import`)
+  - **Resume Note:** Phase 1 interface only; file selection and waiting states are implemented. Parsing, row validation, preview, and MockDB apply remain for later approved phases; Student Number-to-LRN replacement is separate.
 
 ## Cross-Check & Audit Phase Summary
 
@@ -972,6 +982,8 @@ A screen is never marked audited merely because it was previously built.
   - **Resume Note:** Administrator receives security events; Super Admin receives security events plus read-only finance/change audit; Auditor receives read-only finance/change audit; Accounting has no separate audit workspace. API, route-capability, and role navigation checks cover the split. Browser, actor-retention, screen-reader, contrast, and all-role evidence remain open.
 - [ ] A40 — **Backup & Recovery** (`/admin/backup`)
   - **Resume Note:** Production unavailable under U07; no backup/history API or approved deployment/recovery plan.
+- [ ] A41 — **Student Masterlist Import** (`/students/import`)
+  - **Resume Note:** Phase 1 UI uses the Registrar `student.edit` guard and MockDB-only availability. Browser role/accessibility checks and later-phase import behavior remain pending.
 
 ---
 

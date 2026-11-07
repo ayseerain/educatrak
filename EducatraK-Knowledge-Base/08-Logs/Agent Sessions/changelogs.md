@@ -25,6 +25,15 @@
 
 ## Entries
 
+### Saturday, November 07, 2026 — 11:48:15 Asia/Manila | Add Phase 1 student masterlist import interface
+
+- **Agent:** Codex
+- **Summary:** Added the Registrar-only `/students/import` MockDB interface, file selection for CSV/XLSX with extension and empty-file checks, and waiting states for mapping and review. Added its Students-page entry. Updated the requirements, decision record, and frontend ledger. Changed the viewport tag to `width=device-width` so the screen's approved responsive layout works on phones.
+- **Files:** Added `frontend/src/features/students/StudentImportPage.tsx` and `EducatraK-Knowledge-Base/06-Decisions/2026-11-07-student-masterlist-import.md`. Modified `frontend/src/App.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/index.html`, `EducatraK-Knowledge-Base/01-Requirements/Modules-and-Features.md`, `EducatraK-Knowledge-Base/01-Requirements/Screens-Routes-and-Flows.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, this tracker, and this changelog.
+- **Validation:** `npm.cmd run build` passed. Design Taste app lint passed (0 FAIL, 0 WARN). Production browser inspection passed at 1440, 768, and 390px (0 FAIL, 0 WARN); screenshots were reviewed. `git diff --check` passed with a line-ending warning for `Screens-Routes-and-Flows.md`. Tests not run.
+- **Commit/PR:** Not available at time of entry.
+- **Follow-ups:** Student Number-to-LRN replacement remains a separate task and must precede parsing/apply phases. Existing screens need a device-width review after the global viewport change. Parsing, row validation, preview, and MockDB writes remain for later approved phases.
+
 ### Friday, November 06, 2026 — 14:08:57 +08:00 | Add a MockDB email contact to Follow-up
 
 - **Agent:** Codex
@@ -2106,3 +2115,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Playwright drove visible Chrome at 1366×900 and 390×844. The Registrar profile displayed personal information and no billing content; Cashier and Accounting profiles retained billing content and omitted personal fields. Add/Edit forms retained required fields, derived read-only age, and guardian controls. No horizontal overflow was found. Keyboard navigation reached the form controls and gender options, and visible focus indicators appeared. Contrast ratios computed against white were 17.40:1 for `#1A1A1A`, 6.19:1 for `#616161`, and 9.19:1 for `#035419`. Focused Vitest checks passed (90 tests); `npm.cmd run build` passed. The full frontend test run was interrupted after failures appeared in dashboard, login, and live workflow suites. No backend files or project dependencies changed; Playwright was installed under the system temporary directory.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Isolate the affected full-suite tests in `Issues-and-TODOs.md`. The visible Chrome window remains open for review.
+
+### Saturday, November 07, 2026 — 15:33:10 +08:00 | Make MockDB detail tables row-clickable
+
+- **Agent:** Codex
+- **Summary:** Replaced name- and receipt-only hyperlinks in the MockDB billing-account and payment lists with whole-row detail navigation. Student-profile billing-account rows use the same interaction. Rows have pointer, hover, visible keyboard focus, accessible names, and Enter/Space activation; selection and operational-only tables are unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- operations.test.tsx` passed (65 tests). `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings for unrelated knowledge-base files.
+- **Commit/PR:** Not created.
+- **Follow-ups:** The focused combined test run also exposed an existing failing Registrar-profile assertion in `liveStudents.test.tsx`; this change does not alter that profile's displayed fields. The live-API list components retain their existing name/receipt links because this request's screenshot and default application data source are MockDB.

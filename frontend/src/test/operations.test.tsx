@@ -1108,6 +1108,28 @@ describe("operational page navigation", () => {
     }
   });
 
+  it("opens MockDB account and payment details from accessible table rows", async () => {
+    const user = userEvent.setup();
+    const accounts = render(
+      <MemoryRouter initialEntries={["/accounts"]}>
+        <Routes><Route path="/accounts" element={<AccountsPage user={cashier} />} /><Route path="/accounts/:id" element={<LocationPath />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getAllByRole("link", { name: /open billing account/i })[0]!);
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/accounts/");
+    accounts.unmount();
+
+    render(
+      <MemoryRouter initialEntries={["/payments"]}>
+        <Routes><Route path="/payments" element={<PaymentsPage user={cashier} />} /><Route path="/payments/:id" element={<LocationPath />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.keyDown(screen.getAllByRole("link", { name: /open payment/i })[0]!, { key: "Enter" });
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/");
+  });
+
   it("keeps reports with Accounting and Auditor review separate", () => {
     const cashierHub = render(<MemoryRouter><ReportsHubPage user={cashier} /></MemoryRouter>);
     expect(screen.queryByText(/daily collection/i)).not.toBeInTheDocument();

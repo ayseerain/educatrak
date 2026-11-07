@@ -361,9 +361,10 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
         }
         action={
           can(user, "student.edit") ? (
-            <Link className={primaryLinkClass} to="/students/new">
-              Add student
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              {!isLiveCashierApiEnabled() && <Link className={secondaryLinkClass} to="/students/import">Import students</Link>}
+              <Link className={primaryLinkClass} to="/students/new">Add student</Link>
+            </div>
           ) : undefined
         }
       />
@@ -765,6 +766,7 @@ function StudentOverviewPanel({
   student: typeof firstStudent;
   user: AuthenticatedUser;
 }) {
+  const navigate = useNavigate();
   if (user.role === "registrar") {
     const age = calculateStudentAge(student.dateOfBirth);
     return (
@@ -843,14 +845,15 @@ function StudentOverviewPanel({
           <p className="mt-1 text-sm text-text-secondary">Each school year remains a separate billing record. Historical balances and payments are not carried forward.</p>
           <ListCard
             className="mt-4"
-            headers={["School year", "Grade", "Status", "Balance", "Action"]}
+            headers={["School year", "Grade", "Status", "Balance"]}
             rows={getStudentBillingAccounts(student.id).map((account) => [
               account.schoolYear,
               account.gradeLevel,
               <StatusBadge status={account.status} />,
               format(account.balance),
-              can(user, "account.view") ? <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>View</Link> : "Unavailable",
             ])}
+            onRowClick={can(user, "account.view") ? (index) => navigate(`/accounts/${getStudentBillingAccounts(student.id)[index]?.id}`) : undefined}
+            getRowLabel={can(user, "account.view") ? (index) => `Open billing account for ${getStudentBillingAccounts(student.id)[index]?.schoolYear ?? "student"}` : undefined}
           />
         </Card>
       )}
@@ -871,6 +874,7 @@ const mockAccountFilters = { query: "", schoolYear: "", grade: "", status: "", m
 
 export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   if (isLiveCashierApiEnabled()) return <LiveBillingAccounts />;
+  const navigate = useNavigate();
   const filters = useTableFilters(mockAccountFilters);
   const visibleAccounts = billingAccounts.filter((account) => {
     const student = getStudentById(account.studentId);
@@ -904,12 +908,14 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
         { key: "maximumBalance", label: "Maximum balance (PHP)", type: "number", min: "0", step: "0.01" },
       ]} onChange={filters.update} onSearch={filters.search} onApply={filters.apply} onClear={filters.clear} onRemove={filters.remove} validate={(draft) => moneyRangeError(draft.minimumBalance, draft.maximumBalance)} />}
         rows={visibleAccounts.map((account) => [
-          <Link key={account.id} className={inlineLinkClass} to={`/accounts/${account.id}`}>{getStudentById(account.studentId)?.name ?? "Unknown student"}</Link>,
+          getStudentById(account.studentId)?.name ?? "Unknown student",
           account.schoolYear,
           format(account.balance),
           account.status,
         ])}
         headers={["Student", "School year", "Balance", "Billing status"]}
+        onRowClick={(index) => navigate(`/accounts/${visibleAccounts[index]?.id}`)}
+        getRowLabel={(index) => `Open billing account for ${getStudentById(visibleAccounts[index]?.studentId)?.name ?? "student"}`}
       />
     </>
   );
@@ -1067,6 +1073,7 @@ export function PaymentsPage({
 }) {
   if (isLiveCashierApiEnabled()) return <LivePaymentsPage user={user} detail={detail} />;
   if (detail) return <PaymentDetailPage user={user} />;
+  const navigate = useNavigate();
   const filters = useTableFilters(mockPaymentFilters);
   const visiblePayments = payments.filter((payment) => {
     const applied = filters.applied;
@@ -1105,15 +1112,15 @@ export function PaymentsPage({
         paginate={{ label: "payments" }}
         headers={["Receipt", "Student", "Date", "Amount", "Method", "Status"]}
         rows={visiblePayments.map((payment) => [
-          <Link className={inlineLinkClass} to={`/payments/${payment.id}`}>
-            {payment.receiptNo}
-          </Link>,
+          payment.receiptNo,
           <><span className="block">{getStudentById(payment.studentId)?.name ?? "Unknown student"}</span><span className="mt-0.5 block text-xs text-text-secondary">{[getStudentById(payment.studentId)?.grade, getStudentById(payment.studentId)?.section].filter(Boolean).join(" · ")}</span></>,
           payment.paidOn,
           format(payment.amount),
           "Cash",
           payment.status,
         ])}
+        onRowClick={(index) => navigate(`/payments/${visiblePayments[index]?.id}`)}
+        getRowLabel={(index) => `Open payment ${visiblePayments[index]?.receiptNo ?? "record"}`}
       />
     </>
   );
@@ -3468,6 +3475,7 @@ function ListCard({
   empty,
   onRowClick,
   isRowSelected,
+  getRowLabel,
 }: {
   headers: string[];
   rows: ReactNode[][];
@@ -3486,6 +3494,8 @@ function ListCard({
   /** Selectable rows: a click anywhere on the row (except its own controls) toggles it. Index is into `rows`. */
   onRowClick?: (rowIndex: number) => void;
   isRowSelected?: (rowIndex: number) => boolean;
+  /** Makes a detail row keyboard-accessible and announces where activation leads. */
+  getRowLabel?: (rowIndex: number) => string;
 }) {
   const sorting = useTableSort();
   const sortedRows = sortTableRows(rows, sorting.sort, (row, key) => cellSortValue(row[Number(key)]));
@@ -3520,13 +3530,22 @@ function ListCard({
               const rowIndex = rows.indexOf(row);
               return (
               <tr
+                aria-label={getRowLabel?.(rowIndex)}
                 className={cn(
                   "border-b border-border transition-colors last:border-0 hover:bg-surface/70 focus-within:bg-surface/70",
                   onRowClick && "cursor-pointer",
+                  getRowLabel && "focus:bg-surface/70 focus:outline-none focus-visible:bg-surface/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-green-dark",
                   isRowSelected?.(rowIndex) && "bg-brand-green-light/15 hover:bg-brand-green-light/25",
                 )}
                 key={rowIndex}
                 onClick={onRowClick ? (event) => { if (!isRowControlClick(event.target)) onRowClick(rowIndex); } : undefined}
+                onKeyDown={getRowLabel && onRowClick ? (event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  onRowClick(rowIndex);
+                } : undefined}
+                role={getRowLabel ? "link" : undefined}
+                tabIndex={getRowLabel ? 0 : undefined}
               >
                 {row.map((cell, itemIndex) => (
                   <td

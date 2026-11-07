@@ -26,6 +26,7 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/` | M0 Dashboard | all (content differs by role) |
 | `/profile` | M0/M1 My profile | all |
 | `/students` | M2 Student list | `student.view` |
+| `/students/import` | M2 Student masterlist import | `student.edit` |
 | `/students/new`, `/students/:id/edit` | M2 Student form | `student.edit` |
 | `/students/:id` | M2 Student profile | `student.view` |
 | `/accounts` | M3 Account list | `account.view` |

@@ -7,6 +7,7 @@ import { can, canViewReport, type ReportKind } from "@/lib/permissions";
 import { SessionExpirationWarning } from "@/features/auth/SessionExpirationWarning";
 import { FirstLoginPage } from "@/features/auth/FirstLoginPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
+import { StudentImportPage } from "@/features/students/StudentImportPage";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -31,7 +32,7 @@ function AuthenticatedApp({ onLogout, onRoleChange, user }: { onLogout: () => vo
   const guarded = (capability: Capability, element: ReactNode) => <Guard user={user} capability={capability}>{element}</Guard>;
   return <Shell user={user} onLogout={onLogout} onRoleChange={onRoleChange}><SessionExpirationWarning /><ScreenTransition screenKey={`${user.role}:${location.pathname}`}>{user.role === "auditor" && !auditorPageAllowed ? <DeniedPage /> : <Routes>
     <Route path="/" element={<DashboardPage user={user} />} /><Route path="/profile" element={<ProfilePage user={user} />} />
-    <Route path="/students" element={guarded("student.view", <StudentsPage user={user} />)} /><Route path="/students/new" element={guarded("student.edit", <StudentFormPage user={user} />)} /><Route path="/students/:id/edit" element={guarded("student.edit", <StudentFormPage user={user} edit />)} /><Route path="/students/:id" element={guarded("student.view", <StudentProfilePage user={user} />)} />
+    <Route path="/students" element={guarded("student.view", <StudentsPage user={user} />)} /><Route path="/students/import" element={guarded("student.edit", <StudentImportPage />)} /><Route path="/students/new" element={guarded("student.edit", <StudentFormPage user={user} />)} /><Route path="/students/:id/edit" element={guarded("student.edit", <StudentFormPage user={user} edit />)} /><Route path="/students/:id" element={guarded("student.view", <StudentProfilePage user={user} />)} />
     <Route path="/accounts" element={guarded("account.view", <AccountsPage user={user} />)} /><Route path="/accounts/new" element={guarded("account.create", <AccountWizardPage user={user} />)} /><Route path="/accounts/:id" element={guarded("account.view", <AccountDetailPage user={user} />)} />
     <Route path="/payments/new" element={guarded("payment.record", <PaymentEntryPage />)} /><Route path="/payments" element={guarded("payment.view", <PaymentsPage user={user} />)} /><Route path="/payments/:id" element={guarded("payment.view", <PaymentsPage user={user} detail />)} /><Route path="/receipts/:id/print" element={guarded("payment.view", <ReceiptPage user={user} />)} />
     <Route path="/voids" element={guarded("payment.void.view", <VoidsPage user={user} />)} /><Route path="/followup" element={guarded("followup.view", <RoleFollowupWorkspace user={user} />)} />

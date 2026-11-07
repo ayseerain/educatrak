@@ -1,5 +1,7 @@
 # Modules and Features
 
+> **Student masterlist import — November 7, 2026.** Approved for the frontend MockDB workflow: Registrar-only `/students/import`, complete masterlist via CSV or XLSX, LRN matching, row-level blockers with warnings, valid rows may proceed, and no backend changes. See `06-Decisions/2026-11-07-student-masterlist-import.md` for approved field and status rules.
+
 > **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
 
 > **Approved operational reassignment — November 5, 2026.** Clearance and Exam Permit are retired from active delivery. The shared Students module is Registrar's student-record workspace and remains Cashier's billing-context workspace. Registrar has basic-record create/edit access and the same read-only student-page financial and guardian context as Cashier; Cashier has no student-mutation access; Accounting remains read-only for student records.
@@ -114,7 +116,7 @@ Registrar (`REG`) can view the same financial balance and guardian-contact conte
 | Edit student | Change name, grade, section, guardian links | REG |
 | Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | REG |
 | Delete student | **Not allowed.** Use Set inactive | - |
-| Bulk add students | Through the Ledger Import wizard (M12) | - (import policy and authority unresolved) |
+| Import student masterlist | Upload complete CSV/XLSX masterlist; match by LRN; block invalid rows with warnings while valid rows may proceed | REG |
 | Jump to Create account / Record payment | Shortcuts on the profile | CSH |
 
 ### M2.2 Guardians
@@ -128,7 +130,7 @@ Registrar (`REG`) can view the same financial balance and guardian-contact conte
 | Flag missing or bounced email | Automatic badge on the student and guardian | system |
 | Delete guardian | **Not allowed** if they have notification history; unlink instead | - |
 
-**Routes:** `/students` and `/students/:id` (`student.view`; Registrar, Cashier, and Accounting); `/students/new` and `/students/:id/edit` (`student.edit`; Registrar only). Registrar receives `student.financial.view` and `guardianContact.view` on student pages only; those capabilities do not grant account or payment actions.
+**Routes:** `/students` and `/students/:id` (`student.view`; Registrar, Cashier, and Accounting); `/students/new`, `/students/:id/edit`, and `/students/import` (`student.edit`; Registrar only). Registrar receives `student.financial.view` and `guardianContact.view` on student pages only; those capabilities do not grant account or payment actions.
 
 ---
 ---
