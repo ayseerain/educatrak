@@ -1238,7 +1238,7 @@ describe("operational page navigation", () => {
     expect(screen.getByText("Grade 7 · Olive")).toBeInTheDocument();
     const emailMetric = screen.getByText("Email status").parentElement;
     expect(emailMetric).not.toBeNull();
-    expect(within(emailMetric!).getByText("Queued").parentElement).toHaveClass("text-xl", "font-bold");
+    expect(within(emailMetric!).getByText("Queued").parentElement).toHaveClass("text-lg", "font-semibold");
   });
 
   it("shows the cashier notification and permitted close-out tabs", () => {

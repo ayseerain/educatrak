@@ -73,7 +73,7 @@ describe("live Registrar student list", () => {
     expect(screen.queryByText("Section")).not.toBeInTheDocument();
     expect(screen.getByText("Student status")).toBeInTheDocument();
     expect(screen.getByText("Account balance")).toBeInTheDocument();
-    expect(screen.getByText("Active").parentElement).toHaveClass("text-xl", "font-bold", "tracking-tight");
+    expect(screen.getByText("Active").parentElement).toHaveClass("text-lg", "font-semibold", "leading-tight");
     expect(screen.getByText("Guardian details")).toBeInTheDocument();
   });
 

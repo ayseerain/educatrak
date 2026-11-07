@@ -1220,7 +1220,7 @@ function PaymentDetailPage({ user }: { user: AuthenticatedUser }) {
 }
 
 const paymentMethodOptions = [{ value: "Cash", label: "Cash" }];
-const PROMINENT_STATUS_BADGE_CLASS = "gap-1.5 px-2.5 py-0.5 text-xl font-bold leading-tight tracking-tight [&_svg]:h-5 [&_svg]:w-5";
+const PROMINENT_STATUS_BADGE_CLASS = "gap-1.5 px-2.5 py-0.5 text-lg font-semibold leading-tight [&_svg]:h-4 [&_svg]:w-4";
 
 function dueRecordForAccount(account: ReturnType<typeof getBillingAccount>) {
   const installment = account?.schedule.find((item) => item.paid < item.amount);
@@ -3455,9 +3455,9 @@ function formatBackupSize(bytes: number): string {
 
 function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <Card className="flex flex-col gap-2 p-5">
+    <Card className="flex min-w-0 flex-col gap-2 p-5">
       <CardLabel className="font-semibold">{label}</CardLabel>
-      <CardValue className="mt-0 truncate text-3xl font-bold tracking-tight">{value}</CardValue>
+      <CardValue className="mt-0 break-words text-xl font-semibold leading-tight tracking-tight">{value}</CardValue>
     </Card>
   );
 }

@@ -72,8 +72,18 @@ describe("live notification log", () => {
 
     await user.click(await screen.findByRole("button", { name: "View entry" }));
 
-    expect(screen.getByRole("dialog", { name: "Notification entry" })).toHaveTextContent("Casey Sample Student");
-    expect(screen.getByRole("dialog", { name: "Notification entry" })).toHaveTextContent("guardian@example.test");
+    const dialog = screen.getByRole("dialog", { name: "Notification entry" });
+    expect(dialog).toHaveTextContent("Casey Sample Student");
+    expect(dialog).toHaveTextContent("guardian@example.test");
+    expect(dialog).toHaveTextContent("Delivery record");
+    expect(screen.getByText("Queued")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Notification entry" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View entry" }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Notification entry" })).not.toBeInTheDocument();
   });
 
   it("keeps retry unavailable while the delivery switch is off", async () => {

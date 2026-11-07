@@ -52,6 +52,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordHelpOpen, setIsForgotPasswordHelpOpen] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
+  const privacyPolicySections = en.login.privacyPolicySections;
 
   useEffect(() => {
     usernameRef.current?.focus();
@@ -272,7 +273,7 @@ export function LoginPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="min-h-control px-1 text-xs font-semibold underline decoration-brand-green-dark/40 underline-offset-2 hover:text-brand-green"
+              className="min-h-control px-1 text-xs font-semibold text-brand-green-dark hover:bg-transparent hover:text-brand-green hover:underline hover:decoration-brand-green-dark/40 underline-offset-2"
               aria-haspopup="dialog"
               aria-expanded={isPrivacyPolicyOpen}
               onClick={() => setIsPrivacyPolicyOpen(true)}
@@ -285,13 +286,24 @@ export function LoginPage() {
               <Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" />
               <Dialog.Content
                 aria-describedby="privacy-policy-description"
-                className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-6 shadow-raised"
+                className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-5 shadow-raised sm:p-6"
               >
-                <Dialog.Title className="text-lg font-semibold text-text-primary">{en.login.privacyPolicy}</Dialog.Title>
-                <Dialog.Description id="privacy-policy-description" className="mt-2 text-sm leading-6 text-text-secondary">
-                  {en.login.privacyPolicyNotice}
+                <Dialog.Title className="text-xl font-semibold text-text-primary">{en.login.privacyPolicy}</Dialog.Title>
+                <Dialog.Description id="privacy-policy-description" className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+                  {en.login.privacyPolicyDescription}
                 </Dialog.Description>
-                <p className="mt-4 text-sm leading-6 text-text-secondary">{en.login.privacyPolicyContact}</p>
+                <p className="mt-4 text-sm font-medium text-text-primary">{en.login.privacyPolicyEffectiveDate}</p>
+                <p className="text-sm text-text-secondary">{en.login.privacyPolicyLastUpdated}</p>
+                <div className="mt-7 space-y-7 pb-1">
+                  {privacyPolicySections.map((section) => (
+                    <section key={section.id} id={`privacy-${section.id}`} aria-labelledby={`privacy-${section.id}-heading`} className="scroll-mt-4">
+                      <h3 id={`privacy-${section.id}-heading`} className="text-base font-semibold text-text-primary">{section.title}</h3>
+                      <div className="mt-2 space-y-3 text-sm leading-6 text-text-secondary">
+                        {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                      </div>
+                    </section>
+                  ))}
+                </div>
                 <div className="mt-6 flex justify-end">
                   <Dialog.Close asChild>
                     <Button variant="secondary">{en.login.closePrivacyPolicy}</Button>

@@ -2124,3 +2124,49 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm.cmd test -- operations.test.tsx` passed (65 tests). `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings for unrelated knowledge-base files.
 - **Commit/PR:** Not created.
 - **Follow-ups:** The focused combined test run also exposed an existing failing Registrar-profile assertion in `liveStudents.test.tsx`; this change does not alter that profile's displayed fields. The live-API list components retain their existing name/receipt links because this request's screenshot and default application data source are MockDB.
+
+### Saturday, November 07, 2026 — 15:54:05 +08:00 | Normalize MockDB detail metric typography
+
+- **Agent:** Codex
+- **Summary:** Corrected the MockDB detail cards that forced every key value to a clipped 30px bold style. Shared metrics now use the approved 22px semibold value role, wrap long names within their cards, and status badges use the matching restrained semibold emphasis.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `frontend/src/test/liveStudents.test.tsx`, and this changelog.
+- **Validation:** `operations.test.tsx` passed (65 tests). `npm.cmd run build` passed. The Impeccable type detector reported no findings. The combined `operations.test.tsx liveStudents.test.tsx` run retained one pre-existing failing Registrar-profile assertion about fields unrelated to this typography change.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None for the metric typography change.
+
+### Saturday, November 07, 2026 — 17:18:58 +08:00 | Refine the live notification-entry dialog
+
+- **Agent:** Codex
+- **Summary:** Reworked the live Follow-up notification-entry dialog into an information-first record view. The current delivery status is now prominent, recipient data is grouped separately from delivery evidence, and queued entries continue to state that delivery is not confirmed.
+- **Files:** Updated `frontend/src/features/operations/LiveNotificationLog.tsx`, `frontend/src/test/liveNotificationLog.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveNotificationLog.test.tsx` passed (5 tests), including Escape dismissal. `npm.cmd run build` passed. Design-source lint passed (0 failures, 0 warnings), and `git diff --check` passed. Direct browser capture reached the unauthenticated sign-in view only, so the live API dialog could not be visually inspected against an authenticated backend session in this task.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Authenticated browser visual review of the live notification dialog remains pending under the existing device-width verification item.
+
+- **Updated:** Saturday, November 07, 2026 — 17:19:59 +08:00. The dialog regression test now also reopens the entry and closes it through the visible Close control. The focused suite still passes (5 tests), production build still passes, and `git diff --check` remains clean.
+### Saturday, November 07, 2026 — 18:49:06 +08:00 | Add approved login Privacy Policy modal content
+
+- **Agent:** Codex
+- **Summary:** Replaced the temporary unauthenticated-login privacy notice with the approved, read-only EducaTrak Privacy Policy. The existing Radix dialog now provides a scrollable structured policy, in-modal section navigation, the approved November 7, 2026 effective/last-updated dates, the approved five-year general and ten-year audit-log retention periods, in-person administration-office request route, and a child-friendly student/minor section. No route, acceptance action, tracking, authentication behavior, backend, API, database, or permission behavior changed.
+- **Files:** Updated `frontend/src/i18n/en.ts`, `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (24 tests). `npm.cmd run build` passed (`tsc -b` and Vite production build). Headless Chrome reviewed the final production preview at 1366×900 and 390×844 with the modal open; both kept the dialog fully within the viewport and had no horizontal overflow. `git diff --check` passed before documentation logging, apart from existing line-ending warnings for the changelog.
+- **Commit/PR:** Not created.
+- **Follow-ups:** School legal/privacy review remains appropriate for the policy's operational application. Before enabling any external email/SMS reminder provider, review the sharing arrangement and update the notice where required.
+
+### Saturday, November 07, 2026 — 18:56:49 +08:00 | Remove Privacy Policy in-page navigation
+
+- **Agent:** Codex
+- **Summary:** Removed the “On this page” section-navigation panel from the login Privacy Policy dialog. The full read-only policy content and dialog dismissal behavior remain unchanged.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/i18n/en.ts`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (24 tests). `npm.cmd run build` passed. `git diff --check` passed with an existing changelog line-ending warning.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Saturday, November 07, 2026 — 18:59:29 +08:00 | Refine Privacy Policy footer trigger hover state
+
+- **Agent:** Codex
+- **Summary:** Removed the Privacy Policy trigger's resting underline and its ghost-button surface hover. It now remains transparent and gains an underline only on hover.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/login.test.tsx` passed (24 tests). `npm.cmd run build` passed (`tsc -b` and Vite production build).
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.

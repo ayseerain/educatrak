@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { listNotificationLogs, retryNotification, type NotificationLogEntry } from "@/api/notificationApi";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -105,11 +106,60 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
 }
 
 function NotificationEntryDialog({ entry, onOpenChange }: { entry: NotificationLogEntry | null; onOpenChange: (open: boolean) => void }) {
-  return <Dialog.Root open={entry !== null} onOpenChange={onOpenChange}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-5 shadow-raised"><Dialog.Title className="text-lg font-semibold text-text-primary">Notification entry</Dialog.Title>{entry && <><dl className="mt-4 grid gap-3 text-sm"><Detail label="Student" value={entry.studentName ?? entry.studentNo ?? "Unavailable"} /><Detail label="Type" value={entry.type.replace(/_/g, " ")} /><Detail label="Channel" value={entry.channel.toUpperCase()} /><Detail label="Recipient" value={entry.recipient ?? "Unavailable"} /><Detail label="Status" value={entry.status.replace(/_/g, " ")} /><Detail label="Attempts" value={String(entry.attempts)} /><Detail label="Created" value={formatTimestamp(entry.createdAt)} /><Detail label="Delivery detail" value={entry.failureReason ?? (entry.sentAt ? `Sent ${formatTimestamp(entry.sentAt)}` : entry.status === "queued" ? "Awaiting provider delivery confirmation" : "—")} /></dl><div className="mt-5 flex justify-end"><Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Close</Button></div></>}</Dialog.Content></Dialog.Portal></Dialog.Root>;
+  return <Dialog.Root open={entry !== null} onOpenChange={onOpenChange}><Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" /><Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-2rem)] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-5 shadow-raised">
+    {entry && <>
+      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+        <div className="min-w-0">
+          <Dialog.Title className="text-lg font-semibold text-text-primary">Notification entry</Dialog.Title>
+          <Dialog.Description className="mt-1 text-sm text-text-secondary">Recorded {formatTimestamp(entry.createdAt)}</Dialog.Description>
+        </div>
+        <Badge tone={notificationStatusTone(entry.status)} label={formatLabel(entry.status)} />
+      </div>
+
+      <section className="mt-5" aria-labelledby="notification-entry-details">
+        <h2 id="notification-entry-details" className="text-sm font-semibold text-text-primary">Recipient details</h2>
+        <dl className="mt-3 grid gap-x-5 gap-y-4 text-sm sm:grid-cols-2">
+          <Detail className="sm:col-span-2" label="Student" value={entry.studentName ?? entry.studentNo ?? "Unavailable"} />
+          <Detail label="Notification type" value={formatLabel(entry.type)} />
+          <Detail label="Channel" value={entry.channel.toUpperCase()} />
+          <Detail className="sm:col-span-2" label="Recipient" value={entry.recipient ?? "Unavailable"} />
+        </dl>
+      </section>
+
+      <section className="mt-5 rounded-md bg-surface p-4" aria-labelledby="notification-entry-delivery">
+        <h2 id="notification-entry-delivery" className="text-sm font-semibold text-text-primary">Delivery record</h2>
+        <dl className="mt-3 grid gap-x-5 gap-y-4 text-sm sm:grid-cols-2">
+          <Detail label="Attempts" value={String(entry.attempts)} />
+          <Detail label="Delivered" value={entry.sentAt ? formatTimestamp(entry.sentAt) : "Not confirmed"} />
+          <Detail className="sm:col-span-2" label="Delivery detail" value={deliveryDetail(entry)} />
+        </dl>
+      </section>
+
+      <div className="mt-5 flex justify-end border-t border-border pt-4"><Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Close</Button></div>
+    </>}
+  </Dialog.Content></Dialog.Portal></Dialog.Root>;
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  return <div><dt className="font-medium text-text-secondary">{label}</dt><dd className="mt-1 break-words text-text-primary">{value}</dd></div>;
+function Detail({ label, value, className }: { label: string; value: string; className?: string }) {
+  return <div className={className}><dt className="font-medium text-text-secondary">{label}</dt><dd className="mt-1 break-words text-text-primary">{value}</dd></div>;
+}
+
+function formatLabel(value: string): string {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function notificationStatusTone(status: NotificationLogEntry["status"]): BadgeTone {
+  if (status === "sent") return "success";
+  if (status === "failed") return "error";
+  if (status === "queued") return "warning";
+  return "neutral";
+}
+
+function deliveryDetail(entry: NotificationLogEntry): string {
+  if (entry.failureReason) return entry.failureReason;
+  if (entry.sentAt) return `Sent ${formatTimestamp(entry.sentAt)}`;
+  if (entry.status === "queued") return "Awaiting provider delivery confirmation";
+  return "-";
 }
 
 function formatTimestamp(value: string): string {

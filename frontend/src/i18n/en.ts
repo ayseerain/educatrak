@@ -28,8 +28,113 @@ export const en = {
     edukados: "Edukados",
     edukadosLogoPlaceholder: "Edukados logo placeholder",
     privacyPolicy: "Privacy Policy",
-    privacyPolicyNotice: "This temporary privacy-policy notice will be replaced with the school-approved policy.",
-    privacyPolicyContact: "For questions about information handled in EducaTrak, contact a system administrator.",
+    privacyPolicyDescription: "How Mendez Christian Academy handles personal information in EducaTrak.",
+    privacyPolicyEffectiveDate: "Effective November 7, 2026",
+    privacyPolicyLastUpdated: "Last updated November 7, 2026",
+    privacyPolicySections: [
+      {
+        id: "scope",
+        title: "Scope and purpose",
+        paragraphs: [
+          "Mendez Christian Academy is the personal information controller for personal information processed through EducaTrak. EducaTrak is the Academy's internal system for student billing and payment monitoring.",
+          "This notice applies to students, including minors, parents and guardians, school personnel, and authorized EducaTrak users. It explains the information handled in EducaTrak and does not include Terms and Conditions.",
+        ],
+      },
+      {
+        id: "information",
+        title: "Personal information we process",
+        paragraphs: [
+          "EducaTrak may process student identity and enrollment information; parent or guardian names, relationships, email addresses, and mobile numbers; staff account details; billing accounts, fees, balances, installments, adjustments, payments, receipts, void requests, and close-out records.",
+          "The system also records authentication and security information, audit entries about data-changing actions, notification and reminder records when those functions are enabled, and import-batch information. Education information may be sensitive personal information under Philippine law.",
+        ],
+      },
+      {
+        id: "collection",
+        title: "How we collect and use information",
+        paragraphs: [
+          "Authorized school personnel enter or update information from school records and from information supplied by students, parents, or guardians. EducaTrak also creates records when authorized personnel use its billing, payment, receipt, audit, and security functions.",
+          "We use this information to maintain student and guardian records, administer billing accounts, record and monitor payments, issue and reprint receipts, manage financial controls, prepare authorized reports, protect access to the system, and maintain accountability through audit records.",
+        ],
+      },
+      {
+        id: "lawful-bases",
+        title: "Lawful bases for processing",
+        paragraphs: [
+          "The Academy processes personal information only as permitted by the Data Privacy Act of 2012 and other applicable laws. Depending on the activity, this may include processing necessary to provide education-related and billing services, comply with a legal obligation, protect the Academy's legitimate interests without overriding data-subject rights, or act on valid consent when consent is required.",
+          "The Academy will apply the appropriate basis to the specific processing activity. Consent is not treated as the basis for every activity.",
+        ],
+      },
+      {
+        id: "access-sharing",
+        title: "Access, sharing, and transfers",
+        paragraphs: [
+          "Access is limited to authorized personnel according to their roles and work responsibilities. EducaTrak uses role-based access controls. Registrar access is limited to guardian contact information and does not include financial balances.",
+          "The Academy may disclose information when required by law or to authorized service providers that process information on its behalf under appropriate safeguards. Email and SMS reminder providers are not currently deployed or enabled in EducaTrak. Before any such provider is used, the Academy will review the arrangement and update this notice when required.",
+        ],
+      },
+      {
+        id: "security",
+        title: "Storage and security",
+        paragraphs: [
+          "EducaTrak is an internal, authenticated system. The Academy uses access controls, session-based authentication, role restrictions, and audit records to support the protection and accountable handling of information.",
+          "Security measures are reviewed in a manner appropriate to the risks of the processing. This notice does not describe confidential security configurations.",
+        ],
+      },
+      {
+        id: "retention",
+        title: "Retention and disposal",
+        paragraphs: [
+          "Audit logs are retained for ten years. Other personal information processed in EducaTrak, including student, guardian, staff-account, billing, payment, notification, import, and backup-related records, is retained for five years.",
+          "After the applicable period, information is disposed of or anonymized using methods appropriate to the record and subject to applicable legal, accounting, audit, or dispute-related requirements.",
+        ],
+      },
+      {
+        id: "rights",
+        title: "Your privacy rights",
+        paragraphs: [
+          "Subject to applicable conditions and limitations under Philippine law, data subjects may have the right to be informed, object, access, rectify inaccurate information, request erasure or blocking where applicable, receive portable information where applicable, seek damages, and file a complaint with the National Privacy Commission.",
+          "Parents and legal guardians may exercise applicable rights for minors. To make a privacy concern or data-subject request, please visit the Mendez Christian Academy administration office in person.",
+        ],
+      },
+      {
+        id: "students",
+        title: "For students and minors",
+        paragraphs: [
+          "EducaTrak handles student information so the Academy can keep student records, manage school billing, and record payments. Only authorized school personnel may use the system for their assigned work.",
+          "Students and their parents or guardians can ask the Academy what information is held about them, request correction of inaccurate information, or raise a privacy concern. The Academy considers the best interests and evolving capacities of children when handling their information.",
+        ],
+      },
+      {
+        id: "cookies",
+        title: "Cookies and technical information",
+        paragraphs: [
+          "EducaTrak uses session and security cookies needed to sign in and protect the system. It does not use advertising or analytics tracking cookies.",
+          "The browser may store a limited interface preference, such as whether the application sidebar is collapsed. EducaTrak is not designed to store credentials or production personal information in browser local storage.",
+        ],
+      },
+      {
+        id: "incidents",
+        title: "Privacy incidents",
+        paragraphs: [
+          "If you suspect that personal information has been accessed, disclosed, lost, or used improperly, report the concern promptly to the Mendez Christian Academy administration office. The Academy will assess and manage the incident under applicable law and its privacy procedures.",
+          "Where a personal data breach requires notification, the Academy will notify the National Privacy Commission and affected data subjects as required by applicable law.",
+        ],
+      },
+      {
+        id: "changes",
+        title: "Changes to this notice",
+        paragraphs: [
+          "The Academy may update this notice when its processing activities, systems, or legal obligations change. Material changes will be reviewed and communicated through an appropriate Academy channel. The effective and last-updated dates above show the current version.",
+        ],
+      },
+      {
+        id: "contact",
+        title: "Privacy concerns and contact",
+        paragraphs: [
+          "For questions, concerns, or requests about information handled in EducaTrak, please visit the Mendez Christian Academy administration office in person.",
+        ],
+      },
+    ],
     closePrivacyPolicy: "Close Privacy Policy",
   },
   session: {

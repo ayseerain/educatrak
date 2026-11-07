@@ -94,7 +94,30 @@ describe("LoginPage", () => {
     expect(screen.getByText("Powered by")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Edukados logo placeholder" })).toBeInTheDocument();
     expect(screen.getByText("Edukados")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Privacy Policy" })).toHaveAttribute("aria-expanded", "false");
+    const privacyPolicy = screen.getByRole("button", { name: "Privacy Policy" });
+    expect(privacyPolicy).toHaveAttribute("aria-expanded", "false");
+    expect(privacyPolicy).not.toHaveClass("underline");
+    expect(privacyPolicy).toHaveClass("hover:bg-transparent", "hover:underline");
+  });
+
+  it("opens the complete read-only privacy policy and closes it with Escape", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const trigger = screen.getByRole("button", { name: "Privacy Policy" });
+    await user.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Privacy Policy" });
+    expect(dialog).toHaveTextContent("Effective November 7, 2026");
+    expect(dialog).toHaveTextContent("Personal information we process");
+    expect(dialog).toHaveTextContent("For students and minors");
+    expect(dialog).toHaveTextContent("Mendez Christian Academy administration office");
+    expect(screen.queryByRole("navigation", { name: "On this page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /agree|consent|accept/i })).not.toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Privacy Policy" })).not.toBeInTheDocument();
   });
 
   it("supports sequential keyboard navigation through login controls", async () => {
@@ -123,7 +146,7 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "Privacy Policy" })).toHaveFocus();
   });
 
-  it("opens and closes the temporary privacy policy dialog", async () => {
+  it("closes the privacy policy from its visible close control", async () => {
     const user = userEvent.setup();
     renderApp();
 
@@ -132,7 +155,7 @@ describe("LoginPage", () => {
 
     expect(privacyPolicy).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("dialog", { name: "Privacy Policy" })).toBeInTheDocument();
-    expect(screen.getByText(/temporary privacy-policy notice/i)).toBeInTheDocument();
+    expect(screen.getByText(/how mendez christian academy handles personal information/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Close Privacy Policy" }));
     expect(screen.queryByRole("dialog", { name: "Privacy Policy" })).not.toBeInTheDocument();
