@@ -1,10 +1,21 @@
 import rawDatabase from "./mock-db.json";
+import type { StudentGender } from "@/lib/types";
 
 export type RelativeDate = { daysAgo?: number; daysFromNow?: number; time?: string };
 export type RawMockDatabase = typeof rawDatabase;
 export const rawMockDatabase = rawDatabase;
 
-export interface SeededMockDatabase extends Omit<RawMockDatabase, "installments" | "payments" | "voidRequests" | "notificationAttempts" | "backupRuns"> {
+export type MockStudentRecord = Omit<RawMockDatabase["students"][number], "dateOfBirth" | "gender" | "residentialAddress"> & {
+  dateOfBirth?: string | null;
+  gender?: StudentGender | null;
+  residentialAddress?: string | null;
+};
+
+export type MockGuardianRecord = Omit<RawMockDatabase["guardians"][number], "email"> & { email: string | null };
+
+export interface SeededMockDatabase extends Omit<RawMockDatabase, "students" | "guardians" | "installments" | "payments" | "voidRequests" | "notificationAttempts" | "backupRuns"> {
+  students: MockStudentRecord[];
+  guardians: MockGuardianRecord[];
   installments: Array<Omit<RawMockDatabase["installments"][number], "due"> & { dueDate: string }>;
   payments: Array<Omit<RawMockDatabase["payments"][number], "paidOn"> & { paidOn: string }>;
   voidRequests: Array<Omit<RawMockDatabase["voidRequests"][number], "requestedAt"> & { requestedAt: string }>;
@@ -37,6 +48,7 @@ export function seedMockDatabase(today = manilaDate()): SeededMockDatabase {
   const copy = JSON.parse(JSON.stringify(rawDatabase)) as RawMockDatabase;
   return {
     ...copy,
+    students: copy.students.map((student) => ({ ...student, gender: student.gender as StudentGender })),
     installments: copy.installments.map((installment) => ({
       ...installment,
       dueDate: resolveRelativeDate(installment.due, today),

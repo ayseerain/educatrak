@@ -1,4 +1,5 @@
 import { rawMockDatabase, type RelativeDate } from "./seed";
+import { isValidDateOfBirth, todayInManila } from "@/lib/studentAge";
 
 const roles = new Set(["super_admin", "cashier", "accounting", "administrator", "auditor", "registrar"]);
 
@@ -51,6 +52,12 @@ export function mockIntegrityErrors(data: typeof rawMockDatabase = rawMockDataba
   for (const row of data.studentGuardianLinks) {
     if (!ids.students.has(row.studentId)) errors.push(`studentGuardianLinks.studentId ${row.studentId} does not exist`);
     if (!ids.guardians.has(row.guardianId)) errors.push(`studentGuardianLinks.guardianId ${row.guardianId} does not exist`);
+  }
+  for (const student of data.students) {
+    const personal = student as unknown as { id: string; dateOfBirth?: unknown; gender?: unknown; residentialAddress?: unknown };
+    if (personal.dateOfBirth != null && (typeof personal.dateOfBirth !== "string" || !isValidDateOfBirth(personal.dateOfBirth) || personal.dateOfBirth > todayInManila())) errors.push(`students.dateOfBirth for ${student.id} must be a valid, non-future date`);
+    if (personal.gender != null && personal.gender !== "Male" && personal.gender !== "Female") errors.push(`students.gender for ${student.id} must be Male or Female`);
+    if (personal.residentialAddress != null && (typeof personal.residentialAddress !== "string" || !personal.residentialAddress.trim() || /[\r\n]/.test(personal.residentialAddress))) errors.push(`students.residentialAddress for ${student.id} must be one non-empty line`);
   }
   for (const row of data.billingAccounts) {
     if (!ids.students.has(row.studentId)) errors.push(`billingAccounts.studentId ${row.studentId} does not exist`);

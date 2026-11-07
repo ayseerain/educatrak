@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockIntegrityErrors } from "@/api/mock/integrity";
-import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, createMockStudent, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockFollowUpAccounts, selectMockStaffUsers, selectPayments, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser } from "@/api/mock";
+import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, createMockStudent, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, listMockStudents, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockFollowUpAccounts, selectMockStaffUsers, selectPayments, selectStudents, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser, updateMockStudent } from "@/api/mock";
 
 describe("central mock database", () => {
   afterEach(() => {
@@ -10,6 +10,112 @@ describe("central mock database", () => {
 
   it("accepts the committed synthetic seed", () => {
     expect(mockIntegrityErrors()).toEqual([]);
+  });
+
+  it("keeps missing personal fields compatible and adds fields without changing student identity or billing links", () => {
+    const originalLocalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
+    const values = new Map<string, string>();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
+    });
+    try {
+      const existing = getMockState().students.find((student) => student.id === "sample-1001")!;
+      expect(existing).toMatchObject({ id: "sample-1001", number: "S-1001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite" });
+      const existingAccounts = getMockState().billingAccounts.filter((account) => account.studentId === existing.id);
+      const updated = updateMockStudent(existing.id, {
+        number: existing.number, name: existing.name, grade: existing.grade, section: existing.section,
+        dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite",
+      });
+      expect(updated).toMatchObject({ id: existing.id, number: "S-1001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
+      expect(getMockState().billingAccounts.filter((account) => account.studentId === existing.id)).toEqual(existingAccounts);
+
+      const created = createMockStudent({
+        number: "S-9001", name: "Taylor Sample (sample)", grade: "Grade 7", section: "Olive",
+        dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite",
+      });
+      const saved = updateMockStudent(created.id, { number: created.number, name: created.name, grade: created.grade, section: created.section });
+      expect(saved).toMatchObject({ id: created.id, number: "S-9001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
+      expect(getMockState().billingAccounts.every((account) => account.studentId !== created.id)).toBe(true);
+      expect(window.localStorage.getItem("educatrak.mock-db.v1")).toContain("12 Sample Road, Cavite");
+    } finally {
+      if (originalLocalStorage) Object.defineProperty(window, "localStorage", originalLocalStorage);
+      else Reflect.deleteProperty(window, "localStorage");
+    }
+  });
+
+  it("backfills missing saved fixture details without replacing saved values or billing links", async () => {
+    const originalLocalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
+    const values = new Map<string, string>();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
+    });
+    try {
+      const savedState = JSON.parse(JSON.stringify(getMockState())) as ReturnType<typeof getMockState>;
+      const missingDetails = savedState.students.find((student) => student.id === "sample-1001")!;
+      missingDetails.dateOfBirth = null;
+      missingDetails.gender = null;
+      missingDetails.residentialAddress = null;
+      const savedDetails = savedState.students.find((student) => student.id === "sample-1002")!;
+      savedDetails.dateOfBirth = "2011-03-21";
+      savedDetails.gender = "Female";
+      savedDetails.residentialAddress = "Saved Demo Address, Mendez, Cavite";
+      const savedAccounts = savedState.billingAccounts;
+      window.localStorage.setItem("educatrak.mock-db.v1", JSON.stringify({ state: savedState }));
+      vi.resetModules();
+
+      const { getMockState: getRestoredState } = await import("@/api/mock/store");
+      const restored = getRestoredState();
+      expect(restored.students.find((student) => student.id === "sample-1001")).toMatchObject({
+        dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite",
+      });
+      expect(restored.students.find((student) => student.id === "sample-1002")).toMatchObject({
+        dateOfBirth: "2011-03-21", gender: "Female", residentialAddress: "Saved Demo Address, Mendez, Cavite",
+      });
+      expect(restored.billingAccounts).toEqual(savedAccounts);
+    } finally {
+      if (originalLocalStorage) Object.defineProperty(window, "localStorage", originalLocalStorage);
+      else Reflect.deleteProperty(window, "localStorage");
+    }
+  });
+
+  it("rejects invalid, future, or unapproved personal values", () => {
+    const base = { number: "S-9002", name: "Morgan Sample (sample)", grade: "Grade 7", section: "Olive" };
+    expect(() => createMockStudent({ ...base, dateOfBirth: "2025-02-29" })).toThrow("valid date of birth");
+    expect(() => createMockStudent({ ...base, dateOfBirth: "2999-01-01" })).toThrow("not in the future");
+    expect(() => createMockStudent({ ...base, gender: "Other" as never })).toThrow("Male or Female");
+    expect(() => createMockStudent({ ...base, residentialAddress: "12 Sample Road\nCavite" })).toThrow("one line");
+  });
+
+  it("returns null personal values for older records with omitted fields", () => {
+    const student = getMockState().students.find((item) => item.id === "sample-1001")!;
+    const legacyStudent = student as unknown as Record<string, unknown>;
+    delete legacyStudent.dateOfBirth;
+    delete legacyStudent.gender;
+    delete legacyStudent.residentialAddress;
+
+    expect(selectStudents().find((item) => item.id === student.id)).toMatchObject({ dateOfBirth: null, gender: null, residentialAddress: null, age: null });
+  });
+
+  it("serves personal fields through the async MockDB student API", async () => {
+    const previousUrl = window.location.href;
+    window.history.replaceState({}, "", "?mockLatency=0");
+    try {
+      await expect(listMockStudents()).resolves.toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: "sample-1001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite", age: expect.any(Number) }),
+      ]));
+    } finally {
+      window.history.replaceState({}, "", previousUrl);
+    }
   });
 
   it("does not reuse a legacy persisted business date after Manila advances", async () => {
@@ -44,12 +150,16 @@ describe("central mock database", () => {
   it("names dangling references, duplicate ids, absolute dates, and unsafe credentials", () => {
     const invalid = JSON.parse(JSON.stringify(rawMockDatabase)) as typeof rawMockDatabase;
     invalid.students.push({ ...invalid.students[0]! });
+    Object.assign(invalid.students[0]!, { dateOfBirth: "2999-02-30", gender: "Other", residentialAddress: "Line one\nLine two" });
     invalid.payments[0]!.studentId = "student-missing";
     invalid.installments[0]!.due = "2026-10-25" as never;
     invalid.frontendOnly.devCredentials[0]!.password = "not-a-demo-password";
 
     expect(mockIntegrityErrors(invalid)).toEqual(expect.arrayContaining([
       expect.stringContaining("students.id duplicates"),
+      expect.stringContaining("students.dateOfBirth"),
+      expect.stringContaining("students.gender"),
+      expect.stringContaining("students.residentialAddress"),
       expect.stringContaining("payments.studentId"),
       expect.stringContaining("installments.due"),
       expect.stringContaining("frontendOnly.devCredentials password"),

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { RoleFollowupWorkspace } from "@/features/followup/RoleFollowupWorkspace";
 import { AccountDetailPage, AccountsPage, AccountWizardPage, AuditPage, CloseoutHistoryPage, CloseoutPage, FollowupPage, MockNotificationsPage, PaymentEntryPage, PaymentsPage, ReceiptPage, ReportsHubPage, RequireCapability, RolesPage, SettingsPage, StudentFormPage, StudentProfilePage, StudentStatementPage, StudentsPage, UsersPage } from "@/features/operations/OperationalPages";
-import { getBillingAccount, getCurrentBillingAccount, getDueInstallments, getMockFeeSchedule, loadMockSnapshot, mockSnapshot } from "@/api/mock";
+import { createMockStudent, getBillingAccount, getCurrentBillingAccount, getDueInstallments, getMockFeeSchedule, getMockState, getStudentById, loadMockSnapshot, mockSnapshot, updateMockStudent } from "@/api/mock";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Shell } from "@/components/layout/Shell";
 import { can, canViewReport } from "@/lib/permissions";
@@ -128,6 +128,44 @@ describe("operational page navigation", () => {
   });
 
   it("routes to the created MockDB student record", async () => {
+    const before = mockSnapshot();
+    const user = userEvent.setup();
+    try {
+      render(
+        <MemoryRouter initialEntries={["/students/new"]}>
+          <Routes>
+            <Route path="/students/new" element={<StudentFormPage />} />
+            <Route path="/students/:id" element={<h1>Student profile</h1>} />
+          </Routes>
+          <LocationPath />
+        </MemoryRouter>,
+      );
+
+      await user.type(screen.getByLabelText(/Student number/), "S-2000");
+      await user.type(screen.getByLabelText(/Student name/), "Taylor Student");
+      await user.click(screen.getByRole("button", { name: "Grade level" }));
+      await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+      await user.click(screen.getByRole("button", { name: "Section" }));
+      await user.click(screen.getByRole("menuitemradio", { name: "Olive" }));
+      fireEvent.change(screen.getByLabelText(/Date of birth/), { target: { value: "2012-06-15" } });
+      await user.click(screen.getByRole("button", { name: "Gender" }));
+      await user.click(screen.getByRole("menuitemradio", { name: "Female" }));
+      await user.type(screen.getByLabelText(/Residential address/), "12 Sample Road, Cavite");
+      expect(screen.getByLabelText("Age")).toHaveValue("14 years old");
+      await user.click(screen.getByRole("button", { name: "Create student" }));
+
+      const path = screen.getByLabelText("Current path");
+      expect(path).toHaveTextContent(/\/students\/mock-student-/);
+      expect(screen.getByRole("heading", { name: "Student profile" })).toBeInTheDocument();
+      expect(getStudentById(path.textContent!.split("/").pop())).toMatchObject({
+        dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite",
+      });
+    } finally {
+      loadMockSnapshot(before);
+    }
+  });
+
+  it("requires the personal fields and keeps entered values after validation errors", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/students/new"]}>
@@ -139,16 +177,86 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText(/Student number/), "S-2000");
-    await user.type(screen.getByLabelText(/Student name/), "Taylor Student");
+    await user.type(screen.getByLabelText(/Student number/), "S-2101");
+    await user.type(screen.getByLabelText(/Student name/), "Morgan Sample (sample)");
     await user.click(screen.getByRole("button", { name: "Grade level" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
     await user.click(screen.getByRole("button", { name: "Section" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Olive" }));
+    expect(screen.getByLabelText(/Date of birth/)).toBeRequired();
+    expect(screen.getByLabelText(/Residential address/)).toBeRequired();
+    await user.click(screen.getByRole("button", { name: "Create student" }));
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/new");
+    expect(screen.getByLabelText(/Date of birth/)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Date of birth/)).toHaveFocus();
+
+    fireEvent.change(screen.getByLabelText(/Date of birth/), { target: { value: "2012-06-15" } });
+    await user.click(screen.getByRole("button", { name: "Create student" }));
+    expect(screen.getByLabelText(/Residential address/)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Residential address/)).toHaveFocus();
+    await user.type(screen.getByLabelText(/Residential address/), "12 Sample Road, Cavite");
     await user.click(screen.getByRole("button", { name: "Create student" }));
 
-    expect(screen.getByLabelText("Current path")).toHaveTextContent(/\/students\/mock-student-/);
-    expect(screen.getByRole("heading", { name: "Student profile" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Select Male or Female for gender.");
+    expect(screen.getByRole("button", { name: "Gender" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Gender" })).toHaveFocus();
+    expect(screen.getByLabelText(/Student name/)).toHaveValue("Morgan Sample (sample)");
+    expect(getMockState().students.some((student) => student.number === "S-2101")).toBe(false);
+  });
+
+  it("cancels student creation without writing the unfinished record", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/students/new"]}>
+        <Routes>
+          <Route path="/students/new" element={<StudentFormPage />} />
+          <Route path="/students" element={<h1>Students</h1>} />
+        </Routes>
+        <LocationPath />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/Student number/), "S-2103");
+    await user.type(screen.getByLabelText(/Student name/), "Casey Sample (sample)");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/students");
+    expect(getMockState().students.some((student) => student.number === "S-2103")).toBe(false);
+  });
+
+  it("prefills and saves personal fields when editing a student", async () => {
+    const before = mockSnapshot();
+    const user = userEvent.setup();
+    try {
+      const created = createMockStudent({
+      number: "S-2102", name: "Riley Sample (sample)", grade: "Grade 7", section: "Olive",
+      dateOfBirth: "2011-02-28", gender: "Male", residentialAddress: "5 Sample Lane, Cavite",
+      });
+      render(
+        <MemoryRouter initialEntries={[`/students/${created.id}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/edit" element={<StudentFormPage edit />} />
+            <Route path="/students/:id" element={<h1>Student profile</h1>} />
+          </Routes>
+          <LocationPath />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByLabelText(/Date of birth/)).toHaveValue("2011-02-28");
+      expect(screen.getByRole("button", { name: "Gender" })).toHaveTextContent("Male");
+      expect(screen.getByLabelText(/Residential address/)).toHaveValue("5 Sample Lane, Cavite");
+      expect(screen.getByLabelText("Age")).toHaveValue("15 years old");
+      await user.clear(screen.getByLabelText(/Residential address/));
+      await user.type(screen.getByLabelText(/Residential address/), "6 Sample Lane, Cavite");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(screen.getByLabelText("Current path")).toHaveTextContent(`/students/${created.id}`);
+      expect(getStudentById(created.id)).toMatchObject({
+        dateOfBirth: "2011-02-28", gender: "Male", residentialAddress: "6 Sample Lane, Cavite",
+      });
+    } finally {
+      loadMockSnapshot(before);
+    }
   });
 
   it("uses explicit button types for student and billing-account creation", () => {
@@ -614,7 +722,8 @@ describe("operational page navigation", () => {
 
     expect(screen.getByRole("columnheader", { name: /student status/i })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: /billing status/i })).toBeInTheDocument();
-    expect(screen.getAllByText("Active")).toHaveLength(4);
+    expect(screen.queryByRole("columnheader", { name: /date of birth|gender|residential address|age/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Active")).toHaveLength(3);
     expect(screen.getAllByText("Current")).not.toHaveLength(0);
     expect(screen.getAllByText("Due soon")).not.toHaveLength(0);
     expect(screen.getByText("Overdue")).toBeInTheDocument();
@@ -712,6 +821,9 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /record payment/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Account balance")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Billing accounts" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Personal information" })).not.toBeInTheDocument();
   });
 
   it("prefills the account wizard student search from a profile's Create account action", async () => {
@@ -731,6 +843,9 @@ describe("operational page navigation", () => {
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/accounts/new?student=sample-1004");
     expect(screen.getByPlaceholderText("Search student name or number")).toHaveValue("Dara Santos (sample) - S-1004");
+    expect(screen.queryByText("Date of birth")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gender")).not.toBeInTheDocument();
+    expect(screen.queryByText("Residential address")).not.toBeInTheDocument();
   });
 
   it("opens the shared payment workflow route with student search", async () => {
@@ -761,6 +876,13 @@ describe("operational page navigation", () => {
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
     expect(screen.getAllByText("Amara Villanueva (sample)").length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/student search/i)).toHaveValue("Amara Villanueva (sample)");
+    expect(screen.queryByText("Date of birth")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gender")).not.toBeInTheDocument();
+    expect(screen.queryByText("Residential address")).not.toBeInTheDocument();
+    expect(screen.queryByText("Date of birth")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gender")).not.toBeInTheDocument();
+    expect(screen.queryByText("Residential address")).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo Residence 1, Mendez, Cavite")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/amount received/i)).toHaveValue("1250.00");
     expect(screen.getByLabelText(/fee name/i))
       .toHaveAttribute("placeholder", "SY 2026-2027 Tuition");
@@ -941,10 +1063,12 @@ describe("operational page navigation", () => {
     expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
     adminProfile.unmount();
 
-    renderProfile(registrar);
+    const registrarProfile = renderProfile(registrar);
     expect(screen.queryByRole("tablist", { name: /student profile sections/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/guardian details/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/account balance/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /personal information/i })).toBeInTheDocument();
+    expect(screen.queryByText("Account balance")).not.toBeInTheDocument();
+    registrarProfile.unmount();
   });
 
   it("keeps account creation in the dedicated billing workspace", () => {
@@ -1208,28 +1332,86 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/");
   });
 
-  it("lets the Registrar open the student directory with read-only financial and guardian context", () => {
-    render(
-      <MemoryRouter initialEntries={["/students/sample-1001"]}>
-        <Routes>
-          <Route
-            path="/students/:id"
-            element={
-              <RequireCapability user={registrar} capability="student.view">
-                <StudentProfilePage user={registrar} />
-              </RequireCapability>
-            }
-          />
-        </Routes>
-      </MemoryRouter>,
-    );
+  it("shows Registrar academic and personal details without billing context", () => {
+    const before = mockSnapshot();
+    try {
+      const student = getStudentById("sample-1001")!;
+      updateMockStudent(student.id, {
+        number: student.number,
+        name: student.name,
+        grade: student.grade,
+        section: student.section,
+        dateOfBirth: "2012-06-15",
+        gender: "Female",
+        residentialAddress: "123 Sample Road, Mendez, Cavite",
+      });
 
-    expect(screen.queryByRole("heading", { name: "Access denied" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
-    expect(screen.getByText(/account balance/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Edit student" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /record payment/i })).not.toBeInTheDocument();
+      render(
+        <MemoryRouter initialEntries={["/students/sample-1001"]}>
+          <Routes>
+            <Route
+              path="/students/:id"
+              element={
+                <RequireCapability user={registrar} capability="student.view">
+                  <StudentProfilePage user={registrar} />
+                </RequireCapability>
+              }
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.queryByRole("heading", { name: "Access denied" })).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Academic information" })).toBeInTheDocument();
+      expect(screen.getByText("Student number").parentElement).toHaveTextContent(student.number);
+      expect(screen.getByText("Enrollment status").parentElement).toHaveTextContent("Active");
+      expect(screen.getByRole("heading", { name: "Personal information" })).toBeInTheDocument();
+      expect(screen.getByText("Date of birth").parentElement).toHaveTextContent("Jun 15, 2012");
+      expect(screen.getByText("Age").parentElement).toHaveTextContent(/years old/);
+      expect(screen.getByText("Gender").parentElement).toHaveTextContent("Female");
+      expect(screen.getByText("Residential address").parentElement).toHaveTextContent("123 Sample Road, Mendez, Cavite");
+      expect(screen.getByRole("heading", { name: /guardian details/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Edit student" })).toBeInTheDocument();
+      expect(screen.queryByText("Account balance")).not.toBeInTheDocument();
+      expect(screen.queryByText("Billing status")).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Billing accounts" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /record payment/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /create account/i })).not.toBeInTheDocument();
+    } finally {
+      loadMockSnapshot(before);
+    }
+  });
+
+  it("does not show personal student details to Cashier or Accounting", () => {
+    for (const profileUser of [cashier, accounting]) {
+      const profile = render(
+        <MemoryRouter initialEntries={["/students/sample-1001"]}>
+          <Routes><Route path="/students/:id" element={<StudentProfilePage user={profileUser} />} /></Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.queryByRole("heading", { name: "Personal information" })).not.toBeInTheDocument();
+      expect(screen.queryByText("Date of birth")).not.toBeInTheDocument();
+      expect(screen.queryByText("Residential address")).not.toBeInTheDocument();
+      profile.unmount();
+    }
+  });
+
+  it("shows clear empty values when personal details are missing", () => {
+    const before = mockSnapshot();
+    try {
+      const student = createMockStudent({ number: "S-9003", name: "Synthetic Student (sample)", grade: "Grade 7", section: "Olive" });
+      render(
+        <MemoryRouter initialEntries={[`/students/${student.id}`]}>
+          <Routes><Route path="/students/:id" element={<StudentProfilePage user={registrar} />} /></Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.getAllByText("Not provided")).toHaveLength(4);
+    } finally {
+      loadMockSnapshot(before);
+    }
   });
 
   it("renders not found for unknown student and account routes", () => {
@@ -1249,10 +1431,10 @@ describe("operational page navigation", () => {
 
   it("uses the shared mock account records for account, payment, and follow-up context", () => {
     const account = getBillingAccount("account-1003-2026");
-    expect(account?.balance).toBe(850000);
+    expect(account?.balance).toBe(1250000);
     expect(getCurrentBillingAccount("sample-1001")?.id).toBe("account-1001-2026");
     expect(getDueInstallments("sample-1003").map(({ installment }) => installment.id)).toEqual([
-      "installment-1003-1", "installment-1003-2",
+      "installment-1003-1", "installment-1003-2", "installment-1003-3", "installment-1003-5",
     ]);
   });
 
@@ -1261,6 +1443,6 @@ describe("operational page navigation", () => {
       <MemoryRouter initialEntries={["/reports/student/sample-1003"]}><Routes><Route path="/reports/student/:id" element={<StudentStatementPage user={cashier} />} /></Routes></MemoryRouter>,
     );
     expect(screen.getAllByText(/cora navarro/i, { ignore: ".print-root *, script, style" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("₱8,500.00", { ignore: ".print-root *, script, style" })).toBeInTheDocument();
+    expect(screen.getByText("₱12,500.00", { ignore: ".print-root *, script, style" })).toBeInTheDocument();
   });
 });

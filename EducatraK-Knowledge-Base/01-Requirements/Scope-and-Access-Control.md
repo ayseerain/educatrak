@@ -1,5 +1,7 @@
 # Scope and Access Control
 
+> **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
+
 > **Approved operational reassignment — November 5, 2026.** Older clearance, permit, and Cashier student-editing provisions are superseded. Registrar may view and manage the shared Students module's basic records, grade, section, and enrollment status without financial or guardian data. Cashier may view the shared module and perform approved billing actions, but cannot create or edit students. Accounting keeps its financial oversight permissions. Clearance and exam permits are not active features.
 
 > **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.

@@ -1,5 +1,7 @@
 # Modules and Features
 
+> **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
+
 > **Approved operational reassignment — November 5, 2026.** Clearance and Exam Permit are retired from active delivery. The shared Students module is Registrar's student-record workspace and remains Cashier's billing-context workspace. Registrar has basic-record create/edit access and the same read-only student-page financial and guardian context as Cashier; Cashier has no student-mutation access; Accounting remains read-only for student records.
 
 > Source-derived module requirements extracted from the canonical Project Specification. No new requirements are introduced here.

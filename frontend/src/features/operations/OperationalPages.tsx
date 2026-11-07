@@ -95,6 +95,7 @@ import { PrintDocumentTable } from "@/components/printing/PrintDocumentTable";
 import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
 import { printDocumentWhenReady } from "@/lib/printing";
 import { formatDate, formatDateTime } from "@/lib/dates";
+import { calculateStudentAge, todayInManila } from "@/lib/studentAge";
 import { LiveVoidsPage } from "@/features/operations/LiveVoidsPage";
 import { LiveCloseOutHistory, LiveDailyCloseOut } from "@/features/operations/LiveCloseouts";
 import { LiveAdminLog } from "@/features/operations/LiveAdminLog";
@@ -106,7 +107,7 @@ import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettin
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
 import { StudentFormPage as LiveStudentFormPage } from "@/features/students/StudentFormPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
-import type { AuthenticatedUser, Capability, Role } from "@/lib/types";
+import type { AuthenticatedUser, Capability, Role, StudentGender } from "@/lib/types";
 
 const firstStudent = students[0]!;
 function asDropdownOptions(values: string[]) {
@@ -497,7 +498,14 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
   const [section, setSection] = useState(student?.section ?? "");
   const [studentStatus, setStudentStatus] = useState(student?.studentStatus ?? "Active");
   const [strand, setStrand] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState(student?.dateOfBirth ?? "");
+  const [gender, setGender] = useState<StudentGender | "">(student?.gender ?? "");
+  const [residentialAddress, setResidentialAddress] = useState(student?.residentialAddress ?? "");
+  const [dateOfBirthError, setDateOfBirthError] = useState("");
+  const [genderError, setGenderError] = useState("");
+  const [residentialAddressError, setResidentialAddressError] = useState("");
   const seniorHigh = isSeniorHighGrade(grade);
+  const age = calculateStudentAge(dateOfBirth);
 
   function selectGrade(nextGrade: string) {
     setGrade(nextGrade);
@@ -507,15 +515,41 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    setError("");
+    const invalid = form.querySelector<HTMLInputElement>(":invalid");
+    if (invalid?.name === "dateOfBirth") {
+      setDateOfBirthError(!dateOfBirth ? "Enter the student’s date of birth." : "Enter a valid date of birth that is not in the future.");
+      invalid.focus();
+      return;
+    }
+    if (invalid?.name === "residentialAddress" || !residentialAddress.trim()) {
+      setResidentialAddressError("Enter the student’s residential address.");
+      form.querySelector<HTMLInputElement>('[name="residentialAddress"]')?.focus();
+      return;
+    }
+    if (invalid) {
+      invalid.reportValidity();
+      return;
+    }
+    setDateOfBirthError("");
+    setResidentialAddressError("");
+    if (!gender) {
+      setGenderError("Select Male or Female for gender.");
+      form.querySelector<HTMLButtonElement>('[aria-label="Gender"]')?.focus();
+      return;
+    }
+    setGenderError("");
+    const formData = new FormData(form);
     try {
       const input = {
-        number: String(form.get("number") ?? ""), name: String(form.get("name") ?? ""), grade, section,
+        number: String(formData.get("number") ?? ""), name: String(formData.get("name") ?? ""), grade, section,
         studentStatus: student ? studentStatus : "Active",
-        guardianName: String(form.get("guardianName") ?? ""),
-        guardianRelationship: String(form.get("guardianRelationship") ?? ""),
-        guardianEmail: String(form.get("guardianEmail") ?? ""),
-        guardianMobile: String(form.get("guardianMobile") ?? ""),
+        dateOfBirth, gender, residentialAddress,
+        guardianName: String(formData.get("guardianName") ?? ""),
+        guardianRelationship: String(formData.get("guardianRelationship") ?? ""),
+        guardianEmail: String(formData.get("guardianEmail") ?? ""),
+        guardianMobile: String(formData.get("guardianMobile") ?? ""),
       };
       const saved = student ? updateMockStudent(student.id, input, user?.id ?? "user-registrar") : createMockStudent(input, user?.id ?? "user-registrar");
       navigate(`/students/${saved.id}`);
@@ -528,11 +562,12 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
     <>
       <PageHeader
         title={edit ? "Edit student" : "Add student"}
-        description="Maintain student identity, grade level, section, enrollment status, and guardian contact."
+        description="Maintain student academic, personal, and guardian information."
         backTo={student ? `/students/${student.id}` : "/students"}
       />
       <form noValidate onSubmit={submit} className="w-full space-y-5">
         <Card className="grid gap-4 md:grid-cols-2">
+          <h2 className="text-base font-semibold text-text-primary md:col-span-2">Student information</h2>
           <label className="text-sm font-medium">
             Student number <span aria-hidden="true" className="text-status-error">*</span>
             <input
@@ -619,6 +654,65 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
             </p>
           )}
         </Card>
+        <Card className="grid gap-4 md:grid-cols-2">
+          <h2 className="text-base font-semibold text-text-primary md:col-span-2">Personal information</h2>
+          <label htmlFor="student-date-of-birth" className="text-sm font-medium">
+            Date of birth <span aria-hidden="true" className="text-status-error">*</span>
+            <input
+              id="student-date-of-birth"
+              name="dateOfBirth"
+              type="date"
+              required
+              max={todayInManila()}
+              value={dateOfBirth}
+              onChange={(event) => { setDateOfBirth(event.currentTarget.value); setDateOfBirthError(""); }}
+              aria-invalid={Boolean(dateOfBirthError)}
+              aria-describedby={dateOfBirthError ? "student-date-of-birth-error" : "student-date-of-birth-hint"}
+              className={inputClass}
+            />
+            {dateOfBirthError
+              ? <span id="student-date-of-birth-error" role="alert" className="mt-1 block text-sm font-normal text-status-error">{dateOfBirthError}</span>
+              : <span id="student-date-of-birth-hint" className="mt-1 block text-sm font-normal text-text-secondary">Use the date shown on the student’s record.</span>}
+          </label>
+          <div>
+            <label htmlFor="student-age" className="text-sm font-medium">Age</label>
+            <input id="student-age" readOnly value={age === null ? "Not available" : `${age} years old`} className={inputClass} />
+            <p className="mt-1 text-sm text-text-secondary">Calculated from the date of birth and current Philippine date.</p>
+          </div>
+          <div>
+            <span id="student-gender-label" className="text-sm font-medium">Gender <span aria-hidden="true" className="text-status-error">*</span></span>
+            <span className="mt-1 block">
+              <DropdownSelect
+                aria-label="Gender"
+                aria-describedby={genderError ? "student-gender-error" : undefined}
+                aria-invalid={Boolean(genderError)}
+                aria-required
+                value={gender}
+                options={[{ value: "", label: "Select gender" }, { value: "Male", label: "Male" }, { value: "Female", label: "Female" }]}
+                onChange={(value) => { setGender(value); setGenderError(""); }}
+                className="w-full"
+                align="start"
+              />
+            </span>
+            <input name="gender" type="hidden" value={gender} />
+            {genderError && <p id="student-gender-error" role="alert" className="mt-1 text-sm text-status-error">{genderError}</p>}
+          </div>
+          <label htmlFor="student-residential-address" className="text-sm font-medium">
+            Residential address <span aria-hidden="true" className="text-status-error">*</span>
+            <input
+              id="student-residential-address"
+              name="residentialAddress"
+              type="text"
+              required
+              value={residentialAddress}
+              onChange={(event) => { setResidentialAddress(event.currentTarget.value); setResidentialAddressError(""); }}
+              aria-invalid={Boolean(residentialAddressError)}
+              aria-describedby={residentialAddressError ? "student-residential-address-error" : undefined}
+              className={inputClass}
+            />
+            {residentialAddressError && <span id="student-residential-address-error" role="alert" className="mt-1 block text-sm font-normal text-status-error">{residentialAddressError}</span>}
+          </label>
+        </Card>
         <Card>
           <h2 className="text-base font-semibold text-text-primary">Guardian contact</h2>
           <p className="mt-1 text-sm text-text-secondary">Add or update the guardian details used for notices and receipts.</p>
@@ -671,6 +765,45 @@ function StudentOverviewPanel({
   student: typeof firstStudent;
   user: AuthenticatedUser;
 }) {
+  if (user.role === "registrar") {
+    const age = calculateStudentAge(student.dateOfBirth);
+    return (
+      <div className="space-y-4">
+        <Card>
+          <h2 className="text-base font-semibold text-text-primary">Academic information</h2>
+          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <StudentProfileField label="Student number" value={student.number} />
+            <StudentProfileField label="Student name" value={student.name} />
+            <StudentProfileField label="Grade level" value={student.grade} />
+            <StudentProfileField label="Section" value={student.section} />
+            <StudentProfileField label="Enrollment status" value={<StatusBadge status={student.studentStatus} />} />
+          </dl>
+        </Card>
+        <Card>
+          <h2 className="text-base font-semibold text-text-primary">Personal information</h2>
+          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <StudentProfileField label="Date of birth" value={student.dateOfBirth ? formatDate(`${student.dateOfBirth}T00:00:00+08:00`) : "Not provided"} />
+            <StudentProfileField label="Age" value={age === null ? "Not provided" : `${age} years old`} />
+            <StudentProfileField label="Gender" value={student.gender ?? "Not provided"} />
+            <StudentProfileField label="Residential address" value={student.residentialAddress ?? "Not provided"} />
+          </dl>
+        </Card>
+        <Card className="bg-white">
+          <h2 className="text-base font-semibold text-text-primary">Guardian details</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Guardian email health and contact changes stay with the student
+            record.
+          </p>
+          <ListCard
+            className="mt-3"
+            headers={["Guardian", "Relationship", "Email status"]}
+            rows={[["Sample Guardian", "Parent", "Queued"]]}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   const canSeeFinancialContext = can(user, "student.financial.view");
   const canViewGuardianContacts = can(user, "guardianContact.view");
   return (
@@ -721,6 +854,15 @@ function StudentOverviewPanel({
           />
         </Card>
       )}
+    </div>
+  );
+}
+
+function StudentProfileField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-sm font-medium text-text-secondary">{label}</dt>
+      <dd className="mt-1 break-words text-sm text-text-primary">{value}</dd>
     </div>
   );
 }

@@ -89,7 +89,7 @@ describe("LoginPage", () => {
     expect(username).toHaveFocus();
     expect(username.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(password.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByRole("checkbox", { name: /remember me/i })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).toBeChecked();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
     expect(screen.getByText("Powered by")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Edukados logo placeholder" })).toBeInTheDocument();
@@ -183,15 +183,18 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("persists a mock session only when remember me is selected", async () => {
+  it("restores the default mock session after a Vite page reload", async () => {
     const user = userEvent.setup();
-    renderApp();
+    const app = renderApp();
 
-    await user.click(screen.getByRole("checkbox", { name: /remember me/i }));
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).toBeChecked();
     await fillLogin("sample.cashier", "demo-cashier", user);
-
     await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
     expect(window.sessionStorage.getItem("educatrak.mockSession")).toContain("Casey Cashier");
+    app.unmount();
+
+    renderApp();
+    expect(await screen.findByRole("heading", { name: /good day, casey cashier/i })).toBeInTheDocument();
   });
 
   it("keeps the mock session after a persisted MockDB update", async () => {
@@ -322,6 +325,7 @@ describe("LoginPage", () => {
 
     renderApp();
     await screen.findByLabelText(/username/i);
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).not.toBeChecked();
     await fillLogin("sample.cashier", "wrong-password");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/account locked\. try again in 1 minute/i);

@@ -12,6 +12,9 @@ interface DropdownSelectProps<TValue extends string> {
   options: DropdownSelectOption<TValue>[];
   onChange: (value: TValue) => void;
   "aria-label": string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
+  "aria-required"?: boolean;
   className?: string;
   contentClassName?: string;
   disabled?: boolean;
@@ -23,6 +26,9 @@ export function DropdownSelect<TValue extends string>({
   options,
   onChange,
   "aria-label": ariaLabel,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
+  "aria-required": ariaRequired,
   className,
   contentClassName,
   disabled = false,
@@ -36,6 +42,9 @@ export function DropdownSelect<TValue extends string>({
         <button
           type="button"
           aria-label={ariaLabel}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          aria-required={ariaRequired}
           disabled={disabled}
           className={cn("dropdown-trigger", className)}
         >

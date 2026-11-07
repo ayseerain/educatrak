@@ -2018,3 +2018,91 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm test -- --run src/test/login.test.tsx` passed (23 tests), including dialog open/close coverage. `git diff --check` passed with existing line-ending warnings only. `npm run build` remains blocked by unrelated existing nullability errors in `frontend/src/api/mock/selectors.ts` at lines 714 and 733.
 - **Commit/PR:** Not created.
 - **Follow-ups:** Replace the provisional notice and placeholder mark once approved policy content and the official Edukados logo are available.
+
+### Saturday, November 07, 2026 — 02:01:26 +08:00 | Expand MockDB student personal information
+
+- **Agent:** Codex
+- **Summary:** Added nullable Date of Birth, Male/Female gender, and one-line residential address to the existing synthetic student records. MockDB selectors and the async student list API expose these fields; age is calculated from the current Asia/Manila date and is not stored. Validation rejects invalid/future birth dates, unapproved gender values, and multiline/blank addresses. Existing records without these fields remain readable, and student updates preserve billing links.
+- **Files:** Updated `frontend/src/api/mock/mock-db.json`, `frontend/src/api/mock/seed.ts`, `frontend/src/api/mock/selectors.ts`, `frontend/src/api/mock/integrity.ts`, `frontend/src/api/mock/README.md`, `frontend/src/lib/types.ts`, `frontend/src/test/mockDatabase.test.ts`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `frontend/src/lib/studentAge.ts` and `frontend/src/test/studentAge.test.ts`.
+- **Validation:** `npm.cmd run build` passed. MockDB, mock billing, age, and focused student-navigation tests passed (31 tests total); 54 unrelated operations tests were skipped. A broader student-name filter also selected an existing student-statement assertion that fails on its known ₱8,500.00 fixture expectation. The default Vitest worker pool ran out of memory; focused reruns passed in a single thread. `git diff --check` passed with existing LF-to-CRLF warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Phase 2 must add the required fields to the Registrar form; Phase 3 must gate personal-field display to Registrar. No backend or live API files changed. Await approval before Phase 2.
+
+### Saturday, November 07, 2026 — 02:41:36 +08:00 | Add personal information to the MockDB Registrar student form
+
+- **Agent:** Codex
+- **Summary:** Updated the existing MockDB student form to require Date of Birth, Gender (Male/Female), and one-line Residential Address. Age updates from Date of Birth using the current Asia/Manila date; guardian contact remains present. Create and edit save through the central MockDB selectors, and the existing live form path is unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/components/ui/DropdownSelect.tsx`, `frontend/src/test/operations.test.tsx`, and `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`; this changelog records the work. Phase 1 MockDB changes are also present in this working tree as recorded above.
+- **Validation:** Focused form tests passed (6 tests); `npm.cmd run build` passed. Full `operations.test.tsx` run passed 58 tests and failed 4 existing assertions tied to stale seed/profile/billing expectations (active-student count, Registrar guardian detail, and ₱8,500 balance/statement fixtures). Browser review at 1366×768 and 1024×768 confirmed the form scrolls vertically and has no horizontal overflow. `git diff --check` passed; Git reported only its existing LF-to-CRLF warning for `frontend/src/lib/types.ts`.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Phase 3 must replace Registrar billing content with academic/personal information while preserving Cashier and Accounting workflows. Personal values persist in browser Local Storage through the existing MockDB and are not production-secure. No backend, live API, role permissions, or student-list columns changed. Await approval before Phase 3.
+
+### Saturday, November 07, 2026 — 03:21:22 +08:00 | Refocus the MockDB Registrar student profile
+
+- **Agent:** Codex
+- **Summary:** Added a Registrar-only profile view with academic and personal sections, calculated age, clear missing-value labels, guardian information, and the existing edit action. The Registrar profile omits all billing content and financial shortcuts. Cashier and Accounting retain their existing financial profile and do not see personal fields. The route and student list remain unchanged.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/01-Requirements/Screens-Routes-and-Flows.md`, `EducatraK-Knowledge-Base/01-Requirements/Scope-and-Access-Control.md`, `EducatraK-Knowledge-Base/01-Requirements/Modules-and-Features.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/06-Decisions/2026-11-07-mockdb-registrar-student-profile.md`.
+- **Validation:** Focused profile/role tests passed (5 tests). `npm.cmd run build` passed. Full `operations.test.tsx` passed 61 tests and failed 3 existing fixture assertions: active-student count and two ₱8,500.00 expectations against the current ₱12,500.00 account fixture; the issue tracker was updated. `git diff --check` passed with existing line-ending warnings. Browser review was not run; A10 remains unchecked.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Phase 4 integration review and Phase 5 broader verification remain. No backend, live API, permissions, student-list columns, or Cashier/Accounting workflows changed. Personal information remains in browser Local Storage via MockDB and is not production-secure.
+
+### Saturday, November 07, 2026 — 03:41:22 +08:00 | Reduce Enrollment status text size on Registrar profile
+
+- **Agent:** Codex
+- **Summary:** Removed the prominent 20px status styling from the Registrar profile's Enrollment status field. It now uses the standard status badge size.
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx` and this changelog.
+- **Validation:** Focused Registrar profile test passed (1 test). No build rerun; the change only removes a CSS class. `git diff --check` remains the final whitespace check.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Saturday, November 07, 2026 — 03:46:03 +08:00 | Populate synthetic student personal details
+
+- **Agent:** Codex
+- **Summary:** Added fictional Date of Birth, Male/Female Gender, and one-line demo address values to the four existing MockDB sample students. Restoring an older saved sample record now fills only missing personal values from its matching seed record; custom saved values, student identities, relationships, and billing records remain intact. New student records are not altered.
+- **Files:** Updated `frontend/src/api/mock/mock-db.json`, `frontend/src/api/mock/seed.ts`, `frontend/src/api/mock/store.ts`, `frontend/src/api/mock/README.md`, `frontend/src/test/mockDatabase.test.ts`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Seven focused MockDB/profile tests passed across two files. `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Refresh the browser to load the updated fixture and backfill existing saved sample records. No backend, live API, billing data, or unrelated Local Storage records were changed.
+
+### Saturday, November 07, 2026 — 04:00:51 +08:00 | Clarify calculated age wording
+
+- **Agent:** Codex
+- **Summary:** Changed calculated age display in the student form and Registrar profile to “N years old.”
+- **Files:** Updated `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** Three focused student create/edit/profile tests passed. `git diff --check` passed with existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None.
+
+### Saturday, November 07, 2026 — 04:04:26 +08:00 | Keep the MockDB login active through Vite reloads
+
+- **Agent:** Codex
+- **Summary:** MockDB login now defaults `Remember me` to checked, so the existing per-tab sessionStorage behavior restores the signed-in user after a Vite page reload. Users can still uncheck it. Live mode retains its unchecked default and server-backed remember behavior.
+- **Files:** Updated `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** All 23 `login.test.tsx` tests passed, including reload restoration and live-mode checkbox behavior. `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings.
+- **Commit/PR:** Not created.
+- **Follow-ups:** None. No backend or live API code changed.
+
+### Saturday, November 07, 2026 — 04:26:26 +08:00 | Verify student personal-information integration
+
+- **Agent:** Codex
+- **Summary:** Verified that the shared MockDB student list keeps its existing columns, search suggestions show only student identity, and the Registrar-only profile is the only UI that renders the new personal fields. Existing Cashier/Accounting billing and payment selection workflows retain their student IDs and financial context. Reconciled stale operations-test expectations with the committed mock fixtures; no financial calculations or seed balances changed.
+- **Files:** Updated `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `operations.test.tsx` passed (64 tests), `mockDatabase.test.ts` passed (22 tests), and `studentSearchField.test.tsx` passed (1 test). `npm.cmd run build` passed. `git diff --check` passed with existing line-ending warnings. Source scan found demographic rendering only in the student form and Registrar profile.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Formal browser/accessibility audit remains open under A10 for Phase 5. No backend, live API, student-list columns, billing calculations, or Cashier/Accounting profile behavior changed.
+### Saturday, November 07, 2026 — 04:45:26 +08:00 | Complete Phase 5 focused verification
+
+- **Agent:** Codex
+- **Summary:** Ran Phase 5 checks for the student personal-information enhancement. Recorded focused test results and the uncompleted full-suite/browser audits in the frontend audit manual; A10 remains unchecked because rendered browser and keyboard/contrast review could not be performed.
+- **Files:** Updated `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` and this changelog.
+- **Validation:** Focused Vitest run passed (4 files, 90 tests), covering student age/leap-year/invalid dates, MockDB, student create/edit/profile and role flows, and student search. `npm.cmd run build` passed (`tsc -b` and Vite production build). `git diff --check` passed with LF-to-CRLF warnings. The full frontend test suite did not complete: failures surfaced in dashboard, login, and live workflow suites, and the run was stopped. Browser visual/accessibility review was unavailable. No backend files were changed.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Investigate the full-suite test failures and complete A10 rendered-browser, keyboard, contrast, and role-flow review.
+### Saturday, November 07, 2026 — 05:59:56 +08:00 | Complete visible Playwright review for student information
+
+- **Agent:** Codex
+- **Summary:** Completed the phase-specific browser review of MockDB Add Student, Edit Student, and Student Profile. Marked A08–A10 audited with the tested viewports and role results. Added a verification issue for failures observed during the interrupted full frontend test run.
+- **Files:** Updated `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** Playwright drove visible Chrome at 1366×900 and 390×844. The Registrar profile displayed personal information and no billing content; Cashier and Accounting profiles retained billing content and omitted personal fields. Add/Edit forms retained required fields, derived read-only age, and guardian controls. No horizontal overflow was found. Keyboard navigation reached the form controls and gender options, and visible focus indicators appeared. Contrast ratios computed against white were 17.40:1 for `#1A1A1A`, 6.19:1 for `#616161`, and 9.19:1 for `#035419`. Focused Vitest checks passed (90 tests); `npm.cmd run build` passed. The full frontend test run was interrupted after failures appeared in dashboard, login, and live workflow suites. No backend files or project dependencies changed; Playwright was installed under the system temporary directory.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Isolate the affected full-suite tests in `Issues-and-TODOs.md`. The visible Chrome window remains open for review.

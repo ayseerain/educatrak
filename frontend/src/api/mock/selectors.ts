@@ -1,4 +1,6 @@
 import { centavos, type Centavos } from "@/lib/money";
+import type { StudentGender } from "@/lib/types";
+import { calculateStudentAge, isValidDateOfBirth, todayInManila } from "@/lib/studentAge";
 import { getMockState, getMockToday, updateMockState } from "./store";
 
 const runtimePaymentIds = new Set<string>();
@@ -10,6 +12,10 @@ export interface Student {
   grade: string;
   section: string;
   studentStatus: string;
+  dateOfBirth?: string | null;
+  gender?: StudentGender | null;
+  residentialAddress?: string | null;
+  age: number | null;
   billingStatus: "Current" | "Due soon" | "Overdue";
   balance: Centavos;
 }
@@ -116,6 +122,9 @@ export interface MockStudentInput {
   grade: string;
   section: string;
   studentStatus?: string;
+  dateOfBirth?: string;
+  gender?: StudentGender;
+  residentialAddress?: string;
   guardianName?: string;
   guardianRelationship?: string;
   guardianEmail?: string;
@@ -299,6 +308,10 @@ export function selectStudents(): Student[] {
     const account = getCurrentBillingAccount(student.id);
     return {
       ...student,
+      dateOfBirth: student.dateOfBirth ?? null,
+      gender: student.gender ?? null,
+      residentialAddress: student.residentialAddress ?? null,
+      age: calculateStudentAge(student.dateOfBirth),
       billingStatus: account?.status ?? "Current",
       balance: account?.balance ?? centavos(0),
     };
@@ -705,10 +718,16 @@ export function restoreMockStaffUser(userId: string, actorId = "user-admin"): Mo
 export function createMockStudent(input: MockStudentInput, actorId = "user-registrar"): Student {
   const number = input.number.trim();
   if (!number || !input.name.trim() || !input.grade || !input.section) throw new Error("Complete the required student fields.");
+  validateMockStudentPersonalInfo(input);
   if (getMockState().students.some((student) => student.number.toLocaleLowerCase() === number.toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
   const id = nextId("mock-student", getMockState().students);
   updateMockState((state) => {
-    state.students.push({ id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active" });
+    state.students.push({
+      id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active",
+      dateOfBirth: input.dateOfBirth ?? null,
+      gender: input.gender ?? null,
+      residentialAddress: input.residentialAddress?.trim() ?? null,
+    });
     if (input.guardianName?.trim() && input.guardianRelationship?.trim()) {
       const guardianId = nextId("mock-guardian", state.guardians);
       state.guardians.push({ id: guardianId, name: input.guardianName.trim(), email: input.guardianEmail?.trim() || null, mobile: input.guardianMobile?.trim() || "" });
@@ -720,12 +739,19 @@ export function createMockStudent(input: MockStudentInput, actorId = "user-regis
 }
 
 export function updateMockStudent(studentId: string, input: MockStudentInput, actorId = "user-registrar"): Student {
+  validateMockStudentPersonalInfo(input);
   let found = false;
   updateMockState((state) => {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
     if (state.students.some((item) => item.id !== studentId && item.number.toLocaleLowerCase() === input.number.trim().toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
-    Object.assign(student, { number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section, ...(input.studentStatus ? { studentStatus: input.studentStatus } : {}) });
+    Object.assign(student, {
+      number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section,
+      ...(input.studentStatus ? { studentStatus: input.studentStatus } : {}),
+      ...(input.dateOfBirth !== undefined ? { dateOfBirth: input.dateOfBirth } : {}),
+      ...(input.gender !== undefined ? { gender: input.gender } : {}),
+      ...(input.residentialAddress !== undefined ? { residentialAddress: input.residentialAddress.trim() } : {}),
+    });
     const link = state.studentGuardianLinks.find((item) => item.studentId === studentId);
     const guardian = link && state.guardians.find((item) => item.id === link.guardianId);
     if (link && guardian && input.guardianName && input.guardianRelationship) {
@@ -739,6 +765,18 @@ export function updateMockStudent(studentId: string, input: MockStudentInput, ac
   });
   if (!found) throw new Error("This student record is no longer available.");
   return getStudentById(studentId)!;
+}
+
+function validateMockStudentPersonalInfo(input: MockStudentInput): void {
+  if (input.dateOfBirth !== undefined && (!isValidDateOfBirth(input.dateOfBirth) || input.dateOfBirth > todayInManila())) {
+    throw new Error("Enter a valid date of birth that is not in the future.");
+  }
+  if (input.gender !== undefined && input.gender !== "Male" && input.gender !== "Female") {
+    throw new Error("Select Male or Female for gender.");
+  }
+  if (input.residentialAddress !== undefined && (!input.residentialAddress.trim() || /[\r\n]/.test(input.residentialAddress))) {
+    throw new Error("Enter a residential address on one line.");
+  }
 }
 
 export function createMockBillingAccount(studentId: string, inputOrActor: MockBillingAccountInput | string = "user-cashier", actorId = "user-cashier"): MockBillingAccount {

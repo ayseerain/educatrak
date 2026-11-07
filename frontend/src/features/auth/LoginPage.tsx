@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { z } from "zod";
+import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/ui/Button";
 import { en } from "@/i18n/en";
@@ -42,7 +43,7 @@ export function LoginPage() {
     register,
     setError,
   } = useForm<LoginFormValues>({
-    defaultValues: { username: "", password: "", rememberMe: false },
+    defaultValues: { username: "", password: "", rememberMe: !isLiveCashierApiEnabled() },
   });
   const usernameField = register("username");
   const passwordField = register("password");

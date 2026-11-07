@@ -68,7 +68,7 @@ For each screen below:
 - **Documented access:** All users
 - **Build scope:** Username/password login; generic failure messaging; lockout wait-time handling.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/login` with username/password authentication, generic failure messaging, repeated-failure lockout wait time, password visibility toggle, development-only mock session handling, production Laravel cookie-session authentication, `/api/auth/me` session rehydration after refresh, retryable restore errors, and sign-out return to login. Coverage is in `frontend/src/test/login.test.tsx` and `frontend/src/test/sessionRestore.test.tsx`. Formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/login` with username/password authentication, generic failure messaging, repeated-failure lockout wait time, password visibility toggle, development-only mock session handling, production Laravel cookie-session authentication, `/api/auth/me` session rehydration after refresh, retryable restore errors, and sign-out return to login. In MockDB mode, `Remember me` defaults on so the per-tab mock session survives Vite reloads; live mode keeps its existing unchecked default and server-backed remember behavior. Coverage is in `frontend/src/test/login.test.tsx` and `frontend/src/test/sessionRestore.test.tsx`. Formal Phase 2 audit remains pending.
 
 ### B02. First-login password change — M1
 
@@ -117,30 +117,31 @@ For each screen below:
 - **Build scope:** Search/filter student records; REG receives only the documented limited fields.
 - **Build status:** [x] Built
 - **Resume Note:** Production `/students` uses `LiveStudentsPage` and the role-protected `/api/students` search/filter/pagination endpoint. Registrar, Cashier, and Accounting receive the current school-year balance in this shared student-page context; Registrar retains student-record management while Cashier and Accounting retain their own role capabilities. Coverage: `frontend/src/test/liveStudents.test.tsx` and `backend/tests/Feature/StudentAccessTest.php`. Editing/import remain separate and unresolved; formal Phase 2 audit remains pending.
+- **MockDB integration:** `/students` keeps its existing columns with no personal-information columns. Student rows and search suggestions show the existing student identity and academic/status context; Cashier/Accounting billing and payment selectors continue using the same student IDs and show no demographic values. Coverage: `operations.test.tsx` and `studentSearchField.test.tsx`. Live list and API remain unchanged.
 
 ### B08. New Student — M2
 
 - **Route:** `/students/new`
-- **Documented access:** CSH (production write unavailable pending U02)
-- **Build scope:** Create student and guardian information with duplicate-number handling.
+- **Documented access:** REG for MockDB; live create remains unavailable and untouched.
+- **Build scope:** Create student academic, personal, and guardian information with duplicate-number handling.
 - **Build status:** [x] Built
-- **Resume Note:** Development `/students/new` retains the sample `StudentFormPage`. In production the form is disabled and cannot claim a local save because student create authority and API persistence remain unresolved under Decision 31.3. Formal Phase 2 audit remains pending.
+- **Resume Note:** The MockDB `/students/new` form requires date of birth, Male/Female gender, and one-line residential address; it calculates age as read-only and keeps guardian contact. `operations.test.tsx` covers create, required-field validation, and Cancel. Live create remains unavailable and untouched. Formal audit remains pending.
 
 ### B09. Edit Student — M2
 
 - **Route:** `/students/:id/edit`
-- **Documented access:** CSH (production write unavailable pending U02)
-- **Build scope:** Edit permitted student/guardian links and status; no hard delete.
+- **Documented access:** REG for MockDB; live edit remains unavailable and untouched.
+- **Build scope:** Edit student academic, personal, and guardian information; no hard delete.
 - **Build status:** [x] Built
-- **Resume Note:** Development `/students/:id/edit` retains the sample `StudentFormPage`. In production editing is disabled until the school confirms edit authority and the server-backed mutation is implemented; no sample edit success is shown. Formal Phase 2 audit remains pending.
+- **Resume Note:** The MockDB `/students/:id/edit` form preloads and saves date of birth, gender, and residential address while keeping age derived. `operations.test.tsx` covers prefill and save. Live edit remains unavailable and untouched. Formal audit remains pending.
 
 ### B10. Student Profile — M2
 
 - **Route:** `/students/:id`
-- **Documented access:** CSH / ACC
-- **Build scope:** Student overview and guardian contacts for CSH/ACC; contextual actions stay in their dedicated workspaces.
+- **Documented access:** REG (MockDB academic/personal profile); CSH / ACC (existing financial overview).
+- **Build scope:** Registrar's MockDB profile shows academic, personal, and guardian information without billing content; CSH/ACC financial overview and contextual actions stay in their existing workspaces.
 - **Build status:** [x] Built
-- **Resume Note:** Production `/students/:id` uses `LiveStudentProfilePage` and the role-limited server serializer. Registrar, Cashier, and Accounting receive read-only guardian-contact and current-balance context on the shared student page; Registrar retains its student-management actions and does not gain account, payment, report, or other finance-workspace access. The Registrar summary layout matches Cashier's, without extra role-only identity tiles. Guardian privacy coverage is in `StudentAccessTest.php` and `liveStudents.test.tsx`; formal Phase 2 audit remains pending.
+- **Resume Note:** MockDB `/students/:id` shows Registrar academic and personal details, missing-value states, guardian details, and the existing edit action; it hides balances, billing status, billing accounts, and financial shortcuts. Cashier and Accounting remain on the existing financial overview and do not see personal fields. Live `LiveStudentProfilePage` and its API remain unchanged. MockDB role-visibility/profile coverage is in `operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B11. Account List — M3
 
@@ -535,26 +536,26 @@ A screen is never marked audited merely because it was previously built.
 ### A08. New Student — M2
 
 - **Route:** `/students/new`
-- **Cross-Check & Audit status:** [ ] Audited
-- **Confirmation:** _Not run — PASS/FAIL pending._
-- **Simulation(s):** _Not run._
-- **Resume Note:** Production `/students/new` returns an explicit unavailable state; `liveStudents.test.tsx` verifies no mock form is exposed as a save path. The create API and approved student-record authority remain unresolved under U02, with account/configuration dependencies also tracked there. A08 remains unchecked pending policy/API resolution and browser visual/accessibility review.
+- **Cross-Check & Audit status:** [x] Audited
+- **Confirmation:** PASS — Phase 5 Add Student review completed for the MockDB route.
+- **Simulation(s):** Playwright with visible Chrome at 1366×900 and 390×844. Required-field state, empty calculated-age state, labeled controls, gender menu options, keyboard navigation/focus, and horizontal overflow were checked. Focused create/validation tests passed.
+- **Resume Note:** The Add Student route keeps the existing academic and guardian sections and includes required date of birth, gender, and residential address fields. Age is read-only and shows “Not available” until a valid date is entered. The mock-only route is reviewed; live API behavior remains untouched.
 
 ### A09. Edit Student — M2
 
 - **Route:** `/students/:id/edit`
-- **Cross-Check & Audit status:** [ ] Audited
-- **Confirmation:** _Not run — PASS/FAIL pending._
-- **Simulation(s):** _Not run._
-- **Resume Note:** Production `/students/:id/edit` returns an explicit unavailable state; `liveStudents.test.tsx` now verifies this separately from the new-student route and confirms no mock edit form is exposed. Student edit authority remains unresolved under U02. A09 remains unchecked pending policy/API resolution and browser visual/accessibility review.
+- **Cross-Check & Audit status:** [x] Audited
+- **Confirmation:** PASS — Phase 5 Edit Student review completed for the MockDB route.
+- **Simulation(s):** Playwright with visible Chrome at 1366×900. Existing values, derived age, labeled fields, keyboard focus, and horizontal overflow were checked. Focused edit and persistence tests passed.
+- **Resume Note:** The Edit Student route preloads the existing personal details, keeps Age read-only, and retains guardian contact. The mock-only route is reviewed; live API behavior remains untouched.
 
 ### A10. Student Profile — M2
 
 - **Route:** `/students/:id`
-- **Cross-Check & Audit status:** [ ] Audited
-- **Confirmation:** _Not run — PASS/FAIL pending._
-- **Simulation(s):** _Not run._
-- **Resume Note:** Production `/students/:id` loads the role-filtered student API. Registrar has no general student profile access; only CSH/ACC can view the profile and guardian contacts. The Cashier now has a profile-only `Record payment` shortcut that deep-links to `/payments/new?student=:id`; the live payment page fetches that student's billing context directly. Focused tests cover this link and preselection. The current user-directed simplification keeps Billing, Payments, and Follow-up in their dedicated workspaces; the older M2.1 nested-tab wording is superseded for this profile. A manual Cashier browser review at 1366×768 found the development profile free of nested workflow tabs and the overview/clearance/guardian sections visible within the viewport. After that review, the duplicate top-level Clearance metric was removed because the clearance-details panel already communicates the same status. Build and production-asset verification passed; application tests were not run. A10 remains unchecked pending Accounting/Cashier/Registrar role-flow review, keyboard/contrast acceptance across all states, and approved role journey evidence.
+- **Cross-Check & Audit status:** [x] Audited
+- **Confirmation:** PASS — Phase 5 MockDB profile and role-visibility review completed.
+- **Simulation(s):** Playwright with visible Chrome at 1366×900 and 390×844. Registrar profile showed academic, personal, and guardian details without billing; Cashier and Accounting retained billing content without personal demographics. No horizontal overflow appeared at either viewport. Keyboard traversal showed visible focus indicators. Contrast ratios computed against white: primary text 17.40:1, secondary text 6.19:1, and dark-green focus ring 9.19:1.
+- **Resume Note:** Live `/students/:id` and its API are unchanged. MockDB Registrar, Cashier, and Accounting profile visibility was reviewed in the browser. Focused feature tests (90 tests) and the production build passed. The full frontend test suite did not complete; failures in dashboard, login, and live workflow suites are tracked in `Issues-and-TODOs.md` for isolated investigation. The broader application audit remains separate from this phase-specific screen review.
 
 ### A11. Account List — M3
 

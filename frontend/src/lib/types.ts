@@ -6,6 +6,8 @@ export type Role =
   | "auditor"
   | "registrar";
 
+export type StudentGender = "Male" | "Female";
+
 export interface AuthenticatedUser {
   id: string;
   name: string;

@@ -51,10 +51,10 @@
     { "id": "plan-monthly", "name": "Monthly", "active": true, "downPaymentCents": 200000, "installmentCount": 8, "firstDueDays": 30, "intervalDays": 30 }
   ],
   "students": [
-    { "id": "sample-1001", "number": "S-1001", "name": "Amara Villanueva (sample)", "grade": "Grade 7", "section": "Olive", "studentStatus": "Active" },
-    { "id": "sample-1002", "number": "S-1002", "name": "Basil Mercado (sample)", "grade": "Grade 8", "section": "Maple", "studentStatus": "Active" },
-    { "id": "sample-1003", "number": "S-1003", "name": "Cora Navarro (sample)", "grade": "Grade 9", "section": "Pine", "studentStatus": "Active" },
-    { "id": "sample-1004", "number": "S-1004", "name": "Dara Santos (sample)", "grade": "Grade 7", "section": "Section B", "studentStatus": "Inactive" }
+    { "id": "sample-1001", "number": "S-1001", "name": "Amara Villanueva (sample)", "grade": "Grade 7", "section": "Olive", "studentStatus": "Active", "dateOfBirth": "2012-06-15", "gender": "Female", "residentialAddress": "Demo Residence 1, Mendez, Cavite" },
+    { "id": "sample-1002", "number": "S-1002", "name": "Basil Mercado (sample)", "grade": "Grade 8", "section": "Maple", "studentStatus": "Active", "dateOfBirth": "2011-03-22", "gender": "Male", "residentialAddress": "Demo Residence 2, Mendez, Cavite" },
+    { "id": "sample-1003", "number": "S-1003", "name": "Cora Navarro (sample)", "grade": "Grade 9", "section": "Pine", "studentStatus": "Active", "dateOfBirth": "2010-11-08", "gender": "Female", "residentialAddress": "Demo Residence 3, Mendez, Cavite" },
+    { "id": "sample-1004", "number": "S-1004", "name": "Dara Santos (sample)", "grade": "Grade 7", "section": "Section B", "studentStatus": "Inactive", "dateOfBirth": "2013-09-17", "gender": "Male", "residentialAddress": "Demo Residence 4, Mendez, Cavite" }
   ],
   "guardians": [
     { "id": "guardian-1001", "name": "Devon Villanueva (sample)", "email": "guardian@example.test", "mobile": "0917 555 0101" },

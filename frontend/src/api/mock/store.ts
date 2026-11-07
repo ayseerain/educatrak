@@ -28,7 +28,22 @@ function restore(): void {
     if (typeof envelope?.mockTodayOverride === "string" && /^\d{4}-\d{2}-\d{2}$/.test(envelope.mockTodayOverride)) mockTodayOverride = envelope.mockTodayOverride;
     if (typeof envelope?.simulatedDateTime === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$/.test(envelope.simulatedDateTime)) simulatedDateTime = envelope.simulatedDateTime;
     if (candidate.meta?.notice && Array.isArray(candidate.students) && Array.isArray(candidate.payments)) {
-      state = { ...seedMockDatabase(getMockToday()), ...candidate } as SeededMockDatabase;
+      const seed = seedMockDatabase(getMockToday());
+      state = {
+        ...seed,
+        ...candidate,
+        students: candidate.students.map((student) => {
+          const seededStudent = seed.students.find((seeded) => seeded.id === student.id);
+          if (!seededStudent) return student;
+          return {
+            ...seededStudent,
+            ...student,
+            dateOfBirth: student.dateOfBirth ?? seededStudent.dateOfBirth ?? null,
+            gender: student.gender ?? seededStudent.gender ?? null,
+            residentialAddress: student.residentialAddress ?? seededStudent.residentialAddress ?? null,
+          };
+        }),
+      } as SeededMockDatabase;
     }
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);
