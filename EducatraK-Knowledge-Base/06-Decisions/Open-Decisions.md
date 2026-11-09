@@ -46,3 +46,12 @@ These were flagged in the original handoff as assumptions to be treated as confi
 - **Current interpretation:** No policy interpretation is approved; leave the behavior tracked and do not treat the one-day fallback as settled.
 - **What needs confirmation:** The MCA finance/system-settings owner must specify whether to reject the range, return an empty result, select another configured period, or require a current school year. Then align API, UI messaging, and focused coverage.
 - **Reviewed:** Sunday, October 25, 2026 — 10:51:18 +08:00.
+
+### 2026-11-09 backend Part 1b status note
+
+At Monday, November 09, 2026 — 12:40:29 Asia/Manila, Project owner left guardian-data ownership, adjustment approval threshold, Super Admin lifecycle, no-current-school-year dashboard behavior, and client sign-off for global no-hard-delete policy open. Recommendations in `2026-11-09-backend-part-1b-owner-decisions.md` are proposals only. Keep these decisions open; this note does not resolve or amend their substantive policy.
+### 31.8 Backend retention versus current Privacy Policy text
+- **Issue:** Project owner said backend audit/security/backup/notification/financial retention remains undecided. Current Privacy Policy copy in `frontend/src/i18n/en.ts:87` states ten-year audit-log and five-year other personal-information periods.
+- **Status:** Source conflict remains open. Part 1b did not edit the client-facing promise or canonical requirements and does not authorize retention/purge implementation. Staff account archive's 30-day restore/anonymization lifecycle remains separate.
+- **Next action:** MCA policy owner reconcile which records and systems the published periods govern, then separately authorize any canonical or implementation update.
+- **Recorded:** Monday, November 09, 2026 — 12:46:06 Asia/Manila.

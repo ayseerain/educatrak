@@ -18,3 +18,7 @@ Show students absent from the complete masterlist for review. Keep all status-ch
 ## Phase boundary
 
 Phase 1 implements the interface and file selection only. It does not parse file contents or change MockDB. Each later phase requires separate approval. Student Number-to-LRN replacement remains outside this decision and task.
+
+### 2026-11-09 owner confirmation
+
+Project owner confirmed at Monday, November 09, 2026 — 12:40:29 Asia/Manila that Student Number-to-LRN change is approved for a separately authorized future change. It is not implemented in `feature/backend-foundation` by Part 1b. This does not settle LRN field semantics, uniqueness, legacy backfill, import API contract, or authorize schema/code work. See `2026-11-09-backend-part-1b-owner-decisions.md`.

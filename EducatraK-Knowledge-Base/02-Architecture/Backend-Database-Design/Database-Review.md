@@ -97,3 +97,33 @@ The branch also lacks the later decision documents for student-record role
 reassignment, fee synchronization, and the masterlist/LRN import. This review
 follows the current task for scope and records the source drift; it does not
 rewrite canonical requirements.
+
+## 2026-11-09 current-branch reconciliation
+
+**Snapshot:** `feature/backend-foundation` at `b4ee0e3f535e07810d87a3106268e3965029f7a4`; this section supersedes the old branch counts above. Read-only inspection found 14 migration files and 29 model files. The migration chain—not this review—is executable schema. No ERD, data dictionary, reference SQL, diagram, or checks directory exists here. Therefore B4 draft repair and B7 approval are blocked; no schema load or constraint matrix ran.
+
+### Checklist against migrations/models
+
+| Topic | Status | Evidence and owner decision |
+|---|---|---|
+| Surrogate IDs / student identifiers | Implemented / future decision | `2026_10_09_062757_create_educatrak_reference_and_people_tables.php:68-79` defines `students.student_no` and surrogate ID; no LRN column found. Owner approved a separate future Student Number-to-LRN change; field semantics, uniqueness, backfill and migration remain open. |
+| Lengths and types | Not settled for a proposed design | Preserve deployed migration types; student `student_no` and names are strings; amount storage uses integer centavos. No approved reference schema exists to compare. |
+| Grade / section lookup | Implemented | Same migration defines grade levels, sections and student foreign keys (`:45-79`); do not replace with free text. |
+| Duplicate facts / billing history | Existing snapshots and references observed | `2026_10_09_062757...php:86-101` defines school-year/grade-based fee schedules and items; `2026_10_09_062759...php:14-79` defines account, item snapshots, adjustments, installments and payments. Account item snapshots preserve name/category/amount. Detailed authority for all copied values needs a future dictionary. |
+| Payment allocation / receipts | Implemented | `2026_10_09_062759...php:82-99` defines receipt/payment allocation relations; receipt sequence additions are in `2026_10_24_220000_create_receipt_sequences_table.php`. Preserve receipt and allocation uniqueness as implemented. |
+| Settings storage | Implemented | `backend/app/Models/SystemSetting.php` exposes `key`, `value`, `updated_by`; no second generic settings table proposed. |
+| Money / signed amounts | Implemented | Fee/account balances use unsigned cents; adjustment and close-out variance use signed integer cents (`2026_10_09_062759...php:43-48`; `2026_10_09_062801...php:53-59`). No schema changes approved. |
+| Current school year uniqueness | Not settled — confirm | `2026_10_09_062757...php:17` indexes `is_current` but does not make it unique. Current-year dashboard behavior is one of five explicitly open policies. |
+| Guardian ownership / primary link | Not settled — confirm | `2026_10_09_062757...php:80-84` defines `guardian_student.is_primary`; owner says guardian-data ownership/lifecycle remains open. |
+| Audit evidence / privacy | Implemented storage; policy incomplete | `2026_10_09_062801...php:65-78` stores nullable before/after JSON, user/IP/agent and entity type/string ID. Owner: retain required evidence and minimize sensitive snapshots; exact field allowlist/retention remain open. |
+| Retention / purge | Not settled — confirm | The separate 30-day user archive/anonymization lifecycle is implemented by `2026_10_25_122930_add_archive_lifecycle_to_users.php`. Owner confirmed retention for audit/security/backup/notification/financial records is undecided. No purge procedure approved. |
+| Financial/audit deletion | Existing restrictive FKs; global sign-off open | Financial FK restrictions appear in billing migrations; they do not make rows database-immutable. Preserve financial/audit evidence. Global client sign-off remains open. |
+| Index/performance | Implemented indexes; recommendations provisional | Migrations define indexes for status, lookups, event dates and key combinations. No safe representative load test or MySQL deployment check ran. |
+| Unused columns / relationships | Not fully assessed | 29 model files exist. No column is proposed for removal; unused status requires query-level evidence and a separately authorized review. |
+| Engine/version/collation | Deployment unverified | Application config targets MySQL and test config SQLite; owner says deployment versions/topology remain unverified. |
+
+The owner’s 30-minute idle session answer is a policy decision, not an existing database/schema answer. No financial/audit/notification/backup retention period was inferred. The five open policies remain proposals only as detailed in the dated decision record.
+
+### B4/B7 gate
+
+B4 fixes completed: **0**. Must-fix items resolved: **0**. Must-fix count cannot be reconciled because Part 1 created no ERD, dictionary, reference SQL or enumerated gap register beyond this review. Diagram status: absent/not generated. Schema load: not run. Constraint tests: 0 run. SQLite/PHPUnit suite: not run in this documentation pass. MySQL CLI was not available in the earlier Part 1 environment; current matching scratch DB availability was not established. B7: **skipped**; no design approval, artifacts, compatible scratch database evidence or passing gates.

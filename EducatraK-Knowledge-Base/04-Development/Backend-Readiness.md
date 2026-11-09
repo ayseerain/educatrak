@@ -1,5 +1,7 @@
 # Backend Environment and Readiness — feature/backend-foundation
 
+> Current readiness is in the 2026-11-09 reconciliation section. D1–D17 and nine-route results below describe the historical Part 1 snapshot at `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`; they are not the current backend inventory.
+
 ## Verified task baseline
 
 - Branch: `feature/backend-foundation`, matching
@@ -88,3 +90,22 @@ The current task authorizes only these preparation documents and required
 logs. It does not authorize code, schema, branch synchronization, Part 1b,
 Part 2, or Part 3. The owner must review the contract, database findings, and
 open decision checklist before any later implementation phase.
+
+## 2026-11-09 current-branch readiness reconciliation
+
+This section supersedes the historical nine-route / old-host snapshot above. Selected branch: `feature/backend-foundation`; current baseline `b4ee0e3f535e07810d87a3106268e3965029f7a4`. Part 1's original evidence remains historical at `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`.
+
+| Check | Current evidence/status | Owner decision or next action |
+|---|---|---|
+| Laravel/runtime | Existing Laravel backend; current framework version should be taken from lockfile/composer metadata. Host/deployment PHP and Composer versions are unverified in this pass. | Verify deployment machine before setup. |
+| Database | 14 migration files, 29 models. MySQL target; SQLite is test configuration. Deployment server/version/topology unverified. | Verify target version and topology; no DB connection/load attempted. |
+| API | `php artisan route:list --path=api --except-vendor` passed; 51 routes. | Existing route inventory is documented in API contract. |
+| Session | Backend `config/session.php` defaults to 120 minutes; owner policy is 30 minutes idle, activity renews, warn at one minute. Frontend warning/idle behavior is a separate implementation. | No code alignment in Part 1b. Track separately. |
+| Errors | Current Laravel `{message}` and validation `{message,errors}` retained by owner decision. | Any envelope change needs separate approval. |
+| Deployment/TLS/jobs | Owner says PHP/Composer/MySQL versions, topology, TLS owner and scheduler owner remain unverified. | Follow-up only. Do not treat 00:05/00:15 schedules as configured or verified. |
+| Development DB hardening | Documentation checklist only: secure DBA/root, use local loopback bind only when DB truly local, create limited app account, avoid root app credentials, protect credentials/backups. No commands executed. | Apply only in separately authorized environment setup. |
+| LAN readiness | Least-privilege service account and HTTPS before real student data crosses a network are deployment requirements; current topology/proxy not verified. | Confirm before real-data use. |
+| Documentation drift | Root README and backend README contain stale/boilerplate implementation descriptions; canonical role/clearance text includes historical descriptions. | Separate documentation scope; not edited here. |
+| Design/test readiness | API contract updated; DB review current. ERD, dictionary, reference SQL, diagrams and scratch checks absent. No schema approval. | B4 draft completion and B7 remain blocked. |
+
+Only route inventory was validated during this pass. No backend/frontend tests, builds, live database commands, deployment setup, scheduler, TLS, backup restore, or schema constraints were run. No live data or credentials were accessed.

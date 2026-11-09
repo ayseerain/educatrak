@@ -1,4 +1,6 @@
-# Backend API Contract — feature/backend-foundation snapshot
+# Backend API Contract — current feature/backend-foundation snapshot
+
+> Current evidence is in the 2026-11-09 reconciliation section. The original nine-route inventory below is retained as historical Part 1 evidence at `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`; it is superseded by the current 51-route inventory below.
 
 ## Status and scope
 
@@ -88,3 +90,44 @@ error envelope; API-wide throttling; security headers; audit snapshot privacy
 and retention; deployment origin/TLS/CORS; exact production database version;
 and which proposed domain routes, fields, pagination, status codes, and role
 capabilities are approved. No proposed route is represented as implemented.
+
+## 2026-11-09 reconciliation — current branch snapshot
+
+This section supersedes the historical nine-route snapshot above for the current `feature/backend-foundation` HEAD `b4ee0e3f535e07810d87a3106268e3965029f7a4`. Part 1 itself documented `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`; the intervening main refresh added the implementation now recorded here. Route inventory was verified with `php artisan route:list --path=api --except-vendor`: **51 routes**. Routes and files are read-only evidence, not new approval.
+
+### Current route inventory
+
+| Area | Implemented declarations | Capability / behavior evidence |
+|---|---|---|
+| Authentication | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/change-password` | Session Sanctum; login throttle; auth controllers/requests. |
+| User/security/audit | `GET,POST /api/admin/users`; `PATCH /api/admin/users/{staffUser}`; `POST .../archive`, `/restore`, `/reset-password`; `GET /api/admin/security-events`, `/api/audit-log` | `users.manage`, `security.events.view`, `audit.view`; current code's protected-account and archive safeguards. |
+| Dashboard/backup | `GET /api/dashboard`, `/api/backups` | `dashboard.view`, `backup.manage`; backup route is a read listing, not backup execution. |
+| Notifications/follow-up | `GET /api/notifications`, `POST /api/notifications/{notificationLog}/retry`, `GET /api/follow-up`, `POST /api/follow-up/reminders`, `POST /api/webhooks/twilio/messages/{notificationLog}` | Notification/follow-up capabilities; webhook signature validation is in delivery implementation. |
+| Finance settings | `GET /api/settings/finance/fees`, `/plans`; `POST /api/settings/finance/fees/{feeSchedule}/items`; `PATCH /api/settings/finance/fee-items/{feeItem}`; `POST .../deactivate` | `settings.finance.view/manage`. |
+| Reports | `GET /api/reports/daily`, `/outstanding`, `/students/{student}/statement` | `reports.view`; role capability map controls access. |
+| Students/accounts | `GET,POST /api/students`; `GET /api/student-record-options`; `GET,PATCH /api/students/{student}`; `GET /api/billing-accounts`, `/api/billing-accounts/{billingAccount}`; `POST /api/billing-accounts/{billingAccount}/adjustments` | Student view/manage and account view/manage capabilities. No student import route. |
+| Payments/voids | `GET /api/payment-students`, `/api/payment-students/{student}/context`, `/api/payments`, `/api/payments/{payment}`; `POST /api/payments`, `/api/payments/{payment}/reprint`, `/api/payments/{payment}/void-requests`; `GET /api/void-requests`; `PATCH /api/void-requests/{voidRequest}` | Payment record/view, receipt reprint and void request/approval capabilities. |
+| Close-outs | `GET /api/close-outs`, `/today`; `POST /api/close-outs`, `/api/close-outs/{closeOut}/sign-off`; `GET,POST,DELETE /api/close-outs/business-date` | View/submit/sign-off capabilities. Business-date simulator is a real route, protect from production exposure through deployment configuration/review. |
+
+Laravel current error response remains `{message}` and validation `{message,errors}`. The owner confirmed retaining this shape. A shared `code/request_id` envelope remains unapproved. Test evidence is distributed among `backend/tests/Feature/` (authentication, user administration, audit, backup, student, billing, finance, payments/close-out, notifications, reports and dashboard); no new tests were run in this docs-only pass.
+
+The 65 named MockDB function exports in `api.ts`, `selectors.ts`, `store.ts`, `seed.ts`, and `integrity.ts` are client-side operations, not 65 network endpoints. `reset()`, `snapshot()`, raw seed, developer latency/error/empty switches, date simulation, and derived selectors do not create routes. Server routes cover the listed business operations; student masterlist import has no backend endpoint. Its staged UI does not authorize import implementation. LRN is approved only for separately authorized future work.
+
+### Owner answers and open contract questions
+
+| Question | Answer | Why / evidence |
+|---|---|---|
+| Session idle/renewal/warning | Owner policy: 30 minutes idle; activity renews; warn at 1 minute. | Direct owner confirmation, recorded in `06-Decisions/2026-11-09-backend-part-1b-owner-decisions.md`. Current Laravel config default remains 120 minutes; alignment is not implemented. |
+| Error response envelope | Retain current Laravel `{message}` and validation `{message,errors}`. | Owner confirmation; changing envelope requires separate approval. |
+| Audit contents and retention | Keep required evidence, minimize sensitive snapshots; retention undecided. | Owner confirmation; specific snapshot allowlist and retention durations remain open. |
+| Deployment topology/TLS | Unverified; follow-up. | No deployment host evidence supplied. |
+| Guardian access and ownership | Open; recommendation only. | Existing data model has guardian links; accountable role/lifecycle not approved. |
+| Adjustment threshold | Open; recommendation only. | Current implementation requires reason/audits; no threshold decision. |
+| Super Admin lifecycle | Open; recommendation only. | Implementation is not MCA policy approval. |
+| No-current-year dashboard | Open; recommendation only. | Current fallback behavior requires owner decision before being treated as policy. |
+| Global no-hard-delete sign-off | Open; recommendation only. | Preserve existing financial/audit evidence; client-wide policy confirmation open. |
+| Student Number to LRN | Approved for a separately authorized future change; not implemented here. | Owner confirmation; schema semantics, migration and import contract remain open. |
+
+### Known boundaries and follow-up
+
+The current branch contains route families absent from the Part 1 snapshot; this reconciles the current API description only. Exact per-route field/response schemas should be expanded from their Form Requests/resources as a separately scoped contract pass if needed. Current mock/backend differences must be reviewed against the dated decisions before any frontend edits. No endpoint was added or changed in this task.

@@ -2187,3 +2187,28 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Confirmed no remaining unmerged paths and no conflict markers in the resolved changelog. No application tests run; this change only resolves merge documentation and removes generated files.
 - **Commit/PR:** Not created; merge remains in progress.
 - **Follow-ups:** Review and commit the completed merge when ready.
+
+### Monday, November 09, 2026 — 12:43:04 Asia/Manila | Backend Part 1b documentation reconciliation
+
+- **Agent:** Codex
+- **Summary:** Recorded owner-confirmed session and error-contract policy, audit minimization/retention status, unverified deployment facts, and separate future LRN approval. Reconciled API contract to 51 routes and refreshed database review/readiness evidence for the current branch. Kept five MCA policy questions open as proposals only. B4/B7 remain blocked because database reference artifacts and safe schema validation are absent.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Database-Review.md`, `EducatraK-Knowledge-Base/04-Development/Backend-Readiness.md`, `EducatraK-Knowledge-Base/06-Decisions/Open-Decisions.md`, `EducatraK-Knowledge-Base/06-Decisions/2026-11-07-student-masterlist-import.md`; added `EducatraK-Knowledge-Base/06-Decisions/2026-11-09-backend-part-1b-owner-decisions.md`; updated this tracker and changelog; added `EducatraK-Knowledge-Base/08-Logs/2026-11-09-backend-part-1b.md`.
+- **Validation:** `php artisan route:list --path=api --except-vendor` passed and showed 51 routes. Confirmed 14 migration files, 29 model files, clean starting worktree, and missing ERD/data dictionary/reference SQL/diagrams/checks. `git diff --check` and backend/frontend diff guard results recorded at hand-back. No tests, DB commands, schema load, build, or live data access.
+- **Commit/PR:** None.
+- **Follow-ups:** Complete schema reference artifacts under separate authorization; obtain an approved matching scratch database and pass schema/constraint checks before any B7 approval. Resolve the five listed policies with MCA; verify deployment facts, TLS and scheduler ownership. LRN implementation requires a separately authorized task.
+### Monday, November 09, 2026 — 12:46:06 Asia/Manila | Record retention-source conflict
+
+- **Agent:** Codex
+- **Summary:** Clarified that owner confirmation leaves backend retention periods undecided, while existing client-facing Privacy Policy copy states ten-year audit and five-year other personal-information periods. Marked the source conflict open; no privacy copy or canonical requirement changed.
+- **Files:** Updated `EducatraK-Knowledge-Base/06-Decisions/2026-11-09-backend-part-1b-owner-decisions.md` and `EducatraK-Knowledge-Base/06-Decisions/Open-Decisions.md`; appended this changelog.
+- **Validation:** Read current policy string at `frontend/src/i18n/en.ts:87`; no frontend file modified. `git diff --check` to be rerun.
+- **Commit/PR:** None.
+- **Follow-ups:** MCA policy owner must reconcile published privacy periods with backend retention decisions before retention implementation.
+### Monday, November 09, 2026 — 12:46:40 Asia/Manila | Add retention conflict to session log
+
+- **Agent:** Codex
+- **Summary:** Added the discovered privacy-policy/owner-answer retention conflict to the Part 1b session hand-back.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-09-backend-part-1b.md` and this changelog.
+- **Validation:** Confirmed the current policy wording at `frontend/src/i18n/en.ts:87`; no frontend file changed.
+- **Commit/PR:** None.
+- **Follow-ups:** MCA policy-owner reconciliation remains open.
