@@ -18,3 +18,18 @@
   modules, frontend API adapter, and deployment/runbook validation.
 - Revalidate CSV import support on a host where PHP `fileinfo` and `intl` are
   available; this Windows host blocks those extension DLLs by policy.
+
+## Entry — Sunday, November 08, 2026 — 01:09:41 Asia/Manila | Backend preparation Part 1 review
+
+- Added an API contract for the nine routes registered on the selected branch,
+  an existing-database review, and environment/readiness notes.
+- Selected task baseline: `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`.
+  The branch is 57 commits behind `main`; it was audited as-is per owner
+  direction. Its backend inventory differs from the newer snapshot described
+  in the supplied task. No code, migration, model, or database was changed.
+- Validation: `php artisan route:list --path=api --except-vendor` showed 9
+  routes; `npm.cmd run build` passed; `npm.cmd test` passed (3 files, 60
+  tests). Composer and MySQL CLI were unavailable. Backend tests and database
+  operations were not run.
+- Follow-up: resolve the documented owner decisions before Part 1b or any
+  later implementation. This branch has no Issues-and-TODOs.md.
