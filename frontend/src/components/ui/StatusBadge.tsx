@@ -1,6 +1,7 @@
 import { cn } from "@/lib/cn";
 import {
   STATUS_TONE_STYLES,
+  formatStatusLabel,
   getStatusPresentation,
 } from "@/lib/status";
 import { CircleDashed } from "lucide-react";
@@ -12,7 +13,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const presentation = getStatusPresentation(status) ?? {
-    label: status,
+    label: formatStatusLabel(status),
     tone: "neutral",
     icon: CircleDashed,
   };
@@ -22,12 +23,12 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-semibold forced-colors:border print:border print:border-current",
         STATUS_TONE_STYLES[presentation.tone].badge,
         className,
       )}
     >
-      <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+      <Icon aria-hidden="true" className={cn("h-3 w-3 shrink-0", STATUS_TONE_STYLES[presentation.tone].text)} strokeWidth={2.25} />
       <span>{presentation.label}</span>
     </span>
   );

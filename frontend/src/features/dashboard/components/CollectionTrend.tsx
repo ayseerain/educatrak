@@ -7,10 +7,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardLabel } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { ChartColumn } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { en } from "@/i18n/en";
 import { format, type Centavos } from "@/lib/money";
-import { formatDate } from "@/lib/dates";
+import { formatShortDate } from "@/lib/dates";
 import type { CollectionTrendPoint, DashboardRange } from "@/api/dashboardTypes";
 import { dashboardRangeLabel } from "./dashboardRangeLabels";
 
@@ -23,9 +25,10 @@ interface CollectionTrendProps {
 // application (section 9, Accounting dashboard). Do not add more.
 export function CollectionTrend({ points, range }: CollectionTrendProps) {
   const data = points.map((p) => ({
-    label: formatDate(p.date).replace(", 2026", ""),
+    label: formatShortDate(p.date),
     total: p.totalCollected / 100,
   }));
+  const hasCollections = data.some((point) => point.total > 0);
   const label =
     range === "today"
       ? en.dashboard.todaysTotals
@@ -51,20 +54,26 @@ export function CollectionTrend({ points, range }: CollectionTrendProps) {
           format((Math.round(value * 100)) as Centavos)
         }
         contentStyle={{
-          borderRadius: 6,
+          borderRadius: 8,
           borderColor: "#E0E0E0",
           fontSize: 12,
         }}
       />
-      <Bar dataKey="total" fill="#039935" radius={[4, 4, 0, 0]} />
+      <Bar
+        dataKey="total"
+        fill="#039935"
+        radius={[4, 4, 0, 0]}
+      />
     </BarChart>
   );
 
   return (
-    <Card>
-      <CardLabel>{label}</CardLabel>
-      <div className="mt-3 h-56 min-h-56 min-w-0">
-        {isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
+    <Card className="p-0">
+      <CardHeader icon={<ChartColumn aria-hidden="true" />} title={label} />
+      <div className="flex h-56 min-h-56 min-w-0 items-center px-5 pb-5">
+        {!hasCollections ? (
+          <EmptyState message={en.dashboard.noCollectionsInRange} />
+        ) : isJsdom ? chart : <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>}
       </div>
     </Card>
   );

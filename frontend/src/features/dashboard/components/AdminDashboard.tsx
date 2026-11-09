@@ -1,7 +1,8 @@
+import { CalendarDays, Database, GraduationCap, Users } from "lucide-react";
 import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
-import { Database, History, Settings, ShieldCheck, UserCog } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { AuditActivityPreview } from "./AuditActivityPreview";
+import { StaffAccountOverview } from "./StaffAccountOverview";
+import { Card, CardLabel } from "@/components/ui/Card";
 import { en } from "@/i18n/en";
 import { formatDateTime } from "@/lib/dates";
 import type { AdministratorDashboardSummary } from "@/api/dashboardTypes";
@@ -13,89 +14,92 @@ interface AdminDashboardProps {
 export function AdminDashboard({ summary }: AdminDashboardProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <DashboardStatCard
           label={en.dashboard.lastBackup}
-          value={formatDateTime(summary.lastBackupAt)}
+          value={summary.lastBackupAt ? formatDateTime(summary.lastBackupAt) : en.dashboard.backupUnavailable}
+          helperText={summary.lastBackupAt === null ? en.dashboard.noBackupRecord : summary.lastBackupSucceeded === null ? en.dashboard.backupResultUnavailable : summary.lastBackupSucceeded ? en.dashboard.backupSucceeded : en.dashboard.backupFailed}
           icon={Database}
+          action={{ to: "/admin/backup", label: en.dashboard.backupRecovery }}
         />
         <DashboardStatCard
           label={en.dashboard.activeUsers}
           value={String(summary.activeUserCount)}
-        />
-        <DashboardStatCard
-          label={en.dashboard.failedLoginAttempts}
-          value={String(summary.failedLoginCount)}
-          icon={ShieldCheck}
-          action={{ to: "/admin/audit-log", label: en.dashboard.viewSecurityEvents }}
+          icon={Users}
+          action={{ to: "/admin/users", label: en.dashboard.manageUsers }}
         />
       </div>
-
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <DashboardWorkPanel
-          title={en.dashboard.adminWorkspace}
-          description={en.dashboard.adminWorkspaceHelp}
-          items={[
-            {
-              label: en.dashboard.manageUsers,
-              detail: en.dashboard.manageUsersHelp,
-              to: "/admin/users",
-              icon: UserCog,
-            },
-            {
-              label: en.dashboard.systemSettings,
-              detail: en.dashboard.systemSettingsHelp,
-              to: "/settings/school",
-              icon: Settings,
-            },
-            {
-              label: en.dashboard.backupRecovery,
-              detail: en.dashboard.backupRecoveryHelp,
-              to: "/admin/backup",
-              icon: Database,
-            },
-            {
-              label: en.dashboard.securityEvents,
-              detail: en.dashboard.securityEventsHelp,
-              to: "/admin/audit-log",
-              icon: ShieldCheck,
-            },
-          ]}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <StaffAccountOverview
+          summary={summary.staffAccounts}
+          title={en.dashboard.userAccountOverview}
+          description={en.dashboard.userAccountOverviewHelp}
         />
-        <Card className="border-l-4 border-l-brand-green p-4">
-          <h2 className="text-lg font-semibold text-text-primary">
-            {en.dashboard.adminSafeguards}
-          </h2>
-          <div className="mt-4 space-y-3 text-sm">
-            <div className="flex items-start gap-3 rounded-md bg-surface p-3">
-              <UserCog aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-green-dark" />
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {en.dashboard.adminAccountSafety}
-                </p>
-                <p className="mt-1 text-text-secondary">{en.dashboard.adminAccountSafetyHelp}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 rounded-md bg-surface p-3">
-              <History aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-green-dark" />
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {en.dashboard.adminAuditTrail}
-                </p>
-                <p className="mt-1 text-text-secondary">{en.dashboard.adminAuditTrailHelp}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 rounded-md bg-surface p-3">
-              <ShieldCheck aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-green-dark" />
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {en.dashboard.adminSettingsReview}
-                </p>
-                <p className="mt-1 text-text-secondary">{en.dashboard.adminSettingsReviewHelp}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
+        <ConfigurationOverview configuration={summary.configuration} />
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <AuditActivityPreview
+          title={en.dashboard.recentAdministrativeActivity}
+          description={en.dashboard.recentAdministrativeActivityHelp}
+          entries={summary.recentAdministrativeActivity}
+          emptyMessage={en.dashboard.noAdministrativeActivity}
+          to="/admin/audit-log"
+          actionLabel={en.dashboard.goToAuditLog}
+        />
+        <AuditActivityPreview
+          title={en.dashboard.securityEvents}
+          description={en.dashboard.securityEventsHelp}
+          entries={summary.securityEvents}
+          emptyMessage={en.dashboard.noSecurityEvents}
+          to="/admin/security-events"
+          actionLabel={en.dashboard.viewSecurityEvents}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ConfigurationOverview({
+  configuration,
+}: {
+  configuration: AdministratorDashboardSummary["configuration"];
+}) {
+  return (
+    <Card className="p-0" aria-labelledby="school-configuration-heading">
+      <div className="border-b border-border px-5 pb-3 pt-5">
+        <CardLabel id="school-configuration-heading" className="text-base font-semibold text-text-primary">
+          {en.dashboard.schoolConfiguration}
+        </CardLabel>
+        <p className="mt-1 text-sm text-text-secondary">{en.dashboard.schoolConfigurationHelp}</p>
+      </div>
+      {configuration ? (
+        <dl className="space-y-3 p-5">
+          <ConfigurationItem icon={CalendarDays} label={en.dashboard.currentSchoolYear} value={configuration.schoolYear ?? en.dashboard.configurationUnavailable} />
+          <ConfigurationItem icon={GraduationCap} label={en.dashboard.configuredGradeLevels} value={String(configuration.gradeLevelCount)} />
+          <ConfigurationItem icon={Users} label={en.dashboard.configuredPaymentMethods} value={String(configuration.paymentMethodCount)} />
+        </dl>
+      ) : (
+        <p className="px-5 py-5 text-sm text-text-secondary">{en.dashboard.configurationUnavailable}</p>
+      )}
+    </Card>
+  );
+}
+
+function ConfigurationItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-brand-green-dark" />
+      <div className="min-w-0">
+        <dt className="text-sm text-text-secondary">{label}</dt>
+        <dd className="mt-0.5 font-semibold text-text-primary">{value}</dd>
       </div>
     </div>
   );

@@ -131,3 +131,7 @@ temp/
 EducatraK-Knowledge-Base/.obsidian/workspace.json
 EducatraK-Knowledge-Base/.obsidian/workspace-mobile.json
 EducatraK-Knowledge-Base/.trash/
+
+.pinpoint/
+# Local agent and tooling scratch files
+.agent-tmp/

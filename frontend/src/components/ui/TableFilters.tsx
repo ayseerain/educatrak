@@ -1,0 +1,196 @@
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Filter, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
+import { cn } from "@/lib/cn";
+
+export type TableFilterValues = Record<string, string>;
+
+export interface TableFilterField<Key extends string> {
+  key: Key;
+  label: string;
+  type?: "text" | "date" | "number" | "select" | "checkbox";
+  options?: readonly { value: string; label: string }[];
+  placeholder?: string;
+  min?: string;
+  step?: string;
+}
+
+/** Each table owns an instance; only the shared state transitions and controls live here. */
+export function useTableFilters<Values extends TableFilterValues>(defaults: Values, initial: Values = defaults) {
+  const [draft, setDraft] = useState<Values>(() => ({ ...initial }));
+  const [applied, setApplied] = useState<Values>(() => ({ ...initial }));
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  function update(key: keyof Values & string, value: string) {
+    setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function search(key: keyof Values & string, value: string) {
+    update(key, value);
+    setApplied((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }
+
+  function apply() {
+    setApplied({ ...draft });
+    setPage(1);
+  }
+
+  function clear() {
+    setDraft({ ...defaults });
+    setApplied({ ...defaults });
+    setPage(1);
+  }
+
+  function remove(key: keyof Values & string) {
+    const value = defaults[key];
+    setDraft((current) => ({ ...current, [key]: value }));
+    setApplied((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }
+
+  function replace(values: Values) {
+    setDraft({ ...values });
+    setApplied({ ...values });
+    setPage(1);
+  }
+
+  function changePerPage(size: number) {
+    setPerPage(size);
+    setPage(1);
+  }
+
+  return { draft, applied, page, perPage, update, search, apply, clear, remove, replace, setPage, changePerPage };
+}
+
+interface TableFiltersProps<Values extends TableFilterValues> {
+  scope: string;
+  fields: readonly TableFilterField<keyof Values & string>[];
+  draft: Values;
+  applied: Values;
+  defaults: Values;
+  search?: { key: keyof Values & string; label: string; placeholder?: string };
+  searchSlot?: ReactNode;
+  onChange: (key: keyof Values & string, value: string) => void;
+  onSearch?: (key: keyof Values & string, value: string) => void;
+  onApply: () => void;
+  onClear: () => void;
+  onRemove: (key: keyof Values & string) => void;
+  error?: string;
+  validate?: (draft: Values) => string | undefined;
+  /** Render only the toolbar row, for the top of the table's own card (CLINIQ list card). */
+  embedded?: boolean;
+}
+
+export function TableFilters<Values extends TableFilterValues>({
+  scope, fields, draft, applied, defaults, search, searchSlot, onChange, onSearch, onApply, onClear, onRemove, error, validate, embedded = false,
+}: TableFiltersProps<Values>) {
+  const [open, setOpen] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const activeFields = fields.filter((field) => applied[field.key] !== defaults[field.key]);
+  const searchActive = search && applied[search.key] !== defaults[search.key];
+  const activeCount = activeFields.length + (searchActive ? 1 : 0);
+  const panelId = `${scope.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}-filters`;
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector<HTMLElement>("input, select")?.focus();
+    function dismissOnOutsideClick(event: PointerEvent) {
+      if ((event.target as HTMLElement).closest("[data-radix-popper-content-wrapper]")) return;
+      if (menuRef.current?.parentElement?.parentElement?.contains(event.target as Node)) return;
+      if (menuRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    }
+    function dismissOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if ((event.target as HTMLElement).closest("[data-radix-popper-content-wrapper]")) return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    }
+    document.addEventListener("pointerdown", dismissOnOutsideClick);
+    document.addEventListener("keydown", dismissOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOnOutsideClick);
+      document.removeEventListener("keydown", dismissOnEscape);
+    };
+  }, [open]);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextError = validate?.(draft) ?? "";
+    setValidationError(nextError);
+    if (nextError) return;
+    onApply();
+    setOpen(false);
+  }
+
+  const toolbar = <div className="no-print flex flex-wrap items-end gap-3">
+      {searchSlot ?? (search && <div className="min-w-[min(100%,16rem)] flex-1">
+        <input type="search" aria-label={search.label} value={draft[search.key]} placeholder={search.placeholder ?? search.label} onChange={(event) => (onSearch ?? onChange)(search.key, event.target.value)} className={searchInputClass} />
+      </div>)}
+      <div className="relative">
+        <Button ref={triggerRef} type="button" variant="secondary" aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
+          <Filter aria-hidden="true" className="h-4 w-4" />Filter{activeCount ? ` (${activeCount})` : ""}
+        </Button>
+        {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className={cn("absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-raised sm:left-auto sm:right-0", fields.length > 1 ? "w-[min(90vw,26rem)]" : "w-[min(90vw,19.5rem)]")}>
+          {activeCount > 0 && <div aria-label="Active filters" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-4">
+            {searchActive && <Chip label={`${search.label}: ${applied[search.key]}`} onClick={() => { setValidationError(""); onRemove(search.key); }} />}
+            {activeFields.map((field) => <Chip key={field.key} label={`${field.label}: ${field.type === "checkbox" ? "Yes" : field.options?.find((option) => option.value === applied[field.key])?.label ?? applied[field.key]}`} onClick={() => { setValidationError(""); onRemove(field.key); }} />)}
+          </div>}
+          <form aria-label={`${scope} filter fields`} onSubmit={submit}>
+            <div className={cn("grid gap-3", fields.length > 1 && "sm:grid-cols-2")}>
+              {fields.map((field) => <FilterInput key={field.key} field={field} value={draft[field.key] ?? ""} onChange={(value) => { setValidationError(""); onChange(field.key, value); }} />)}
+            </div>
+            {(error || validationError) && <p role="alert" className="mt-3 text-sm text-status-error">{error || validationError}</p>}
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <Button type="submit" size="sm">Apply filters</Button>
+              <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => { setValidationError(""); onClear(); }}>Clear all</Button>
+            </div>
+          </form>
+        </div>}
+      </div>
+    </div>;
+  return embedded ? toolbar : <Card className="no-print mb-4">{toolbar}</Card>;
+}
+
+function FilterInput<Key extends string>({ field, value, onChange }: { field: TableFilterField<Key>; value: string; onChange: (value: string) => void }) {
+  if (field.type === "checkbox") return <label className="flex items-center gap-2 self-end pb-3 text-sm font-medium"><input type="checkbox" checked={value === "true"} onChange={(event) => onChange(event.target.checked ? "true" : "")} />{field.label}</label>;
+  return <label className="block text-xs font-semibold text-text-secondary">{field.label}
+    {field.type === "select"
+      ? <DropdownSelect aria-label={field.label} value={value} options={[...(field.options ?? [])]} onChange={onChange} className="mt-1 h-10 w-full" align="start" />
+      : <input aria-label={field.label} type={field.type ?? "text"} value={value} placeholder={field.placeholder} min={field.min} step={field.step} onChange={(event) => onChange(event.target.value)} className={inputClass} />}
+  </label>;
+}
+
+function Chip({ label, onClick }: { label: string; onClick: () => void }) {
+  return <button type="button" aria-label={`Remove ${label} filter`} onClick={onClick} className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-sm border border-border bg-surface px-3 text-xs font-semibold text-text-primary transition-colors hover:border-brand-green hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">{label}<X aria-hidden="true" className="h-3 w-3" /></button>;
+}
+
+// Compact inside the filter panel (CLINIQ's 40px control); the toolbar's own search keeps 44px.
+const inputClass = "form-control mt-1 h-10";
+const searchInputClass = "form-control";
+
+export function dateRangeError(from: string, to: string): string | undefined {
+  return from && to && to < from ? "End date must be on or after start date." : undefined;
+}
+
+export function moneyRangeError(minimum: string, maximum: string): string | undefined {
+  const valid = (value: string) => !value.trim() || /^\d+(\.\d{1,2})?$/.test(value.trim());
+  if (!valid(minimum) || !valid(maximum)) return "Enter amounts with up to two decimal places.";
+  return minimum && maximum && Number(maximum) < Number(minimum) ? "Maximum amount must be at least the minimum amount." : undefined;
+}
+
+/** Preserve each page's own keys while leaving unused fields out of API requests. */
+export function activeTableFilters<Values extends TableFilterValues>(values: Values, defaults: Values): Partial<Values> {
+  const active: Partial<Values> = {};
+  for (const key of Object.keys(values) as (keyof Values & string)[]) {
+    const value = values[key];
+    if (typeof value === "string" && value !== defaults[key] && value.trim() !== "") active[key] = value;
+  }
+  return active;
+}

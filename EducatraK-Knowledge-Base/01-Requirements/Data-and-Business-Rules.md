@@ -1,5 +1,7 @@
 # Data Model and Business Rules
 
+> **Approved operational reassignment — November 5, 2026.** Registrar updates change only the current student record and must not recalculate, replace, or overwrite billing accounts, charges, payments, receipts, or audit evidence. No clearance or exam-permit rule is active. Guardian ownership is unchanged and is not implied by Registrar student-record authority.
+
 > Source-derived data and business rules extracted from the canonical Project Specification.
 
 ## 24. Data Model

@@ -1,27 +1,130 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BackupController;
+use App\Http\Controllers\Api\BillingAccountController;
+use App\Http\Controllers\Api\BusinessDateSimulatorController;
+use App\Http\Controllers\Api\CloseOutController;
+use App\Http\Controllers\Api\DailyReportController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FinanceSettingsController;
+use App\Http\Controllers\Api\FollowUpController;
+use App\Http\Controllers\Api\NotificationLogController;
+use App\Http\Controllers\Api\OutstandingReportController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReminderDeliveryController;
 use App\Http\Controllers\Api\SecurityEventController;
+use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\StudentStatementController;
 use App\Http\Controllers\Api\UserAdministrationController;
+use App\Http\Controllers\Api\VoidRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
+    Route::post('/webhooks/twilio/messages/{notificationLog}', [ReminderDeliveryController::class, 'twilioStatus']);
     Route::middleware('throttle:login')->post('/auth/login', [AuthController::class, 'login']);
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
-        Route::get('/admin/users', [UserAdministrationController::class, 'index'])
-            ->middleware('capability:users.manage');
-        Route::post('/admin/users', [UserAdministrationController::class, 'store'])
-            ->middleware('capability:users.manage');
-        Route::patch('/admin/users/{staffUser}', [UserAdministrationController::class, 'update'])
-            ->middleware('capability:users.manage');
-        Route::post('/admin/users/{staffUser}/reset-password', [UserAdministrationController::class, 'resetPassword'])
-            ->middleware('capability:users.manage');
-        Route::get('/admin/security-events', [SecurityEventController::class, 'index'])
-            ->middleware('capability:security.events.view');
+        Route::middleware('password.changed')->group(function (): void {
+            Route::get('/dashboard', [DashboardController::class, 'show'])
+                ->middleware('capability:dashboard.view');
+            Route::get('/admin/users', [UserAdministrationController::class, 'index'])
+                ->middleware('capability:users.manage');
+            Route::post('/admin/users', [UserAdministrationController::class, 'store'])
+                ->middleware('capability:users.manage');
+            Route::patch('/admin/users/{staffUser}', [UserAdministrationController::class, 'update'])
+                ->middleware('capability:users.manage');
+            Route::post('/admin/users/{staffUser}/archive', [UserAdministrationController::class, 'archive'])
+                ->middleware('capability:users.manage');
+            Route::post('/admin/users/{staffUser}/restore', [UserAdministrationController::class, 'restore'])
+                ->middleware('capability:users.manage');
+            Route::post('/admin/users/{staffUser}/reset-password', [UserAdministrationController::class, 'resetPassword'])
+                ->middleware('capability:users.manage');
+            Route::get('/admin/security-events', [SecurityEventController::class, 'index'])
+                ->middleware('capability:security.events.view');
+            Route::get('/audit-log', [AuditLogController::class, 'index'])
+                ->middleware('capability:audit.view');
+            Route::get('/backups', [BackupController::class, 'index'])
+                ->middleware('capability:backup.manage');
+            Route::get('/notifications', [NotificationLogController::class, 'index'])
+                ->middleware('capability:notification.view');
+            Route::get('/follow-up', [FollowUpController::class, 'index'])
+                ->middleware('capability:followup.view');
+            Route::post('/follow-up/reminders', [ReminderDeliveryController::class, 'send'])
+                ->middleware('capability:followup.manage');
+            Route::post('/notifications/{notificationLog}/retry', [ReminderDeliveryController::class, 'retry'])
+                ->middleware('capability:notification.retry');
+            Route::get('/settings/finance/fees', [FinanceSettingsController::class, 'feeSchedules'])
+                ->middleware('capability:settings.finance.view');
+            Route::get('/settings/finance/plans', [FinanceSettingsController::class, 'paymentPlans'])
+                ->middleware('capability:settings.finance.view');
+            Route::post('/settings/finance/fees/{feeSchedule}/items', [FinanceSettingsController::class, 'storeFeeItem'])
+                ->middleware('capability:settings.finance.manage');
+            Route::patch('/settings/finance/fee-items/{feeItem}', [FinanceSettingsController::class, 'reviseFeeItem'])
+                ->middleware('capability:settings.finance.manage');
+            Route::post('/settings/finance/fee-items/{feeItem}/deactivate', [FinanceSettingsController::class, 'deactivateFeeItem'])
+                ->middleware('capability:settings.finance.manage');
+            Route::get('/reports/daily', [DailyReportController::class, 'show'])
+                ->middleware('capability:reports.view');
+            Route::get('/reports/outstanding', [OutstandingReportController::class, 'index'])
+                ->middleware('capability:reports.view');
+            Route::get('/reports/students/{student}/statement', [StudentStatementController::class, 'show'])
+                ->middleware('capability:reports.view');
+
+            Route::get('/students', [StudentController::class, 'index'])
+                ->middleware('capability:students.view');
+            Route::post('/students', [StudentController::class, 'store'])
+                ->middleware('capability:students.manage');
+            Route::get('/student-record-options', [StudentController::class, 'recordOptions'])
+                ->middleware('capability:students.manage');
+            Route::get('/students/{student}', [StudentController::class, 'show'])
+                ->middleware('capability:students.view');
+            Route::patch('/students/{student}', [StudentController::class, 'update'])
+                ->middleware('capability:students.manage');
+            Route::get('/billing-accounts', [BillingAccountController::class, 'index'])
+                ->middleware('capability:accounts.view');
+            Route::get('/billing-accounts/{billingAccount}', [BillingAccountController::class, 'show'])
+                ->middleware('capability:accounts.view');
+            Route::post('/billing-accounts/{billingAccount}/adjustments', [BillingAccountController::class, 'storeAdjustment'])
+                ->middleware('capability:accounts.manage');
+
+            Route::get('/payment-students', [PaymentController::class, 'searchStudents'])
+                ->middleware('capability:payments.record');
+            Route::get('/payment-students/{student}/context', [PaymentController::class, 'context'])
+                ->middleware('capability:payments.record');
+            Route::get('/payments', [PaymentController::class, 'index'])
+                ->middleware('capability:payments.view');
+            Route::post('/payments', [PaymentController::class, 'store'])
+                ->middleware('capability:payments.record');
+            Route::get('/payments/{payment}', [PaymentController::class, 'show'])
+                ->middleware('capability:payments.view');
+            Route::post('/payments/{payment}/reprint', [PaymentController::class, 'reprint'])
+                ->middleware('capability:receipts.reprint');
+            Route::post('/payments/{payment}/void-requests', [VoidRequestController::class, 'store'])
+                ->middleware('capability:void.request');
+            Route::get('/void-requests', [VoidRequestController::class, 'index'])
+                ->middleware('capability:void.view');
+            Route::patch('/void-requests/{voidRequest}', [VoidRequestController::class, 'update'])
+                ->middleware('capability:void.approve');
+            Route::get('/close-outs/today', [CloseOutController::class, 'today'])
+                ->middleware('capability:closeout.submit');
+            Route::get('/close-outs/business-date', [BusinessDateSimulatorController::class, 'show'])
+                ->middleware('capability:closeout.submit');
+            Route::post('/close-outs/business-date', [BusinessDateSimulatorController::class, 'store'])
+                ->middleware('capability:closeout.submit');
+            Route::delete('/close-outs/business-date', [BusinessDateSimulatorController::class, 'destroy'])
+                ->middleware('capability:closeout.submit');
+            Route::get('/close-outs', [CloseOutController::class, 'index'])
+                ->middleware('capability:closeout.view');
+            Route::post('/close-outs', [CloseOutController::class, 'store'])
+                ->middleware('capability:closeout.submit');
+            Route::post('/close-outs/{closeOut}/sign-off', [CloseOutController::class, 'signOff'])
+                ->middleware('capability:closeout.signoff');
+        });
     });
 });

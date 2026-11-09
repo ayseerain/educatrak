@@ -4,6 +4,7 @@ namespace App;
 
 enum UserRole: string
 {
+    case SuperAdmin = 'super_admin';
     case Admin = 'admin';
     case Cashier = 'cashier';
     case Accounting = 'accounting';

@@ -1,21 +1,19 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
 import {
-  AlertCircle,
   Banknote,
-  CheckCircle2,
   ClipboardCheck,
   MailSearch,
   ReceiptText,
-  SearchCheck,
   Users,
 } from "lucide-react";
-import { Card, CardLabel } from "@/components/ui/Card";
+import { Card, CardBody, CardHeader, CARD_SURFACE } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { buttonVariants } from "@/components/ui/Button";
+import { Link } from "react-router-dom";
 import { AccountStatusOverview } from "./AccountStatusOverview";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
 import { format } from "@/lib/money";
-import { STATUS_TONE_STYLES } from "@/lib/status";
 import type { CashierDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
 import { financialStatLabelsForRange } from "./dashboardRangeLabels";
 
@@ -29,73 +27,20 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex h-full flex-col gap-3">
-          <div className="grid flex-1 grid-cols-2 items-stretch gap-3">
-            <DashboardStatCard
-              label={en.dashboard.overallEnrolledStudents}
-              value={String(summary.overallEnrolledStudents)}
-              icon={Users}
-              action={{ to: "/students", label: en.dashboard.viewStudents }}
-            />
-            <DashboardStatCard
-              label={statLabels.collections}
-              value={format(summary.todayCollectionsTotal)}
-              icon={Banknote}
-              action={{ to: "/closeout", label: en.dashboard.reviewCloseout }}
-            />
-            <DashboardStatCard
-              label={statLabels.payments}
-              value={String(summary.paymentsTodayCount)}
-              icon={ReceiptText}
-              action={{ to: "/payments", label: en.dashboard.viewPayments }}
-            />
-            <DashboardStatCard
-              label={en.dashboard.failedEmails}
-              value={String(summary.failedEmailCount)}
-              icon={MailSearch}
-              action={{ to: "/followup", label: en.dashboard.reviewFollowups }}
-            />
-          </div>
-          <CloseoutStatus done={summary.closeoutDone} className="min-h-[116px]" />
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardStatCard label={statLabels.collections} value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)} icon={Banknote} action={{ to: "/payments", label: en.dashboard.viewPayments }} />
+        <DashboardStatCard label={statLabels.payments} value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)} icon={ReceiptText} />
+        <DashboardStatCard label={en.dashboard.dueSoon} value={String(summary.accountStatusOverview.dueSoon)} helperText={en.dashboard.dueSoonAccounts} icon={Users} action={{ to: "/followup?status=due_soon", label: en.dashboard.reviewFollowups }} />
+        <DashboardStatCard label={en.dashboard.failedEmails} value={String(summary.failedEmailCount)} icon={MailSearch} action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }} />
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <CloseoutStatus done={summary.closeoutDone} />
         <AccountStatusOverview
-          className="h-full"
-          overview={summary.accountStatusOverview}
           accountsNeedingAttention={summary.accountsNeedingAttention}
         />
       </div>
 
-      <DashboardWorkPanel
-        title={en.dashboard.cashierWorkspace}
-        description={en.dashboard.cashierWorkspaceHelp}
-        items={[
-          {
-            label: en.dashboard.recordPayment,
-            detail: en.dashboard.recordPaymentHelp,
-            to: "/payments/new",
-            icon: ReceiptText,
-          },
-          {
-            label: en.dashboard.findStudentAccount,
-            detail: en.dashboard.findStudentAccountHelp,
-            to: "/students",
-            icon: SearchCheck,
-            meta: `${summary.accountsNeedingAttention.length} ${en.dashboard.needAttention}`,
-          },
-          {
-            label: en.dashboard.endOfDayCloseout,
-            detail: summary.closeoutDone
-              ? en.dashboard.closeoutDoneActionHelp
-              : en.dashboard.closeoutOpenActionHelp,
-            to: "/closeout",
-            icon: ClipboardCheck,
-            meta: summary.closeoutDone ? en.dashboard.done : en.dashboard.open,
-          },
-        ]}
-      />
-
-      <section aria-labelledby="recent-activity-heading">
+      <section aria-labelledby="recent-activity-heading" className={`${CARD_SURFACE} p-5`}>
         <RecentActivity payments={summary.recentActivity} range={range} showActions />
       </section>
     </div>
@@ -109,38 +54,28 @@ function CloseoutStatus({
   done: boolean;
   className?: string;
 }) {
-  const StatusIcon = done ? CheckCircle2 : AlertCircle;
   const statusLabel = done
     ? en.dashboard.closeoutStatusDone
     : en.dashboard.closeoutStatusOpen;
-  const statusTone = done ? STATUS_TONE_STYLES.success : STATUS_TONE_STYLES.warning;
 
   return (
-    <Card
-      className={`relative overflow-hidden border-l-4 p-4 ${statusTone.borderLeft} ${statusTone.surface} ${className ?? ""}`}
-      aria-labelledby="closeout-status-heading"
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${statusTone.soft} ${statusTone.text}`}
-        >
-          <StatusIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
-        </span>
-        <div className="min-w-0">
-          <CardLabel id="closeout-status-heading" className="text-sm uppercase tracking-[0.08em]">
-            {en.dashboard.closeoutReminder}
-          </CardLabel>
-          <p className="mt-1 text-lg font-semibold text-text-primary">{statusLabel}</p>
-          <p className="mt-2 flex items-start gap-2 text-sm text-text-secondary">
-            <ClipboardCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              {done
-                ? en.dashboard.closeoutStatusDoneHelp
-                : en.dashboard.closeoutStatusOpenHelp}
-            </span>
-          </p>
-        </div>
-      </div>
+    <Card className={`p-0 ${className ?? ""}`} aria-labelledby="closeout-status-heading">
+      <CardHeader
+        titleId="closeout-status-heading"
+        icon={<ClipboardCheck aria-hidden="true" />}
+        title={en.dashboard.closeoutReminder}
+      />
+      <CardBody className="space-y-3">
+        <Badge tone={done ? "success" : "warning"} label={statusLabel} />
+        <p className="text-sm text-text-secondary">
+          {done
+            ? en.dashboard.closeoutStatusDoneHelp
+            : en.dashboard.closeoutStatusOpenHelp}
+        </p>
+        <Link to="/closeout" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+          {en.dashboard.reviewCloseout}
+        </Link>
+      </CardBody>
     </Card>
   );
 }

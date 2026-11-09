@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/Table";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -87,13 +88,13 @@ export function RecentActivity({
           {
             id: "actions",
             header: en.table.actions,
-            cell: () => (
-              <button
-                type="button"
-                className="text-sm font-medium text-brand-green-dark underline-offset-2 hover:underline"
+            cell: ({ row }) => (
+              <Link
+                to={`/receipts/${encodeURIComponent(row.original.id)}/print`}
+                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green"
               >
                 {en.table.viewReceipt}
-              </button>
+              </Link>
             ),
           } as ColumnDef<RecentPayment>,
         ]
@@ -110,19 +111,18 @@ export function RecentActivity({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2
           id="recent-activity-heading"
-          className="text-lg font-semibold text-text-primary"
+          className="text-base font-semibold text-text-primary"
         >
           {en.dashboard.recentActivity}
         </h2>
         <label className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-text-secondary">
           <span>{en.dashboard.activityRows}</span>
           <DropdownSelect
-            aria-label={en.dashboard.activityRows}
+            aria-label={`${en.dashboard.activityRows}: ${activityLimit}`}
             value={activityLimit}
             options={ACTIVITY_LIMIT_OPTIONS}
             onChange={setActivityLimit}
             className="min-w-[150px]"
-            contentClassName="min-w-[150px]"
           />
         </label>
       </div>

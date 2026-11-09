@@ -3,35 +3,41 @@ import type { AuthenticatedUser, Capability, Role } from "./types";
 export type ReportKind = "daily" | "monthly" | "outstanding" | "statement";
 
 /**
- * Capability matrix, derived from the navigation lists in
- * EducatraK_Frontend_Context_Brief.md section 8. This is the single
- * source of truth for what each role can see in the UI.
- *
- * Frontend checks are UX only — the backend remains the actual
- * security boundary (spec section 23).
+ * Frontend route and action capabilities aligned with the approved
+ * capability matrix in Project Specification section 6.4. This map is
+ * the source of truth for interface visibility; backend checks remain
+ * the security boundary (Project Specification section 23).
  */
 const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
+  super_admin: new Set<Capability>([
+    "dashboard.view", "user.manage", "security.events.view", "audit.view",
+  ]),
   cashier: new Set<Capability>([
     "dashboard.view",
-    "student.view", "student.edit", "guardianContact.view",
-    "account.view", "account.create",
-    "payment.view", "payment.record", "payment.void.request", "receipt.reprint", "receipt.pdf",
+    "student.view", "student.financial.view", "guardianContact.view",
+    "account.view", "account.create", "account.adjust",
+    "payment.view", "payment.record", "payment.void.request", "receipt.reprint",
     "followup.view", "followup.send",
-    "statement.print",
-    "closeout.submit",
-    "finance.amounts.view",
+    "notification.view", "notification.retry",
+    "closeout.submit", "closeout.view",
   ]),
   accounting: new Set<Capability>([
     "dashboard.view",
-    "payment.void.view", "payment.void.approve",
+    "student.view", "student.financial.view", "guardianContact.view",
+    "account.view",
+    "payment.view",
+    "payment.void.view", "payment.void.approve", "receipt.reprint",
+    "followup.view", "followup.send",
     "report.view",
-    "settings.finance",
+    "statement.print",
+    "settings.finance.view", "settings.finance.manage",
+    "settings.system.view",
+    "notification.view",
     "closeout.signoff", "closeout.view",
-    "finance.amounts.view",
   ]),
   administrator: new Set<Capability>([
     "dashboard.view",
-    "settings.system", "user.manage", "audit.view", "backup.manage",
+    "settings.system.view", "settings.system.manage", "user.manage", "security.events.view", "backup.manage",
   ]),
   auditor: new Set<Capability>([
     "dashboard.view",
@@ -39,9 +45,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   ]),
   registrar: new Set<Capability>([
     "dashboard.view",
-    "student.view",
-    "clearance.view",
-    "permit.print",
+    "student.view", "student.edit", "student.financial.view", "guardianContact.view",
   ]),
 };
 
@@ -49,13 +53,7 @@ export function can(user: AuthenticatedUser, capability: Capability): boolean {
   return CAPABILITY_MATRIX[user.role].has(capability);
 }
 
-/** Convenience guard used by dashboard components to hide financial data. */
-export function canSeeFinancials(user: AuthenticatedUser): boolean {
-  return can(user, "finance.amounts.view");
-}
-
-/** Cashiers are limited to their daily report and student statements. */
+/** Report pages are assigned to Accounting; Cashier totals remain in Dashboard and Close-out. */
 export function canViewReport(user: AuthenticatedUser, report: ReportKind): boolean {
-  if (!can(user, "report.view")) return false;
-  return user.role !== "cashier" || report === "daily" || report === "statement";
+  return can(user, "report.view") && (report !== "statement" || can(user, "statement.print"));
 }

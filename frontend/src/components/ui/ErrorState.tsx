@@ -1,3 +1,4 @@
+import { OctagonAlert, RefreshCw } from "lucide-react";
 import { Button } from "./Button";
 import { en } from "@/i18n/en";
 
@@ -6,18 +7,18 @@ interface ErrorStateProps {
   onRetry?: () => void;
 }
 
+/** Failed-to-load message with an optional retry (CLINIQ style). Plain language only. */
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-md border border-border bg-white p-6"
+      className="flex flex-col items-center gap-2 rounded-md border border-status-error bg-white px-4 py-6 text-center"
     >
-      <p className="flex items-center gap-2 text-sm text-status-error">
-        <span aria-hidden="true">×</span>
-        <span>{message}</span>
-      </p>
+      <OctagonAlert aria-hidden="true" className="h-5 w-5 text-status-error" />
+      <p className="text-sm font-semibold text-text-primary">{message}</p>
       {onRetry && (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="primary" size="sm" onClick={onRetry}>
+          <RefreshCw aria-hidden="true" className="h-4 w-4" />
           {en.states.retry}
         </Button>
       )}

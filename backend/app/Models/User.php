@@ -14,7 +14,7 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $fillable = ['username', 'full_name', 'email', 'role', 'active', 'must_change_password', 'password'];
+    protected $fillable = ['username', 'full_name', 'email', 'role', 'active', 'is_protected', 'must_change_password', 'password'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -28,9 +28,17 @@ class User extends Authenticatable
         return [
             'role' => UserRole::class,
             'active' => 'boolean',
+            'is_protected' => 'boolean',
             'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
+            'archived_at' => 'datetime',
+            'anonymize_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function archivedBy(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'archived_by');
     }
 }

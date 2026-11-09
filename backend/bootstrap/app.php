@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureCapability;
+use App\Http\Middleware\EnsureActiveUser;
+use App\Http\Middleware\EnsurePasswordChanged;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,7 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
-        $middleware->alias(['capability' => EnsureCapability::class]);
+        $middleware->validateCsrfTokens(except: ['api/webhooks/twilio/messages/*']);
+        $middleware->alias([
+            'capability' => EnsureCapability::class,
+            'active.user' => EnsureActiveUser::class,
+            'password.changed' => EnsurePasswordChanged::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

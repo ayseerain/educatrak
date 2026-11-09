@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "notice": "All records in this file are synthetic development data. They do not identify real students, guardians, staff, or financial activity.",
+    "purpose": "Development-only seed for the EducatraK frontend mock API.",
+    "dateFormat": "Dates are relative to one injected Manila calendar day. Use { daysAgo: n }, { daysFromNow: n }, and optional time HH:MM. seed.ts resolves them to ISO date or timestamp strings at runtime."
+  },
+  "config": {
+    "currentSchoolYearId": "school-year-2026-2027",
+    "dueSoonDays": 7,
+    "paymentMethods": ["cash"],
+    "grades": ["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"],
+    "sectionsByGrade": {
+      "Grade 7": ["Olive", "Section B"],
+      "Grade 8": ["Maple", "Section B"],
+      "Grade 9": ["Pine", "Section B"]
+    }
+  },
+  "staffUsers": [
+    { "id": "user-superadmin", "name": "Morgan Super Admin (sample)", "username": "sample.superadmin", "role": "super_admin", "active": true },
+    { "id": "user-cashier", "name": "Casey Cashier (sample)", "username": "sample.cashier", "role": "cashier", "active": true },
+    { "id": "user-accounting", "name": "Avery Accounting (sample)", "username": "sample.accounting", "role": "accounting", "active": true },
+    { "id": "user-admin", "name": "Alex Administrator (sample)", "username": "sample.admin", "role": "administrator", "active": true },
+    { "id": "user-auditor", "name": "Arden Auditor (sample)", "username": "sample.auditor", "role": "auditor", "active": true },
+    { "id": "user-registrar", "name": "Riley Registrar (sample)", "username": "sample.registrar", "role": "registrar", "active": true }
+  ],
+  "schoolYears": [
+    { "id": "school-year-2026-2027", "label": "SY 2026-2027", "current": true },
+    { "id": "school-year-2027-2028", "label": "SY 2027-2028", "current": false }
+  ],
+  "feeSchedules": [
+    { "id": "fees-2026-kinder", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Kinder", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-1", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 1", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-2", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 2", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-3", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 3", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-4", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 4", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-5", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 5", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-6", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 6", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-7", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 7", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1000000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-8", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 8", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1100000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-9", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 9", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1200000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-10", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 10", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1300000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-11", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 11", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1300000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2026-grade-12", "schoolYearId": "school-year-2026-2027", "gradeLevel": "Grade 12", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1300000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 200000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2027-grade-7", "schoolYearId": "school-year-2027-2028", "gradeLevel": "Grade 7", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1050000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 210000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2027-grade-8", "schoolYearId": "school-year-2027-2028", "gradeLevel": "Grade 8", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1150000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 210000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] },
+    { "id": "fees-2027-grade-9", "schoolYearId": "school-year-2027-2028", "gradeLevel": "Grade 9", "items": [{ "id": "tuition", "name": "Tuition Fee", "category": "Tuition", "amountCents": 1250000, "required": true }, { "id": "miscellaneous", "name": "Miscellaneous Fee", "category": "Miscellaneous", "amountCents": 210000, "required": true }, { "id": "activity", "name": "Activity Fee", "category": "Other", "amountCents": 50000, "required": false }] }
+  ],
+  "paymentPlans": [
+    { "id": "plan-full", "name": "Full Payment", "active": true, "downPaymentCents": 0, "installmentCount": 1, "firstDueDays": 0, "intervalDays": 0 },
+    { "id": "plan-quarterly", "name": "Quarterly", "active": true, "downPaymentCents": 200000, "installmentCount": 4, "firstDueDays": 30, "intervalDays": 90 },
+    { "id": "plan-monthly", "name": "Monthly", "active": true, "downPaymentCents": 200000, "installmentCount": 8, "firstDueDays": 30, "intervalDays": 30 }
+  ],
+  "students": [
+    { "id": "sample-1001", "number": "S-1001", "name": "Amara Villanueva (sample)", "grade": "Grade 7", "section": "Olive", "studentStatus": "Active", "dateOfBirth": "2012-06-15", "gender": "Female", "residentialAddress": "Demo Residence 1, Mendez, Cavite" },
+    { "id": "sample-1002", "number": "S-1002", "name": "Basil Mercado (sample)", "grade": "Grade 8", "section": "Maple", "studentStatus": "Active", "dateOfBirth": "2011-03-22", "gender": "Male", "residentialAddress": "Demo Residence 2, Mendez, Cavite" },
+    { "id": "sample-1003", "number": "S-1003", "name": "Cora Navarro (sample)", "grade": "Grade 9", "section": "Pine", "studentStatus": "Active", "dateOfBirth": "2010-11-08", "gender": "Female", "residentialAddress": "Demo Residence 3, Mendez, Cavite" },
+    { "id": "sample-1004", "number": "S-1004", "name": "Dara Santos (sample)", "grade": "Grade 7", "section": "Section B", "studentStatus": "Inactive", "dateOfBirth": "2013-09-17", "gender": "Male", "residentialAddress": "Demo Residence 4, Mendez, Cavite" }
+  ],
+  "guardians": [
+    { "id": "guardian-1001", "name": "Devon Villanueva (sample)", "email": "guardian@example.test", "mobile": "0917 555 0101" },
+    { "id": "guardian-1002", "name": "Rory Mercado (sample)", "email": "guardian@example.test", "mobile": "0917 555 0102" },
+    { "id": "guardian-1003", "name": "Sky Navarro (sample)", "email": "sky.navarro@example.test", "mobile": "0917 555 0103" }
+  ],
+  "studentGuardianLinks": [
+    { "id": "student-guardian-1001", "studentId": "sample-1001", "guardianId": "guardian-1001", "relationship": "Parent" },
+    { "id": "student-guardian-1002", "studentId": "sample-1002", "guardianId": "guardian-1002", "relationship": "Parent" },
+    { "id": "student-guardian-1003", "studentId": "sample-1003", "guardianId": "guardian-1003", "relationship": "Parent" }
+  ],
+  "billingAccounts": [
+    { "id": "account-1001-2026", "studentId": "sample-1001", "schoolYearId": "school-year-2026-2027", "totalDueCents": 1250000 },
+    { "id": "account-1001-2027", "studentId": "sample-1001", "schoolYearId": "school-year-2027-2028", "totalDueCents": 1300000 },
+    { "id": "account-1002-2026", "studentId": "sample-1002", "schoolYearId": "school-year-2026-2027", "totalDueCents": 1000000 },
+    { "id": "account-1003-2026", "studentId": "sample-1003", "schoolYearId": "school-year-2026-2027", "totalDueCents": 1500000 }
+  ],
+  "installments": [
+    { "id": "installment-1001-1", "accountId": "account-1001-2026", "label": "Tuition installment 1", "due": { "daysAgo": 120 }, "amountCents": 250000 },
+    { "id": "installment-1001-2", "accountId": "account-1001-2026", "label": "Tuition installment 2", "due": { "daysAgo": 90 }, "amountCents": 250000 },
+    { "id": "installment-1001-3", "accountId": "account-1001-2026", "label": "Tuition installment 3", "due": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "installment-1001-4", "accountId": "account-1001-2026", "label": "Tuition installment 4", "due": { "daysAgo": 30 }, "amountCents": 250000 },
+    { "id": "installment-1001-5", "accountId": "account-1001-2026", "label": "Tuition installment 5", "due": { "daysFromNow": 3 }, "amountCents": 250000 },
+    { "id": "installment-1001-next", "accountId": "account-1001-2027", "label": "Tuition installment", "due": { "daysFromNow": 310 }, "amountCents": 250000 },
+    { "id": "installment-1002-1", "accountId": "account-1002-2026", "label": "Tuition installment 1", "due": { "daysAgo": 120 }, "amountCents": 250000 },
+    { "id": "installment-1002-2", "accountId": "account-1002-2026", "label": "Tuition installment 2", "due": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "installment-1002-3", "accountId": "account-1002-2026", "label": "Tuition installment 3", "due": { "daysFromNow": 4 }, "amountCents": 250000 },
+    { "id": "installment-1002-4", "accountId": "account-1002-2026", "label": "Tuition installment 4", "due": { "daysFromNow": 34 }, "amountCents": 250000 },
+    { "id": "installment-1003-1", "accountId": "account-1003-2026", "label": "Installment 1", "due": { "daysAgo": 25 }, "amountCents": 500000 },
+    { "id": "installment-1003-2", "accountId": "account-1003-2026", "label": "Installment 2", "due": { "daysAgo": 10 }, "amountCents": 350000 },
+    { "id": "installment-1003-3", "accountId": "account-1003-2026", "label": "Installment 3", "due": { "daysAgo": 90 }, "amountCents": 250000 },
+    { "id": "installment-1003-4", "accountId": "account-1003-2026", "label": "Installment 4", "due": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "installment-1003-5", "accountId": "account-1003-2026", "label": "Installment 5", "due": { "daysAgo": 35 }, "amountCents": 150000 }
+  ],
+  "payments": [
+    { "id": "mock-payment-0", "accountId": "account-1001-2026", "studentId": "sample-1001", "receiptNo": "OR-2026-001000", "paidOn": { "daysAgo": 120 }, "amountCents": 250000 },
+    { "id": "mock-payment-1", "accountId": "account-1001-2026", "studentId": "sample-1001", "receiptNo": "OR-2026-001001", "paidOn": { "daysAgo": 90 }, "amountCents": 250000 },
+    { "id": "mock-payment-2", "accountId": "account-1001-2026", "studentId": "sample-1001", "receiptNo": "OR-2026-001002", "paidOn": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "mock-payment-3", "accountId": "account-1001-2026", "studentId": "sample-1001", "receiptNo": "OR-2026-001003", "paidOn": { "daysAgo": 30 }, "amountCents": 250000 },
+    { "id": "mock-payment-4", "accountId": "account-1001-2026", "studentId": "sample-1001", "receiptNo": "OR-2026-001004", "paidOn": { "daysAgo": 1 }, "amountCents": 125000 },
+    { "id": "mock-payment-5", "accountId": "account-1002-2026", "studentId": "sample-1002", "receiptNo": "OR-2026-001005", "paidOn": { "daysAgo": 120 }, "amountCents": 250000 },
+    { "id": "mock-payment-6", "accountId": "account-1002-2026", "studentId": "sample-1002", "receiptNo": "OR-2026-001006", "paidOn": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "mock-payment-7", "accountId": "account-1002-2026", "studentId": "sample-1002", "receiptNo": "OR-2026-001007", "paidOn": { "daysAgo": 4 }, "amountCents": 80000, "voidRequestId": "void-request-1001" },
+    { "id": "mock-payment-8", "accountId": "account-1003-2026", "studentId": "sample-1003", "receiptNo": "OR-2026-001008", "paidOn": { "daysAgo": 90 }, "amountCents": 250000 },
+    { "id": "mock-payment-9", "accountId": "account-1003-2026", "studentId": "sample-1003", "receiptNo": "OR-2026-001009", "paidOn": { "daysAgo": 60 }, "amountCents": 250000 },
+    { "id": "mock-payment-10", "accountId": "account-1003-2026", "studentId": "sample-1003", "receiptNo": "OR-2026-001010", "paidOn": { "daysAgo": 35 }, "amountCents": 150000 }
+  ],
+  "paymentAllocations": [
+    { "id": "allocation-0", "paymentId": "mock-payment-0", "installmentId": "installment-1001-1", "amountCents": 250000 },
+    { "id": "allocation-1", "paymentId": "mock-payment-1", "installmentId": "installment-1001-2", "amountCents": 250000 },
+    { "id": "allocation-2", "paymentId": "mock-payment-2", "installmentId": "installment-1001-3", "amountCents": 250000 },
+    { "id": "allocation-3", "paymentId": "mock-payment-3", "installmentId": "installment-1001-4", "amountCents": 250000 },
+    { "id": "allocation-4", "paymentId": "mock-payment-4", "installmentId": "installment-1001-5", "amountCents": 125000 },
+    { "id": "allocation-5", "paymentId": "mock-payment-5", "installmentId": "installment-1002-1", "amountCents": 250000 },
+    { "id": "allocation-6", "paymentId": "mock-payment-6", "installmentId": "installment-1002-2", "amountCents": 250000 },
+    { "id": "allocation-7", "paymentId": "mock-payment-7", "installmentId": "installment-1002-3", "amountCents": 80000 },
+    { "id": "allocation-8", "paymentId": "mock-payment-8", "installmentId": "installment-1003-3", "amountCents": 250000 },
+    { "id": "allocation-9", "paymentId": "mock-payment-9", "installmentId": "installment-1003-4", "amountCents": 250000 },
+    { "id": "allocation-10", "paymentId": "mock-payment-10", "installmentId": "installment-1003-5", "amountCents": 150000 }
+  ],
+  "voidRequests": [
+    { "id": "void-request-1001", "paymentId": "mock-payment-7", "status": "pending", "reason": "Synthetic pending review request", "requestedBy": "user-cashier", "requestedAt": { "daysAgo": 3, "time": "10:15" } },
+    { "id": "void-request-1002", "paymentId": "mock-payment-4", "status": "pending", "reason": "Synthetic duplicate-payment review", "requestedBy": "user-cashier", "requestedAt": { "daysAgo": 1, "time": "14:20" } },
+    { "id": "void-request-1003", "paymentId": "mock-payment-8", "status": "approved", "reason": "Synthetic duplicate payment correction", "requestedBy": "user-cashier", "requestedAt": { "daysAgo": 88, "time": "09:35" } },
+    { "id": "void-request-1004", "paymentId": "mock-payment-9", "status": "rejected", "reason": "Synthetic incorrect-receipt request", "requestedBy": "user-cashier", "requestedAt": { "daysAgo": 58, "time": "11:05" } },
+    { "id": "void-request-1005", "paymentId": "mock-payment-10", "status": "approved", "reason": "Synthetic duplicate installment payment", "requestedBy": "user-cashier", "requestedAt": { "daysAgo": 33, "time": "15:40" } }
+  ],
+  "notificationAttempts": [
+    { "id": "notification-1001", "studentId": "sample-1001", "type": "Payment confirmation", "channel": "Email", "recipient": "guardian@example.test", "status": "Queued", "attempts": 1, "sentAt": { "daysAgo": 0, "time": "09:00" } },
+    { "id": "notification-1002", "studentId": "sample-1002", "type": "Payment confirmation", "channel": "SMS", "recipient": "0917 555 0101", "status": "Sent", "attempts": 1, "sentAt": { "daysAgo": 1, "time": "13:00" } },
+    { "id": "notification-1003", "studentId": "sample-1003", "type": "Reminder", "channel": "SMS", "recipient": "No guardian mobile number", "status": "Failed", "attempts": 0, "sentAt": { "daysAgo": 0, "time": "10:00" } }
+  ],
+  "followUpActions": [],
+  "closeouts": [],
+  "backupRuns": [
+    { "id": "backup-1001", "occurred": { "daysAgo": 0, "time": "08:00" }, "succeeded": true }
+  ],
+  "auditLog": [],
+  "frontendOnly": {
+    "devCredentials": [
+      { "username": "sample.superadmin", "password": "demo-superadmin", "userId": "user-superadmin" },
+      { "username": "sample.cashier", "password": "demo-cashier", "userId": "user-cashier" },
+      { "username": "sample.accounting", "password": "demo-accounting", "userId": "user-accounting" },
+      { "username": "sample.admin", "password": "demo-admin", "userId": "user-admin" },
+      { "username": "sample.auditor", "password": "demo-auditor", "userId": "user-auditor" },
+      { "username": "sample.registrar", "password": "demo-registrar", "userId": "user-registrar" }
+    ]
+  }
+}

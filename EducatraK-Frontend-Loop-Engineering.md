@@ -124,7 +124,7 @@ For each screen below:
 - **Documented access:** ADM / CSH
 - **Build scope:** Create student and guardian information with duplicate-number handling.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/students/new` as `StudentFormPage` with student and guardian fields, grade selector, duplicate-number handling, and post-create navigation. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/students/new` as `StudentFormPage` with student and guardian fields, Kindergarten through Grade 12 grade selector, grade-dependent section selector, Grade 11/12 strand selector (STEM, ABM, HUMSS, TVL), duplicate-number handling, and post-create navigation. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B09. Edit Student — M2
 
@@ -132,7 +132,7 @@ For each screen below:
 - **Documented access:** ADM / CSH
 - **Build scope:** Edit permitted student/guardian links and status; no hard delete.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/students/:id/edit` as `StudentFormPage edit` with editable student/guardian fields, existing sample values, and no hard-delete action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/students/:id/edit` as `StudentFormPage edit` with editable student/guardian fields, the same grade-dependent academic selectors as New Student, existing sample values, and no hard-delete action. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B10. Student Profile — M2
 
@@ -172,7 +172,7 @@ For each screen below:
 - **Documented access:** CSH
 - **Build scope:** Fast-path payment flow with balance/next due, validation, confirmation, receipt preview and post-save feedback.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/payments/new` as `PaymentEntryPage` with student search, preselected-student context from `?student=:id`, balance display, and dashboard-linked mock payment entry flow with validation/confirmation/receipt behavior. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/payments/new` as `PaymentEntryPage` with student search, balance display, and receipt delivery options for email and SMS. The confirmation discloses the unconfigured SMS load fee, which is never added to the student balance. Formal Phase 2 audit remains pending.
 
 ### B15. Transaction History — M4
 
@@ -210,9 +210,9 @@ For each screen below:
 
 - **Route:** `/followup`
 - **Documented access:** CSH / ACC / AUD
-- **Build scope:** Due-soon/overdue list, filters, print list, and reminder-batch flow for permitted roles.
+- **Build scope:** Due-soon/overdue list, filters, and reminder-batch flow for permitted roles.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/followup` as `FollowupPage` with overdue/due-soon sample rows, selectable reminder batch behavior, print-list-ready table structure, and send action gated by permission. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/followup` as `FollowupPage` with selectable reminder batches, email/SMS delivery choices, SMS load-fee disclosure, and permission-gated sending. The follow-up print option was removed by current user direction. Formal Phase 2 audit remains pending.
 
 ### B20. Clearance Lookup — M10
 
@@ -236,7 +236,7 @@ For each screen below:
 - **Documented access:** CSH
 - **Build scope:** System totals, counted cash, variance/reason, confirmation, lock and printable summary.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/closeout` as `CloseoutPage` with system cash total, counted-cash entry, variance calculation, variance reason field, and review action. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/closeout` as `CloseoutPage` with a responsive reconciliation row for the system total, counted-cash entry, and live variance state. A non-zero variance now requires an explanation before review, and the confirmation repeats that explanation. Focused close-out coverage is in `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B23. Close-out History — M13
 
@@ -292,7 +292,7 @@ For each screen below:
 - **Documented access:** ADM / CSH / ACC / AUD
 - **Build scope:** Filter/view notification entries; retry failed messages only where permitted.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/notifications` as `NotificationsPage` with notification rows, queued/sent/failed statuses, URL-backed status filter, and retry/view action behavior gated by permission. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/notifications` as `NotificationsPage` with email and SMS notification rows, SMS load-fee context, queued/sent/failed statuses, URL-backed status filter, and permission-gated retry/view behavior. Covered by `frontend/src/test/operations.test.tsx`; formal Phase 2 audit remains pending.
 
 ### B30. Ledger Import Wizard — M12
 
@@ -308,7 +308,7 @@ For each screen below:
 - **Documented access:** ACC write; ADM/AUD read
 - **Build scope:** Fee schedules/items and documented lifecycle; edits affect new accounts only.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/settings/fees` as `SettingsPage section="fees"` with Accounting edit access, read-only variants, active fee-schedule sample data, and note that edits affect new accounts only. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** Implemented `/settings/fees` as `SettingsPage section="fees"` with Accounting edit access, read-only variants, active fee-schedule sample data, and an Add fee item dialog for school year, grade level, name, category, amount, and required/optional status. Submitted mock items appear in the active schedule and apply to new accounts only. Formal Phase 2 audit remains pending.
 
 ### B32. Payment Plans — M9
 
@@ -356,7 +356,7 @@ For each screen below:
 - **Documented access:** ADM
 - **Build scope:** Search/create/edit/deactivate/reactivate/reset users and inspect user activity as documented.
 - **Build status:** [x] Built
-- **Resume Note:** Implemented `/admin/users` as `UsersPage` with user list rows, create/edit/reset/deactivate/reactivate copy, temporary-password warning, and administrator safeguards copy. Built during the remaining-route implementation pass; formal Phase 2 audit remains pending.
+- **Resume Note:** `/admin/users` uses `LiveUsersPage` with live search and filters, account creation/editing, password reset, deactivation/reactivation, and the approved archive/restore lifecycle. The edit dialog now scrolls within the viewport and exposes the confirmed archive action; archive confirmation explains the 30-day restore window. The deactivation confirmation has a blurred/dimmed backdrop and larger dialog dimensions for clear visual separation. Archive access remains disabled for protected accounts and the signed-in user. `frontend/src/test/liveUsersFilters.test.tsx` passes (4 tests), and `npm run build` passes. Formal Phase 2 audit remains pending.
 
 ### B38. Role Matrix — M1
 

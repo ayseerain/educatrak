@@ -1,14 +1,34 @@
 # Authentication flow
 
-The `/login` route is mounted in the active application for the B01 build
-phase. It uses the in-memory mock session in `src/auth/session.tsx` so the
-frontend can run without the Laravel backend. Credentials are not stored in
-`localStorage`; the signed-in user exists only in React state for this mock.
+The `/login` route uses the Laravel cookie-session API in production builds.
+On startup the frontend requests `/api/auth/me` to restore the cookie-backed
+session after refresh. It shows a restoring state while that request is pending,
+returns to login on an unauthenticated response, and offers retry on a network or
+server error. The identity and role are not cached in browser storage.
+Local development may use the in-memory mock session in `src/auth/session.tsx`
+when `VITE_DATA_SOURCE` is not set to `live`. The functional prototype uses the
+same MockDB in development and production builds by default; live API access is
+an explicit opt-in.
+backend and never fall back to mock credentials. Mock credentials are fictional
+and remain development-only. Credentials are not stored in `localStorage`.
 
-The real backend will replace this with the documented cookie-session API.
+The header's role preview control is also limited to local mock development; it
+is hidden when using the live API and is not included in production builds.
+
+Reminder sending and retry controls are hidden unless the frontend build sets
+`VITE_REMINDER_DELIVERY_ENABLED=true`. This frontend flag only controls the
+controls' visibility; the backend's `REMINDER_DELIVERY_ENABLED` switch is
+authoritative and defaults to `false`. Keep both disabled until the provider,
+network, consent and cost rules, message text, daily limit, and retry policy
+have been approved. Never place provider credentials in frontend build values.
 
 The sign-in page includes a "Forgot password?" control that directs staff to
 contact an administrator. It does not provide self-service password recovery.
+
+Accounts marked `mustChangePassword` are routed to `/first-login`. The page
+verifies the temporary/current password and sends the new password to the
+authenticated `/api/auth/change-password` endpoint; navigation to other
+protected pages remains blocked until the server confirms the change.
 
 The mock session expires after 30 minutes of inactivity and shows the required
 warning 1 minute before expiry. The warning lets the user stay signed in or

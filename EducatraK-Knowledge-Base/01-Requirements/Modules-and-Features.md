@@ -1,5 +1,11 @@
 # Modules and Features
 
+> **Student masterlist import — November 7, 2026.** Approved for the frontend MockDB workflow: Registrar-only `/students/import`, complete masterlist via CSV or XLSX, LRN matching, row-level blockers with warnings, valid rows may proceed, and no backend changes. See `06-Decisions/2026-11-07-student-masterlist-import.md` for approved field and status rules.
+
+> **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
+
+> **Approved operational reassignment — November 5, 2026.** Clearance and Exam Permit are retired from active delivery. The shared Students module is Registrar's student-record workspace and remains Cashier's billing-context workspace. Registrar has basic-record create/edit access and the same read-only student-page financial and guardian context as Cashier; Cashier has no student-mutation access; Accounting remains read-only for student records.
+
 > Source-derived module requirements extracted from the canonical Project Specification. No new requirements are introduced here.
 
 ## 7. Module Summary
@@ -13,7 +19,7 @@
 | M2 | Students & Guardians | Searchable student list, student profile, add/edit student and guardian (name, grade, section, guardian name/email, relationship), email-valid indicator | Must |
 | M3 | Billing Accounts | Create account wizard (student, fee schedule, plan, review), account detail (fees, schedule, payments, balance), discount/scholarship adjustments | Must |
 | M4 | Payment Recording & Receipts | Record payment (fast path), server-side validation results, receipt preview/print, transaction history, payment detail, reprint (marked REPRINT) | Must |
-| M5 | Void Control / Receipt Integrity | No delete; void request with reason; approval queue; VOID marking; audit trail | Must |
+| M5 | Void Control / Receipt Integrity | No delete; Cashier void request/status; Accounting approval queue; VOID marking; audit trail | Must |
 | M6 | Email Notifications | Notification log (sent/queued/failed with reason), retry failed, per-guardian email status | Must |
 | M7 | Reports | Daily collection, monthly financial, student statement of account, outstanding balances; print and export to Excel | Must |
 | M8 | Audit & Backup | Audit log viewer with filters, backup status page, "Run backup now," last restore-test date | Must |
@@ -37,8 +43,8 @@ Each role gets a different dashboard; the sidebar shows only the items that role
 |---|---|---|
 | View cashier dashboard | Big "Record payment" button; today's collected total and payment count; failed-email count; due-soon count; reminder to submit close-out | CSH |
 | View accounting dashboard | Pending void approvals; overdue total; collection trend (one chart); unsigned close-outs | ACC |
-| View admin dashboard | Last backup time and result; active user count; failed-email count | ADM |
-| View auditor dashboard | Today's totals; links to reports and audit log (read-only) | AUD |
+| View admin dashboard | Last backup time and result; active user count | ADM |
+| View auditor dashboard | Read-only oversight summary; link to Audit Review only | AUD |
 | View registrar dashboard | One large student search that opens clearance | REG |
 | Quick links | Jump to the most common task for the role | all |
 
@@ -81,16 +87,15 @@ Routes: `/login`, `/first-login`.
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search users | Search by name or username; filter by role and active state | ADM |
-| Create user | Full name, username, role; system creates a temporary password shown **once** | ADM |
-| Edit user | Change full name and role | ADM |
-| Deactivate / reactivate user | Blocks or restores login; keeps all history | ADM |
-| Reset password | Generates a new temporary password shown once; forces change at next login | ADM |
+| List and search users | Search by name or username; filter by role and active state; ADM cannot see the protected Super Admin account | SAD, ADM |
+| Create user | Full name, username, role; system creates a temporary password shown **once**; SAD may create Administrator, ADM may create approved non-privileged roles | SAD, ADM |
+| Edit user | Change full name and approved role; protected bootstrap account is immutable through the application | SAD, ADM |
+| Deactivate / reactivate user | Blocks or restores login; keeps all history; protected bootstrap account cannot be changed through the application | SAD, ADM |
+| Reset password | Generates a new temporary password shown once; forces change at next login; protected bootstrap account cannot be reset through the application | SAD, ADM |
 | Delete user | **Not allowed.** Use Deactivate so audit history stays linked to the user | - |
-| View user login/activity history | Filtered view of the audit log for one user | ADM, ACC, AUD |
-| View role matrix | Read-only reference of Section 6 | ADM |
+| View role matrix | Read-only reference of Section 6 | SAD, ADM |
 
-**Rules:** an admin cannot deactivate themselves or the last active admin; a cashier account cannot be given approval rights by anyone other than by changing its role.
+**Rules:** the initial Super Admin is created only by the trusted console bootstrap and is protected from application-based changes; no public Super Admin registration or later assignment is available. A regular Administrator cannot create/promote an account to Administrator or Super Admin. Accounting Officer assignment remains blocked pending MCA policy. An administrator cannot deactivate themselves or the last active Administrator.
 
 Routes: `/admin/users` (`user.manage`), `/admin/roles` (`user.manage`).
 
@@ -99,33 +104,33 @@ Routes: `/admin/users` (`user.manage`), `/admin/roles` (`user.manage`).
 
 ## 10. M2 — Students & Guardians (Must)
 
-Registrar (`REG`) is **limited**: name, student number, grade and section, and clearance status only.
+Registrar (`REG`) can view the same financial balance and guardian-contact context as Cashier on the student list and profile, while retaining only Registrar's existing student-management actions.
 
 ### M2.1 Student records
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search students | Search by name or student number; filter by grade, section, status, clearance | ADM, CSH, ACC, AUD; REG (limited) |
-| View student profile | Tabs: Overview, Accounts, Payments, Notifications | ADM, CSH, ACC, AUD; REG (Overview only, limited) |
-| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | ADM, CSH |
-| Edit student | Change name, grade, section, guardian links | ADM, CSH |
-| Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | ADM, CSH |
+| List and search students | Search by name or student number; filter by grade, section, status | REG, CSH, ACC |
+| View student profile | Student data with read-only balance and guardian context | REG, CSH, ACC |
+| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | REG |
+| Edit student | Change name, grade, section, guardian links | REG |
+| Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | REG |
 | Delete student | **Not allowed.** Use Set inactive | - |
-| Bulk add students | Through the Ledger Import wizard (M12) | ADM, CSH |
+| Import student masterlist | Upload complete CSV/XLSX masterlist; match by LRN; block invalid rows with warnings while valid rows may proceed | REG |
 | Jump to Create account / Record payment | Shortcuts on the profile | CSH |
 
 ### M2.2 Guardians
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View guardian details | Name, relationship, email, mobile, email status | ADM, CSH, ACC, AUD |
-| Add guardian to a student | Name, relationship, email (validated), mobile (optional) | ADM, CSH |
-| Edit guardian | Fix email or contact details; resets email status to "unverified" | ADM, CSH |
-| Unlink guardian from student | Removes the link only; the guardian record stays | ADM, CSH |
+| View guardian details | Name, relationship, email, mobile, email status | REG, CSH, ACC |
+| Add guardian to a student | Name, relationship, email (validated), mobile (optional) | CSH |
+| Edit guardian | Fix email or contact details; resets email status to "unverified" | CSH |
+| Unlink guardian from student | Removes the link only; the guardian record stays | CSH |
 | Flag missing or bounced email | Automatic badge on the student and guardian | system |
 | Delete guardian | **Not allowed** if they have notification history; unlink instead | - |
 
-**Routes:** `/students` (`student.view`, columns: name, grade & section, balance, status badge; REG sees the limited columns only), `/students/new` and `/students/:id/edit` (`student.edit`), `/students/:id` (`student.view`; Overview/Accounts/Payments/Notifications tabs; REG sees Overview limited; buttons: Create account, Record payment).
+**Routes:** `/students` and `/students/:id` (`student.view`; Registrar, Cashier, and Accounting); `/students/new`, `/students/:id/edit`, and `/students/import` (`student.edit`; Registrar only). Registrar receives `student.financial.view` and `guardianContact.view` on student pages only; those capabilities do not grant account or payment actions.
 
 ---
 ---
@@ -150,9 +155,9 @@ An account = one student for one school year: fees, plan, installment schedule, 
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search accounts | Filter by school year, grade, status (Current, Due soon, Overdue, Paid) | ADM, CSH, ACC, AUD |
-| View account detail | Total, paid, balance, status; fee items; schedule; payments; adjustments; activity | ADM, CSH, ACC, AUD |
-| View installment schedule | Each row: due date, amount, paid, status | ADM, CSH, ACC, AUD |
+| List and search accounts | Filter by school year, grade, status (Current, Due soon, Overdue, Paid) | CSH, ACC |
+| View account detail | Total, paid, balance, status; fee items; schedule; payments; adjustments; activity | CSH, ACC |
+| View installment schedule | Each row: due date, amount, paid, status | CSH, ACC |
 | Edit account fees after creation | **Not allowed** except through adjustments | - |
 | Delete account | **Not allowed** | - |
 
@@ -161,7 +166,7 @@ An account = one student for one school year: fees, plan, installment schedule, 
 | Operation | What it does | Roles |
 |---|---|---|
 | Add adjustment | Type (discount, scholarship, correction), amount, required reason; recalculates balance and schedule | CSH |
-| View adjustments | List with who added it and when | ADM, CSH, ACC, AUD |
+| View adjustments | List with who added it and when | CSH, ACC |
 | Reverse an adjustment | Adds an opposite **correction** entry with a reason | CSH |
 | Edit / delete adjustment | **Not allowed** | - |
 
@@ -200,9 +205,10 @@ See Section 31 for the open question on whether large adjustments need Accountin
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search payments | Filter by date range, cashier, method, status (valid, void pending, voided), student | ADM, ACC, AUD; CSH (own by default) |
-| View payment detail | Amount, allocation across installments, receipt number, recorded by, email status, audit trail | ADM, CSH, ACC, AUD |
-| Export to Excel | Exports the current filtered list | ADM, ACC, AUD; CSH (own) |
+| List and search payments | Filter by date range, cashier, method, status (valid, void pending, voided), student | ACC; CSH (own by default) |
+| View payment detail | Amount, allocation across installments, receipt number, recorded by, email status, audit trail | CSH, ACC |
+| View own void-request status | See only requests submitted by the signed-in Cashier | CSH |
+| Export to Excel | Exports the current filtered list | ACC; CSH (own) |
 | Edit payment | **Not allowed** | - |
 | Delete payment | **Not allowed.** Use Void (M5) | - |
 
@@ -211,12 +217,12 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Operation | What it does | Roles |
 |---|---|---|
 | Generate receipt | Server assigns a sequential number automatically on save | system |
-| View / print receipt | Print-styled half-page block; title and school header from settings | CSH, ACC (print); ADM, AUD (view) |
+| View / print receipt | Print-styled half-page block; title and school header from settings | CSH, ACC |
 | Reprint receipt | Logged, increments reprint count, prints with a "REPRINT" mark | CSH, ACC |
 | Show VOID mark | Voided receipts print with "VOID" | system |
 | Edit receipt number or content | **Not allowed** | - |
 
-**Routes:** `/payments/new` (also `/payments/new?student=:id`, `payment.record` — see Flow F1, Section 23), `/payments` (`payment.view`), `/payments/:id` (`payment.view`; actions: Reprint, Request void, Approve/Reject void), `/receipts/:id/print` (`payment.view`).
+**Routes:** `/payments/new` (also `/payments/new?student=:id`, `payment.record` — see Flow F1, Section 23), `/payments` (`payment.view`), `/payments/:id` (`payment.view`; actions: Reprint, Request void), `/receipts/:id/print` (`payment.view`). Void decisions are available only in Accounting's `/voids` queue.
 
 ---
 ---
@@ -226,15 +232,15 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Operation | What it does | Roles |
 |---|---|---|
 | Request void | Reason required (minimum 10 characters); payment shows "Void pending" | CSH |
-| View pending void queue | List of requests with reason, amount, requester | ACC (ADM, AUD read-only) |
+| View pending void queue | List of requests with reason, amount, requester | ACC |
 | Approve void | Payment becomes VOID, balance restored, audit entry written | ACC |
 | Reject void | Requires a note; payment returns to valid | ACC |
-| View void history | All requests with decision, who decided, and when | ADM, ACC, AUD; CSH (own requests) |
+| View void history | All requests with decision, who decided, and when | ACC; CSH sees own request status in M4.2 |
 | Withdraw own void request | **Not in scope.** The cashier asks accounting to reject it | - |
 
 **Rule:** a user cannot approve a void of a payment they recorded (Section 6.2, rule 3).
 
-**Route:** `/voids` (`payment.void.view`; approval actions require `payment.void.approve`). See also Flow F3, Section 23.
+**Routes:** `/voids` (`payment.void.view`; Accounting approval queue and full history; approval actions require `payment.void.approve`). Cashier request status appears within `/payments` and is limited by the server to requests submitted by the signed-in Cashier. See also Flow F3, Section 23.
 
 ---
 ---
@@ -246,36 +252,36 @@ See Section 31 for the open question on whether large adjustments need Accountin
 | Operation | What it does | Roles |
 |---|---|---|
 | Queue confirmation email | Automatically after every confirmed payment: amount, balance, receipt number, date | system |
-| Show email status on payment | Queued, Sent, Failed, or "No guardian email" | ADM, CSH, ACC, AUD |
+| Show email status on payment | Queued, Sent, Failed, or "No guardian email" | CSH, ACC |
 | Keep payment if email fails | Payment is always saved; failure goes to the log | system |
 
 ### M6.2 Notification log
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and filter | By status (Sent, Queued, Failed), date, student | ADM, CSH, ACC, AUD |
-| View entry | Recipient, type, attempts, failure reason | ADM, CSH, ACC, AUD |
-| Retry failed email | Re-queues one failed email | ADM, CSH |
+| List and filter | By status (Sent, Queued, Failed), date, student | CSH, ACC (combined follow-up workspace) |
+| View entry | Recipient, type, attempts, failure reason | CSH, ACC (combined follow-up workspace) |
+| Retry failed email | Cashier-only capability; unavailable until U04 delivery/retry API and policy are approved | CSH |
 | Delete log entry | **Not allowed** | - |
 
 ### M6.3 Guardian email health
 
 | Operation | What it does | Roles |
 |---|---|---|
-| See students with missing or bounced email | Filter on the student list and follow-up list | ADM, CSH, ACC, AUD |
-| Fix email address | Through Edit guardian (M2.2) | ADM, CSH |
+| See students with missing or bounced email | Filter on the student list and follow-up list | CSH, ACC |
+| Fix email address | Through Edit guardian (M2.2) | CSH |
 
 ### M6.4 Reminder template
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View template | Text with placeholders such as `{student}` and `{balance}` | ADM |
-| Edit template | Save changes; live preview | ADM |
-| Send test email | Sends to a chosen address to check the setup | ADM |
+| View or edit template | Unavailable until U04 provider, message, and delivery policy are approved | - |
+
+
 
 (Sending the reminders themselves is in M11.)
 
-**Route:** `/notifications` (`notification.view`; failed rows show a Retry button, `notification.retry`).
+**Route:** `/followup?view=notifications` (`notification.view`; legacy `/notifications` redirects here for Cashier and Accounting). Retry remains unavailable under U04; the `notification.retry` capability belongs to Cashier only.
 
 ---
 ---
@@ -288,32 +294,32 @@ Every report supports **print** and **export to Excel** unless stated otherwise.
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Pick date and view | Totals by method and by cashier; list of payments; voids shown separately | ADM, ACC, AUD; CSH (own day only) |
-| Print / export | Print view and Excel file | same as above |
+| Pick date and view | Totals by method and by cashier; list of payments; voids shown separately | ACC |
+| Print / export | Print view and Excel file | ACC |
 
 ### M7.2 Monthly financial
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Pick month and view | Collections by fee category and grade level; total collected vs. billed | ADM, ACC, AUD |
-| Print / export | Print view and Excel file | ADM, ACC, AUD |
+| Pick month and view | Collections by fee category and grade level; total collected vs. billed | ACC |
+| Print / export | Print view and Excel file | ACC |
 
 ### M7.3 Outstanding balances
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Filter and view | By grade, section, minimum balance, overdue only | ADM, ACC, AUD |
-| Print / export | Print view and Excel file | ADM, ACC, AUD |
+| Filter and view | By grade, section, minimum balance, overdue only | ACC |
+| Print / export | Print view and Excel file | ACC |
 
 ### M7.4 Student statement of account
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View statement | One student's fees, schedule, payments, balance | ADM, CSH, ACC, AUD |
-| Print statement | Handed to a guardian who has no email | CSH, ACC |
-| Export | Excel file | ADM, ACC, AUD |
+| View statement | One student's fees, schedule, payments, balance | ACC |
+| Print statement | Handed to a guardian who has no email | ACC |
+| Export | Excel file | ACC |
 
-**Routes:** `/reports` (report hub, `report.view`), `/reports/daily`, `/reports/monthly`, `/reports/outstanding`, `/reports/student/:id` (all `report.view`; cashiers see only their own day on `/reports/daily`, and can print the student statement per Section 30 item 1).
+**Routes:** `/reports` (report hub, `report.view`), `/reports/daily`, `/reports/monthly`, `/reports/outstanding`, `/reports/student/:id`. Reports belong to Accounting; Cashier does not receive a standalone report or statement page. Audit evidence is reviewed through the Auditor's single Audit Review workspace.
 
 ---
 ---
@@ -324,8 +330,8 @@ Every report supports **print** and **export to Excel** unless stated otherwise.
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View and filter log | By user, action, date, entity | ADM, ACC, AUD |
-| View change detail | Before and after values for an entry | ADM, ACC, AUD |
+| View finance/change audit | By user, action, date, entity; before/after change detail | SAD (governance oversight), AUD (single Audit Review workspace) |
+| View authentication/account-administration security events | By user, action, and date | SAD, ADM (separate Security Events workspace) |
 | Edit or delete entries | **Not allowed** | - |
 | Write entries | Automatic on every data change and every login, void, reprint, permit print | system |
 
@@ -333,27 +339,27 @@ Every report supports **print** and **export to Excel** unless stated otherwise.
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View backup status | Last backup time and result; list of recent backups | ADM |
+| View backup status | Last backup time and result; list of recent backups | SAD (dashboard summary), ADM |
 | Run backup now | Starts a manual backup | ADM |
 | View last restore-test date | Reminder to test recovery | ADM |
 | View restore instructions | Plain step-by-step text | ADM |
 | Perform restore | Done outside the app by the admin using the instructions | - |
 | Nightly automatic backup | Scheduled on the server | system |
 
-**Routes:** `/admin/audit-log` (`audit.view`), `/admin/backup` (`backup.manage`).
+**Routes:** `/admin/audit-log` (Administrator `security.events.view`; Super Admin and Auditor `audit.view`), `/admin/security-events` (Super Admin `security.events.view`), `/admin/backup` (`backup.manage`, Administrator only).
 
 ---
 ---
 
 ## 17. M9 — Settings (Must)
 
-Read access for settings screens: `ADM`, `ACC`, `AUD` (read-only for those without edit rights). `CSH` and `REG` have no settings access; they only see the results of settings (fees, plans) inside their normal screens. See Section 30, item 3 for how this read-access rule was reconciled with the original capability matrix.
+Access follows Project Specification Section 6.4: Administrator manages system settings; Accounting manages finance settings and reads required system configuration. Auditor uses Audit Review only. Cashier and Registrar have no settings workspace.
 
 ### M9.1 Fee schedules (per school year and grade level)
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View fee schedules | List by school year and grade level | ACC; ADM, AUD (read-only) |
+| View fee schedules | List by school year and grade level | ACC |
 | Add fee item | Name, category (tuition, miscellaneous, other), amount, required or optional | ACC |
 | Edit fee item | Changes apply to **new accounts only**; existing accounts keep their fees | ACC |
 | Deactivate fee item | Hides it from new accounts; history kept | ACC |
@@ -364,7 +370,7 @@ Read access for settings screens: `ADM`, `ACC`, `AUD` (read-only for those witho
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View plans | Name, installments, down payment | ACC; ADM, AUD (read-only) |
+| View plans | Name, installments, down payment | ACC |
 | Add plan | Name, down payment (amount or percent), installment labels and due dates or offsets | ACC |
 | Edit plan | Applies to **new accounts only** | ACC |
 | Preview schedule | Shows the schedule for a sample total | ACC |
@@ -377,7 +383,7 @@ Editing a fee item or plan applying to new accounts only requires a **versioning
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View rules | One enrollment rule and one rule per exam period | ACC; ADM, AUD (read-only) |
+| View rules | One enrollment rule and one rule per exam period | ACC |
 | Add / edit rule | E.g., minimum down payment for enrollment; installments paid through the exam start date | ACC |
 | Plain-language preview | Shows the rule in a sentence | ACC |
 | Test with a student | Shows what status that student would get | ACC |
@@ -391,7 +397,7 @@ Editing a fee item or plan applying to new accounts only requires a **versioning
 | Add / edit terms and exam periods | Names and start dates | ADM |
 | Manage grade levels and sections | Add, rename, deactivate | ADM |
 | Manage payment methods | Add, rename, deactivate | ADM |
-| View lists | Read-only | ACC, AUD |
+| View lists | Read-only | ACC |
 
 ### M9.5 Receipt settings
 
@@ -410,7 +416,7 @@ Editing a fee item or plan applying to new accounts only requires a **versioning
 | Set daily send limit | Protects free email limits | ADM |
 | Send test email | Checks the connection | ADM |
 
-**Routes:** `/settings/fees`, `/settings/plans`, `/settings/clearance-rules` (`settings.finance`), `/settings/school`, `/settings/receipt`, `/settings/email` (`settings.system`) — all also readable by `ADM`/`AUD` (finance) and `ACC`/`AUD` (system) per the reconciled access rule above.
+**Routes:** `/settings/fees`, `/settings/plans`, `/settings/clearance-rules` (`settings.finance`), `/settings/school`, `/settings/receipt`, `/settings/email` (`settings.system`). Administrator has the system control-plane; Accounting owns finance settings and read-only system configuration. Auditor uses Audit Review only.
 
 ---
 ---
@@ -423,18 +429,18 @@ Statuses are computed by the server from the rules in M9.3 and recomputed after 
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Search student | Large search box | all (ADM, CSH, ACC, AUD, REG) |
-| View enrollment clearance | Cleared or Not cleared with a plain reason | all |
-| View exam period clearance | One row per exam period with status and reason | all |
-| Reason detail | CSH, ACC, AUD, ADM see the amounts (e.g., balance due and date); **REG sees a reason without amounts** (e.g., "Installment overdue") | all (REG limited) |
-| Filter students by clearance on the student list | Cleared / Not cleared | ADM, CSH, ACC, AUD |
+| Search student | Large search box | REG (limited) |
+| View enrollment clearance | Cleared or Not cleared with a plain reason | REG |
+| View exam period clearance | One row per exam period with status and reason | REG |
+| Reason detail | **REG sees an amount-free reason** (e.g., "Installment overdue"); no other role has a standalone clearance page | REG |
+| Filter students by clearance on the student list | Removed; clearance lookup is Registrar-only | - |
 
 ### M10.2 Exam permit
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Print exam permit | Available only for a cleared period; opens a print-styled slip | CSH, REG |
-| Explain why not | Button disabled with the reason if not cleared | CSH, REG |
+| Print exam permit | Available only for a cleared period; opens a print-styled slip | REG |
+| Explain why not | Button disabled with the reason if not cleared | REG |
 | Log each print | Every print is written to the audit log | system |
 | Edit permit content | **Not allowed** | - |
 
@@ -449,7 +455,7 @@ Statuses are computed by the server from the rules in M9.3 and recomputed after 
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Show installment schedule | Inside account detail (M3.2) | ADM, CSH, ACC, AUD |
+| Show installment schedule | Inside account detail (M3.2) | CSH, ACC |
 | Auto-apply payments to oldest installment | Spills into the next installment | system |
 | Auto-mark Paid, Current, Due soon, Overdue | Due soon window default 7 days | system |
 
@@ -457,9 +463,8 @@ Statuses are computed by the server from the rules in M9.3 and recomputed after 
 
 | Operation | What it does | Roles |
 |---|---|---|
-| View overdue and due-soon accounts | Student, guardian contact, amount overdue, days overdue, last reminder date | CSH, ACC, AUD |
-| Filter and sort | By grade, section, days overdue, amount | CSH, ACC, AUD |
-| Print list | One-page printable | CSH, ACC |
+| View overdue and due-soon accounts | Student, guardian contact, amount overdue, days overdue, last reminder date | CSH, ACC |
+| Filter and sort | By grade, section, days overdue, amount | CSH, ACC |
 
 ### M11.3 Reminder batches
 
@@ -481,14 +486,14 @@ Nothing is saved until the final confirm.
 
 | Operation | What it does | Roles |
 |---|---|---|
-| Upload file | `.xlsx` or `.csv` | ADM, CSH |
-| Map columns | Auto-suggests by header name; user can correct | ADM, CSH |
-| Preview and validate | Row-level warnings and errors; summary counts (duplicate student number is an error; missing guardian email is a warning) | ADM, CSH |
-| Download error report | File listing problem rows | ADM, CSH |
-| Continue with valid rows only | Skips rows with errors | ADM, CSH |
-| Cancel import | Discards the upload; nothing saved | ADM, CSH |
-| Commit import | Final confirm dialog; creates records | ADM, CSH |
-| View result summary | Created, skipped, and a link to the error report | ADM, CSH |
+| Upload file | `.xlsx` or `.csv` | - (authority unresolved) |
+| Map columns | Auto-suggests by header name; user can correct | - (authority unresolved) |
+| Preview and validate | Row-level warnings and errors | - (authority unresolved) |
+| Download error report | File listing problem rows | - (authority unresolved) |
+| Continue with valid rows only | Skips rows with errors | - (authority unresolved) |
+| Cancel import | Discards the upload; nothing saved | - (authority unresolved) |
+| Commit import | Final confirm dialog; creates records | - (authority unresolved) |
+| View result summary | Created, skipped, and a link to the error report | - (authority unresolved) |
 | Undo a committed import | **Not in scope.** Corrections are made through normal edit and adjustment operations | - |
 
 **Route:** `/import` (`import.run`). See also Flow F7, Section 23.
@@ -506,7 +511,7 @@ Nothing is saved until the final confirm.
 | Enter variance reason | Required when the variance is not zero | CSH |
 | Submit close-out | Confirm dialog; locks the day for that cashier | CSH |
 | Print summary | Print-styled close-out report | CSH, ACC |
-| View history | List by date with variance and sign-off status | ADM, ACC, AUD; CSH (own) |
+| View history | List by date with variance and sign-off status | ACC; CSH (own) |
 | Sign off | Accounting confirms the close-out | ACC |
 | Reopen a locked day | **Not in scope** | - |
 

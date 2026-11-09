@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface DropdownSelectOption<TValue extends string> {
@@ -12,6 +12,9 @@ interface DropdownSelectProps<TValue extends string> {
   options: DropdownSelectOption<TValue>[];
   onChange: (value: TValue) => void;
   "aria-label": string;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
+  "aria-required"?: boolean;
   className?: string;
   contentClassName?: string;
   disabled?: boolean;
@@ -23,6 +26,9 @@ export function DropdownSelect<TValue extends string>({
   options,
   onChange,
   "aria-label": ariaLabel,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
+  "aria-required": ariaRequired,
   className,
   contentClassName,
   disabled = false,
@@ -36,11 +42,14 @@ export function DropdownSelect<TValue extends string>({
         <button
           type="button"
           aria-label={ariaLabel}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          aria-required={ariaRequired}
           disabled={disabled}
           className={cn("dropdown-trigger", className)}
         >
           <span>{selectedOption?.label}</span>
-          <ChevronDown aria-hidden="true" className="size-4 text-text-secondary" />
+          <ChevronDown aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={2.25} />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -48,7 +57,7 @@ export function DropdownSelect<TValue extends string>({
           align={align}
           sideOffset={6}
           className={cn(
-            "dropdown-menu z-50 min-w-52 rounded-md border border-border bg-white p-1 shadow-lg",
+            "dropdown-menu z-50 max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] min-w-[var(--radix-dropdown-menu-trigger-width)] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-md border border-border bg-white p-1 shadow-raised",
             contentClassName,
           )}
         >
@@ -59,9 +68,6 @@ export function DropdownSelect<TValue extends string>({
                 value={option.value}
                 className="dropdown-menu-item"
               >
-                <DropdownMenu.ItemIndicator className="flex size-4 items-center justify-center">
-                  <Check aria-hidden="true" className="size-4" />
-                </DropdownMenu.ItemIndicator>
                 <span>{option.label}</span>
               </DropdownMenu.RadioItem>
             ))}

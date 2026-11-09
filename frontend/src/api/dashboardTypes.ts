@@ -49,6 +49,8 @@ export interface CashierDashboardSummary {
   overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
+  rangeCollectionsTotal: Centavos;
+  paymentsInRangeCount: number;
   failedEmailCount: number;
   closeoutDone: boolean;
   accountStatusOverview: CashierAccountStatusOverview;
@@ -73,10 +75,17 @@ export interface AccountingDashboardSummary {
 
 export interface AdministratorDashboardSummary {
   role: "administrator";
-  lastBackupAt: string; // ISO timestamp
-  lastBackupSucceeded: boolean;
+  lastBackupAt: string | null; // ISO timestamp when available
+  lastBackupSucceeded: boolean | null;
   activeUserCount: number;
-  failedLoginCount: number;
+  staffAccounts?: DashboardStaffAccountSummary;
+  configuration?: DashboardConfigurationSummary;
+  recentAdministrativeActivity?: DashboardActivity[];
+  securityEvents?: DashboardActivity[];
+}
+
+export interface SuperAdministratorDashboardSummary extends Omit<AdministratorDashboardSummary, "role"> {
+  role: "super_admin";
 }
 
 export interface AuditorDashboardSummary {
@@ -84,7 +93,29 @@ export interface AuditorDashboardSummary {
   overallEnrolledStudents: number;
   todayCollectionsTotal: Centavos;
   paymentsTodayCount: number;
-  recentActivity: RecentPayment[];
+  rangeCollectionsTotal: Centavos;
+  paymentsInRangeCount: number;
+  recentAuditActivity?: DashboardActivity[];
+}
+
+export interface DashboardStaffAccountSummary {
+  active: number;
+  inactive: number;
+  privileged: number;
+  byRole: Array<{ role: Role; count: number }>;
+}
+
+export interface DashboardConfigurationSummary {
+  schoolYear: string | null;
+  gradeLevelCount: number;
+  paymentMethodCount: number;
+}
+
+export interface DashboardActivity {
+  id: string;
+  label: string;
+  actor: string | null;
+  occurredAt: string;
 }
 
 export interface RegistrarDashboardSummary {
@@ -96,6 +127,7 @@ export type DashboardSummary =
   | CashierDashboardSummary
   | AccountingDashboardSummary
   | AdministratorDashboardSummary
+  | SuperAdministratorDashboardSummary
   | AuditorDashboardSummary
   | RegistrarDashboardSummary;
 

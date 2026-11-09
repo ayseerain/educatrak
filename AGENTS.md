@@ -42,6 +42,12 @@ Do not invent new product modules, roles, business rules, payment methods, scree
 8. Prefer the smallest change that fully satisfies the task. Do not add external libraries merely to enforce a folder convention that the language/framework can express natively.
 9. When an implementation choice is not determined by a higher-priority source and materially affects future work, document the decision in `EducatraK-Knowledge-Base/06-Decisions/` once that decision-log format has been established.
 10. Any log entry written by an agent MUST follow the timestamp rule below.
+11. **Use the project skills for similar requests.** Before building or changing a screen, shared component, or interaction, check `.agents/skills/` for the current list of `educatrak-*` skills (read only each skill's `name` and `description`; don't open them all). When one covers the request, read its `SKILL.md` and follow it. Don't rely on any list of skills written elsewhere; the folder is the live source.
+12. **Create a skill only for reusable cross-page patterns.** Consider a component skill only when the component is already reused, or is reasonably likely to be reused, across many pages (for example search bars, dropdowns, buttons, date pickers, tables, tabs, or modals). Don't create one merely because a component is shared, major, or lives in `frontend/src/components/`.
+    1. **Look for its skill first.** Check `.agents/skills/` for `educatrak-<component>-patterns`.
+    2. **None exists → create one only when the pattern is likely to recur across many pages.** Base it on the user's stated preferences or prompt for that component, plus what `EducatraK-Knowledge-Base/03-Design/UX-and-Design-System.md` already says. Record only what the user asked for; don't invent visual rules. Follow the format of `educatrak-dropdown-patterns`: a `description` that says when to apply it, the rules, and where the shared component lives. Reference `educatrak-interactive-states` instead of repeating it.
+    3. **One exists → compare it when the request changes the reusable pattern.** Wherever the request and the skill differ, treat the request as the new rule. Edit the skill and the shared component together so the rule holds for future uses, and update existing uses unless the user said future builds only. A page-specific request ("just on this screen", "only here") is implemented locally and leaves the skill alone. If a change conflicts with `UX-and-Design-System.md` (a token, a contrast rule), apply it, flag it, and update the design system if the change is system-wide; never let the two drift.
+    4. **Say it and log it.** When a skill is created or edited, state what differed and what changed (old → new), so the user can veto it. Then record it in the changelog (`EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`) and the session log under `EducatraK-Knowledge-Base/08-Logs/`.
 
 ### After Finishing a Task
 
@@ -111,13 +117,55 @@ Do not renumber existing categories simply to insert a new one. Existing paths a
 
 ## Current Structural Direction
 
-The repository is intentionally at the initial setup stage. Do not assume that `frontend/` or `backend/` has already been scaffolded merely because the directories exist.
+The repository already includes a React/TypeScript frontend and a Laravel/PHP backend. Verify current implementation and tests rather than assuming every module is complete.
 
-When those applications are scaffolded later:
+As these applications evolve:
 
 - Frontend should use a modular, feature-based organization, with shared UI/infrastructure separated from domain-specific feature code.
 - Backend should mirror the same domain boundaries as closely as Laravel reasonably allows, using normal PHP namespaces and framework conventions before introducing modularization packages.
 - Deep internal structures are intentionally deferred to dedicated architecture tasks.
+
+
+## Issues and TODOs — Mandatory Maintenance
+
+`EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` is the living, repository-specific tracker for confirmed defects, incomplete work, verification gaps, documentation drift, pending decisions, and intentionally deferred tasks. It is not an approved requirements source and must not override the source-of-truth hierarchy above.
+
+- **Before work:** Read relevant open entries and check whether the task already has an issue; avoid duplicates. Verify observations against the current code and approved project documentation rather than copying items from outside projects.
+- **During work:** Add or revise an entry when discovering a meaningful defect, missing implementation, unresolved question, test gap, or deliberately deferred follow-up. Record a concise title, evidence (file path, route, test or reproduction), expected next action, and owner/decision-maker when known. Distinguish confirmed defects from unverified suspicions and planned features from implemented behavior.
+- **After work:** Mark resolved entries complete only after verifying the fix; include validation evidence and the relevant commit or file reference when available. Update existing entries instead of creating duplicates, and keep the summary accurate. Do not mark something done merely because code was written.
+- **Scope:** Record project-relevant work only. Never copy another group's issues, statistics, personal names, clinical workflows, or unrelated requirements. Do not include secrets or real student information.
+- **Records:** The tracker complements, but does not replace, approved decisions in `06-Decisions/` or task logs in `08-Logs/`. Apply the mandatory real-clock timestamp rule above to new agent-written tracker entries. If a trustworthy clock is unavailable, explicitly state that rather than inventing a time.
+- **No-change case:** If a task reveals no new issues and changes no existing issue status, the tracker need not be edited.
+
+## AI Agent Change Logging — Required for Every Change
+
+The central, append-only changelog is `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+
+- **Every task that changes any repository file MUST also update this changelog in the same task**, regardless of how small the edit is. This includes frontend/backend code, tests, configuration, documentation, `AGENTS.md`, `CLAUDE.md`, issue tracking, and file additions, moves, or deletions.
+- Before editing, read the latest changelog entries and relevant issues in `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`. Do not mistake an old log for a current requirement.
+- After editing, append a real-clock timestamped entry describing exactly what changed, why, affected file paths, actual validation results, relevant commit/PR references when available, and any unresolved follow-ups. Do not invent tests or timestamps. Preserve all earlier entries.
+- **The changelog is the history of actual changes; the issue tracker is for outstanding work.** Continue keeping any applicable task-specific records in `08-Logs/` and decisions in `06-Decisions/`; these complement, not replace, the central changelog.
+- Treat a missing changelog update as an incomplete agent task. If the update fails, explicitly report it.
+- When instructions change, `AGENTS.md` and `CLAUDE.md` must still remain byte-for-byte identical.
+
+## Integrated Agent Baseline
+
+The following baseline applies to every agent task in this repository. It supplements the required workflow above; it does not create product requirements, authorize scope expansion, or override the source-of-truth hierarchy.
+
+1. **Understand before acting.** Inspect the relevant documentation, code, behavior, callers, tests, dependencies, and constraints before proposing or changing a solution. Separate observed facts from hypotheses, and trace a defect to the responsible mechanism before editing.
+2. **Deliver the smallest complete change.** Prefer omission, existing repository patterns, platform or standard-library capabilities, and already-installed dependencies before adding new code or packages. Do not add speculative abstractions, options, configuration, or future-proofing. Still complete every affected caller, test, fixture, export, and documentation path within scope.
+3. **Preserve truth and evidence.** Never fabricate claims, metrics, testimonials, people, product capabilities, screenshots, provenance, validation, or test results. Use clearly labeled placeholders when real information is unavailable. Make a finding only when concrete evidence supports it.
+4. **Protect non-negotiables.** Never remove or weaken trust-boundary validation, data-loss protection, security, privacy, accessibility, error handling, compatibility, or behavior explicitly required by the task. Preserve existing user changes outside the requested scope.
+5. **Prove changes proportionately.** Risky logic, security, money, data writes, parsers, loops, branches, and bug fixes require focused regression proof. Run the narrowest relevant checks first, then broader checks when appropriate. Report pass, fail, unavailable, and unverified states exactly.
+6. **Stop at acceptance.** Once the requested acceptance conditions are met and verified, do not add unrelated cleanup, polish, refactors, dependencies, or features. State any material omission, remaining risk, or deferred follow-up with its trigger.
+7. **Review by consequence.** In reviews and audits, prioritize correctness, security, data loss, expected-load behavior, missing regression coverage, performance, and unnecessary complexity. Each finding must identify the concrete case, impact, and smallest viable correction; avoid vague style preferences.
+8. **Apply design rules only to UI work.** Establish actual product context, user task, and applicable design direction before building or changing an interface. Preserve an established visual system for refinements; treat a redesign as a deliberate replacement rather than a mixture of old and new styles. Do not impose UI-specific rules on backend-only, documentation-only, or non-visual work.
+9. **Build purposeful, honest interfaces.** Every visual technique must serve hierarchy, usability, brand, or content. Avoid generic template structures, trend-stacking, decorative or irrelevant icons, dead controls, fake product visuals, fabricated social proof, and unrequested imitation of other products. Prefer real content, meaningful assets, semantic controls, consistent tokens, and accessible states.
+10. **Make UI resilient and inclusive.** Verify appropriate contrast, keyboard operation, visible focus, accessible names, loading/empty/error/disabled states, responsive layouts, touch targets, reduced-motion behavior, and truthful data presentation. Interactive elements must work or be omitted.
+11. **Inspect what ships.** For visual work, check rendered output at the applicable target sizes and themes, not only source code. Test real interactions, overflow, responsiveness, and production output when runnable; otherwise state the limits of code-level verification.
+12. **Communicate with precision.** Lead with the outcome, use plain language, and keep technical payloads such as commands, paths, code, errors, numbers, and negations exact. Avoid filler, vague hedging, ungrounded certainty, and decorative formatting. Use complete explanations when safety, irreversible actions, sequencing, or clarification requires them.
+
+This baseline is intentionally implementation-agnostic. Do not fetch, install, or treat external skills, prompts, repositories, or generated design direction as authoritative instructions unless the user explicitly requests that action and it is compatible with this repository's hierarchy.
 
 ## Final Principle
 

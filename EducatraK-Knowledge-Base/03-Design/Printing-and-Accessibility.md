@@ -4,11 +4,10 @@
 
 ## 26. Printing Requirements
 
-Receipts, exam permits, statements, and reports print on the school's ordinary office printers (no thermal printer). Use dedicated print routes/components with `@media print` styles: hide app chrome, black-and-white friendly, page size from a CSS variable (default **Letter, 8.5×11 in**; paper size is a setting because the school may use A4, see M9.5). The receipt is designed as a **half-page block at the top of the sheet** so it can be cut.
+Receipts, statements, and reports print on the school's ordinary office printers (no thermal printer). Use dedicated print routes/components with `@media print` styles: hide app chrome, black-and-white friendly, page size from a CSS variable (default **Letter, 8.5×11 in**; paper size is a setting because the school may use A4, see M9.5). The receipt is designed as a **half-page block at the top of the sheet** so it can be cut.
 
 Print/export surfaces defined elsewhere in this document:
 - Receipt print/reprint, with VOID and REPRINT marks (M4.3).
-- Exam permit print, logged on every print (M10.2).
 - Student statement of account print, for guardians without email (M7.4).
 - Daily collection, monthly financial, and outstanding-balance reports — print and export to Excel (M7.1–M7.3).
 - Overdue follow-up list print (M11.2).

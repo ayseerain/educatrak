@@ -19,7 +19,7 @@ export function DashboardRangeFilter({ value, onChange }: DashboardRangeFilterPr
     <label className="flex items-center gap-2 text-sm text-text-secondary">
       <span>{en.dashboard.filterRange}</span>
       <DropdownSelect
-        aria-label={en.dashboard.filterRange}
+        aria-label={`${en.dashboard.filterRange}: ${value}`}
         value={value}
         options={DASHBOARD_RANGE_OPTIONS}
         onChange={onChange}

@@ -1,10 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { SessionProvider } from "@/auth/session";
+import { MOCK_USERS } from "@/auth/mockSession";
 import { App } from "@/App";
+import { MockDatabaseProvider } from "@/api/mock/MockDatabaseProvider";
+import { createMockStudent, resetMockStore } from "@/api/mock";
 
 interface RenderAppOptions {
   sessionDurationMs?: number;
@@ -56,8 +59,14 @@ function submitLogin(username: string, password: string) {
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 }
 
+beforeEach(() => {
+  resetMockStore();
+});
+
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("LoginPage", () => {
@@ -65,7 +74,6 @@ describe("LoginPage", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.queryByText(/use your educatrak account to continue/i)).not.toBeInTheDocument();
     expect(screen.getAllByText("Simplifying School Billing & Payments")).toHaveLength(2);
     const logos = screen.getAllByRole("img", { name: "Mendez Christian Academy seal" });
     expect(logos).toHaveLength(2);
@@ -73,9 +81,84 @@ describe("LoginPage", () => {
       "/mendez-christian-academy-seal.png",
       "/mendez-christian-academy-seal.png",
     ]);
-    expect(screen.getByLabelText(/username/i)).toHaveFocus();
-    expect(screen.getByLabelText("Password", { selector: "input" })).toBeInTheDocument();
+    const campusPhoto = screen.getByRole("img", { name: "Mendez Christian Academy campus" });
+    expect(campusPhoto).toHaveAttribute("src", "/loginpage_bg.jpg");
+    expect(campusPhoto).toHaveAttribute("fetchpriority", "high");
+    const username = screen.getByLabelText(/username/i);
+    const password = screen.getByLabelText("Password", { selector: "input" });
+    expect(username).toHaveFocus();
+    expect(username.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(password.parentElement?.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).toBeChecked();
     expect(screen.getByRole("button", { name: /forgot password/i })).toBeInTheDocument();
+    expect(screen.getByText("Powered by")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Edukados logo placeholder" })).toBeInTheDocument();
+    expect(screen.getByText("Edukados")).toBeInTheDocument();
+    const privacyPolicy = screen.getByRole("button", { name: "Privacy Policy" });
+    expect(privacyPolicy).toHaveAttribute("aria-expanded", "false");
+    expect(privacyPolicy).not.toHaveClass("underline");
+    expect(privacyPolicy).toHaveClass("hover:bg-transparent", "hover:underline");
+  });
+
+  it("opens the complete read-only privacy policy and closes it with Escape", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const trigger = screen.getByRole("button", { name: "Privacy Policy" });
+    await user.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Privacy Policy" });
+    expect(dialog).toHaveTextContent("Effective November 7, 2026");
+    expect(dialog).toHaveTextContent("Personal information we process");
+    expect(dialog).toHaveTextContent("For students and minors");
+    expect(dialog).toHaveTextContent("Mendez Christian Academy administration office");
+    expect(screen.queryByRole("navigation", { name: "On this page" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /agree|consent|accept/i })).not.toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Privacy Policy" })).not.toBeInTheDocument();
+  });
+
+  it("supports sequential keyboard navigation through login controls", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const username = screen.getByLabelText(/username/i);
+    const password = screen.getByLabelText("Password", { selector: "input" });
+    const visibility = screen.getByRole("button", { name: /show password/i });
+    const rememberMe = screen.getByRole("checkbox", { name: /remember me/i });
+    const submit = screen.getByRole("button", { name: /sign in/i });
+    const forgotPassword = screen.getByRole("button", { name: /forgot password/i });
+
+    expect(username).toHaveFocus();
+    await user.tab();
+    expect(password).toHaveFocus();
+    await user.tab();
+    expect(visibility).toHaveFocus();
+    await user.tab();
+    expect(rememberMe).toHaveFocus();
+    await user.tab();
+    expect(forgotPassword).toHaveFocus();
+    await user.tab();
+    expect(submit).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Privacy Policy" })).toHaveFocus();
+  });
+
+  it("closes the privacy policy from its visible close control", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const privacyPolicy = screen.getByRole("button", { name: "Privacy Policy" });
+    await user.click(privacyPolicy);
+
+    expect(privacyPolicy).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("dialog", { name: "Privacy Policy" })).toBeInTheDocument();
+    expect(screen.getByText(/how mendez christian academy handles personal information/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close Privacy Policy" }));
+    expect(screen.queryByRole("dialog", { name: "Privacy Policy" })).not.toBeInTheDocument();
   });
 
   it("explains the administrator-led password reset path", async () => {
@@ -97,11 +180,13 @@ describe("LoginPage", () => {
     renderApp();
 
     const passwordInput = screen.getByLabelText("Password", { selector: "input" });
+    const visibilityButton = screen.getByRole("button", { name: /show password/i });
 
     expect(passwordInput).toHaveAttribute("type", "password");
+    expect(visibilityButton).toHaveClass("rounded-md", "disabled:cursor-not-allowed");
     expect(screen.queryByText(/show password/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /show password/i }));
+    await user.click(visibilityButton);
 
     expect(passwordInput).toHaveAttribute("type", "text");
     expect(screen.getByRole("button", { name: /hide password/i })).toBeInTheDocument();
@@ -111,7 +196,7 @@ describe("LoginPage", () => {
   it("signs in with a valid mock account and opens the dashboard", async () => {
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!");
+    await fillLogin("sample.cashier", "demo-cashier");
 
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
@@ -121,11 +206,71 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("restores the default mock session after a Vite page reload", async () => {
+    const user = userEvent.setup();
+    const app = renderApp();
+
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).toBeChecked();
+    await fillLogin("sample.cashier", "demo-cashier", user);
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(window.sessionStorage.getItem("educatrak.mockSession")).toContain("Casey Cashier");
+    app.unmount();
+
+    renderApp();
+    expect(await screen.findByRole("heading", { name: /good day, casey cashier/i })).toBeInTheDocument();
+  });
+
+  it("keeps the mock session after a persisted MockDB update", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/login"]} future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+          <SessionProvider>
+            <MockDatabaseProvider>
+              <App />
+              <LocationPath />
+            </MockDatabaseProvider>
+          </SessionProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByLabelText(/username/i);
+    await fillLogin("sample.cashier", "demo-cashier", user);
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+
+    act(() => {
+      createMockStudent({
+        number: "MOCK-SESSION-REGRESSION",
+        name: "Session Regression Student",
+        grade: "Grade 7",
+        section: "Olive",
+        guardianName: "Session Regression Guardian",
+        guardianRelationship: "Parent",
+        guardianEmail: "",
+        guardianMobile: "",
+      });
+    });
+
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(screen.queryByRole("heading", { name: /sign in/i })).not.toBeInTheDocument();
+  });
+
+  it.each(Object.entries(MOCK_USERS))("signs in the seeded %s account", async (username, account) => {
+    renderApp();
+
+    await fillLogin(username, account.password);
+
+    await waitFor(() => expect(screen.getByLabelText("Current path")).toHaveTextContent("/"));
+    expect(await screen.findByRole("heading", { name: `Good day, ${account.user.name}` })).toBeInTheDocument();
+  });
+
   it("switches mock roles from the header and returns to the role dashboard", async () => {
     const user = userEvent.setup();
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!", user);
+    await fillLogin("sample.cashier", "demo-cashier", user);
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent(/^\/$/),
     );
@@ -140,7 +285,7 @@ describe("LoginPage", () => {
     expect(
       await screen.findByRole("heading", { name: /good day, avery accounting/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /void approvals/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Void requests" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /preview role/i }));
     await user.click(screen.getByRole("menuitemradio", { name: /registrar/i }));
@@ -157,7 +302,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     renderApp();
 
-    await fillLogin("sample.cashier", "SamplePass123!");
+    await fillLogin("sample.cashier", "demo-cashier");
     await waitFor(() =>
       expect(screen.getByLabelText("Current path")).toHaveTextContent("/"),
     );
@@ -179,6 +324,37 @@ describe("LoginPage", () => {
       await screen.findByRole("alert"),
     ).toHaveTextContent(/we could not sign you in/i);
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/login");
+  });
+
+  it("shows and enforces the server-provided retry interval for a 429 response", async () => {
+    vi.stubEnv("VITE_USE_LIVE_API", "true");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/sanctum/csrf-cookie")) return new Response(null, { status: 204 });
+      if (url.endsWith("/api/auth/me")) {
+        return new Response(JSON.stringify({ message: "Unauthenticated." }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.endsWith("/api/auth/login")) {
+        return new Response(JSON.stringify({ message: "Too many attempts." }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Retry-After": "60" },
+        });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    renderApp();
+    await screen.findByLabelText(/username/i);
+    expect(screen.getByRole("checkbox", { name: /remember me/i })).not.toBeChecked();
+    await fillLogin("sample.cashier", "wrong-password");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/account locked\. try again in 1 minute/i);
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
+    expect(screen.getByLabelText(/username/i)).toHaveClass("disabled:cursor-not-allowed");
+    expect(screen.getByLabelText("Password", { selector: "input" })).toHaveClass("disabled:cursor-not-allowed");
   });
 
   it("shows the lockout wait time after repeated failed attempts", async () => {
@@ -203,7 +379,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 
@@ -239,7 +415,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 
@@ -263,7 +439,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 5000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
 
     act(() => {
@@ -294,7 +470,7 @@ describe("LoginPage", () => {
     renderApp("/login", { sessionDurationMs: 3000, warningDurationMs: 1000 });
 
     await act(async () => {
-      submitLogin("sample.cashier", "SamplePass123!");
+      submitLogin("sample.cashier", "demo-cashier");
     });
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
 

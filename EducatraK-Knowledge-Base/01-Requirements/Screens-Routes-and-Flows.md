@@ -1,5 +1,9 @@
 # Screens, Routes, and User Flows
 
+> **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
+
+> **Approved operational reassignment — November 5, 2026.** `/clearance`, `/permits/:studentId/:period/print`, and `/settings/clearance-rules` are retired. Registrar and Cashier both use `/students`; only Registrar may use `/students/new` and `/students/:id/edit`. On student list and profile screens, Registrar receives the same read-only financial and guardian context as Cashier, while retaining only Registrar's existing student-management buttons. Cashier continues from an existing student to approved billing-account and payment workflows.
+
 > Source-derived screen, route, and flow inventory extracted from the canonical Project Specification.
 
 ## 23. Screens, Routes, and Key Flows
@@ -22,6 +26,7 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/` | M0 Dashboard | all (content differs by role) |
 | `/profile` | M0/M1 My profile | all |
 | `/students` | M2 Student list | `student.view` |
+| `/students/import` | M2 Student masterlist import | `student.edit` |
 | `/students/new`, `/students/:id/edit` | M2 Student form | `student.edit` |
 | `/students/:id` | M2 Student profile | `student.view` |
 | `/accounts` | M3 Account list | `account.view` |
@@ -81,7 +86,7 @@ Cashier opens payment → Request void → reason (required, min 10 characters) 
 Registrar (or cashier) opens `/clearance` → searches student → sees Enrollment and each exam-period status with a reason **appropriate to the viewer's role** (an amount for CSH/ACC/AUD/ADM, no amount for REG) → for a cleared period, clicks **Print exam permit** → print view → browser print dialog. For a not-cleared period the button is disabled with the reason.
 
 **F5. Overdue follow-up**
-Cashier or accounting opens `/followup` → filters → selects rows → **Send reminder emails** → review dialog (recipients, missing emails flagged, message preview) → confirm → rows show "Reminder sent today." Also a **Print list** action.
+Cashier or accounting opens `/followup` → filters → selects rows → **Send reminder emails** → review dialog (recipients, missing emails flagged, message preview) → confirm → rows show "Reminder sent today."
 
 **F6. End-of-day close-out**
 Cashier opens `/closeout` → sees system totals by method → enters counted cash → variance appears → adds reason if needed → confirm → day locks and a printable summary opens. Accounting later signs off from history.

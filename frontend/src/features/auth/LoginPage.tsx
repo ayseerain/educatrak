@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { z } from "zod";
+import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 import { useSession } from "@/auth/session";
 import { Button } from "@/components/ui/Button";
 import { en } from "@/i18n/en";
@@ -10,9 +12,12 @@ import { en } from "@/i18n/en";
 const loginSchema = z.object({
   username: z.string().trim().min(1, en.login.usernameRequired),
   password: z.string().min(1, en.login.passwordRequired),
+  rememberMe: z.boolean(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
+
+const highPriorityImageProps = { fetchpriority: "high" } as Record<string, string>;
 
 function formatWait(lockUntil: number) {
   const remainingMs = Math.max(0, lockUntil - Date.now());
@@ -38,7 +43,7 @@ export function LoginPage() {
     register,
     setError,
   } = useForm<LoginFormValues>({
-    defaultValues: { username: "", password: "" },
+    defaultValues: { username: "", password: "", rememberMe: !isLiveCashierApiEnabled() },
   });
   const usernameField = register("username");
   const passwordField = register("password");
@@ -46,6 +51,8 @@ export function LoginPage() {
   const [lockedUntil, setLockedUntil] = useState<number>();
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordHelpOpen, setIsForgotPasswordHelpOpen] = useState(false);
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
+  const privacyPolicySections = en.login.privacyPolicySections;
 
   useEffect(() => {
     usernameRef.current?.focus();
@@ -69,7 +76,7 @@ export function LoginPage() {
     return () => window.clearInterval(timer);
   }, [lockedUntil]);
 
-  function submit(values: LoginFormValues) {
+  async function submit(values: LoginFormValues) {
     setAuthError("");
     const parsed = loginSchema.safeParse(values);
 
@@ -83,7 +90,7 @@ export function LoginPage() {
       return;
     }
 
-    const result = login(parsed.data.username, parsed.data.password);
+    const result = await login(parsed.data.username, parsed.data.password, parsed.data.rememberMe);
     if (result.ok) return;
     if (result.lockedUntil) {
       setLockedUntil(result.lockedUntil);
@@ -96,129 +103,215 @@ export function LoginPage() {
   const disabled = Boolean(lockedUntil && lockedUntil > Date.now()) || isSubmitting;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-10 sm:px-8">
+    <main className="flex min-h-[100dvh] bg-white">
+      {/* ponytail: radius is in bounding-box units (~12px at 1240x925), so it stretches slightly on unusual aspect ratios. Switch to a ResizeObserver-built path() if that shows. */}
+      <svg aria-hidden="true" className="absolute h-0 w-0">
+        <clipPath id="login-art-clip" clipPathUnits="objectBoundingBox">
+          <path d="M0.01,0 L0.99,0 Q1,0 0.999,0.013 L0.926,0.987 Q0.925,1 0.915,1 L0.01,1 Q0,1 0,0.987 L0,0.013 Q0,0 0.01,0 Z" />
+        </clipPath>
+      </svg>
       <section
-        className="grid w-full max-w-7xl overflow-hidden rounded-lg border border-border bg-white shadow-[0_18px_50px_rgba(0,0,0,0.12)] lg:min-h-[680px] lg:grid-cols-[1.1fr_0.9fr]"
+        className="grid w-full bg-white p-1.5 lg:grid-cols-[2fr_1fr]"
         aria-labelledby="login-title"
       >
-        <div className="relative hidden overflow-hidden border-r border-white/15 bg-brand-green-dark/90 p-10 text-white backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-[-12%] top-28 h-28 -rotate-6 bg-brand-green/75"
+        <div className="relative hidden overflow-hidden rounded-lg bg-brand-green-dark lg:block lg:[clip-path:url(#login-art-clip)]">
+          <img
+            src="/loginpage_bg.jpg"
+            alt="Mendez Christian Academy campus"
+            width={1392}
+            height={768}
+            {...highPriorityImageProps}
+            className="absolute inset-0 h-full w-full scale-105 object-cover object-[50%_40%] blur-[3px]"
           />
           <div
             aria-hidden="true"
-            className="absolute inset-x-[-12%] top-52 h-28 rotate-6 bg-brand-green-light/65"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-green-dark/75 via-brand-green-dark/30 to-brand-green-dark/45"
           />
-          <div className="relative flex items-center gap-5 text-left">
-            <img
-              src="/mendez-christian-academy-seal.png"
-              alt="Mendez Christian Academy seal"
-              className="h-20 w-20 shrink-0 object-contain"
-            />
-            <div className="min-w-0">
-              <p className="text-[44px] font-semibold leading-none tracking-[-0.025em]">{en.app.name}</p>
-              <p className="ml-[2px] mt-0.5 text-xs leading-4 text-white/85">{en.app.tagline}</p>
+          <div className="relative z-10 flex h-full flex-col p-8 text-white lg:p-10">
+            <div className="animate-login-brand-in flex w-fit items-center gap-6 text-left [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
+              <img
+                src="/mendez-christian-academy-seal.png"
+                alt="Mendez Christian Academy seal"
+                className="h-24 w-24 shrink-0 object-contain"
+              />
+              <div className="min-w-0">
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.025em]">{en.app.name}</p>
+                <p className="ml-[2px] mt-1 text-base leading-6 text-white/85">{en.app.tagline}</p>
+              </div>
             </div>
-          </div>
-
-          <div className="relative max-w-sm">
-            <p className="text-lg font-semibold leading-7">{en.login.mockHint}</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center px-6 py-12 sm:px-12 lg:px-16">
-          <div className="w-full max-w-xl">
-            <div className="mb-6 text-center lg:text-left">
-              <div className="mb-5 flex items-center justify-center gap-4 lg:hidden">
+        <div className="flex min-h-[590px] flex-col px-7 py-8 sm:px-12 lg:px-14 lg:py-10">
+          <div className="flex flex-1 items-center justify-center">
+            <div className="w-full max-w-[400px]">
+              <div className="mb-12 text-center">
+                <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
                 <img
                   src="/mendez-christian-academy-seal.png"
                   alt="Mendez Christian Academy seal"
-                  className="h-20 w-20 shrink-0 object-contain"
+                  className="h-[72px] w-[72px] shrink-0 object-contain"
                 />
-                <div className="text-left">
-                  <p className="text-[44px] font-semibold leading-none tracking-[-0.025em] text-brand-green-dark">{en.app.name}</p>
-                  <p className="ml-[2px] mt-0.5 text-xs leading-4 text-text-secondary">{en.app.tagline}</p>
+                <div>
+                  <p className="text-[32px] font-semibold leading-tight tracking-tight text-brand-green-dark">{en.app.name}</p>
+                  <p className="mt-1 text-[13px] leading-5 text-text-secondary">{en.app.tagline}</p>
                 </div>
               </div>
-              <h1 id="login-title" className="text-2xl font-semibold text-text-primary">{en.login.title}</h1>
-            </div>
-
-            <form className="space-y-5" onSubmit={handleSubmit(submit)} noValidate>
-              <div>
-                <label htmlFor="username" className="mb-2 block text-sm font-medium text-text-primary">{en.login.username}</label>
-                <input
-                  id="username"
-                  autoComplete="username"
-                  aria-invalid={Boolean(errors.username)}
-                  aria-describedby={errors.username ? "username-error" : undefined}
-                  className="h-11 w-full rounded-md border border-border bg-white px-3 text-base focus-visible:border-brand-green-dark"
-                  disabled={disabled}
-                  {...usernameField}
-                  ref={(element) => {
-                    usernameField.ref(element);
-                    usernameRef.current = element;
-                  }}
-                />
-                {errors.username?.message && (
-                  <p id="username-error" className="mt-2 text-sm text-status-error">
-                    {errors.username.message}
-                  </p>
-                )}
+                <h1 id="login-title" className="text-[42px] font-semibold leading-none tracking-[-0.035em] text-text-primary">{en.login.title}</h1>
               </div>
-              <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-primary">{en.login.password}</label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    aria-invalid={Boolean(errors.password)}
-                    aria-describedby={errors.password ? "password-error" : undefined}
-                    className="h-11 w-full rounded-md border border-border bg-white px-3 pr-12 text-base focus-visible:border-brand-green-dark"
-                    disabled={disabled}
-                    {...passwordField}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-brand-green-dark hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:pointer-events-none disabled:opacity-50"
-                    disabled={disabled}
-                    onClick={() => setShowPassword((current) => !current)}
-                    aria-pressed={showPassword}
-                    aria-label={showPassword ? en.login.hidePassword : en.login.showPassword}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-                  </button>
+
+              <form className="space-y-7" onSubmit={handleSubmit(submit)} noValidate>
+                <div>
+                  <label htmlFor="username" className="mb-3 block text-sm font-medium text-text-primary">{en.login.username}</label>
+                  <div className="group relative">
+                    <UserRound
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary transition-[color,transform] duration-150 motion-reduce:transition-none group-focus-within:scale-110 group-focus-within:text-brand-green-dark"
+                    />
+                    <input
+                      id="username"
+                      autoComplete="username"
+                      aria-invalid={Boolean(errors.username)}
+                      aria-describedby={errors.username ? "username-error" : undefined}
+                      className="h-11 w-full rounded-md border border-border bg-white px-10 text-base transition-[border-color,box-shadow] duration-150 hover:border-brand-green focus-visible:border-brand-green-dark focus-visible:shadow-[0_0_0_3px_rgb(3_153_53_/_0.12)] motion-reduce:transition-none disabled:cursor-not-allowed"
+                      disabled={disabled}
+                      {...usernameField}
+                      ref={(element) => {
+                        usernameField.ref(element);
+                        usernameRef.current = element;
+                      }}
+                    />
+                  </div>
+                  {errors.username?.message && (
+                    <p id="username-error" role="alert" className="mt-2 text-sm text-status-error">
+                      {errors.username.message}
+                    </p>
+                  )}
                 </div>
-                {errors.password?.message && (
-                  <p id="password-error" className="mt-2 text-sm text-status-error">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-              {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
-              <Button type="submit" className="w-full" disabled={disabled}>{en.login.submit}</Button>
-            </form>
+                <div>
+                  <label htmlFor="password" className="mb-3 block text-sm font-medium text-text-primary">{en.login.password}</label>
+                  <div className="group relative">
+                    <LockKeyhole
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary transition-[color,transform] duration-150 motion-reduce:transition-none group-focus-within:scale-110 group-focus-within:text-brand-green-dark"
+                    />
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      aria-invalid={Boolean(errors.password)}
+                      aria-describedby={errors.password ? "password-error" : undefined}
+                      className="h-11 w-full rounded-md border border-border bg-white px-10 pr-12 text-base transition-[border-color,box-shadow] duration-150 hover:border-brand-green focus-visible:border-brand-green-dark focus-visible:shadow-[0_0_0_3px_rgb(3_153_53_/_0.12)] motion-reduce:transition-none disabled:cursor-not-allowed"
+                      disabled={disabled}
+                      {...passwordField}
+                    />
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="absolute right-0 top-1/2 h-11 w-11 min-h-0 -translate-y-1/2 rounded-md px-0"
+                      disabled={disabled}
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-pressed={showPassword}
+                      aria-label={showPassword ? en.login.hidePassword : en.login.showPassword}
+                    >
+                      {showPassword ? <EyeOff className="animate-login-icon-swap h-4 w-4" aria-hidden="true" /> : <Eye className="animate-login-icon-swap h-4 w-4" aria-hidden="true" />}
+                    </Button>
+                  </div>
+                  <div className="mt-4 flex min-h-11 items-center justify-between gap-4">
+                    <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-text-primary">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 cursor-pointer rounded border-border text-brand-green-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark disabled:cursor-not-allowed"
+                        disabled={disabled}
+                        {...register("rememberMe")}
+                      />
+                      {en.login.rememberMe}
+                    </label>
+                    <div className="text-right">
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        className="px-1 text-sm text-brand-green-dark hover:text-brand-green"
+                        aria-expanded={isForgotPasswordHelpOpen}
+                        aria-controls="forgot-password-help"
+                        onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
+                      >
+                        {en.login.forgotPassword}
+                      </Button>
+                    </div>
+                  </div>
+                  {isForgotPasswordHelpOpen && (
+                    <p id="forgot-password-help" role="status" className="mt-2 text-left text-sm text-text-secondary">
+                      {en.login.forgotPasswordHelp}
+                    </p>
+                  )}
+                  {errors.password?.message && (
+                    <p id="password-error" role="alert" className="mt-2 text-sm text-status-error">
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+                {authError && <p role="alert" className="rounded-md border border-[#F3C2C2] bg-[#FBEAEA] p-3 text-sm text-status-error">{authError}</p>}
+                <Button type="submit" className="w-full transition-transform active:scale-[0.985] motion-reduce:transition-none motion-reduce:active:scale-100" disabled={disabled}>{en.login.submit}</Button>
+              </form>
 
-            <div className="mt-5 text-center lg:text-left">
-              <button
-                type="button"
-                className="text-sm font-medium text-brand-green-dark underline underline-offset-4 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
-                aria-expanded={isForgotPasswordHelpOpen}
-                aria-controls="forgot-password-help"
-                onClick={() => setIsForgotPasswordHelpOpen((current) => !current)}
-              >
-                {en.login.forgotPassword}
-              </button>
-              {isForgotPasswordHelpOpen && (
-                <p id="forgot-password-help" role="status" className="mt-2 text-sm text-text-secondary">
-                  {en.login.forgotPasswordHelp}
-                </p>
-              )}
             </div>
-
-            <p className="mt-6 text-xs leading-5 text-text-muted-readable lg:hidden">{en.login.mockHint}</p>
           </div>
+          <footer className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs text-text-secondary">
+            <div className="flex items-center gap-2">
+              <span
+                role="img"
+                aria-label={en.login.edukadosLogoPlaceholder}
+                className="flex h-5 w-5 items-center justify-center rounded-sm bg-brand-green-dark text-[11px] font-bold leading-none text-white"
+              >
+                E
+              </span>
+              <span>{en.login.poweredBy}</span>
+              <span className="font-semibold text-text-primary">{en.login.edukados}</span>
+            </div>
+            <span aria-hidden="true" className="hidden h-4 w-px bg-border sm:block" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-control px-1 text-xs font-semibold text-brand-green-dark hover:bg-transparent hover:text-brand-green hover:underline hover:decoration-brand-green-dark/40 underline-offset-2"
+              aria-haspopup="dialog"
+              aria-expanded={isPrivacyPolicyOpen}
+              onClick={() => setIsPrivacyPolicyOpen(true)}
+            >
+              {en.login.privacyPolicy}
+            </Button>
+          </footer>
+          <Dialog.Root open={isPrivacyPolicyOpen} onOpenChange={setIsPrivacyPolicyOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" />
+              <Dialog.Content
+                aria-describedby="privacy-policy-description"
+                className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-5 shadow-raised sm:p-6"
+              >
+                <Dialog.Title className="text-xl font-semibold text-text-primary">{en.login.privacyPolicy}</Dialog.Title>
+                <Dialog.Description id="privacy-policy-description" className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
+                  {en.login.privacyPolicyDescription}
+                </Dialog.Description>
+                <p className="mt-4 text-sm font-medium text-text-primary">{en.login.privacyPolicyEffectiveDate}</p>
+                <p className="text-sm text-text-secondary">{en.login.privacyPolicyLastUpdated}</p>
+                <div className="mt-7 space-y-7 pb-1">
+                  {privacyPolicySections.map((section) => (
+                    <section key={section.id} id={`privacy-${section.id}`} aria-labelledby={`privacy-${section.id}-heading`} className="scroll-mt-4">
+                      <h3 id={`privacy-${section.id}-heading`} className="text-base font-semibold text-text-primary">{section.title}</h3>
+                      <div className="mt-2 space-y-3 text-sm leading-6 text-text-secondary">
+                        {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <Dialog.Close asChild>
+                    <Button variant="secondary">{en.login.closePrivacyPolicy}</Button>
+                  </Dialog.Close>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
       </section>
     </main>

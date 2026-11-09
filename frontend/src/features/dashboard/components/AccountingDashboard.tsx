@@ -1,6 +1,5 @@
 import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
-import { Banknote, CalendarClock, FileClock, ReceiptText, Settings, Users } from "lucide-react";
+import { Banknote, CalendarClock, FileClock } from "lucide-react";
 import { CollectionTrend } from "./CollectionTrend";
 import { RecentActivity } from "./RecentActivity";
 import { en } from "@/i18n/en";
@@ -15,16 +14,12 @@ interface AccountingDashboardProps {
 export function AccountingDashboard({ summary, range }: AccountingDashboardProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4">
-        <DashboardStatCard
-          label={en.dashboard.overallEnrolledStudents}
-          value={String(summary.overallEnrolledStudents)}
-          icon={Users}
-        />
+      <div className="grid gap-3 sm:grid-cols-3">
         <DashboardStatCard
           label={en.dashboard.pendingVoidApprovals}
           value={String(summary.pendingVoidApprovals)}
           icon={FileClock}
+          action={{ to: "/voids", label: en.dashboard.reviewVoidRequests }}
         />
         <DashboardStatCard
           label={en.dashboard.overdueTotal}
@@ -35,39 +30,13 @@ export function AccountingDashboard({ summary, range }: AccountingDashboardProps
           label={en.dashboard.unsignedCloseouts}
           value={String(summary.unsignedCloseouts)}
           icon={Banknote}
+          action={{ to: "/closeout/history", label: en.dashboard.signOffCloseouts }}
         />
       </div>
 
       <CollectionTrend points={summary.collectionTrend} range={range} />
 
-      <DashboardWorkPanel
-        title={en.dashboard.accountingWorkspace}
-        description={en.dashboard.accountingWorkspaceHelp}
-        items={[
-          {
-            label: en.dashboard.reviewVoidRequests,
-            detail: en.dashboard.reviewVoidRequestsHelp,
-            to: "/voids",
-            icon: FileClock,
-            meta: summary.pendingVoidApprovals,
-          },
-          {
-            label: en.dashboard.signOffCloseouts,
-            detail: en.dashboard.signOffCloseoutsHelp,
-            to: "/closeout/history",
-            icon: ReceiptText,
-            meta: summary.unsignedCloseouts,
-          },
-          {
-            label: en.dashboard.financeSettings,
-            detail: en.dashboard.financeSettingsHelp,
-            to: "/settings/fees",
-            icon: Settings,
-          },
-        ]}
-      />
-
-      <section aria-labelledby="recent-activity-heading">
+      <section aria-labelledby="recent-activity-heading" className="rounded-md border border-border bg-white p-4 shadow-card">
         <RecentActivity payments={summary.recentActivity} range={range} />
       </section>
     </div>

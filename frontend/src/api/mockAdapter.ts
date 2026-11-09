@@ -1,111 +1,25 @@
 import { centavos } from "@/lib/money";
-import type { AuthenticatedUser } from "@/lib/types";
+import type { AuthenticatedUser, Role } from "@/lib/types";
+import {
+  billingAccounts,
+  CURRENT_MOCK_SCHOOL_YEAR,
+  getStudentById,
+  payments,
+  students,
+} from "@/api/mock";
+import { getMockState, mockApiDelay } from "@/api/mock";
 import type {
+  DashboardActivity,
   DashboardRange,
   DashboardSummary,
-  RecordPaymentInput,
+  DashboardStaffAccountSummary,
   RecentPayment,
 } from "./dashboardTypes";
+import type { BackupRecord } from "./backupApi";
 
-// All names below are obviously fake placeholder data (spec section 13).
-// Never replace these with real student records.
-const FAKE_STUDENT_NAMES = [
-  "Juan Dela Cruz (sample)",
-  "Maria Santos (sample)",
-  "Pedro Reyes (sample)",
-  "Ana Bautista (sample)",
-  "Jose Ramirez (sample)",
-];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-const RECENT_ACTIVITY_AGE_DAYS = [0, 0, 1, 3, 6, 8, 14, 22, 29, 45, 90, 180, 300];
-let nextMockReceiptNumber = 2000;
-
-function makeRecentActivity(): RecentPayment[] {
-  const statuses: RecentPayment["status"][] = ["posted", "posted", "void_pending", "voided"];
-  const now = Date.now();
-
-  return RECENT_ACTIVITY_AGE_DAYS.map((daysAgo, i) => ({
-    id: `mock-payment-${i}`,
-    time: new Date(
-      now - daysAgo * 24 * 60 * 60 * 1000 - (daysAgo === 0 ? 0 : i * 17 * 60 * 1000),
-    ).toISOString(),
-    studentName: FAKE_STUDENT_NAMES[i % FAKE_STUDENT_NAMES.length]!,
-    receiptNo: `OR-2026-${String(1000 + i)}`,
-    amount: centavos((1500 + i * 350) * 100),
-    method: "cash",
-    status: statuses[i % statuses.length]!,
-  }));
-}
-
-function activityForRange(
-  payments: RecentPayment[],
-  range: DashboardRange,
-): RecentPayment[] {
-  const days = {
-    today: 1,
-    last_7_days: 7,
-    last_30_days: 30,
-    school_year: null,
-  }[range];
-
-  if (days === null) return payments;
-
-  const now = new Date();
-  const cutoff =
-    range === "today"
-      ? startOfManilaDay(now)
-      : now.getTime() - days * 24 * 60 * 60 * 1000;
-  return payments.filter((payment) => Date.parse(payment.time) >= cutoff);
-}
-
-function financialTotalsForActivity(payments: RecentPayment[]): {
-  totalCollections: ReturnType<typeof centavos>;
-  paymentCount: number;
-} {
-  return {
-    totalCollections: centavos(
-      payments.reduce((total, payment) => total + payment.amount, 0),
-    ),
-    paymentCount: payments.length,
-  };
-}
-
-/**
- * Builds chart data from the same range-filtered activity that feeds the
- * dashboard. This prevents the trend from falling back to a fixed "today"
- * series when the selected range changes.
- */
-function collectionTrendForActivity(
-  payments: RecentPayment[],
-): { date: string; totalCollected: ReturnType<typeof centavos> }[] {
-  const totalsByDate = new Map<string, number>();
-
-  for (const payment of payments) {
-    const date = dateInputForManila(new Date(payment.time));
-    totalsByDate.set(date, (totalsByDate.get(date) ?? 0) + payment.amount);
-  }
-
-  return [...totalsByDate.entries()]
-    .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
-    .map(([date, totalCollected]) => ({
-      date,
-      totalCollected: centavos(totalCollected),
-    }));
-}
-
-function startOfManilaDay(value: Date): number {
-  const manilaOffsetMs = 8 * 60 * 60 * 1000;
-  const manilaDate = new Date(value.getTime() + manilaOffsetMs);
-  return (
-    Date.UTC(
-      manilaDate.getUTCFullYear(),
-      manilaDate.getUTCMonth(),
-      manilaDate.getUTCDate(),
-    ) - manilaOffsetMs
-  );
-}
-
-function dateInputForManila(value = new Date()): string {
+function dateInputForManila(value: Date): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Manila",
     year: "numeric",
@@ -115,112 +29,271 @@ function dateInputForManila(value = new Date()): string {
   const year = parts.find((part) => part.type === "year")?.value ?? "";
   const month = parts.find((part) => part.type === "month")?.value ?? "";
   const day = parts.find((part) => part.type === "day")?.value ?? "";
-
   return `${year}-${month}-${day}`;
 }
 
-function paymentDateToIso(paymentDate: string): string {
-  const todayInManila = dateInputForManila();
-
-  if (paymentDate === todayInManila) {
-    return new Date().toISOString();
-  }
-
-  return new Date(`${paymentDate}T12:00:00+08:00`).toISOString();
+function startOfManilaDay(value: Date): number {
+  const manilaOffsetMs = 8 * 60 * 60 * 1000;
+  const manilaDate = new Date(value.getTime() + manilaOffsetMs);
+  return Date.UTC(
+    manilaDate.getUTCFullYear(),
+    manilaDate.getUTCMonth(),
+    manilaDate.getUTCDate(),
+  ) - manilaOffsetMs;
 }
 
-/**
- * Simulates POST /payments. The mock adapter assigns the receipt number so the
- * UI does not invent or edit receipt numbers directly.
- */
-export async function recordMockPayment(
-  input: RecordPaymentInput,
-): Promise<RecentPayment> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
+function currentSchoolYearPayments(): RecentPayment[] {
+  return payments
+    .filter((payment) =>
+      billingAccounts.some(
+        (account) => account.id === payment.accountId && account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR,
+      ),
+    )
+    .map((payment): RecentPayment => ({
+      id: payment.id,
+      time: new Date(`${payment.paidOn}T12:00:00+08:00`).toISOString(),
+      studentName: getStudentById(payment.studentId)?.name ?? "Unavailable student",
+      receiptNo: payment.receiptNo,
+      amount: payment.amount,
+      method: "cash",
+      status:
+        payment.status === "Posted"
+          ? "posted"
+          : payment.status === "Void pending"
+            ? "void_pending"
+            : "voided",
+    }))
+    .sort((first, second) => Date.parse(second.time) - Date.parse(first.time));
+}
 
-  const receiptNo = `OR-2026-${String(nextMockReceiptNumber).padStart(6, "0")}`;
-  nextMockReceiptNumber += 1;
+function activityForRange(
+  allPayments: RecentPayment[],
+  range: DashboardRange,
+  now: Date,
+): RecentPayment[] {
+  if (range === "school_year") return allPayments;
 
+  const days = range === "today" ? 1 : range === "last_7_days" ? 7 : 30;
+  const cutoff = startOfManilaDay(now) - (days - 1) * DAY_MS;
+  return allPayments.filter((payment) => Date.parse(payment.time) >= cutoff);
+}
+
+function financialTotalsForActivity(paymentsInRange: RecentPayment[]) {
+  const collected = paymentsInRange.filter((payment) => payment.status !== "voided");
   return {
-    id: `mock-recorded-payment-${receiptNo}`,
-    time: paymentDateToIso(input.paymentDate),
-    studentName: input.studentName,
-    receiptNo,
-    amount: input.amount,
-    method: input.method,
-    status: "posted",
+    totalCollections: centavos(
+      collected.reduce((total, payment) => total + payment.amount, 0),
+    ),
+    paymentCount: collected.length,
   };
 }
 
-/**
- * Simulates GET /dashboard. Returns a role-specific summary, matching the
- * shape the real API layer is expected to return once implemented.
- */
+function collectionTrendForActivity(paymentsInRange: RecentPayment[]) {
+  const totalsByDate = new Map<string, number>();
+  for (const payment of paymentsInRange) {
+    if (payment.status === "voided") continue;
+    const date = dateInputForManila(new Date(payment.time));
+    totalsByDate.set(date, (totalsByDate.get(date) ?? 0) + payment.amount);
+  }
+  return [...totalsByDate.entries()]
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([date, totalCollected]) => ({ date, totalCollected: centavos(totalCollected) }));
+}
+
+function accountStatusOverview() {
+  const currentAccounts = billingAccounts.filter(
+    (account) => account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR,
+  );
+  return currentAccounts.reduce(
+    (counts, account) => {
+      if (account.balance === 0) counts.cleared += 1;
+      else if (account.status === "Overdue") counts.overdue += 1;
+      else if (account.status === "Due soon") counts.dueSoon += 1;
+      else counts.current += 1;
+      return counts;
+    },
+    { cleared: 0, current: 0, dueSoon: 0, overdue: 0 },
+  );
+}
+
+function accountsNeedingAttention() {
+  return billingAccounts
+    .filter(
+      (account) =>
+        account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR && account.balance > 0,
+    )
+    .sort((first, second) => second.balance - first.balance)
+    .map((account) => ({
+      id: account.id,
+      studentName: getStudentById(account.studentId)?.name ?? "Unavailable student",
+      amountDue: account.balance,
+      severity: account.status === "Overdue" ? ("error" as const) : ("warning" as const),
+    }));
+}
+
+function overdueBalance() {
+  return centavos(
+    billingAccounts
+      .filter((account) => account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR)
+      .flatMap((account) => account.schedule)
+      .filter((installment) => installment.status === "overdue")
+      .reduce(
+        (total, installment) => total + installment.amount - installment.paid,
+        0,
+      ),
+  );
+}
+
+function latestBackup() {
+  const backups = getMockState().backupRuns;
+  return backups[backups.length - 1];
+}
+
+function staffAccountSummary(): DashboardStaffAccountSummary {
+  const staff = getMockState().staffUsers;
+  const roleOrder: Role[] = [
+    "super_admin",
+    "administrator",
+    "accounting",
+    "cashier",
+    "auditor",
+    "registrar",
+  ];
+  const roles: DashboardStaffAccountSummary["byRole"] = roleOrder.map((role) => ({
+    role,
+    count: staff.filter((user) => user.role === role).length,
+  }));
+
+  return {
+    active: staff.filter((user) => user.active).length,
+    inactive: staff.filter((user) => !user.active).length,
+    privileged: staff.filter((user) => user.active && (user.role === "super_admin" || user.role === "administrator")).length,
+    byRole: roles,
+  };
+}
+
+function readableAuditAction(action: string): string {
+  return action
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function dashboardAuditActivity(): DashboardActivity[] {
+  const state = getMockState();
+  const staffNames = new Map(state.staffUsers.map((user) => [user.id, user.name]));
+  const records = state.auditLog as Array<{
+    id?: unknown;
+    action?: unknown;
+    actorId?: unknown;
+    occurredAt?: unknown;
+  }>;
+
+  return records
+    .filter((record) => typeof record.id === "string" && typeof record.action === "string" && typeof record.occurredAt === "string")
+    .map((record) => ({
+      id: record.id as string,
+      label: readableAuditAction(record.action as string),
+      actor: typeof record.actorId === "string" ? staffNames.get(record.actorId) ?? null : null,
+      occurredAt: record.occurredAt as string,
+    }))
+    .sort((first, second) => second.occurredAt.localeCompare(first.occurredAt));
+}
+
+function securityActivity(events: DashboardActivity[]): DashboardActivity[] {
+  return events.filter((event) => /^(Auth|User)/.test(event.label));
+}
+
+export async function listBackupRecords(): Promise<BackupRecord[]> {
+  await mockApiDelay();
+  return getMockState().backupRuns
+    .slice()
+    .sort((first, second) => second.occurredAt.localeCompare(first.occurredAt))
+    .map((backup) => ({
+      id: backup.id,
+      result: backup.succeeded ? "succeeded" : "failed",
+      sizeBytes: null,
+      error: null,
+      completedAt: backup.occurredAt,
+    }));
+}
+
+/** Development-only dashboard projection over the same synthetic billing records as student and payment workspaces. */
 export async function fetchDashboardSummary(
   user: AuthenticatedUser,
   range: DashboardRange = "last_7_days",
+  now = new Date(),
 ): Promise<DashboardSummary> {
-  // Simulate network latency for realistic loading states.
-  await new Promise((resolve) => setTimeout(resolve, 350));
-  const recentActivity = activityForRange(makeRecentActivity(), range);
-  const financialTotals = financialTotalsForActivity(recentActivity);
+  await mockApiDelay();
+  const allPayments = currentSchoolYearPayments();
+  const recentActivity = activityForRange(allPayments, range, now);
+  const rangeTotals = financialTotalsForActivity(recentActivity);
+  const todayActivity = activityForRange(allPayments, "today", now);
+  const todayTotals = financialTotalsForActivity(todayActivity);
+  const activeStudents = students.filter((student) => student.studentStatus === "Active").length;
+  const staffAccounts = staffAccountSummary();
+  const auditActivity = dashboardAuditActivity();
+  const configuration = getMockState().config;
+  const currentSchoolYear = getMockState().schoolYears.find((year) => year.id === configuration.currentSchoolYearId)?.label ?? null;
 
   switch (user.role) {
     case "cashier":
       return {
         role: "cashier",
-        overallEnrolledStudents: 60,
-        todayCollectionsTotal: financialTotals.totalCollections,
-        paymentsTodayCount: financialTotals.paymentCount,
-        failedEmailCount: 2,
-        closeoutDone: false,
-        accountStatusOverview: {
-          cleared: 28,
-          current: 21,
-          dueSoon: 6,
-          overdue: 5,
-        },
-        accountsNeedingAttention: [
-          {
-            id: "attention-1",
-            studentName: "Carlo Reyes (sample)",
-            amountDue: centavos(2100000),
-            severity: "warning",
-          },
-          {
-            id: "attention-2",
-            studentName: "Luis Torres (sample)",
-            amountDue: centavos(2100000),
-            severity: "error",
-          },
-        ],
+        overallEnrolledStudents: activeStudents,
+        todayCollectionsTotal: todayTotals.totalCollections,
+        paymentsTodayCount: todayTotals.paymentCount,
+        rangeCollectionsTotal: rangeTotals.totalCollections,
+        paymentsInRangeCount: rangeTotals.paymentCount,
+        failedEmailCount: getMockState().notificationAttempts.filter((attempt) => attempt.channel === "Email" && attempt.status === "Failed").length,
+        closeoutDone: getMockState().closeouts.length > 0,
+        accountStatusOverview: accountStatusOverview(),
+        accountsNeedingAttention: accountsNeedingAttention(),
         recentActivity,
       };
     case "accounting":
       return {
         role: "accounting",
-        overallEnrolledStudents: 60,
-        pendingVoidApprovals: 3,
-        overdueTotal: centavos(18240000),
-        unsignedCloseouts: 2,
+        overallEnrolledStudents: activeStudents,
+        pendingVoidApprovals: payments.filter((payment) => payment.status === "Void pending").length,
+        overdueTotal: overdueBalance(),
+        unsignedCloseouts: getMockState().closeouts.length,
         collectionTrend: collectionTrendForActivity(recentActivity),
         recentActivity,
       };
     case "administrator":
       return {
         role: "administrator",
-        lastBackupAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        lastBackupSucceeded: true,
-        activeUserCount: 14,
-        failedLoginCount: 2,
+        lastBackupAt: latestBackup()?.occurredAt ?? null,
+        lastBackupSucceeded: latestBackup()?.succeeded ?? null,
+        activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
+        staffAccounts,
+        configuration: {
+          schoolYear: currentSchoolYear,
+          gradeLevelCount: configuration.grades.length,
+          paymentMethodCount: configuration.paymentMethods.length,
+        },
+        recentAdministrativeActivity: auditActivity,
+        securityEvents: securityActivity(auditActivity),
+      };
+    case "super_admin":
+      return {
+        role: "super_admin",
+        lastBackupAt: latestBackup()?.occurredAt ?? null,
+        lastBackupSucceeded: latestBackup()?.succeeded ?? null,
+        activeUserCount: getMockState().staffUsers.filter((staff) => staff.active).length,
+        staffAccounts,
+        recentAdministrativeActivity: auditActivity,
+        securityEvents: securityActivity(auditActivity),
       };
     case "auditor":
       return {
         role: "auditor",
-        overallEnrolledStudents: 60,
-        todayCollectionsTotal: financialTotals.totalCollections,
-        paymentsTodayCount: financialTotals.paymentCount,
-        recentActivity,
+        overallEnrolledStudents: activeStudents,
+        todayCollectionsTotal: todayTotals.totalCollections,
+        paymentsTodayCount: todayTotals.paymentCount,
+        rangeCollectionsTotal: rangeTotals.totalCollections,
+        paymentsInRangeCount: rangeTotals.paymentCount,
+        recentAuditActivity: auditActivity,
       };
     case "registrar":
       return { role: "registrar" };

@@ -1,5 +1,11 @@
 # Scope and Access Control
 
+> **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
+
+> **Approved operational reassignment — November 5, 2026.** Older clearance, permit, and Cashier student-editing provisions are superseded. Registrar may view and manage the shared Students module's basic records, grade, section, and enrollment status without financial or guardian data. Cashier may view the shared module and perform approved billing actions, but cannot create or edit students. Accounting keeps its financial oversight permissions. Clearance and exam permits are not active features.
+
+> **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.
+
 > Source-derived view extracted from the canonical Project Specification. Do not edit independently of the master specification.
 
 ## 2. Scope
@@ -33,10 +39,11 @@ Where this specification is silent, do the simplest thing that fits the rules in
 
 | Code | Role name | TS role key | Summary |
 |---|---|---|---|
+| `SAD` | Super Admin | `super_admin` | Governance, protected bootstrap account, user administration, security events, audit oversight. No payment or finance operations. |
 | `ADM` | Administrator | `admin` | Users, system settings, backups. Does **not** record payments. |
 | `CSH` | Cashier | `cashier` | Daily operations: accounts, payments, receipts, follow-up, close-out. |
 | `ACC` | Accounting Officer | `accounting` | Finance settings, void approvals, sign-off, reports. |
-| `AUD` | Auditor | `auditor` | **Strictly read-only** across finance data and logs. |
+| `AUD` | Auditor | `auditor` | Read-only Audit Review workspace and approved audit summary. |
 | `REG` | Enrollment / Registrar | `registrar` | Clearance lookup and exam permit only. Sees no amounts. |
 
 **Access-note vocabulary:** "own" = only records the user created; "own day" = only the current day's activity; "limited" = reduced fields (noted per module).
@@ -54,59 +61,63 @@ Where this specification is silent, do the simplest thing that fits the rules in
 
 `F` = full access to the module's operations for that role, `R` = read-only, `L` = limited (see module notes), `-` = no access.
 
-| # | Module | ADM | CSH | ACC | AUD | REG |
+| # | Module | SAD | ADM | CSH | ACC | AUD | REG |
 |---|---|---|---|---|---|---|
-| M0 | Dashboard & Navigation | F | F | F | R | L |
-| M1 | User Management | F | L (own profile) | L (own profile) | L (own profile) | L (own profile) |
-| M2 | Students & Guardians | F | F | R | R | L |
-| M3 | Billing Accounts | R | F | R | R | - |
-| M4 | Payments & Receipts | R | F | R (+ reprint) | R | - |
-| M5 | Void Control / Receipt Integrity | R | L (request) | F (approve) | R | - |
-| M6 | Email Notifications | F | L | R | R | - |
-| M7 | Reports | F | L (own day + student statement) | F | R | - |
-| M8 | Audit & Backup | F | - | R (audit only) | R (audit only) | - |
-| M9 | Settings | F (system) / R (finance) | - | F (finance) / R (system) | R | - |
-| M10 | Clearance & Exam Permit | R | F | R | R | F (limited) |
-| M11 | Installments & Follow-up | - | F | F | R | - |
-| M12 | Ledger Import | F | F | - | - | - |
-| M13 | End-of-Day Close-out | R | F | F (sign-off) | R | - |
-| M14 | Shareable PDF Receipt | - | F | F | - | - |
+| M0 | Dashboard & Navigation | F (system governance) | F | F | F | R | L |
+| M1 | User Management | F (privileged lifecycle) | F | L (own profile) | L (own profile) | L (own profile) | L (own profile) |
+| M2 | Students & Guardians | - | - | F | R (workflow context) | - | - |
+| M3 | Billing Accounts | - | - | F | R (workflow context) | - | - |
+| M4 | Payments & Receipts | - | - | F | R (workflow context) | - | - |
+| M5 | Void Control / Receipt Integrity | - | - | L (request/status) | F (queue/decision) | - | - |
+| M6 | Notifications | - | - | L (combined follow-up workspace) | R (combined follow-up workspace) | - | - |
+| M7 | Reports | - | - | - | F | - | - |
+| M8 | Audit & Backup | F (audit/security and backup-status oversight) | F (security events/backup management) | - | - | R (Audit Review) | - |
+| M9 | Settings | - | F (system) | - | F (finance) / R (required system settings) | - | - |
+| M10 | Clearance & Exam Permit | - | - | - | - | - | F (limited) |
+| M11 | Installments & Follow-up | - | - | F | F | - | - |
+| M12 | Ledger Import | - | - | - | - | - | - |
+| M13 | End-of-Day Close-out | - | - | F (submit/own history) | F (review/sign-off) | - | - |
+| M14 | Shareable PDF Receipt | - | - | F | F | - | - |
 
-> M9's cell is expanded from the original handoff — see Reconciliation item 3 in Section 30: ADM and AUD both get read access to finance settings, and ACC gets read access to system settings, in addition to their write scopes.
+> The settings access cells reflect the current role simplification: Administrator manages system settings; Accounting manages finance settings and reads required system configuration; Auditor has no settings workspace. This supersedes the earlier Reconciliation item 3 proposal.
 
 ### 6.4 Capability matrix
 
-This is the authoritative, implementation-level list for `src/auth/permissions.ts`. `F` = full/write access, `R` = read-only, blank = no access. Keep it in one config file so it stays easy to change; treat it as a proposal awaiting final client confirmation (see Section 31).
+This is the implementation-level role list. `F` = full/write access, `R` = read-only, blank = no access. The requester authorized implementation of the proposed Super Admin as a separate governance role. Super Admin is limited to user lifecycle, security events, audit oversight, and backup status; it receives no student, billing, payment-recording, finance-setting, void-approval, or report-operation capabilities. Administrator retains day-to-day system configuration; Accounting retains finance operations; Auditor retains the independent Audit Review workspace; Registrar retains clearance. External client acceptance and unresolved bootstrap recovery/second-person policy remain tracked in Section 31.
 
-| Capability | ADM | CSH | ACC | AUD | REG |
+| Capability | SAD | ADM | CSH | ACC | AUD | REG |
 |---|---|---|---|---|---|
-| `user.manage` (create, deactivate, reset password) | F | | | | |
-| `settings.system` (school info, receipt, email, school year) | F | | R | R | |
-| `settings.finance` (fees, plans, clearance rules) | R | | F | R | |
-| `student.view` | F | F | F | F | L* |
-| `student.edit` (basic info, guardian) | F | F | | | |
-| `account.view` | F | F | F | F | |
-| `account.create` | | F | | | |
-| `payment.record` | | F | | | |
-| `payment.view` | F | F (own by default) | F | F | |
-| `payment.void.request` | | F | | | |
-| `payment.void.view` | F | | F | F | |
-| `payment.void.approve` | | | F | | |
-| `receipt.reprint` (logged) | R (view only) | F | F | R (view only) | |
-| `statement.print` (student statement of account) `NEW` | | F | F | | |
-| `followup.view` | | F | F | F | |
-| `followup.send` (approve reminder batch) | | F | F | | |
-| `clearance.view` | F | F | F | F | F* |
-| `permit.print` | | F | | | F |
-| `closeout.submit` | | F | | | |
-| `closeout.signoff` | | | F | | |
-| `closeout.view` | F | F (own) | F | F | |
-| `report.view` | F | L (own day only) | F | F | |
-| `notification.view` | F | F | F | F | |
-| `notification.retry` | F | F | | | |
-| `import.run` | F | F | | | |
-| `audit.view` | F | | F | F | |
-| `backup.manage` | F | | | | |
+| `user.manage` (controlled lifecycle; bootstrap Super Admin excluded) | F | F | | | | |
+| `settings.system` (school info, receipt, email, school year) | | F | | R | | |
+| `settings.finance` (fees, plans, clearance rules) | | | | F | | |
+| `student.view` | | | F | F | | F |
+| `student.edit` (basic student info) | | | | | | F |
+| `student.financial.view` (student list/profile balance only) | | | F | F | | F |
+| `guardianContact.view` (student profile contact details) | | | F | F | | F |
+| `account.view` | | | F | F | | |
+| `account.create` | | | F | | | |
+| `payment.record` | | | F | | | |
+| `payment.view` | | | F (own by default) | F | | |
+| `payment.void.request` | | | F | | | |
+| `payment.void.view` | | | | F | | |
+| `payment.void.approve` | | | | F | | |
+| `receipt.reprint` (logged) | | | F | F | | |
+| `statement.print` (student statement of account) `NEW` | | | | F | | |
+| `followup.view` | | | F | F | | |
+| `followup.send` (approve reminder batch) | | | F | F | | |
+| `clearance.lookup` (limited student identity search for clearance) | | | | | | F* |
+| `clearance.view` | | | | | | F* |
+| `permit.print` | | | | | | F |
+| `closeout.submit` | | | F | | | |
+| `closeout.signoff` | | | | F | | |
+| `closeout.view` | | | F (own) | F | | |
+| `report.view` | | | | F | | |
+| `notification.view` | | | F | F | | |
+| `notification.retry` | | | F | | | |
+| `import.run` | | | | | | |
+| `security.events.view` (account and authentication events) | F | F | | | | |
+| `audit.view` (financial/change audit) | F | | | | F | |
+| `backup.manage` | | F | | | | |
 
 \* **Registrar (`REG`)** sees only: student name, student number, grade and section, and clearance status with a reason that **hides amounts**. No payment history, no guardian contact details, no account details — see Section 6.2, rule 5, and the reconciliation in Section 30, item 2.
 
@@ -115,24 +126,28 @@ This is the authoritative, implementation-level list for `src/auth/permissions.t
 
 ### 6.5 Per-role summary
 
+**SAD — Super Admin**
+**Can:** use the system-governance dashboard; provision the initial protected account only through the trusted server-console bootstrap command; create and manage non-Super-Admin staff accounts (including Administrators, but not Accounting Officers pending policy); review security events and the financial/change audit; view backup status; change their own password.
+**Cannot:** record payments, create billing accounts, manage finance settings, request or approve voids, sign off close-outs, send notifications, run backups, access student or financial-operation workspaces, assign another Super Admin, or modify/reset/deactivate the protected bootstrap account. No second-person recovery or break-glass policy is implemented until MCA defines it.
+
 **ADM — Administrator**
-**Can:** manage users (M1.3); view all finance data read-only (M2–M5, M7, M10, M13); export reports (M7); manage system settings — school year, terms, grade levels, sections, payment methods, receipt, email (M9.4–M9.6); manage the reminder template and send test emails (M6.4); retry failed emails (M6.2); run ledger imports (M12); view the audit log (M8.1) and manage backups (M8.2); add and edit students and guardians (M2); read finance settings (M9.1–M9.3).
-**Cannot:** record payments, create accounts, add adjustments, request or approve voids, edit fees/plans/clearance rules, print exam permits, submit or sign off close-outs, send reminder batches.
+**Can:** manage user accounts (M1.3); manage system settings — school year, terms, grade levels, sections, payment methods, receipt, and email configuration (M9.4–M9.6); review authentication/account-administration security events; manage backups (M8.2); view the system dashboard (backup and active-user status) and change their own password.
+**Cannot:** access student, guardian, billing-account, payment, receipt, void, notification, clearance, follow-up, close-out, or financial-report workspaces; view or manage finance settings; print exam permits; send reminders; retry notifications; run ledger imports; view the finance/change audit log; record payments or create accounts.
 
 **CSH — Cashier**
-**Can:** add/edit students and guardians (M2); create accounts and adjustments (M3); record payments (M4.1); view their own history (M4.2); print and reprint receipts (M4.3); request voids (M5); view and retry notifications (M6.2); run the daily report for their own day and print student statements (M7.1, M7.4); look up clearance and print exam permits (M10); use the follow-up list and send reminder batches (M11); run ledger imports (M12); perform close-out (M13); generate PDF receipts (M14); change their own password.
-**Cannot:** approve voids, edit settings, manage users, view the audit log or backups, view monthly or outstanding-balance reports, see other cashiers' history by default, sign off close-outs.
+**Can:** add/edit students and guardians (M2); create accounts and adjustments (M3); record payments (M4.1); view their own history and void-request status (M4.2); print and reprint receipts (M4.3); request voids (M5); review/retry notification attempts only within the combined follow-up workspace (M6.2); use the follow-up list and send reminder batches (M11); perform close-out and review their own close-out history (M13); change their own password. Clearance status may appear only as supporting context in an authorized student/payment workflow.
+**Cannot:** approve voids, access standalone reports/student statements, manage fees/system settings or users, access standalone notification/clearance/permit/import workspaces, view the audit log or backups, see other cashiers' history by default, or sign off close-outs.
 
 **ACC — Accounting Officer**
-**Can:** edit fee schedules, plans, and clearance rules (M9.1–M9.3); approve or reject voids (M5); run and export all reports (M7); sign off close-outs (M13.4); reprint receipts and generate PDF receipts (M4.3, M14); view accounts, payments, and notifications (read-only); view follow-up and send reminder batches (M11); view the audit log (M8.1); read system settings (M9.4–M9.6).
-**Cannot:** record payments, create accounts, add adjustments (see Section 31, adjustment-threshold item), manage users, run backups, run ledger imports, edit school or receipt settings.
+**Can:** edit fee schedules, plans, and clearance rules (M9.1–M9.3); approve or reject voids (M5); run and export all reports (M7); sign off close-outs (M13.4); reprint receipts and generate PDF receipts (M4.3, M14); view accounts, payments, and notifications (read-only); view follow-up and send reminder batches (M11); read system settings (M9.4–M9.6).
+**Cannot:** record payments, create accounts, add adjustments (see Section 31, adjustment-threshold item), manage users, run backups, run ledger imports, manage school and receipt settings, or open the Auditor's Audit Review workspace. System settings are read-only only where required by the current proposal.
 
 **AUD — Auditor**
-**Can (all read-only):** students, accounts, payments, receipts, void history, notifications, all reports (with export), the audit log, clearance lookup, the follow-up list, close-out history, and all settings screens.
-**Cannot:** create, edit, approve, send, print permits, retry emails, run backups, or change anything at all.
+**Can (read-only):** use one Audit Review workspace for finance/change audit evidence. The dashboard may show the approved read-only oversight summary.
+**Cannot:** use separate student, billing, payment, void, notification, report, clearance, follow-up, close-out, or settings pages; create, edit, approve, send, print permits, retry notifications, run backups, or change anything.
 
 **REG — Enrollment / Registrar**
-**Can:** search students (name, student number, grade and section only); view enrollment and exam-clearance status with a reason that hides amounts (M10.1); print exam permits for cleared periods (M10.2); change their own password.
-**Cannot:** see amounts, payments, accounts, guardian contact details, reports, settings, or anything else.
+**Can:** search permitted student identity fields only for clearance (`clearance.lookup`); view enrollment/exam clearance status with an amount-free reason; print permits for cleared periods; change their own password.
+**Cannot:** browse the general student directory/profile, see amounts, payments, accounts, guardian contacts, reports, billing settings, or other finance/operations workspaces.
 
 ---

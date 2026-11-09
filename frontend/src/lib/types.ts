@@ -1,14 +1,19 @@
 export type Role =
+  | "super_admin"
   | "cashier"
   | "accounting"
   | "administrator"
   | "auditor"
   | "registrar";
 
+export type StudentGender = "Male" | "Female";
+
 export interface AuthenticatedUser {
   id: string;
   name: string;
   role: Role;
+  mustChangePassword?: boolean;
+  lastLoginAt?: string | null;
 }
 
 /**
@@ -17,15 +22,14 @@ export interface AuthenticatedUser {
  */
 export type Capability =
   | "dashboard.view"
-  | "student.view" | "student.edit"
-  | "account.view" | "account.create"
-  | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.view" | "payment.void.approve" | "receipt.reprint" | "receipt.pdf"
+  | "student.view" | "student.edit" | "student.financial.view"
+  | "account.view" | "account.create" | "account.adjust"
+  | "payment.view" | "payment.record" | "payment.void.request" | "payment.void.view" | "payment.void.approve" | "receipt.reprint"
   | "followup.view" | "followup.send"
-  | "clearance.view" | "permit.print"
   | "report.view" | "statement.print"
   | "notification.view" | "notification.retry"
-  | "settings.system" | "settings.finance"
+  | "settings.finance.view" | "settings.finance.manage"
+  | "settings.system.view" | "settings.system.manage"
   | "user.manage" | "closeout.submit" | "closeout.signoff" | "closeout.view"
-  | "import.run" | "audit.view" | "backup.manage"
-  | "finance.amounts.view"
+  | "import.run" | "audit.view" | "security.events.view" | "backup.manage"
   | "guardianContact.view";

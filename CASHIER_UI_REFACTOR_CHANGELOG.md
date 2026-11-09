@@ -10,6 +10,8 @@
 | Sidebar top-level Follow-up and separate Notification Log destination | Consolidated Reminders & Notifications sidebar/page tabs | `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/i18n/en.ts` | Group related operational activities while preserving distinct workflows | Due follow-up selection/send action, Notification Log statuses Queued/Sent/Failed, failed retry visibility | `/followup`, `/notifications` | `npx tsc -b --pretty false`, focused Vitest, full `npm test`, and `npm run build` passed |
 | Close-out and Close-out History as separate visible areas | Daily Close-out with Today's Close-out and History tabs | `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/features/operations/OperationalPages.tsx` | Keep close-out operations and history together without changing authorization | Counted cash, variance reason, review action, history lookup, sign-off visibility | `/closeout`, `/closeout/history` | `npx tsc -b --pretty false`, focused Vitest, full `npm test`, and `npm run build` passed |
 | Non-cash payment method text in current working copy | Cash-only payment method restored | `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/i18n/en.ts` | Approved scope says transactions are recorded as cash only | Cash payment flow and receipt display | `/payments`, `/payments/new`, `/settings/school` | `npx tsc -b --pretty false`, focused Vitest, full `npm test`, and `npm run build` passed |
+| Interaction-audit defects across shell and mock workflows | Responsive shell plus accessible confirmation/completion behavior | `frontend/src/components/layout/`, `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/features/dashboard/components/RecentActivity.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/lib/status.ts` | Resolve documented mobile, keyboard, contrast, target-size, and incomplete-flow violations | Existing routes and mock-only boundary retained; direct-route checks and Registrar privacy preserved | Authenticated shell, payment, accounts, voids, follow-up, close-out, and user administration | Full Vitest suite (60), production build, Chromium/Playwright role-route, viewport, workflow, and axe rechecks passed |
+| Forgot-password help appearing below the login form | Reserved help area keeps the centered login content in place when the instruction opens | `frontend/src/features/auth/LoginPage.tsx`, `frontend/src/test/login.test.tsx` | Prevent the new instruction from shifting the login form and page spacing | Forgot-password toggle and administrator reset instruction remain unchanged | `/login` | Focused login tests (12) and production build passed |
 
 ## Navigation Before vs. After
 
@@ -23,6 +25,7 @@ After for Cashier-facing operations: Dashboard; Students; Billing Accounts; Paym
 - Passed: `npx vitest run src/test/operations.test.tsx src/test/dashboard.test.tsx`
 - Passed: `npm test`
 - Passed: `npm run build`
+- Current login-layout fix: focused login tests (12) and `npm run build` passed.
 
 ## Remaining Issues
 

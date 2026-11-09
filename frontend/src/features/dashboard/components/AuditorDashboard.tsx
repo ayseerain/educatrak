@@ -1,57 +1,19 @@
-import { DashboardStatCard } from "./DashboardStatCard";
-import { DashboardWorkPanel } from "./DashboardWorkPanel";
-import { RecentActivity } from "./RecentActivity";
-import { Banknote, ShieldCheck, ReceiptText, Users } from "lucide-react";
+import { AuditActivityPreview } from "./AuditActivityPreview";
 import { en } from "@/i18n/en";
-import { format } from "@/lib/money";
-import type { AuditorDashboardSummary, DashboardRange } from "@/api/dashboardTypes";
-import { financialStatLabelsForRange } from "./dashboardRangeLabels";
+import type { AuditorDashboardSummary } from "@/api/dashboardTypes";
 
 interface AuditorDashboardProps {
   summary: AuditorDashboardSummary;
-  range: DashboardRange;
 }
 
-export function AuditorDashboard({ summary, range }: AuditorDashboardProps) {
-  const statLabels = financialStatLabelsForRange(range);
-
+export function AuditorDashboard({ summary }: AuditorDashboardProps) {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-3">
-        <DashboardStatCard
-          label={en.dashboard.overallEnrolledStudents}
-          value={String(summary.overallEnrolledStudents)}
-          icon={Users}
-        />
-        <DashboardStatCard
-          label={statLabels.collections}
-          value={format(summary.todayCollectionsTotal)}
-          icon={Banknote}
-        />
-        <DashboardStatCard
-          label={statLabels.payments}
-          value={String(summary.paymentsTodayCount)}
-          icon={ReceiptText}
-        />
-      </div>
-
-      <DashboardWorkPanel
-        title={en.dashboard.auditorWorkspace}
-        description={en.dashboard.auditorWorkspaceHelp}
-        items={[
-          {
-            label: en.dashboard.openAuditReview,
-            detail: en.dashboard.openAuditReviewHelp,
-            to: "/admin/audit-log",
-            icon: ShieldCheck,
-          },
-        ]}
-      />
-
-      {/* Auditor view is read-only: no showActions, no record/void/approve controls. */}
-      <section aria-labelledby="recent-activity-heading">
-        <RecentActivity payments={summary.recentActivity} range={range} />
-      </section>
-    </div>
+    <AuditActivityPreview
+      title={en.dashboard.auditActivity}
+      description={en.dashboard.auditActivityHelp}
+      entries={summary.recentAuditActivity}
+      emptyMessage={en.dashboard.noAuditActivity}
+      emptyStateClassName="flex min-h-56 items-center"
+    />
   );
 }

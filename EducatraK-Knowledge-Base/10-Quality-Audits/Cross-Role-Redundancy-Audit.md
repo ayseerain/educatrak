@@ -4,6 +4,8 @@
 >
 > **Owner decisions:** (1) One **Students & Billing** area with billing inside each Student Profile; retain distinct student/account records. (2) Retain the **same shared payment form inline** in Student Profile and at `/payments/new`. (3) Cover Administrator, Cashier, Accounting Officer, Auditor, Registrar. (4) Include duplication, access control, data consistency, and workflow gaps. (5) Small independently testable phases with owner approval gates.
 
+**Role coverage update:** This 2026-10-08 baseline predates the user-authorized Super Admin. Its five-role findings and invariants are historical; current six-role access and simplified workspaces are defined by Project Specification Sections 6.4–6.5 and the active Mockup-Based Role UI Implementation Plan. Revalidate every finding against current source before acting.
+
 ## Authority and scope
 
 Read `00-Project-Core/Project-Specification.md`, `01-Requirements/`, `05-Testing/`, `06-Decisions/`, and current `frontend/src/`. The prior `09-References/Frontend-Prototype/` is historical, not live source. The current `07-AI-Agents/Frontend-Build-and-Audit-Manual.md` is a **separate build/audit loop**; this document covers targeted post-refactor remediation, not a declaration that its formal audit phase is complete. Where the owner-approved navigation decision conflicts with the canonical screen inventory, obtain documented approval and reconcile the canonical specification before treating new routes as requirements.

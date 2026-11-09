@@ -28,6 +28,25 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'sms' => [
+        'load_fee_cents' => env('SMS_LOAD_FEE_CENTS'),
+    ],
+
+    'reminders' => [
+        'enabled' => env('REMINDER_DELIVERY_ENABLED', false),
+    ],
+
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
+        'from' => env('TWILIO_FROM'),
+    ],
+
+    'user_archive' => [
+        'retention_days' => (int) env('USER_ARCHIVE_RETENTION_DAYS', 30),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
