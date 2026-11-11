@@ -141,7 +141,7 @@ describe("operational page navigation", () => {
         </MemoryRouter>,
       );
 
-      await user.type(screen.getByLabelText(/Student number/), "S-2000");
+      await user.type(screen.getByLabelText(/LRN/), "000000000920");
       await user.type(screen.getByLabelText(/Student name/), "Taylor Student");
       await user.click(screen.getByRole("button", { name: "Grade level" }));
       await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
@@ -177,7 +177,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText(/Student number/), "S-2101");
+    await user.type(screen.getByLabelText(/LRN/), "000000000921");
     await user.type(screen.getByLabelText(/Student name/), "Morgan Sample (sample)");
     await user.click(screen.getByRole("button", { name: "Grade level" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
@@ -201,7 +201,7 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("button", { name: "Gender" })).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("button", { name: "Gender" })).toHaveFocus();
     expect(screen.getByLabelText(/Student name/)).toHaveValue("Morgan Sample (sample)");
-    expect(getMockState().students.some((student) => student.number === "S-2101")).toBe(false);
+    expect(getMockState().students.some((student) => student.lrn === "000000000921")).toBe(false);
   });
 
   it("cancels student creation without writing the unfinished record", async () => {
@@ -216,12 +216,12 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText(/Student number/), "S-2103");
+    await user.type(screen.getByLabelText(/LRN/), "000000000923");
     await user.type(screen.getByLabelText(/Student name/), "Casey Sample (sample)");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students");
-    expect(getMockState().students.some((student) => student.number === "S-2103")).toBe(false);
+    expect(getMockState().students.some((student) => student.lrn === "000000000923")).toBe(false);
   });
 
   it("prefills and saves personal fields when editing a student", async () => {
@@ -229,7 +229,7 @@ describe("operational page navigation", () => {
     const user = userEvent.setup();
     try {
       const created = createMockStudent({
-      number: "S-2102", name: "Riley Sample (sample)", grade: "Grade 7", section: "Olive",
+      lrn: "000000000922", name: "Riley Sample (sample)", grade: "Grade 7", section: "Olive",
       dateOfBirth: "2011-02-28", gender: "Male", residentialAddress: "5 Sample Lane, Cavite",
       });
       render(
@@ -781,7 +781,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText(/search students/i), "S-1003{Enter}");
+    await user.type(screen.getByLabelText(/search students/i), "000000000003{Enter}");
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/students/sample-1003");
     expect(screen.getByRole("heading", { name: /cora navarro/i })).toBeInTheDocument();
@@ -842,7 +842,7 @@ describe("operational page navigation", () => {
     await user.click(screen.getByRole("link", { name: "Create account" }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/accounts/new?student=sample-1004");
-    expect(screen.getByPlaceholderText("Search student name or number")).toHaveValue("Dara Santos (sample) - S-1004");
+    expect(screen.getByPlaceholderText("Search student name or LRN")).toHaveValue("Dara Santos (sample) - 000000000004");
     expect(screen.queryByText("Date of birth")).not.toBeInTheDocument();
     expect(screen.queryByText("Gender")).not.toBeInTheDocument();
     expect(screen.queryByText("Residential address")).not.toBeInTheDocument();
@@ -860,7 +860,7 @@ describe("operational page navigation", () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText(/student search/i), "S-1001");
+    await user.type(screen.getByLabelText(/student search/i), "000000000001");
     expect(screen.getByRole("listbox", { name: "Matching students" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close suggestions" }));
     expect(screen.queryByRole("listbox", { name: "Matching students" })).not.toBeInTheDocument();
@@ -871,7 +871,7 @@ describe("operational page navigation", () => {
     expect(screen.queryByRole("listbox", { name: "Matching students" })).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/student search/i), " ");
-    await user.click(screen.getByRole("option", { name: /Amara Villanueva.*S-1001/i }));
+    await user.click(screen.getByRole("option", { name: /Amara Villanueva.*000000000001/i }));
 
     expect(screen.getByLabelText("Current path")).toHaveTextContent("/payments/new");
     expect(screen.getAllByText("Amara Villanueva (sample)").length).toBeGreaterThan(0);
@@ -1194,8 +1194,8 @@ describe("operational page navigation", () => {
 
     await user.click(trigger);
 
-    expect(screen.getAllByRole("menuitemradio", { name: /Amara Villanueva.*S-1001/i })).toHaveLength(1);
-    await user.click(screen.getByRole("menuitemradio", { name: /Basil Mercado.*S-1002/i }));
+    expect(screen.getAllByRole("menuitemradio", { name: /Amara Villanueva.*000000000001/i })).toHaveLength(1);
+    await user.click(screen.getByRole("menuitemradio", { name: /Basil Mercado.*000000000002/i }));
     expect(screen.getByRole("status", { name: "Current path" })).toHaveTextContent("/reports/student/sample-1002");
     expect(screen.getAllByText(/Basil Mercado/i, { ignore: ".print-root *, script, style" }).length).toBeGreaterThan(0);
   });
@@ -1359,7 +1359,7 @@ describe("operational page navigation", () => {
     try {
       const student = getStudentById("sample-1001")!;
       updateMockStudent(student.id, {
-        number: student.number,
+        lrn: student.lrn,
         name: student.name,
         grade: student.grade,
         section: student.section,
@@ -1386,7 +1386,7 @@ describe("operational page navigation", () => {
       expect(screen.queryByRole("heading", { name: "Access denied" })).not.toBeInTheDocument();
       expect(screen.getByRole("heading", { name: /amara villanueva/i })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Academic information" })).toBeInTheDocument();
-      expect(screen.getByText("Student number").parentElement).toHaveTextContent(student.number);
+      expect(screen.getByText("LRN").parentElement).toHaveTextContent(student.lrn);
       expect(screen.getByText("Enrollment status").parentElement).toHaveTextContent("Active");
       expect(screen.getByRole("heading", { name: "Personal information" })).toBeInTheDocument();
       expect(screen.getByText("Date of birth").parentElement).toHaveTextContent("Jun 15, 2012");
@@ -1423,7 +1423,7 @@ describe("operational page navigation", () => {
   it("shows clear empty values when personal details are missing", () => {
     const before = mockSnapshot();
     try {
-      const student = createMockStudent({ number: "S-9003", name: "Synthetic Student (sample)", grade: "Grade 7", section: "Olive" });
+      const student = createMockStudent({ lrn: "000000000903", name: "Synthetic Student (sample)", grade: "Grade 7", section: "Olive" });
       render(
         <MemoryRouter initialEntries={[`/students/${student.id}`]}>
           <Routes><Route path="/students/:id" element={<StudentProfilePage user={registrar} />} /></Routes>

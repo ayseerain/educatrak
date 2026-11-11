@@ -10,7 +10,7 @@ export function studentMatchesSearch(student: Student, query: string) {
   return (
     !normalizedQuery ||
     student.name.toLocaleLowerCase().startsWith(normalizedQuery) ||
-    student.number.toLocaleLowerCase().startsWith(normalizedQuery)
+    student.lrn.toLocaleLowerCase().startsWith(normalizedQuery)
   );
 }
 

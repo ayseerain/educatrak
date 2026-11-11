@@ -581,7 +581,7 @@ export async function getPaymentContext(studentId: string): Promise<PaymentConte
 
 export async function recordCashPaymentForStudent(input: {
   billingAccountId: string;
-  studentNumber?: string;
+  studentLrn?: string;
   amount: ReturnType<typeof centavos>;
   paidOn: string;
   backdateReason?: string;
@@ -595,7 +595,7 @@ export async function recordCashPaymentForStudent(input: {
     // a detached success response that account and receipt views cannot see.
     const payment = recordMockBillingPayment({
       billingAccountId: input.billingAccountId,
-      studentNumber: input.studentNumber ?? "",
+      studentLrn: input.studentLrn ?? "",
       amount: input.amount,
       paidOn: input.paidOn,
     });

@@ -16,7 +16,7 @@ function SearchHarness() {
         value={query}
         onChange={setQuery}
         label="Search for a student"
-        placeholder="Name or student number"
+        placeholder="Name or LRN"
       />
       <output aria-label="Current path">{location.pathname}</output>
     </>
@@ -30,7 +30,7 @@ describe("StudentSearchField keyboard access", () => {
 
     const search = screen.getByRole("combobox", { name: "Search for a student" });
     await user.type(search, "Amara");
-    const option = await screen.findByRole("option", { name: /Amara Villanueva.*S-1001/ });
+    const option = await screen.findByRole("option", { name: /Amara Villanueva.*000000000001/ });
 
     await user.keyboard("{ArrowDown}");
     expect(search).toHaveAttribute("aria-activedescendant", "student-search-option-0");
