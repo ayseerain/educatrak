@@ -86,10 +86,9 @@ The branch did not contain the central
 changelog entry and a session-log entry were added. No issue tracker is
 present to update; the branch mismatch is recorded here for owner follow-up.
 
-The current task authorizes only these preparation documents and required
-logs. It does not authorize code, schema, branch synchronization, Part 1b,
-Part 2, or Part 3. The owner must review the contract, database findings, and
-open decision checklist before any later implementation phase.
+At the time of this historical Part 1 snapshot, authorization covered only
+preparation documents and required logs; it did not cover Part 1b, Part 2, or
+Part 3. The later owner approvals and Part 2 result are recorded below.
 
 ## 2026-11-09 current-branch readiness reconciliation
 
@@ -105,7 +104,40 @@ This section supersedes the historical nine-route / old-host snapshot above. Sel
 | Deployment/TLS/jobs | Owner says PHP/Composer/MySQL versions, topology, TLS owner and scheduler owner remain unverified. | Follow-up only. Do not treat 00:05/00:15 schedules as configured or verified. |
 | Development DB hardening | Documentation checklist only: secure DBA/root, use local loopback bind only when DB truly local, create limited app account, avoid root app credentials, protect credentials/backups. No commands executed. | Apply only in separately authorized environment setup. |
 | LAN readiness | Least-privilege service account and HTTPS before real student data crosses a network are deployment requirements; current topology/proxy not verified. | Confirm before real-data use. |
-| Documentation drift | Root README and backend README contain stale/boilerplate implementation descriptions; canonical role/clearance text includes historical descriptions. | Separate documentation scope; not edited here. |
-| Design/test readiness | API contract updated; DB review current. ERD, dictionary, reference SQL, diagrams and scratch checks absent. No schema approval. | B4 draft completion and B7 remain blocked. |
+| Documentation drift | Older consolidated specification text still contains retired clearance and exam-permit descriptions; active modules and role/workflow requirements are being reconciled to the November 5 retirement decision. Clearance tables/models remain historical only. | Keep historical schema; do not expose clearance routes or permissions. Reconcile remaining canonical documentation references in a documentation task. |
+| Design/test readiness | API contract updated; DB review current. ERD, dictionary, and descriptive reference SQL drafts now exist; no target-MySQL load, constraint check, or schema approval. | B4 documentation drafts are complete; B7 remains blocked. |
+| Part 1b detail audit | API contract now lists 51 routes individually and inventories all 65 MockDB function exports. Route summaries are linked to current action/middleware evidence; exact per-route validation/serialization fields and direct test assertions remain incomplete where controllers lack dedicated requests/resources. | Finish exact handler-level contract/test mapping before treating this as client integration specification. |
+| Model/database mapping | Earlier DB-02 statement was stale; current models contain 39 public methods excluding casts across 16 model files. | Reconcile model methods with migration FKs and route/query use; do not infer completeness from counts. |
+| Guardian relationship scope | Owner confirmed per student–guardian link on Nov 10; SQL currently stores it on `guardians`. | Keep schema/API correction separately authorized; ownership/lifecycle and primary-contact policy remain open. |
 
-Only route inventory was validated during this pass. No backend/frontend tests, builds, live database commands, deployment setup, scheduler, TLS, backup restore, or schema constraints were run. No live data or credentials were accessed.
+Route inventory and export names/lines were read from current source. No backend/frontend tests, builds, live database commands, deployment setup, scheduler, TLS, backup restore, or schema constraints were run. No live data or credentials were accessed.
+
+## 2026-11-10 Part 2: approved Laravel foundation alignment
+
+Part 2 was authorized on `feature/backend-foundation` at `ca37699ded2df8f9ea26aa12724c8b42e6b75b90`. Existing working-tree edits were preserved. Scope stayed backend-only; no schema, routes, dependencies, or frontend files changed.
+
+| B0 area | Current evidence and outcome |
+|---|---|
+| B0.1 Scaffold/runtime | Existing Laravel foundation retained. Local PHP is 8.5.10; Composer is unavailable. No framework/package change. |
+| B0.2 Structure | Existing `Actions`, `Http`, `Models`, `Services`, `Support`, and `Console` structure retained. No restructuring. |
+| B0.3 Configuration | Owner approved a 30-minute idle session with activity renewal and a one-minute warning. Laravel `SESSION_LIFETIME`, fallback, example, PHPUnit environment, and local backend `.env` now use 30. Existing cookie flags, driver, and remember-me behavior are unchanged; frontend warning was not edited. |
+| B0.4 Sanctum/CSRF/CORS | Stateful Sanctum remains enabled; API routes use web middleware; Twilio callback is the explicit CSRF exception and validates provider signature. No CORS config or security-header middleware was found. Origins, TLS/proxy, cookie security, and header baseline remain unverified/unapproved; no change. |
+| B0.5 Middleware/throttles | Active-user, capability, and forced-password-change middleware remain. Login stays limited to five attempts per minute per normalized username/IP. Owner declined a general API limiter. Six-role behavior remains covered by existing feature tests. |
+| B0.6 Errors | Current Laravel `{message}` and validation `{message,errors}` shape retained. No envelope or status-code change. |
+| B0.7 Audit | Existing `AuditLogger` records actor/action/entity, before/after snapshots, IP, user-agent, and time. Snapshot minimization is owner policy; retention and purge remain unresolved. No audit data or retention change. |
+| B0.8 Shared financial/date rules | Existing integer-centavo, idempotency, payment-allocation, receipt, void, and Manila-date paths retained. No schema or shared-helper changes. Full backend suite passes. |
+| B0.9 Routes/health | Current route list has 51 routes; framework `/up` remains the health endpoint. Owner declined adding `/api/health`. No route changed. |
+| B0.10 Documentation/CI | Part 2 results and test baseline recorded in this readiness note and existing central logs. No GitHub workflow directory was found; no CI or dependency added. |
+
+### Validation
+
+- `php artisan test --compact tests/Feature/AuthenticationTest.php`: passed, 10 tests / 36 assertions.
+- `php artisan test --compact`: passed, 146 tests / 1,029 assertions.
+- `vendor/bin/pint --dirty --format agent`: passed.
+- `php artisan config:show session.lifetime`: returned 30; `php artisan route:list --path=api --except-vendor`: 51 routes.
+- Frontend baseline (unchanged): `npm.cmd run build` passed; `npm.cmd test` had 248 passed and one failure in `src/test/liveStudents.test.tsx`, where the Registrar profile unexpectedly contains “Student number.” No frontend file was edited.
+- Composer and MySQL CLIs are unavailable; `composer audit` and live MySQL checks could not run. No migration/database command ran.
+
+### Remaining gates
+
+Audit/log retention and the published Privacy Policy conflict remain open. Deployment PHP/Composer/MySQL topology, HTTPS/TLS, CORS origins, scheduler, backup destination/restore, and least-privilege database account remain unverified. API-wide throttling and `/api/health` were declined. Security headers, audit field-allowlisting changes, strict-model enforcement, new middleware, CI, and all schema work were not approved and were not implemented. Part 3 has not started.

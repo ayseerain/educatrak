@@ -45,3 +45,20 @@ No database design approval was given. B7 is not approved. B4 is blocked because
 ## Retention-source conflict
 
 The owner confirmed backend audit/security/backup/notification/financial retention remains undecided. Existing Privacy Policy copy in `frontend/src/i18n/en.ts:87` states ten years for audit logs and five years for other personal information, including student, guardian, staff-account, billing, payment, notification, import, and backup-related records. Part 1b did not edit that frontend promise or canonical requirements. Treat the difference as an open policy/source-reconciliation item; do not implement retention or purge based only on this backend note.
+## Follow-up status
+
+### Part 2 implementation status
+
+On Tuesday, November 10, 2026 — 18:03:12 Asia/Manila, the approved 30-minute
+idle session setting was aligned in Laravel's default and local/example/test
+configuration. Activity renewal and cookie/remember-me behavior remain as
+implemented. This records implementation status, not a new session policy.
+
+On Tuesday, November 10, 2026 — 14:50:29 Asia/Manila, the Project owner
+confirmed that guardian relationship describes each student–guardian link.
+This settles semantic scope only. Current SQL stores `relationship` on
+`guardians`; schema/API reconciliation needs separate authorization.
+Guardian-data ownership, maintenance lifecycle, and primary-contact rules
+remain open.
+
+The owner directed completion of Part 1b prerequisites. Descriptive migration-based drafts now exist at `02-Architecture/Backend-Database-Design/ERD.md`, `Data-Dictionary.md`, and `Reference-Schema.sql`. This direction does not alter the five previously open MCA policy decisions, approve future schema design, satisfy MySQL validation gates, or authorize Part 2 code changes. B7 remains skipped.

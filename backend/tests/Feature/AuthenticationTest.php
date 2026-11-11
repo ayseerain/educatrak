@@ -13,6 +13,11 @@ class AuthenticationTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_session_timeout_uses_the_approved_thirty_minute_idle_window(): void
+    {
+        $this->assertSame(30, (int) config('session.lifetime'));
+    }
+
     public function test_user_can_log_in_and_read_their_profile(): void
     {
         $user = User::factory()->create([

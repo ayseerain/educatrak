@@ -130,4 +130,154 @@ The 65 named MockDB function exports in `api.ts`, `selectors.ts`, `store.ts`, `s
 
 ### Known boundaries and follow-up
 
-The current branch contains route families absent from the Part 1 snapshot; this reconciles the current API description only. Exact per-route field/response schemas should be expanded from their Form Requests/resources as a separately scoped contract pass if needed. Current mock/backend differences must be reviewed against the dated decisions before any frontend edits. No endpoint was added or changed in this task.
+The current branch contains route families absent from the Part 1 snapshot; this reconciles the current API description only. The route-by-route ledger below records handler validation and named test evidence. Some response fields and audit assertions remain summarized or lack direct tests, so this is not a generated client contract. Review mock/backend differences against dated decisions before frontend integration. No endpoint was added or changed in this task.
+
+## Part 1b route-by-route reconciliation (51 routes)
+
+The following ledger expands the grouped inventory above into one row per
+registered route. Inputs and outputs are summarized from the named action;
+where an action has no dedicated Form Request, its controller is the source
+for query/body handling. Middleware and capability are from
+`backend/routes/api.php`; common framework errors are 401/403/404/419/422/500,
+with 429 for throttled login. Mutations use `AuditLogger` only where the action
+does so; do not infer audit coverage from HTTP method. Test references name
+the corresponding feature-test family; absent dedicated coverage is marked
+for follow-up rather than implied.
+
+| # | Method and path | Input contract / response | Access / action / audit / test evidence |
+|---:|---|---|---|
+| 1 | `POST /api/webhooks/twilio/messages/{notificationLog}` | Twilio form fields `AccountSid`, `MessageSid`, `MessageStatus`; valid `X-Twilio-Signature`; returns `{ok:true}`. Invalid signature/account/SID returns 403; wrong channel/kind returns 404. | `web` (no Sanctum); `ReminderDeliveryController::twilioStatus`. `FollowUpTest::test_cashier_can_queue_idempotent_email_and_twilio_reminders_and_delivery_callback_confirms_sms`, `::test_invalid_twilio_delivery_signature_is_rejected`. |
+| 2 | `POST /api/auth/login` | `LoginRequest`: required `username` string max 100; required `password` string max 255; optional boolean `remember`. 200 `{data: profile}`; invalid credentials 422 `{message}`; inactive account 403 `{message}`. | `throttle:login`; `AuthController::login`; success/failure audit. `AuthenticationTest::test_user_can_log_in_and_read_their_profile`, `::test_inactive_user_cannot_log_in`, `::test_failed_login_is_audited_without_a_password`, `::test_login_rate_limit_returns_retry_after_after_repeated_failures`. |
+| 3 | `GET /api/auth/me` | No input; 200 `{data: profile}` with `id`, `username`, `fullName`, `role`, `active`, `isProtected`, `mustChangePassword`, `lastLoginAt`, `capabilities`. | `auth:sanctum`, `active.user`; `AuthController::me`; `AuthenticationTest::test_user_can_log_in_and_read_their_profile`. |
+| 4 | `POST /api/auth/logout` | No body; 204 empty. | Auth + active; `AuthController::logout`; `auth.logout` audit. `AuthenticationTest::test_authenticated_user_can_logout_through_the_session_guard`. |
+| 5 | `POST /api/auth/change-password` | Required `current_password` checked against web guard; required string password min 12 with matching `password_confirmation`; 200 `{data: profile}`. | Auth + active; `ChangePasswordRequest`; `auth.change_password` audit. `AuthenticationTest::test_password_change_accepts_the_server_minimum_without_undocumented_character_class_rules`, `::test_temporary_password_users_are_limited_to_session_and_password_change_until_updated`. |
+| 6 | `GET /api/dashboard` | Optional `range` in `today`, `last_7_days`, `last_30_days`, `school_year` (default `last_7_days`); 200 `{data: role-specific summary}`. | Auth + active + password changed; `dashboard.view`; `DashboardController::show`. `DashboardTest::test_cashier_dashboard_uses_own_payments_and_current_school_year_accounts`, `::test_accounting_auditor_and_administrator_summaries_match_their_approved_widgets`, `::test_administrator_backup_widget_handles_missing_and_unknown_results`, `::test_super_admin_dashboard_shows_governance_status_without_financial_fields`, `::test_registrar_receives_a_limited_dashboard_and_unknown_ranges_are_rejected`, `::test_date_ranges_use_inclusive_manila_calendar_day_boundaries`. |
+| 7 | `GET /api/admin/users` | Optional `query` max 120; `role`; `status` active/inactive/archived; `sort` name/created_at; `direction` asc/desc; `date_from`, `date_to`; `page`; `per_page` 10/25/50 (default 10). Returns `{data,meta}`. | Capability `users.manage`; `UserAdministrationController::index`. `UserAdministrationTest::test_non_administrators_cannot_access_administrator_or_security_endpoints` covers denial; no dedicated full list-filter contract test identified. |
+| 8 | `POST /api/admin/users` | Required username max 100/pattern/unique, `full_name` max 255, role enum with actor-based restrictions; nullable unique valid email max 255. 201 `{data: profile,temporaryPassword}`. | `users.manage`; `user.created` audit. `UserAdministrationTest::test_administrator_can_create_a_staff_account_with_a_one_time_temporary_password`, `::test_administrator_cannot_create_or_promote_an_accounting_officer_without_approved_assignment_policy`, `::test_super_admin_can_create_administrators_but_cannot_enter_payment_workflows`. |
+| 9 | `PATCH /api/admin/users/{staffUser}` | Optional `full_name` max 255, nullable valid unique `email`, actor-restricted role enum, boolean `active`; 200 `{data: profile}`. | `users.manage`; before/after audit; protected/self/last-admin safeguards. `UserAdministrationTest::test_administrator_cannot_deactivate_their_own_account_or_the_last_active_administrator`, `::test_archived_account_cannot_be_reactivated_through_general_user_update`, `::test_protected_bootstrap_super_admin_is_hidden_from_administrator_and_cannot_be_changed`; no dedicated ordinary-update test title identified. |
+| 10 | `POST /api/admin/users/{staffUser}/archive` | No body; 200 `{data: profile}`; self, protected, already archived, last-admin cases reject. | `users.manage`; `user.archived` before/after audit. `UserAdministrationTest::test_administrator_can_archive_and_restore_an_account_during_the_configured_retention_period`, `::test_archiving_protects_super_admin_self_and_last_active_administrator`. |
+| 11 | `POST /api/admin/users/{staffUser}/restore` | No body; 200 `{data: profile}`; archived account must still be inside restore period. | `users.manage`; `user.restored` audit. `UserAdministrationTest::test_administrator_can_archive_and_restore_an_account_during_the_configured_retention_period`, `::test_expired_archives_are_anonymized_without_deleting_linked_audit_history`. |
+| 12 | `POST /api/admin/users/{staffUser}/reset-password` | No body; 200 `{data: profile,temporaryPassword}`; target must change it on next login. | `users.manage`; `user.password_reset` audit. `UserAdministrationTest::test_administrator_can_reset_a_password_and_must_require_a_change`, `::test_archived_account_password_cannot_be_reset_without_restoring_it`. |
+| 13 | `GET /api/admin/security-events` | Optional `user`, `action` (max 120), Manila date range, `page`, `per_page` 10/25/50 (default 10); returns `{data,meta}` with safe event fields. | `security.events.view`; `SecurityEventController::index`. `UserAdministrationTest::test_administrator_security_log_returns_account_identity_and_excludes_password_fields`, `::test_security_log_rejects_nested_values_in_safe_metadata_fields`, `::test_administrator_security_log_filters_by_user_action_and_manila_date`; direct pagination assertion not identified. |
+| 14 | `GET /api/audit-log` | Optional user/action/entity type/entity id filters; Manila date range; `page`, `per_page` 10/25/50. Returns `{data,meta}`; before/after detail keys are allowlisted. | `audit.view`; `AuditLogController::index`. `AuditLogReadTest::test_auditor_and_super_admin_can_read_filtered_finance_audit_entries`, `::test_audit_date_filters_and_pagination_metadata_are_returned`. |
+| 15 | `GET /api/backups` | No query inputs; 200 `{data:[{id,result,sizeBytes,error,completedAt}]}` newest first. | `backup.manage`; `BackupController::index`; read listing only. `BackupReadTest::test_administrator_can_view_backup_history_in_reverse_completion_order`, `::test_non_administrators_cannot_view_backup_history`. |
+| 16 | `GET /api/notifications` | Optional status (`queued/sent/failed/not_sent`), Manila date range, student text, page, per_page (10/25/50; default 10); returns `{data,meta}`. | `notification.view`; `NotificationLogController::index`. `NotificationLogReadTest::test_approved_roles_can_filter_persisted_notification_attempts_and_registrar_cannot`. |
+| 17 | `GET /api/follow-up` | Optional status (`due_soon/overdue`), grade, section, search, sort (`due_date/amount_due/days_overdue`), direction, page, per_page (10/25/50); `{data,meta}`. | `followup.view`; `FollowUpController::index`. `FollowUpTest::test_follow_up_lists_only_unpaid_due_soon_and_overdue_installments_with_contact_details`, `::test_follow_up_endpoint_is_limited_to_cashier_and_accounting`. |
+| 18 | `POST /api/follow-up/reminders` | Requires enabled delivery; UUID idempotency_key; 1–50 distinct existing installment_ids; channels array email/sms. Returns 202 `{data,summary}`. | `followup.manage`; reminder status audit. `FollowUpTest::test_reminder_sending_is_denied_for_roles_without_follow_up_management_capability`, `::test_reminder_sending_and_retry_are_unavailable_until_delivery_policy_is_approved`, `::test_cashier_can_queue_idempotent_email_and_twilio_reminders_and_delivery_callback_confirms_sms`. |
+| 19 | `POST /api/notifications/{notificationLog}/retry` | No body; eligible reminder only; 202 `{data: notification result}`. | `notification.retry`; `reminder.retried` audit. `FollowUpTest::test_reminder_sending_and_retry_are_unavailable_until_delivery_policy_is_approved`, `::test_cashier_can_queue_idempotent_email_and_twilio_reminders_and_delivery_callback_confirms_sms`. |
+| 20 | `GET /api/settings/finance/fees` | No query; 200 `{data:[schedule with items]}`; item fields id/name/category/amountCents/required/active/version. | `settings.finance.view`; `FinanceSettingsController::feeSchedules`. `FinanceSettingsReadTest::test_approved_roles_can_read_persisted_fee_schedules_and_payment_plans`, `::test_cashier_and_registrar_cannot_read_finance_settings`. |
+| 21 | `GET /api/settings/finance/plans` | No query; 200 `{data:[plan with installment definitions]}`. | `settings.finance.view`; `FinanceSettingsController::paymentPlans`; same two `FinanceSettingsReadTest` methods as route 20. |
+| 22 | `POST /api/settings/finance/fees/{feeSchedule}/items` | Required name max 120, category tuition/miscellaneous/other, amount_cents integer >=0, required boolean; optional apply_to_all boolean; 201 with item and updatedAccountCount. | `settings.finance.manage`; fee-item audit. `FinanceSettingsMutationTest::test_accounting_adds_fees_to_matching_existing_accounts_and_prevents_duplicates`, `::test_only_accounting_can_mutate_fee_items_and_input_uses_the_approved_categories`, `::test_accounting_can_apply_new_and_revised_fees_to_all_grade_schedules_without_duplicates`. |
+| 23 | `PATCH /api/settings/finance/fee-items/{feeItem}` | Same required fee fields and optional apply_to_all; returns revised item/version. | `settings.finance.manage`; before/after audit. `FinanceSettingsMutationTest::test_accounting_can_apply_new_and_revised_fees_to_all_grade_schedules_without_duplicates`, `::test_only_accounting_can_mutate_fee_items_and_input_uses_the_approved_categories`. |
+| 24 | `POST /api/settings/finance/fee-items/{feeItem}/deactivate` | No body; returns item; already inactive returns 409. | `settings.finance.manage`; before/after audit. No dedicated deactivation test identified. |
+| 25 | `GET /api/reports/daily` | Optional Manila date (Y-m-d), page, void_page, per_page 10/25/50; defaults to today and 10. | `reports.view`; `DailyReportController::show`. `DailyReportTest::test_cashier_has_no_standalone_daily_report_access`, `::test_daily_report_uses_persisted_records_for_accounting_only`. |
+| 26 | `GET /api/reports/outstanding` | Optional grade, section, minimum/maximum balance cents, overdue_only boolean, page, per_page 10/25/50; max below min returns 422. | `reports.view`; cashiers also denied in action. `OutstandingReportTest::test_current_year_outstanding_report_applies_grade_section_minimum_and_overdue_filters`. |
+| 27 | `GET /api/reports/students/{student}/statement` | No query/body; current-year statement; 404 `{message}` when no current-year account. | `reports.view`; `StudentStatementController::show`. No dedicated statement route test identified. |
+| 28 | `GET /api/students` | Optional query max 120, grade, section, status enrolled/inactive, page, per_page 10/25/50; financial fields vary by capability. | `students.view`. `StudentAccessTest::test_registrar_can_list_the_student_directory_with_financial_context`, `::test_only_student_roles_can_open_the_student_directory`, `::test_registrar_student_search_returns_financial_context_without_guardians`, `::test_accounting_can_read_student_list_with_active_year_balance_field`, `::test_student_list_financial_field_boundary_is_enforced_for_all_six_roles`. |
+| 29 | `POST /api/students` | Required student_no, full_name, grade_level_id, section_id, status; optional guardian_name/relationship/email/mobile with cross-field rules; section must belong to grade. Returns 201. | `students.manage`; student.created audit. `StudentAccessTest::test_registrar_can_create_and_update_a_student_while_cashier_cannot`. |
+| 30 | `GET /api/student-record-options` | No inputs; active grades and sections for student form. | `students.manage`; `StudentController::recordOptions`. No dedicated route test identified. |
+| 31 | `GET /api/students/{student}` | No inputs; student detail; guardian/current-balance fields capability-dependent. | `students.view`. `StudentAccessTest::test_approved_roles_receive_guardian_contact_details_on_student_profile`, `::test_registrar_can_open_student_profiles_with_guardian_and_financial_context`. |
+| 32 | `PATCH /api/students/{student}` | Same required full `UpsertStudentRequest` fields as create, not partial; returns updated student. | `students.manage`; student.updated before/after audit. `StudentAccessTest::test_registrar_can_create_and_update_a_student_while_cashier_cannot`. |
+| 33 | `GET /api/billing-accounts` | Optional query, school_year, school_year_id, scope current/all, grade, status current/due_soon/overdue/paid, minimum/maximum balance cents, page, per_page 10/25/50; `{data,meta}`. | `accounts.view`. `BillingAccountReadTest::test_finance_reader_roles_can_view_billing_accounts_and_registrar_cannot`, `::test_billing_account_list_filters_by_minimum_and_maximum_balance`. |
+| 34 | `GET /api/billing-accounts/{billingAccount}` | No inputs; account, student, school year, fee items, installments, payments, adjustments and activity. | `accounts.view`. `BillingAccountReadTest::test_account_detail_returns_fees_schedule_and_payment_history`, `::test_account_activity_combines_its_records_and_payment_audit_events_only`. |
+| 35 | `POST /api/billing-accounts/{billingAccount}/adjustments` | Required type discount/scholarship/correction, nonzero integer amount_cents, reason 10–1000 chars; returns 201 adjustment. | `accounts.manage`; adjustment.created audit with before/after balances. Threshold remains open; no dedicated adjustment-create test identified. |
+| 36 | `GET /api/payment-students` | Optional free-text query (no explicit validation/length cap); returns up to 10 students and current account balance. | `payments.record`. `CashierOperationsTest::test_payment_entry_student_lookup_and_billing_context_are_cashier_only`. |
+| 37 | `GET /api/payment-students/{student}/context` | No inputs; current payment-entry context and due items. | `payments.record`; same CashierOperations test as route 36. |
+| 38 | `GET /api/payments` | Optional query max 100, status valid/void_pending/voided, date range, cashier, method, amount min/max cents, page, per_page 10/25/50; `{data,meta}`. | `payments.view`; cashiers scoped to own rows. `CashierOperationsTest::test_payment_history_is_available_to_finance_readers_and_cashiers_remain_scoped`, `::test_payment_history_filters_by_date_cashier_method_status_and_student_search`. |
+| 39 | `POST /api/payments` | Idempotency-Key required, max 100 with allowed `A-Za-z0-9._:-`; billing_account_id; positive amount_cents; paid_on not future; past date requires backdate_reason; optional duplicate_override_reason, notes, notification_channels email/sms. | `payments.record`; transactional allocation/receipt and audit. `CashierOperationsTest::test_cashier_can_record_a_cash_payment_with_oldest_first_allocation_and_receipt`, `::test_cashier_payment_is_rejected_when_it_exceeds_the_account_balance`, `::test_same_student_and_amount_within_ten_minutes_requires_an_override_reason`, `::test_repeating_a_payment_with_the_same_idempotency_key_replays_one_receipt`, `::test_idempotency_key_cannot_be_reused_for_a_different_payment`, `::test_payment_submission_requires_an_idempotency_key`. |
+| 40 | `GET /api/payments/{payment}` | No inputs; payment, receipt, allocations and notification history. | `payments.view`; cashier ownership check. `CashierOperationsTest::test_payment_detail_keeps_its_balance_after_snapshot_when_later_payments_post`. |
+| 41 | `POST /api/payments/{payment}/reprint` | No body; receipt print metadata/count; cashier may reprint own payment only. | `receipts.reprint`; audit evidence. `CashierOperationsTest::test_first_receipt_print_does_not_count_as_a_reprint_but_later_prints_do`. |
+| 42 | `POST /api/payments/{payment}/void-requests` | Required reason string 10–1000 chars; returns 201 void request; cashier restricted to own payment. | `void.request`; payment.void_requested audit. `CashierOperationsTest::test_accounting_approval_voids_the_payment_and_restores_the_billing_balance`, `::test_cashier_void_request_history_is_own_scoped_while_accounting_sees_all_requests`, `BillingStatusSynchronizationTest::test_payment_and_void_recalculate_installment_and_account_statuses_using_the_configured_window`. |
+| 43 | `GET /api/void-requests` | No query inputs; all for finance roles, caller-owned for cashier. | `void.view`. `CashierOperationsTest::test_cashier_void_request_history_is_own_scoped_while_accounting_sees_all_requests`. |
+| 44 | `PATCH /api/void-requests/{voidRequest}` | Required decision approved/rejected and decision_note 1–1000 chars; updated request. | `void.approve`; payment-state audit. `CashierOperationsTest::test_accounting_approval_voids_the_payment_and_restores_the_billing_balance`, `BillingStatusSynchronizationTest::test_payment_and_void_recalculate_installment_and_account_statuses_using_the_configured_window`. |
+| 45 | `GET /api/close-outs/today` | No inputs; business date, cashier/system cash and close-out state. | `closeout.submit`. `CashierOperationsTest::test_cashier_can_submit_only_one_daily_close_out_and_non_zero_variance_needs_a_reason`. |
+| 46 | `GET /api/close-outs/business-date` | No inputs; simulation state/current time; restricted to local/testing environments. | `closeout.submit`. `CashierOperationsTest::test_business_date_simulator_uses_date_matched_fictional_payments_and_preserves_locks_and_sign_off`, `::test_business_date_simulator_is_rejected_outside_local_or_testing`. |
+| 47 | `POST /api/close-outs/business-date` | Required `business_datetime` with `Y-m-dTH:i` format; returns simulation state. | `closeout.submit`; same two simulator tests as route 46. |
+| 48 | `DELETE /api/close-outs/business-date` | No body; restores real business date and returns simulation state. | `closeout.submit`; same two simulator tests as route 46. |
+| 49 | `GET /api/close-outs` | No query inputs; sorted by business date/id; cashier sees own entries. | `closeout.view`. `CashierOperationsTest::test_cashier_close_out_history_is_limited_to_their_own_records`. |
+| 50 | `POST /api/close-outs` | Required counted_cash_cents integer >=0; optional variance_reason string 10–1000; returns 201 close-out. | `closeout.submit`; closeout.submitted audit. `CashierOperationsTest::test_cashier_can_submit_only_one_daily_close_out_and_non_zero_variance_needs_a_reason`. |
+| 51 | `POST /api/close-outs/{closeOut}/sign-off` | No body; signed-off close-out; repeated sign-off returns 422 `{message}`. | `closeout.signoff`; closeout.signed_off audit. No direct sign-off test identified; simulator preservation assertion is indirect. |
+
+**Evidence quality note:** this ledger reflects current validation,
+serialization, audit calls, and named test evidence. A named test may assert
+only part of a route contract; rows identify known gaps. This is not generated
+OpenAPI, and some controller response objects remain summarized rather than
+field-enumerated. Do not use it for client code generation.
+
+## MockDB exported function inventory (65 functions)
+
+Every row names a function export, its source line, operational class, and
+server-route relationship. These are in-process client operations, not HTTP
+endpoints. The line numbers are current source evidence and should be refreshed
+if these files move.
+
+| Source | Export and line | Class | Server route / gap |
+|---|---|---|---|
+| `frontend/src/api/mock/api.ts` | `mockApiDelay` L18 | latency/test helper | None; no route. |
+| `frontend/src/api/mock/api.ts` | `listMockStudents` L28 | read adapter | `GET /api/students` analogous domain read; mock-only. |
+| `frontend/src/api/mock/api.ts` | `listMockBillingAccounts` L32 | read adapter | `GET /api/billing-accounts` analogous domain read; mock-only. |
+| `frontend/src/api/mock/api.ts` | `listMockPayments` L36 | read adapter | `GET /api/payments` analogous domain read; mock-only. |
+| `frontend/src/api/mock/selectors.ts` | `getMockGradeLevels` L171 | selector | Finance/student option APIs overlap only; mock-only. |
+| `frontend/src/api/mock/selectors.ts` | `selectBillingAccounts` L241 | selector | `GET /api/billing-accounts` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `selectMockFollowUpAccounts` L277 | selector | `GET /api/follow-up` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `selectStudents` L306 | selector | `GET /api/students` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `selectPayments` L321 | selector | `GET /api/payments` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `getStudentById` L354 | selector | `GET /api/students/{student}` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `getBillingAccount` L358 | selector | `GET /api/billing-accounts/{billingAccount}` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `getStudentBillingAccounts` L362 | selector | Billing-account reads; no exact route parameterized by student. |
+| `frontend/src/api/mock/selectors.ts` | `getCurrentBillingAccount` L366 | selector | Billing-account reads; mock-derived current record. |
+| `frontend/src/api/mock/selectors.ts` | `getRenewalSchoolYears` L372 | selector | No exact route; no renewal-specific endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `getSuggestedRenewalSchoolYear` L381 | selector | No exact route; mock-only suggestion. |
+| `frontend/src/api/mock/selectors.ts` | `getMockFeeSchedule` L389 | selector | `GET /api/settings/finance/fees` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `createMockFeeItem` L396 | mutator | `POST /api/settings/finance/fees/{feeSchedule}/items` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `updateMockFeeItem` L440 | mutator | `PATCH /api/settings/finance/fee-items/{feeItem}` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `archiveMockFeeItem` L483 | mutator | Deactivation endpoint analogous; archive semantics differ. |
+| `frontend/src/api/mock/selectors.ts` | `createMockGradeLevel` L495 | mutator | No corresponding grade-level management route. |
+| `frontend/src/api/mock/selectors.ts` | `updateMockGradeLevel` L508 | mutator | No corresponding grade-level management route. |
+| `frontend/src/api/mock/selectors.ts` | `archiveMockGradeLevel` L534 | mutator | No corresponding grade-level management route. |
+| `frontend/src/api/mock/selectors.ts` | `createMockSchoolYear` L548 | mutator | No corresponding school-year management route. |
+| `frontend/src/api/mock/selectors.ts` | `getMockPaymentPlans` L567 | selector | `GET /api/settings/finance/plans` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `previewMockInstallmentSchedule` L595 | derived calculator | Payment-plan read only; no preview endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `getPaymentsForStudent` L599 | selector | `GET /api/payments` analogous read; no student filter guarantee. |
+| `frontend/src/api/mock/selectors.ts` | `getMockPayment` L603 | selector | `GET /api/payments/{payment}` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `getDueInstallments` L607 | selector | Payment context/account detail analogous; no exact endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `getNextDueRecord` L613 | selector | Payment context analogous; mock-derived. |
+| `frontend/src/api/mock/selectors.ts` | `getMockGuardianContact` L619 | selector | Student read may contain contact; no dedicated guardian endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `selectMockNotificationRows` L626 | selector | `GET /api/notifications` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `selectMockStaffUsers` L640 | selector | `GET /api/admin/users` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `createMockStaffUser` L649 | mutator | `POST /api/admin/users` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `updateMockStaffUser` L670 | mutator | `PATCH /api/admin/users/{staffUser}` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `archiveMockStaffUser` L685 | mutator | `POST /api/admin/users/{staffUser}/archive` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `restoreMockStaffUser` L704 | mutator | `POST /api/admin/users/{staffUser}/restore` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `createMockStudent` L718 | mutator | `POST /api/students` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `updateMockStudent` L741 | mutator | `PATCH /api/students/{student}` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `createMockBillingAccount` L782 | mutator | No account-create route; backend account provisioning is elsewhere. |
+| `frontend/src/api/mock/selectors.ts` | `requestMockVoid` L825 | mutator | `POST /api/payments/{payment}/void-requests` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `decideMockVoid` L836 | mutator | `PATCH /api/void-requests/{voidRequest}` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `mockSystemCashTotal` L848 | derived calculator | Used by close-out flow; no exact total endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `selectMockCloseOuts` L855 | selector | `GET /api/close-outs` analogous read. |
+| `frontend/src/api/mock/selectors.ts` | `recordMockCloseOut` L860 | mutator | `POST /api/close-outs` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `reopenMockCloseOutForNewDay` L876 | mutator/helper | `GET /api/close-outs/today` supplies context; no reopen endpoint. |
+| `frontend/src/api/mock/selectors.ts` | `signOffMockCloseOut` L896 | mutator | `POST /api/close-outs/{closeOut}/sign-off` analogous. |
+| `frontend/src/api/mock/selectors.ts` | `recordMockBillingPayment` L906 | mutator | `POST /api/payments` analogous. |
+| `frontend/src/api/mock/store.ts` | `getMockState` L55 | store primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `getMockToday` L59 | store/date primitive | No HTTP route; simulated date support is separately exposed. |
+| `frontend/src/api/mock/store.ts` | `getMockBusinessDateTime` L69 | store/date primitive | `GET /api/close-outs/business-date` analogous. |
+| `frontend/src/api/mock/store.ts` | `getMockSimulatedDateTime` L73 | store/date primitive | Simulator state helper; no direct endpoint. |
+| `frontend/src/api/mock/store.ts` | `simulateMockBusinessDateTime` L77 | mutator | `POST /api/close-outs/business-date` analogous. |
+| `frontend/src/api/mock/store.ts` | `restoreMockBusinessDateTime` L84 | mutator | `DELETE /api/close-outs/business-date` analogous. |
+| `frontend/src/api/mock/store.ts` | `replaceMockState` L90 | store primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `updateMockState` L96 | store primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `setMockToday` L102 | mutator/date primitive | No exact route; mock-only current date. |
+| `frontend/src/api/mock/store.ts` | `resetMockStore` L111 | test/development primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `mockSnapshot` L119 | store snapshot primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `loadMockSnapshot` L123 | store snapshot primitive | No HTTP route. |
+| `frontend/src/api/mock/store.ts` | `subscribeToMockState` L127 | store subscription | No HTTP route. |
+| `frontend/src/api/mock/seed.ts` | `resolveRelativeDate` L37 | seed/date helper | No HTTP route. |
+| `frontend/src/api/mock/seed.ts` | `seedMockDatabase` L47 | seed primitive | No HTTP route. |
+| `frontend/src/api/mock/seed.ts` | `defaultMockToday` L75 | seed/date helper | No HTTP route. |
+| `frontend/src/api/mock/integrity.ts` | `mockIntegrityErrors` L24 | integrity checker | No HTTP route. |
+| `frontend/src/api/mock/integrity.ts` | `assertMockIntegrity` L109 | integrity assertion | No HTTP route. |
+
+The separate exported constant `rawMockDatabase` in `seed.ts` is not a
+function and is excluded from the 65-function count.

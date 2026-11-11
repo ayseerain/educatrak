@@ -55,3 +55,8 @@ At Monday, November 09, 2026 — 12:40:29 Asia/Manila, Project owner left guardi
 - **Status:** Source conflict remains open. Part 1b did not edit the client-facing promise or canonical requirements and does not authorize retention/purge implementation. Staff account archive's 30-day restore/anonymization lifecycle remains separate.
 - **Next action:** MCA policy owner reconcile which records and systems the published periods govern, then separately authorize any canonical or implementation update.
 - **Recorded:** Monday, November 09, 2026 — 12:46:06 Asia/Manila.
+### 31.9 Guardian relationship scope in persisted schema
+- **Issue:** MockDB `studentGuardianLinks` records `relationship` on each student–guardian link (`frontend/src/api/mock/mock-db.json:64-67`). SQL stores `relationship` on `guardians` (`backend/database/migrations/2026_10_09_062757_create_educatrak_reference_and_people_tables.php:60-68`); `guardian_student` contains `is_primary` but no relationship field (`:80-85`). A guardian linked to multiple students therefore has one persisted relationship value.
+- **Answer:** Project owner confirmed Tuesday, November 10, 2026 — 14:50:29 Asia/Manila: relationship describes each student–guardian link.
+- **Status:** Semantic question resolved. Current SQL stores `relationship` on `guardians`, so schema/API reconciliation remains open and requires separate authorization. Guardian-data ownership/lifecycle and primary-contact rules remain distinct open questions.
+- **Recorded:** Tuesday, November 10, 2026 — 14:50:29 Asia/Manila.

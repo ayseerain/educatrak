@@ -23,8 +23,7 @@
 | M6 | Email Notifications | Notification log (sent/queued/failed with reason), retry failed, per-guardian email status | Must |
 | M7 | Reports | Daily collection, monthly financial, student statement of account, outstanding balances; print and export to Excel | Must |
 | M8 | Audit & Backup | Audit log viewer with filters, backup status page, "Run backup now," last restore-test date | Must |
-| M9 | Settings | Fees per grade level, payment plans, clearance rules, school year/terms, receipt settings, school info | Must |
-| M10 | Clearance & Exam Permit (headline) | Clearance lookup, status per student (enrollment and each exam period), printable exam permit | Should |
+| M9 | Settings | Fees per grade level, payment plans, school year/terms, receipt settings, school info | Must |
 | M11 | Installments & Follow-up | Schedule display, Current/Due soon/Overdue status, overdue follow-up list, cashier-approved reminder batches | Should |
 | M12 | Ledger Import | Upload Excel, map columns, preview, validation report, confirm, result summary | Should |
 | M13 | End-of-Day Close-out | Count cash, show variance, require reason, lock day, print report, accounting sign-off | Could |
@@ -45,7 +44,7 @@ Each role gets a different dashboard; the sidebar shows only the items that role
 | View accounting dashboard | Pending void approvals; overdue total; collection trend (one chart); unsigned close-outs | ACC |
 | View admin dashboard | Last backup time and result; active user count | ADM |
 | View auditor dashboard | Read-only oversight summary; link to Audit Review only | AUD |
-| View registrar dashboard | One large student search that opens clearance | REG |
+| View registrar dashboard | Student search that opens the shared Students workspace | REG |
 | Quick links | Jump to the most common task for the role | all |
 
 ### M0.2 Navigation and session
@@ -379,16 +378,6 @@ Access follows Project Specification Section 6.4: Administrator manages system s
 
 Editing a fee item or plan applying to new accounts only requires a **versioning rule on the backend** so existing accounts keep the terms they were created under.
 
-### M9.3 Clearance rules
-
-| Operation | What it does | Roles |
-|---|---|---|
-| View rules | One enrollment rule and one rule per exam period | ACC |
-| Add / edit rule | E.g., minimum down payment for enrollment; installments paid through the exam start date | ACC |
-| Plain-language preview | Shows the rule in a sentence | ACC |
-| Test with a student | Shows what status that student would get | ACC |
-| Deactivate rule | Stops applying it | ACC |
-
 ### M9.4 School year, terms, and lists
 
 | Operation | What it does | Roles |
@@ -416,35 +405,14 @@ Editing a fee item or plan applying to new accounts only requires a **versioning
 | Set daily send limit | Protects free email limits | ADM |
 | Send test email | Checks the connection | ADM |
 
-**Routes:** `/settings/fees`, `/settings/plans`, `/settings/clearance-rules` (`settings.finance`), `/settings/school`, `/settings/receipt`, `/settings/email` (`settings.system`). Administrator has the system control-plane; Accounting owns finance settings and read-only system configuration. Auditor uses Audit Review only.
+**Routes:** `/settings/fees`, `/settings/plans` (`settings.finance`), `/settings/school`, `/settings/receipt`, `/settings/email` (`settings.system`). Administrator has the system control-plane; Accounting owns finance settings and read-only system configuration. Auditor uses Audit Review only.
 
 ---
 ---
 
-## 18. M10 — Clearance & Exam Permit (Should, headline feature)
+## 18. Retired module
 
-Statuses are computed by the server from the rules in M9.3 and recomputed after every payment, void, or adjustment.
-
-### M10.1 Clearance lookup
-
-| Operation | What it does | Roles |
-|---|---|---|
-| Search student | Large search box | REG (limited) |
-| View enrollment clearance | Cleared or Not cleared with a plain reason | REG |
-| View exam period clearance | One row per exam period with status and reason | REG |
-| Reason detail | **REG sees an amount-free reason** (e.g., "Installment overdue"); no other role has a standalone clearance page | REG |
-| Filter students by clearance on the student list | Removed; clearance lookup is Registrar-only | - |
-
-### M10.2 Exam permit
-
-| Operation | What it does | Roles |
-|---|---|---|
-| Print exam permit | Available only for a cleared period; opens a print-styled slip | REG |
-| Explain why not | Button disabled with the reason if not cleared | REG |
-| Log each print | Every print is written to the audit log | system |
-| Edit permit content | **Not allowed** | - |
-
-**Routes:** `/clearance` (`clearance.view` — the Registrar's only working screen; result card shows Enrollment and each exam-period status with a plain, **role-aware** reason — never an amount for REG, see Section 30 item 2), `/permits/:studentId/:examPeriodId/print` (`permit.print`). See also Flow F4, Section 23.
+Clearance lookup, clearance rules, exam permits, and their routes and permissions are not part of the current system. M10 is retired; later module identifiers are retained to preserve existing references. Historical clearance database structures are retained without active application workflows, as recorded in `06-Decisions/2026-11-05-student-record-role-reassignment.md`.
 
 ---
 ---

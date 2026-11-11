@@ -2,6 +2,16 @@
 
 > Living engineering tracker for **EducatraK**, the student billing and payment-monitoring system for **Mendez Christian Academy**. This document is based on the inspected EducatraK repository, not on the other group's issue contents. Initial inspection: commit `d08926d5cb8c61bd157b1994137ff0459a66c80b`. Entries are **not** claims that all features are absent; re-check the latest branch before acting.
 
+## Current Part 1b documentation follow-ups
+
+- [ ] **[DOC] Complete exact API contract evidence mapping.** Updated: Tuesday, November 10, 2026 — 15:06:48 Asia/Manila. `02-Architecture/Backend-API-Contract.md` enumerates 51 routes and 65 MockDB function exports. Handler validation, named tests, and known no-test cases are now documented route by route. Remaining work: field-enumerate some serialized response objects and audit payloads, and add direct regression coverage for documented gaps if separately authorized. No API behavior change is authorized by this tracker item.
+- [ ] **[AUDIT] Reconcile model relations with schema FKs.** Added: Tuesday, November 10, 2026 — 14:54:51 Asia/Manila. `Database-Review.md` DB-02 count is corrected to 39 public methods excluding casts across 16 model files; method count does not establish coverage. Compare relation methods, migration FK declarations, and query/controller use, then record concrete gaps. No model/schema edits authorized.
+
+## Part 2 findings
+
+- [x] **[FIX] Align Laravel idle-session lifetime with owner policy.** Added/resolved: Tuesday, November 10, 2026 — 18:04:33 Asia/Manila. Laravel had a 120-minute default in `backend/config/session.php` and `backend/.env.example`; local backend `.env` also set 120. Updated default, example, PHPUnit environment and local setting to 30 minutes. Kept cookie/remember-me settings unchanged. `AuthenticationTest` covers the configured value; focused auth suite passed (10 tests / 36 assertions), full backend suite passed (146 / 1,029), Pint passed, and `config:show session.lifetime` returned 30. Owner: project owner.
+- [ ] **[VERIFY] Reconcile failing Registrar profile assertion in frontend baseline.** Added: Tuesday, November 10, 2026 — 18:04:33 Asia/Manila. `frontend/src/test/liveStudents.test.tsx:71` expects “Student number” absent, but baseline test found it in the rendered profile (1 failing test; 248 passed). Review against the current approved Registrar student-record requirements before changing the test or UI. This Part 2 task did not modify frontend files. Owner: frontend/requirements owner.
+
 ## How to use this file
 
 - `[FIX]` — confirmed defect or implementation gap supported by code evidence.
@@ -16,7 +26,9 @@ Use `- [ ]` for open work and `- [x]` only after verification. Include a specifi
 
 ## Open work at a glance
 
-- [ ] **[DOC] Complete approved backend schema reference artifacts before any schema approval.** Added: Monday, November 09, 2026 — 12:43:04 Asia/Manila. Current branch review found only `Database-Review.md`; `ERD.md`, `Data-Dictionary.md`, `Reference-Schema.sql`, diagrams and safe constraint checks are absent. B4 cannot repair missing drafts and B7 approval gates are not met. Next action: owner separately authorizes completion of these documentation artifacts and a compatible scratch-database validation. No migration or production DB action is authorized. Owner: project owner/backend.
+- [ ] **[DECIDE] Confirm guardian relationship field scope.** Added: Monday, November 09, 2026 — 21:01:02 Asia/Manila. MockDB stores relationship on each `studentGuardianLinks` row (`frontend/src/api/mock/mock-db.json:64-67`), while Laravel stores one `relationship` on each guardian and no relationship value on `guardian_student` (`backend/database/migrations/2026_10_09_062757_create_educatrak_reference_and_people_tables.php:60-85`). Confirm whether the relationship is guardian-wide or per student link before any schema/API change. No migration proposed. Owner: MCA data-policy owner.
+
+- [ ] **[DOC] Complete approved backend schema reference artifacts before any schema approval.** Added: Monday, November 09, 2026 — 12:43:04 Asia/Manila. Updated: Monday, November 09, 2026 — 21:05:42 Asia/Manila. Descriptive drafts now exist in `02-Architecture/Backend-Database-Design/ERD.md`, `Data-Dictionary.md`, and `Reference-Schema.sql`, derived from 14 migrations. They are unapproved and not checked against MySQL. B7 gates remain unmet. Next action: reconcile the five review findings and policy conflict, then obtain a verified matching scratch MySQL instance and explicit approval for constraint checks before any schema approval. No migration or production DB action is authorized. Owner: project owner/backend.
 
 - [ ] **[VERIFY] Review existing screens at device-width viewport.** Added: Saturday, November 07, 2026 — 11:48:15 Asia/Manila. The student-import screen exposed the fixed 1366px viewport in `frontend/index.html`; the approved responsive screen now uses `width=device-width`. The production import screen was inspected at 1440, 768, and 390px, but existing routes were not re-reviewed after this global viewport change. Next action: inspect existing role routes at device widths and fix confirmed regressions. Owner: frontend.
 

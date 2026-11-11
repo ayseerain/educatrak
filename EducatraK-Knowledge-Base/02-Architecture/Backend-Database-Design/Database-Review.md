@@ -61,14 +61,19 @@ audit writes are added.
 | ID | Severity | Finding and evidence | Next action |
 |---|---|---|---|
 | DB-01 | Medium, deferred | `students.student_no` is the only student identifier; there is no LRN column or index. The current masterlist decision requires matching by LRN but explicitly defers replacing Student Number until a separate task. | Decide LRN semantics, uniqueness, and migration/backfill plan in that separate approved task. Do not alter schema in this preparation phase. |
-| DB-02 | Medium, incomplete model layer | 28 model files exist, but explicit relationship methods appear only on `BillingAccount` (installments, payments) and `Payment` (allocations). The development ledger says domain relationships remain incomplete. | Add relationships only with their approved domain implementation; preserve foreign keys and snapshots. |
+| DB-02 | Medium, review required | The earlier statement that only `BillingAccount` and `Payment` define relationships is stale. Current `backend/app/Models/` defines 39 public methods excluding `casts`, across 16 model files; most are relationship methods. This count does not prove each migration foreign key or domain relation is represented correctly. | Reconcile each model method against migration FKs and controller/query use before claiming completeness; log specific gaps with evidence. |
 | DB-03 | Decision needed | `school_years.is_current` is indexed but not unique, so the database permits more than one current school year. The business rule for ownership/transitions is not settled in this branch. | Confirm whether exactly one current year must be enforced, then choose transaction and database constraints. |
 | DB-04 | Decision needed | `guardian_student` stores a many-to-many link and `is_primary`, but there is no ownership or maintenance lifecycle for guardian data. | Confirm guardian-data owner and whether one primary guardian per student is required. |
 | DB-05 | Decision needed | `audit_entries.before/after` are nullable JSON and not schema-allowlisted or immutable at the database layer. | Approve snapshot fields, privacy treatment, append-only enforcement, retention, and archive anonymization before expanding audit writes. |
 
-**Confirmed open database-design items: 5.** DB-01 is a deferred identifier
-decision, DB-02 is an incomplete model layer, and DB-03–DB-05 require owner
-policy. No other DDL violation is claimed without an approved target schema.
+**Open database-design review items: 5.** DB-01 is a deferred identifier
+decision; DB-02 requires a model/FK reconciliation; DB-03–DB-05 require owner
+policy or privacy decisions. Guardian relationship scope is confirmed as per
+student–guardian link by the Project owner on Tuesday, November 10, 2026 —
+14:50:29 Asia/Manila. The current SQL stores it on `guardians`; reconciling
+that mismatch requires a separately authorized schema/API change. Guardian
+data ownership, maintenance lifecycle, and primary-contact rules remain
+open. No other DDL violation is claimed without an approved target schema.
 
 ## Approval checklist
 
@@ -100,7 +105,7 @@ rewrite canonical requirements.
 
 ## 2026-11-09 current-branch reconciliation
 
-**Snapshot:** `feature/backend-foundation` at `b4ee0e3f535e07810d87a3106268e3965029f7a4`; this section supersedes the old branch counts above. Read-only inspection found 14 migration files and 29 model files. The migration chain—not this review—is executable schema. No ERD, data dictionary, reference SQL, diagram, or checks directory exists here. Therefore B4 draft repair and B7 approval are blocked; no schema load or constraint matrix ran.
+**Snapshot:** `feature/backend-foundation` at `b4ee0e3f535e07810d87a3106268e3965029f7a4`; this section supersedes the old branch counts above. Read-only inspection found 14 migration files and 29 model files. The migration chain—not this review—is executable schema. At this original Part 1b review point, no ERD, data dictionary, reference SQL, diagram, or checks directory existed. The follow-up below records the subsequently drafted reference documents; schema load and constraint matrix remain unrun.
 
 ### Checklist against migrations/models
 
@@ -126,4 +131,20 @@ The owner’s 30-minute idle session answer is a policy decision, not an existin
 
 ### B4/B7 gate
 
-B4 fixes completed: **0**. Must-fix items resolved: **0**. Must-fix count cannot be reconciled because Part 1 created no ERD, dictionary, reference SQL or enumerated gap register beyond this review. Diagram status: absent/not generated. Schema load: not run. Constraint tests: 0 run. SQLite/PHPUnit suite: not run in this documentation pass. MySQL CLI was not available in the earlier Part 1 environment; current matching scratch DB availability was not established. B7: **skipped**; no design approval, artifacts, compatible scratch database evidence or passing gates.
+At the first Part 1b hand-back, no schema artifacts had been drafted and B4/B7 were skipped. The follow-up below records the completed descriptive drafts and current gates. Database design remains unapproved; schema load and constraints remain unrun.
+
+## Part 1b prerequisite artifacts — descriptive, not approved
+
+Following the owner's direction to finish Part 1b prerequisites, three documentation drafts now describe the current migration baseline: `ERD.md` (Mermaid relationship diagram), `Data-Dictionary.md` (field and 17-collection traceability inventory), and `Reference-Schema.sql` (derived MySQL DDL draft). They are all **descriptive / unapproved**; none supersedes executable migrations. The dictionary identifies 30 EducaTrak domain tables and eight Laravel support tables (38 total).
+
+- Documentation artifacts drafted: 3/3.
+- Findings DB-01 through DB-05 resolved: 0/5. These remain deferred, incomplete-model, or policy questions; no schema behavior was changed.
+- Diagram: Mermaid ERD in `ERD.md`, hand-derived from migrations, not regenerated from a live database/tool.
+- Reference SQL: not loaded or parsed against MySQL. Schema load: not run. Constraint matrix: 0 tests run. No compatible scratch MySQL version/database was approved or verified.
+- B7: skipped. No database design approval, no matching scratch-schema load, and no passing constraint checks. No `Approved` banner was added.
+- No `Checks` directory or test file was created; test/database execution was not authorized as part of this documentation follow-up.
+
+Before any B7 approval, compare this reference against a safe scratch MySQL instance matching the verified deployment target, execute an approved valid/invalid constraint matrix, reconcile the five findings, resolve policy conflicts (including the published-retention conflict), and obtain explicit owner approval. Do not run this SQL against a school or shared database.
+### Traceability discrepancy — guardian relationship scope
+
+The MockDB `studentGuardianLinks` records a relationship per student–guardian link. The current SQL stores `guardians.relationship` on the guardian record, while `guardian_student` stores only `is_primary`. This is a verified data-shape difference. Guardian ownership/lifecycle remains an owner-open policy; relationship scope and behavior remain a separate contract question. No migration recommendation is approved.

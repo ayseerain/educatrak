@@ -38,8 +38,6 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/receipts/:id/print` | M4 Receipt print view | `payment.view` |
 | `/voids` | M5 Void approval queue | `payment.void.view` |
 | `/followup` | M11 Overdue follow-up | `followup.view` |
-| `/clearance` | M10 Clearance lookup | `clearance.view` |
-| `/permits/:studentId/:period/print` | M10 Exam permit print view | `permit.print` |
 | `/closeout` | M13 End-of-day close-out | `closeout.submit` |
 | `/closeout/history` | M13 Close-out history | `closeout.view` |
 | `/reports` | M7 Report hub | `report.view` |
@@ -51,7 +49,6 @@ Route guard = the capability required (Section 6.4). "Shell" = sidebar + header 
 | `/import` | M12 Ledger import wizard | `import.run` |
 | `/settings/fees` | M9 Fee schedules | `settings.finance` |
 | `/settings/plans` | M9 Payment plans | `settings.finance` |
-| `/settings/clearance-rules` | M9 Clearance rules | `settings.finance` |
 | `/settings/school` | M9 School year and terms | `settings.system` |
 | `/settings/receipt` | M9 Receipt settings | `settings.system` |
 | `/settings/email` | M9 Email settings | `settings.system` |
@@ -81,9 +78,6 @@ Student search (or create student inline) → fees load for the grade level → 
 
 **F3. Void a payment**
 Cashier opens payment → Request void → reason (required, min 10 characters) → status "Void pending." Accounting sees it in `/voids` → approve or reject with note → payment shows VOID, balance updated, audit log entry. The cashier who requested it cannot approve it.
-
-**F4. Check clearance and print an exam permit**
-Registrar (or cashier) opens `/clearance` → searches student → sees Enrollment and each exam-period status with a reason **appropriate to the viewer's role** (an amount for CSH/ACC/AUD/ADM, no amount for REG) → for a cleared period, clicks **Print exam permit** → print view → browser print dialog. For a not-cleared period the button is disabled with the reason.
 
 **F5. Overdue follow-up**
 Cashier or accounting opens `/followup` → filters → selects rows → **Send reminder emails** → review dialog (recipients, missing emails flagged, message preview) → confirm → rows show "Reminder sent today."

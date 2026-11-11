@@ -73,7 +73,6 @@ Where this specification is silent, do the simplest thing that fits the rules in
 | M7 | Reports | - | - | - | F | - | - |
 | M8 | Audit & Backup | F (audit/security and backup-status oversight) | F (security events/backup management) | - | - | R (Audit Review) | - |
 | M9 | Settings | - | F (system) | - | F (finance) / R (required system settings) | - | - |
-| M10 | Clearance & Exam Permit | - | - | - | - | - | F (limited) |
 | M11 | Installments & Follow-up | - | - | F | F | - | - |
 | M12 | Ledger Import | - | - | - | - | - | - |
 | M13 | End-of-Day Close-out | - | - | F (submit/own history) | F (review/sign-off) | - | - |
@@ -83,13 +82,13 @@ Where this specification is silent, do the simplest thing that fits the rules in
 
 ### 6.4 Capability matrix
 
-This is the implementation-level role list. `F` = full/write access, `R` = read-only, blank = no access. The requester authorized implementation of the proposed Super Admin as a separate governance role. Super Admin is limited to user lifecycle, security events, audit oversight, and backup status; it receives no student, billing, payment-recording, finance-setting, void-approval, or report-operation capabilities. Administrator retains day-to-day system configuration; Accounting retains finance operations; Auditor retains the independent Audit Review workspace; Registrar retains clearance. External client acceptance and unresolved bootstrap recovery/second-person policy remain tracked in Section 31.
+This is the implementation-level role list. `F` = full/write access, `R` = read-only, blank = no access. The requester authorized implementation of the proposed Super Admin as a separate governance role. Super Admin is limited to user lifecycle, security events, audit oversight, and backup status; it receives no student, billing, payment-recording, finance-setting, void-approval, or report-operation capabilities. Administrator retains day-to-day system configuration; Accounting retains finance operations; Auditor retains the independent Audit Review workspace; Registrar owns basic student records in the shared Students module. External client acceptance and unresolved bootstrap recovery/second-person policy remain tracked in Section 31.
 
 | Capability | SAD | ADM | CSH | ACC | AUD | REG |
 |---|---|---|---|---|---|
 | `user.manage` (controlled lifecycle; bootstrap Super Admin excluded) | F | F | | | | |
 | `settings.system` (school info, receipt, email, school year) | | F | | R | | |
-| `settings.finance` (fees, plans, clearance rules) | | | | F | | |
+| `settings.finance` (fees, plans) | | | | F | | |
 | `student.view` | | | F | F | | F |
 | `student.edit` (basic student info) | | | | | | F |
 | `student.financial.view` (student list/profile balance only) | | | F | F | | F |
@@ -105,9 +104,6 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 | `statement.print` (student statement of account) `NEW` | | | | F | | |
 | `followup.view` | | | F | F | | |
 | `followup.send` (approve reminder batch) | | | F | F | | |
-| `clearance.lookup` (limited student identity search for clearance) | | | | | | F* |
-| `clearance.view` | | | | | | F* |
-| `permit.print` | | | | | | F |
 | `closeout.submit` | | | F | | | |
 | `closeout.signoff` | | | | F | | |
 | `closeout.view` | | | F (own) | F | | |
@@ -147,7 +143,7 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 **Cannot:** use separate student, billing, payment, void, notification, report, clearance, follow-up, close-out, or settings pages; create, edit, approve, send, print permits, retry notifications, run backups, or change anything.
 
 **REG — Enrollment / Registrar**
-**Can:** search permitted student identity fields only for clearance (`clearance.lookup`); view enrollment/exam clearance status with an amount-free reason; print permits for cleared periods; change their own password.
-**Cannot:** browse the general student directory/profile, see amounts, payments, accounts, guardian contacts, reports, billing settings, or other finance/operations workspaces.
+**Can:** view and manage basic student records through the shared Students module; change their own password.
+**Cannot:** view financial or guardian-contact details, reports, or other finance/operations workspaces.
 
 ---

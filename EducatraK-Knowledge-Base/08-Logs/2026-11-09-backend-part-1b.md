@@ -37,3 +37,32 @@
 ### Follow-up — retention policy source conflict
 
 **Recorded:** Monday, November 09, 2026 — 12:46:40 Asia/Manila. Current Privacy Policy copy states ten-year audit retention and five-year retention for other personal information (`frontend/src/i18n/en.ts:87`); the owner’s Part 1b answer leaves backend retention decisions open. This conflict is tracked in `06-Decisions/Open-Decisions.md`. No frontend or canonical requirement was changed. MCA policy-owner reconciliation remains required before backend retention behavior is implemented.
+## Owner-directed prerequisite completion
+
+**Recorded:** Monday, November 09, 2026 — 21:01:02 Asia/Manila. This follow-up began from `feature/backend-foundation` commit `ca37699ded2df8f9ea26aa12724c8b42e6b75b90` (the Part 1b commit already present at start).
+
+- Added `ERD.md`, `Data-Dictionary.md`, and `Reference-Schema.sql` as descriptive, unapproved migration-baseline drafts. The drafts cover 30 domain tables plus eight framework tables and 17 MockDB collections.
+- Updated `Database-Review.md` and readiness status. Five DB findings remain open; no B7 approval.
+- Recorded the guardian relationship field-scope discrepancy in `06-Decisions/Open-Decisions.md` and the existing central tracker.
+- Validation: migration/DDL table-name structural check matched all 38 create declarations. No SQL execution, database load, tests, or application build.
+- Part 2 remains gated by owner review, policy resolution, and schema validation.
+
+## Part 1b contract and database review audit
+
+**Recorded:** Tuesday, November 10, 2026 — 14:54:51 Asia/Manila.
+
+- Expanded the API contract with a route-by-route ledger for the 51 registered routes and a named inventory of all 65 exported MockDB functions, including source lines, function class, and analogous backend route or gap.
+- Corrected DB-02: current source contains 39 public methods excluding `casts` across 16 model files; the count is not a completeness proof. Reconciliation against every migration FK and controller/query remains open.
+- Owner confirmed guardian relationship semantics as per student–guardian link at 14:50:29 Asia/Manila. Updated the owner record and open-decisions note. Current SQL mismatch remains a separate schema/API change; ownership/lifecycle and primary-contact rules remain unresolved.
+- Retention remains open due to the conflict between the current Privacy Policy wording and backend owner answer.
+- Validation: read-only `php artisan route:list --path=api --except-vendor` previously showed 51; current route declarations and MockDB export locations were inspected. No tests, builds, SQL execution, MySQL schema load, or application changes.
+- Remaining documentation gap: exact request/response field schemas, audit assertions, and direct test method references are not enumerated for every controller action. The route ledger flags that limit; do not use it as a generated OpenAPI/client integration contract yet.
+
+## Route handler and test-evidence detail
+
+**Recorded:** Tuesday, November 10, 2026 — 15:06:48 Asia/Manila.
+
+- Expanded the 51-route ledger with concrete controller/Form Request validation fields, response/status details, audit actions, and exact feature-test method names where evidence exists. Marked routes with no direct test identified.
+- Corrected student update to reflect that `UpsertStudentRequest` requires the full field set, documented the Twilio callback signature/status fields, payment idempotency inputs, and `business_datetime` simulator input.
+- Validation: documentation diff passed `git diff --check` (Git emitted LF-to-CRLF conversion warnings). Inventory checks returned 51 route rows and 65 MockDB function rows. No tests/builds were run and no backend/frontend code was changed.
+- Remaining gaps: some serialized response fields and audit payload details remain summarized; sign-off, statement, adjustment creation, fee-item deactivation, and record-options routes have no direct test method identified. No API behavior or test files changed.

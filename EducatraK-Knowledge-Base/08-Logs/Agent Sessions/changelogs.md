@@ -1,4 +1,4 @@
-﻿# EducatraK — AI Agent Changelogs
+# EducatraK — AI Agent Changelogs
 
 > **Purpose:** Central, append-only record of **every repository change made by an AI agent**, including code, UI, backend, tests, configuration, documentation, instructions, and file moves. Stored under `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/`.
 
@@ -2212,3 +2212,56 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Confirmed the current policy wording at `frontend/src/i18n/en.ts:87`; no frontend file changed.
 - **Commit/PR:** None.
 - **Follow-ups:** MCA policy-owner reconciliation remains open.
+### Monday, November 09, 2026 — 21:01:02 Asia/Manila | Complete descriptive schema-reference drafts
+
+- **Agent:** Codex
+- **Summary:** Added migration-derived ERD, data dictionary, and reference DDL drafts after the owner directed completion of Part 1b prerequisites. Updated review/readiness state. Recorded the MockDB versus SQL guardian-relationship scope discrepancy. Five owner policy decisions remain open; B7 remains unapproved.
+- **Files:** Added `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/ERD.md`, `Data-Dictionary.md`, and `Reference-Schema.sql`; updated `Database-Review.md`, `EducatraK-Knowledge-Base/04-Development/Backend-Readiness.md`, `EducatraK-Knowledge-Base/06-Decisions/2026-11-09-backend-part-1b-owner-decisions.md`, `Open-Decisions.md`, this tracker, and `EducatraK-Knowledge-Base/08-Logs/2026-11-09-backend-part-1b.md`.
+- **Validation:** Read the 14 migration sources; structural name comparison found 38 `Schema::create` table names and 38 matching SQL `CREATE TABLE` names. `git diff --check` passed with Git line-ending conversion warnings. No SQL was executed or loaded, no DB/test command was run, and no files under `backend/` or `frontend/` changed.
+- **Commit/PR:** None by Codex.
+- **Follow-ups:** Validate DDL only against a verified matching disposable MySQL target after separate authorization. Resolve policy questions and the privacy-retention conflict before B7 or Part 2.
+
+### Tuesday, November 10, 2026 — 14:54:51 Asia/Manila | Audit Part 1b API and database documentation
+
+- **Agent:** Codex
+- **Summary:** Added a per-route ledger for all 51 API routes and an individually named inventory of all 65 exported MockDB functions, with source lines, classifications, and route analogs/gaps. Corrected the stale DB-02 model-method claim. Recorded the Project owner's confirmed per-student–guardian relationship scope while keeping the SQL mismatch and guardian ownership/lifecycle open. Retention remains unresolved.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Database-Review.md`, `EducatraK-Knowledge-Base/04-Development/Backend-Readiness.md`, `EducatraK-Knowledge-Base/06-Decisions/2026-11-09-backend-part-1b-owner-decisions.md`, `EducatraK-Knowledge-Base/06-Decisions/Open-Decisions.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-09-backend-part-1b.md`, this tracker, and this changelog.
+- **Validation:** Inspected current `backend/routes/api.php`, MockDB exports and line numbers, and model public methods. Route inventory previously returned 51. No tests, builds, SQL execution, database load, or backend/frontend file changes.
+- **Commit/PR:** None.
+- **Follow-ups:** Exact per-route request/response schemas, direct audit assertions and test method mappings remain open; migration-FK/model relation reconciliation remains open. B7 and Part 2 are not authorized. No retention value or guardian schema change was inferred.
+
+### Tuesday, November 10, 2026 — 15:06:48 Asia/Manila | Expand Part 1b handler contract evidence
+
+- **Agent:** Codex
+- **Summary:** Expanded the route ledger with controller/Form Request inputs, response/status details, audit actions, and named test methods where found. Corrected the required full student update payload and business-date simulator field; documented Twilio callback signature fields and payment idempotency constraints. Explicitly marked known direct-test gaps.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-09-backend-part-1b.md`, this tracker, and this changelog.
+- **Validation:** `git diff --check` passed with Git LF-to-CRLF warnings; route table count 51; MockDB function table count 65; no backend/frontend paths changed by this task. No tests or builds run.
+- **Commit/PR:** None.
+- **Follow-ups:** Some serialized response/audit fields remain summarized. Direct test coverage is not identified for statement, options, adjustment-create, fee-item deactivate, or close-out sign-off routes. Model/FK reconciliation, retention conflict, and open MCA policy decisions remain unchanged.
+
+### Tuesday, November 10, 2026 — 15:02:04 +08:00 | Retire M10 clearance and exam-permit documentation
+
+- **Agent:** Codex
+- **Summary:** Removed clearance rules and the M10 lookup/permit requirements from the active module summary and workflows. Removed retired routes and capabilities from current role and route tables, updated the Registrar dashboard description, and recorded that database structures remain historical under the approved November 5 decision.
+- **Files:** Updated `EducatraK-Knowledge-Base/01-Requirements/Modules-and-Features.md`, `Scope-and-Access-Control.md`, `Screens-Routes-and-Flows.md`, `EducatraK-Knowledge-Base/04-Development/Backend-Readiness.md`, and this changelog.
+- **Validation:** Source scan found no active M10 route, permission, calculation, or settings implementation in `frontend/src` or `backend/app`/`routes`. `git diff --check` passed with existing LF-to-CRLF conversion warnings. No tests or builds run; no application code or database schema changed.
+- **Commit/PR:** None.
+- **Follow-ups:** Historical clearance models, factories, and migration-backed tables remain per the approved decision; no destructive schema migration was made. Older consolidated specification text remains historical and is superseded by its November 5 retirement notice.
+
+### Tuesday, November 10, 2026 — 18:04:33 Asia/Manila | Align Laravel idle-session lifetime
+
+- **Agent:** Codex
+- **Summary:** Applied the owner-approved 30-minute idle session lifetime to the Laravel default, environment example, PHPUnit environment and local backend environment. Added a focused AuthenticationTest assertion. Cookie settings, session driver, remember-me behavior, and frontend warning remain unchanged. Part 2 review confirmed existing Sanctum/middleware/error/audit/payment behavior; `/up` and login-only rate limiting remain per owner choices.
+- **Files:** Updated `backend/config/session.php`, `backend/.env.example`, `backend/phpunit.xml`, local `backend/.env`, and `backend/tests/Feature/AuthenticationTest.php`. Updated backend readiness and owner-decision implementation status; updated Issues-and-TODOs and added `EducatraK-Knowledge-Base/08-Logs/2026-11-10-backend-part-2.md`; appended this changelog.
+- **Validation:** Focused auth suite passed (10 tests / 36 assertions); full backend suite passed (146 tests / 1,029 assertions); Pint passed; configured session lifetime is 30; route list remains 51. Frontend baseline build passed; frontend suite had one pre-existing Registrar profile assertion failure (248 passed, 1 failed). No database command ran and no frontend/backend schema/route change occurred.
+- **Commit/PR:** None.
+- **Follow-ups:** Composer/MySQL tools unavailable; security-header/CORS/TLS and audit/log retention decisions remain open. Frontend baseline failure recorded in the issue tracker. Part 3 not started.
+
+### Tuesday, November 10, 2026 — 18:06:19 Asia/Manila | Verify Part 2 diff boundaries
+
+- **Agent:** Codex
+- **Summary:** Completed final scope review after the session-timeout alignment. Confirmed no frontend diff or untracked frontend files, and no Part 3 work.
+- **Files:** Updated `EducatraK-Knowledge-Base/04-Development/Backend-Readiness.md` to mark its former authorization statement historical; updated `EducatraK-Knowledge-Base/08-Logs/2026-11-10-backend-part-2.md` with final scope-check evidence; appended this record.
+- **Validation:** `git diff --check` passed with LF-to-CRLF warnings. Frontend diff from the starting commit is empty; the tracked backend diff is limited to the approved session configuration and focused test.
+- **Commit/PR:** None.
+- **Follow-ups:** No Part 3 work has started.
