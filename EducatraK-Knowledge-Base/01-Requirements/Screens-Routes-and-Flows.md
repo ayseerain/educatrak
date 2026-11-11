@@ -63,7 +63,7 @@ Each flow must have a Playwright test against the mock adapter.
 
 **F1. Record a payment** (the most-used flow; target under 2 minutes)
 1. Cashier clicks **Record payment** (dashboard) or opens from a student profile.
-2. Search field is focused; typing a name or student number shows results; Enter selects the first match.
+2. Search field is focused; typing a name or LRN shows results; Enter selects the first match.
 3. The screen shows the student, current balance, and the next due installment with its amount.
 4. Cashier enters an amount (a "Pay next installment" shortcut fills it), picks a method, enters a reference if not cash.
 5. Live validation shows: overpayment block, duplicate warnings, missing reference.

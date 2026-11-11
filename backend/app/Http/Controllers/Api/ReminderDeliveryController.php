@@ -33,7 +33,7 @@ class ReminderDeliveryController extends Controller
         ]);
 
         $installments = Installment::query()
-            ->with(['billingAccount.student:id,student_no,full_name', 'billingAccount.student.guardians'])
+            ->with(['billingAccount.student:id,lrn,full_name', 'billingAccount.student.guardians'])
             ->whereIn('id', $data['installment_ids'])
             ->whereColumn('paid_cents', '<', 'amount_cents')
             ->where(function ($query): void {

@@ -15,7 +15,7 @@ class NotificationLogReadTest extends TestCase
 
     public function test_approved_roles_can_filter_persisted_notification_attempts_and_registrar_cannot(): void
     {
-        $student = Student::query()->create(['student_no' => 'SAMPLE-8001', 'full_name' => 'Casey Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-8001', 'full_name' => 'Casey Sample Student', 'status' => 'enrolled']);
         $log = NotificationLog::query()->create([
             'student_id' => $student->id,
             'guardian_email' => 'guardian@example.test',

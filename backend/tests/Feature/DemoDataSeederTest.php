@@ -23,7 +23,7 @@ class DemoDataSeederTest extends TestCase
             'role' => 'cashier',
         ]);
         $this->assertDatabaseHas('students', [
-            'student_no' => 'S-1001',
+            'lrn' => '000000000001',
             'full_name' => 'Amara Villanueva (sample)',
         ]);
     }

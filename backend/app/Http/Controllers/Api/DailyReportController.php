@@ -53,7 +53,7 @@ class DailyReportController extends Controller
             ->all();
 
         $paymentRows = (clone $payments)
-            ->with(['student:id,student_no,full_name', 'recordedBy:id,full_name', 'receipt:id,payment_id,receipt_no', 'voidRequest:id,payment_id,status'])
+            ->with(['student:id,lrn,full_name', 'recordedBy:id,full_name', 'receipt:id,payment_id,receipt_no', 'voidRequest:id,payment_id,status'])
             ->latest('paid_on')
             ->latest('id')
             ->paginate($perPage, ['*'], 'page', (int) ($filters['page'] ?? 1));
@@ -77,7 +77,7 @@ class DailyReportController extends Controller
                 'id' => (string) $void->id,
                 'paymentId' => (string) $void->payment_id,
                 'receiptNo' => $void->payment->receipt?->receipt_no,
-                'studentNo' => $void->payment->student->student_no,
+                'lrn' => $void->payment->student->lrn,
                 'studentName' => $void->payment->student->full_name,
                 'amountCents' => (int) $void->payment->amount_cents,
                 'status' => $void->status,
@@ -95,7 +95,7 @@ class DailyReportController extends Controller
                 'byCashier' => $byCashier,
                 'payments' => $paymentRows->getCollection()->map(fn (Payment $payment): array => [
                     'id' => (string) $payment->id,
-                    'studentNo' => $payment->student->student_no,
+                    'lrn' => $payment->student->lrn,
                     'studentName' => $payment->student->full_name,
                     'receiptNo' => $payment->receipt?->receipt_no,
                     'amountCents' => (int) $payment->amount_cents,

@@ -86,7 +86,7 @@ export function LiveRegistrarStudentSearch() {
         onClick={() => openStudent(student.id)}
       >
         <span className="block font-medium text-text-primary">{student.fullName}</span>
-        <span className="block font-mono text-xs text-text-secondary">{student.studentNo}</span>
+        <span className="block font-mono text-xs text-text-secondary">{student.lrn}</span>
       </button>)}
     </div>}
   </div>;

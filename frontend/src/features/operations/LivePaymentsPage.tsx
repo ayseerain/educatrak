@@ -105,10 +105,10 @@ function LivePaymentListPage({ user }: { user: AuthenticatedUser }) {
       for (let currentPage = 2; currentPage <= firstPage.lastPage; currentPage += 1) {
         payments.push(...(await listPayments({ ...filters, page: currentPage, perPage: tableFilters.perPage })).data);
       }
-      downloadCsv("payment-history.csv", ["Receipt", "Student", "Student no.", "Amount (PHP)", "Method", "Date of payment", "Recorded by", "Status"], payments.map((payment) => [
+      downloadCsv("payment-history.csv", ["Receipt", "Student", "LRN", "Amount (PHP)", "Method", "Date of payment", "Recorded by", "Status"], payments.map((payment) => [
         payment.receiptNo ?? `Payment ${payment.id}`,
         payment.studentName ?? "Unavailable",
-        payment.studentNo ?? "Unavailable",
+        payment.lrn ?? "Unavailable",
         (payment.amountCents / 100).toFixed(2),
         payment.method,
         payment.paidOn,
@@ -127,7 +127,7 @@ function LivePaymentListPage({ user }: { user: AuthenticatedUser }) {
       <div className="page-header-card mb-5 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-bold tracking-tight text-text-primary">{user.role === "accounting" ? "Payment review" : "Payments"}</h1><p className="mt-1 text-sm text-text-secondary">{user.role === "cashier" ? "Your recorded payments are shown by default." : "Search and filter recorded payments."}</p></div><div className="flex gap-2"><Button type="button" variant="secondary" disabled={!paymentsQuery.data || isExporting} onClick={() => void exportPayments()}>{isExporting ? "Preparing export…" : "Export for Excel (.csv)"}</Button>{can(user, "payment.record") && <Link className={primaryLinkClass} to="/payments/new">Record payment</Link>}</div></div>
       {exportError && <p className="mb-4 text-sm text-status-error" role="alert">{exportError}</p>}
       <Card className="p-0">
-        <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Payments" defaults={paymentFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "query", label: "Search receipt or student", placeholder: "Receipt number, name, or student number" }} fields={[
+        <div className="border-b border-border px-5 py-3"><TableFilters embedded scope="Payments" defaults={paymentFilterDefaults} draft={tableFilters.draft} applied={tableFilters.applied} search={{ key: "query", label: "Search receipt or student", placeholder: "Receipt number, name, or LRN" }} fields={[
         { key: "status", label: "Status", type: "select", options: statusFilters },
         { key: "dateFrom", label: "Date of payment from", type: "date" },
         { key: "dateTo", label: "Date of payment through", type: "date" },

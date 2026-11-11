@@ -4,7 +4,7 @@ import { formatDate, formatDateTime } from "@/lib/dates";
 import { centavos, format } from "@/lib/money";
 
 /** The single receipt layout used by direct printing, the receipt route, and the development preview. */
-export function ReceiptDocument({ payment, printedAt = new Date(), identifierLabel = "Student number" }: { payment: PaymentRecord; printedAt?: Date; identifierLabel?: string }) {
+export function ReceiptDocument({ payment, printedAt = new Date(), identifierLabel = "LRN" }: { payment: PaymentRecord; printedAt?: Date; identifierLabel?: string }) {
   const voided = payment.status === "voided";
   const copyLabel = voided ? "VOID" : payment.reprintCount > 0 ? `REPRINT ${payment.reprintCount}` : "ORIGINAL";
   const gradeSection = [payment.studentGrade, payment.studentSection].filter(Boolean).join(" · ");
@@ -27,7 +27,7 @@ export function ReceiptDocument({ payment, printedAt = new Date(), identifierLab
         <h2>Student information</h2>
         <dl className="receipt-fields">
           <div><dt>Student name</dt><dd>{payment.studentName ?? "Unavailable"}</dd></div>
-          <div><dt>{identifierLabel}</dt><dd>{payment.studentNo ?? "Unavailable"}</dd></div>
+          <div><dt>{identifierLabel}</dt><dd>{payment.lrn ?? "Unavailable"}</dd></div>
           {gradeSection && <div><dt>Grade and section</dt><dd>{gradeSection}</dd></div>}
           {payment.schoolYear && <div><dt>School year</dt><dd>{payment.schoolYear}</dd></div>}
         </dl>

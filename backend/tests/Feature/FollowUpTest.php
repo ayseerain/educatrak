@@ -39,7 +39,7 @@ class FollowUpTest extends TestCase
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
         $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 5', 'sort_order' => 5]);
         $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Sample Section']);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-01', 'full_name' => 'Morgan Sample', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-FOLLOW-01', 'full_name' => 'Morgan Sample', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier);
         $guardian = Guardian::query()->forceCreate(['full_name' => 'Casey Sample Guardian', 'relationship' => 'Guardian', 'email' => 'guardian@example.test', 'email_status' => 'ok', 'mobile' => '09990000000']);
         $student->guardians()->attach($guardian->id, ['is_primary' => true]);
@@ -51,7 +51,7 @@ class FollowUpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.id', (string) $overdue->id)
-            ->assertJsonPath('data.0.studentNo', 'SAMPLE-FOLLOW-01')
+            ->assertJsonPath('data.0.lrn', 'SAMPLE-FOLLOW-01')
             ->assertJsonPath('data.0.amountDueCents', 7_500)
             ->assertJsonPath('data.0.daysOverdue', 4)
             ->assertJsonPath('data.0.status', 'overdue')
@@ -91,7 +91,7 @@ class FollowUpTest extends TestCase
     {
         config(['services.reminders.enabled' => false]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-GATE', 'full_name' => 'Quinn Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-FOLLOW-GATE', 'full_name' => 'Quinn Sample Student', 'status' => 'enrolled']);
         $notification = NotificationLog::query()->create([
             'student_id' => $student->id,
             'guardian_email' => 'guardian@example.test',
@@ -122,7 +122,7 @@ class FollowUpTest extends TestCase
         config(['services.reminders.enabled' => true]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-02', 'full_name' => 'Morgan Sample', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-FOLLOW-02', 'full_name' => 'Morgan Sample', 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier);
         $installment = Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'October installment', 'sequence' => 1, 'due_date' => '2026-10-20', 'amount_cents' => 10_000, 'paid_cents' => 0, 'status' => 'overdue']);
         $guardian = Guardian::query()->forceCreate(['full_name' => 'Casey Sample Guardian', 'relationship' => 'Guardian', 'email' => 'guardian@example.test', 'email_status' => 'verified', 'mobile' => '+639990000000']);
@@ -158,7 +158,7 @@ class FollowUpTest extends TestCase
         config(['services.twilio.auth_token' => 'test-token']);
         $user = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-FOLLOW-03', 'full_name' => 'Morgan Sample', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-FOLLOW-03', 'full_name' => 'Morgan Sample', 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $user);
         $installment = Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'October installment', 'sequence' => 1, 'due_date' => '2026-10-20', 'amount_cents' => 10_000, 'paid_cents' => 0, 'status' => 'overdue']);
         $log = NotificationLog::query()->create(['student_id' => $student->id, 'installment_id' => $installment->id, 'guardian_mobile' => '+639990000000', 'channel' => 'sms', 'kind' => 'reminder', 'status' => 'queued']);

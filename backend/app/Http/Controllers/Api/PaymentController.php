@@ -54,7 +54,7 @@ class PaymentController extends Controller
                 $query->where(function ($matching) use ($search): void {
                     $matching->whereHas('student', fn ($studentQuery) => $studentQuery
                         ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('student_no', 'like', "%{$search}%"))
+                        ->orWhere('lrn', 'like', "%{$search}%"))
                         ->orWhereHas('receipt', fn ($receiptQuery) => $receiptQuery->where('receipt_no', 'like', "%{$search}%"));
                 });
             })
@@ -92,7 +92,7 @@ class PaymentController extends Controller
             ->when($query !== '', function ($studentQuery) use ($query): void {
                 $studentQuery->where(function ($matchQuery) use ($query): void {
                     $matchQuery->where('full_name', 'like', "%{$query}%")
-                        ->orWhere('student_no', 'like', "%{$query}%");
+                        ->orWhere('lrn', 'like', "%{$query}%");
                 });
             })
             ->orderBy('full_name')
@@ -105,7 +105,7 @@ class PaymentController extends Controller
 
                 return [
                     'id' => (string) $student->id,
-                    'number' => $student->student_no,
+                    'number' => $student->lrn,
                     'name' => $student->full_name,
                     'grade' => $student->gradeLevel?->name,
                     'section' => $student->section?->name,
@@ -128,7 +128,7 @@ class PaymentController extends Controller
             'data' => [
                 'student' => [
                     'id' => (string) $student->id,
-                    'number' => $student->student_no,
+                    'number' => $student->lrn,
                     'name' => $student->full_name,
                 ],
                 'billing_account_id' => (string) $account->id,
@@ -314,7 +314,7 @@ class PaymentController extends Controller
             'id' => (string) $payment->id,
             'student_id' => (string) $payment->student_id,
             'student_name' => $payment->student?->full_name,
-            'student_no' => $payment->student?->student_no,
+            'lrn' => $payment->student?->lrn,
             'student_grade' => $payment->student?->gradeLevel?->name,
             'student_section' => $payment->student?->section?->name,
             'billing_account_id' => (string) $payment->billing_account_id,

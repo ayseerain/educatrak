@@ -23,11 +23,11 @@ class OutstandingReportTest extends TestCase
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
         $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 4', 'sort_order' => 4]);
         $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Orchid']);
-        $overdueStudent = Student::query()->create(['student_no' => 'SAMPLE-9201', 'full_name' => 'Avery Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
+        $overdueStudent = Student::query()->create(['lrn' => 'SAMPLE-9201', 'full_name' => 'Avery Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $overdue = $this->createAccount($overdueStudent, $year, $admin, 15_000);
         Installment::query()->create(['billing_account_id' => $overdue->id, 'label' => 'Past installment', 'sequence' => 1, 'due_date' => today('Asia/Manila')->subDay()->toDateString(), 'amount_cents' => 20_000, 'paid_cents' => 5_000, 'status' => 'overdue']);
 
-        $upcomingStudent = Student::query()->create(['student_no' => 'SAMPLE-9202', 'full_name' => 'Robin Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
+        $upcomingStudent = Student::query()->create(['lrn' => 'SAMPLE-9202', 'full_name' => 'Robin Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $upcoming = $this->createAccount($upcomingStudent, $year, $admin, 25_000);
         Installment::query()->create(['billing_account_id' => $upcoming->id, 'label' => 'Upcoming installment', 'sequence' => 1, 'due_date' => today('Asia/Manila')->addMonth()->toDateString(), 'amount_cents' => 25_000, 'paid_cents' => 0, 'status' => 'current']);
 
@@ -43,7 +43,7 @@ class OutstandingReportTest extends TestCase
         $this->actingAs($accounting)->getJson('/api/reports/outstanding?grade=Grade%204&section=Orchid&minimum_balance_cents=10000&overdue_only=1')
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
-            ->assertJsonPath('data.0.studentNo', 'SAMPLE-9201');
+            ->assertJsonPath('data.0.lrn', 'SAMPLE-9201');
 
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
         $this->actingAs($registrar)->getJson('/api/reports/outstanding')->assertForbidden();

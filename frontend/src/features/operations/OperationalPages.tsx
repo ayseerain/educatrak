@@ -1678,7 +1678,7 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
 
   if (!payment || !student) return <NotFoundPage />;
   const receipt: PaymentRecord = {
-    id: payment.id, studentId: student.id, studentName: student.name, studentNo: student.lrn,
+    id: payment.id, studentId: student.id, studentName: student.name, lrn: student.lrn,
     studentGrade: student.grade, studentSection: student.section, schoolYear: account?.schoolYear ?? null,
     billingAccountId: payment.accountId, amountCents: payment.amount, method: "Cash", paidOn: payment.paidOn,
     status: payment.status === "Voided" ? "voided" : payment.status === "Void pending" ? "void_pending" : "valid",

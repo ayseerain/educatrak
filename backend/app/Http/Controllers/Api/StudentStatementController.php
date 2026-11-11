@@ -28,7 +28,7 @@ class StudentStatementController extends Controller
 
         return response()->json(['data' => [
             'studentId' => (string) $student->id,
-            'studentNo' => $student->student_no,
+            'lrn' => $student->lrn,
             'studentName' => $student->full_name,
             'schoolYear' => $account->schoolYear->label,
             'totalDueCents' => (int) $account->total_due_cents,

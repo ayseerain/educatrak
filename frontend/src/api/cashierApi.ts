@@ -62,7 +62,7 @@ export interface PaymentRecord {
   id: string;
   studentId: string;
   studentName: string | null;
-  studentNo: string | null;
+  lrn: string | null;
   studentGrade?: string | null;
   studentSection?: string | null;
   schoolYear?: string | null;
@@ -91,7 +91,7 @@ export interface PaymentPage {
 }
 
 function mapPayment(payment: {
-  id: string; student_id: string; student_name: string | null; student_no: string | null; billing_account_id: string;
+  id: string; student_id: string; student_name: string | null; lrn: string | null; billing_account_id: string;
   student_grade?: string | null; student_section?: string | null; school_year?: string | null;
   amount_cents: number; method: string; paid_on: string; status: string; receipt_no: string | null;
   first_printed_at?: string | null;
@@ -104,7 +104,7 @@ function mapPayment(payment: {
     id: payment.id,
     studentId: payment.student_id,
     studentName: payment.student_name,
-    studentNo: payment.student_no,
+    lrn: payment.lrn,
     studentGrade: payment.student_grade ?? null,
     studentSection: payment.student_section ?? null,
     schoolYear: payment.school_year ?? null,
@@ -323,7 +323,7 @@ export async function listSecurityEvents(filters: { user?: string; action?: stri
 
 export interface StudentListItem {
   id: string;
-  studentNo: string;
+  lrn: string;
   fullName: string;
   gradeLevel: string | null;
   section: string | null;
@@ -338,7 +338,7 @@ export interface StudentRecordOptions {
 }
 
 export interface StudentRecordInput {
-  studentNo: string;
+  lrn: string;
   fullName: string;
   gradeLevelId: string;
   sectionId: string;
@@ -381,7 +381,7 @@ export async function updateStudent(studentId: string, input: StudentRecordInput
 
 function toStudentPayload(input: StudentRecordInput) {
   return {
-    student_no: input.studentNo,
+    lrn: input.lrn,
     full_name: input.fullName,
     grade_level_id: Number(input.gradeLevelId),
     section_id: Number(input.sectionId),
@@ -396,7 +396,7 @@ function toStudentPayload(input: StudentRecordInput) {
 export interface BillingAccountSummary {
   id: string;
   studentId: string;
-  studentNo: string;
+  lrn: string;
   studentName: string;
   gradeLevel: string | null;
   section: string | null;

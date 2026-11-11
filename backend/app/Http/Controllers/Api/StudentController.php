@@ -41,9 +41,9 @@ class StudentController extends Controller
             ))
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
                 $search = trim($filters['query']);
-                $query->where(function ($matches) use ($search): void {
+            $query->where(function ($matches) use ($search): void {
                     $matches->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('student_no', 'like', "%{$search}%");
+                        ->orWhere('lrn', 'like', "%{$search}%");
                 });
             })
             ->when(isset($filters['grade']), fn ($query) => $query->whereHas('gradeLevel', fn ($grades) => $grades->where('name', $filters['grade'])))
@@ -154,7 +154,7 @@ class StudentController extends Controller
     /** @return array<string, mixed> */
     private function studentAuditData(Student $student): array
     {
-        return $student->only(['student_no', 'full_name', 'grade_level_id', 'section_id', 'status']);
+        return $student->only(['lrn', 'full_name', 'grade_level_id', 'section_id', 'status']);
     }
 
     /** @param array<string, mixed> $input */
@@ -181,7 +181,7 @@ class StudentController extends Controller
     {
         $data = [
             'id' => (string) $student->id,
-            'studentNo' => $student->student_no,
+            'lrn' => $student->lrn,
             'fullName' => $student->full_name,
             'gradeLevel' => $student->gradeLevel?->name,
             'section' => $student->section?->name,

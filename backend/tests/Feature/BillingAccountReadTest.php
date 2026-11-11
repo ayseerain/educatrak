@@ -23,7 +23,7 @@ class BillingAccountReadTest extends TestCase
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
         $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 4', 'sort_order' => 4]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-4002', 'full_name' => 'Morgan Sample Student', 'grade_level_id' => $grade->id, 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-4002', 'full_name' => 'Morgan Sample Student', 'grade_level_id' => $grade->id, 'status' => 'enrolled']);
         $account = BillingAccount::query()->create([
             'student_id' => $student->id,
             'school_year_id' => $year->id,
@@ -56,7 +56,7 @@ class BillingAccountReadTest extends TestCase
     {
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-4003', 'full_name' => 'Jamie Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-4003', 'full_name' => 'Jamie Sample Student', 'status' => 'enrolled']);
         $account = BillingAccount::query()->create([
             'student_id' => $student->id,
             'school_year_id' => $year->id,
@@ -71,7 +71,7 @@ class BillingAccountReadTest extends TestCase
             $reader = $role === UserRole::Cashier ? $cashier : User::factory()->create(['role' => $role]);
             $this->actingAs($reader)->getJson("/api/billing-accounts/{$account->id}")
                 ->assertOk()
-                ->assertJsonPath('data.studentNo', 'SAMPLE-4003')
+                ->assertJsonPath('data.lrn', 'SAMPLE-4003')
                 ->assertJsonPath('data.balanceCents', 50_000)
                 ->assertJsonPath('data.items', [])
                 ->assertJsonPath('data.installments', [])
@@ -95,8 +95,8 @@ class BillingAccountReadTest extends TestCase
             ['SAMPLE-4012', 'Avery Sample Student', 5_000],
             ['SAMPLE-4013', 'Blake Sample Student', 10_000],
             ['SAMPLE-4014', 'Casey Sample Student', 15_000],
-        ] as [$studentNo, $name, $balance]) {
-            $student = Student::query()->create(['student_no' => $studentNo, 'full_name' => $name, 'status' => 'enrolled']);
+        ] as [$lrn, $name, $balance]) {
+            $student = Student::query()->create(['lrn' => $lrn, 'full_name' => $name, 'status' => 'enrolled']);
             BillingAccount::query()->create([
                 'student_id' => $student->id,
                 'school_year_id' => $year->id,
@@ -111,7 +111,7 @@ class BillingAccountReadTest extends TestCase
         $this->actingAs($cashier)->getJson('/api/billing-accounts?minimum_balance_cents=10000&maximum_balance_cents=10000')
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
-            ->assertJsonPath('data.0.studentNo', 'SAMPLE-4013');
+            ->assertJsonPath('data.0.lrn', 'SAMPLE-4013');
 
         $this->actingAs($cashier)->getJson('/api/billing-accounts?minimum_balance_cents=15001&maximum_balance_cents=15000')
             ->assertUnprocessable()
@@ -123,7 +123,7 @@ class BillingAccountReadTest extends TestCase
         $cashier = User::factory()->create(['role' => UserRole::Cashier, 'full_name' => 'Casey Cashier (sample)']);
         $accountant = User::factory()->create(['role' => UserRole::Accounting, 'full_name' => 'Morgan Accountant (sample)']);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-4010', 'full_name' => 'Taylor Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-4010', 'full_name' => 'Taylor Sample Student', 'status' => 'enrolled']);
         $account = BillingAccount::query()->forceCreate([
             'student_id' => $student->id,
             'school_year_id' => $year->id,
@@ -167,7 +167,7 @@ class BillingAccountReadTest extends TestCase
             'occurred_at' => '2026-10-23 08:00:00',
         ]);
 
-        $otherStudent = Student::query()->create(['student_no' => 'SAMPLE-4011', 'full_name' => 'Jordan Sample Student', 'status' => 'enrolled']);
+        $otherStudent = Student::query()->create(['lrn' => 'SAMPLE-4011', 'full_name' => 'Jordan Sample Student', 'status' => 'enrolled']);
         $otherAccount = BillingAccount::query()->forceCreate([
             'student_id' => $otherStudent->id,
             'school_year_id' => $year->id,

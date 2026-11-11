@@ -121,7 +121,7 @@ function renderPage(element: ReactNode, initialEntry = "/accounts") {
 const summary = {
   id: "account-1",
   studentId: "student-1",
-  studentNo: "SAMPLE-4002",
+  lrn: "SAMPLE-4002",
   studentName: "Morgan Sample Student",
   gradeLevel: "Grade 4",
   section: null,
