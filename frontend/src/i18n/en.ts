@@ -201,7 +201,7 @@ export const en = {
     description: "Unpaid installments and guardian contact details from persisted billing records.",
     search: "Search",
     searchLabel: "Search student follow-up",
-    searchPlaceholder: "Name or student number",
+    searchPlaceholder: "Name or LRN",
     grade: "Grade",
     section: "Section",
     status: "Status",

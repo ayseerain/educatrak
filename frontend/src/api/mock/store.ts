@@ -32,18 +32,33 @@ function restore(): void {
       state = {
         ...seed,
         ...candidate,
-        students: candidate.students.map((student) => {
+        students: (() => {
+          const assigned = new Set<string>();
+          const reserved = new Set(candidate.students.map((item) => (item as { lrn?: unknown }).lrn).filter((value): value is string => typeof value === "string" && /^\d{12}$/.test(value)));
+          return candidate.students.map((student, index) => {
           const seededStudent = seed.students.find((seeded) => seeded.id === student.id);
-          if (!seededStudent) return student;
+          const storedLrn = (student as { lrn?: unknown }).lrn;
+          let lrn = typeof storedLrn === "string" && /^\d{12}$/.test(storedLrn) && !assigned.has(storedLrn) ? storedLrn : "";
+          if (!lrn && seededStudent?.lrn && !assigned.has(seededStudent.lrn) && (!reserved.has(seededStudent.lrn) || storedLrn === seededStudent.lrn)) lrn = seededStudent.lrn;
+          if (!lrn) {
+            let suffix = index + 1;
+            do { lrn = String(suffix++).padStart(12, "0"); } while (assigned.has(lrn) || reserved.has(lrn));
+          }
+          assigned.add(lrn);
+          const { number: _legacyNumber, ...studentWithoutNumber } = student as typeof student & { number?: unknown };
+          if (!seededStudent) return { ...studentWithoutNumber, lrn } as typeof student;
           return {
             ...seededStudent,
-            ...student,
+            ...studentWithoutNumber,
+            lrn,
             dateOfBirth: student.dateOfBirth ?? seededStudent.dateOfBirth ?? null,
             gender: student.gender ?? seededStudent.gender ?? null,
             residentialAddress: student.residentialAddress ?? seededStudent.residentialAddress ?? null,
           };
-        }),
+          });
+        })(),
       } as SeededMockDatabase;
+      persist();
     }
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);

@@ -7,7 +7,7 @@ const runtimePaymentIds = new Set<string>();
 
 export interface Student {
   id: string;
-  number: string;
+  lrn: string;
   name: string;
   grade: string;
   section: string;
@@ -117,7 +117,7 @@ export interface MockCloseOut {
 }
 
 export interface MockStudentInput {
-  number: string;
+  lrn: string;
   name: string;
   grade: string;
   section: string;
@@ -716,14 +716,15 @@ export function restoreMockStaffUser(userId: string, actorId = "user-admin"): Mo
 }
 
 export function createMockStudent(input: MockStudentInput, actorId = "user-registrar"): Student {
-  const number = input.number.trim();
-  if (!number || !input.name.trim() || !input.grade || !input.section) throw new Error("Complete the required student fields.");
+  const lrn = input.lrn.trim();
+  if (!/^\d{12}$/.test(lrn)) throw new Error("LRN must contain exactly 12 digits.");
+  if (!input.name.trim() || !input.grade || !input.section) throw new Error("Complete the required student fields.");
   validateMockStudentPersonalInfo(input);
-  if (getMockState().students.some((student) => student.number.toLocaleLowerCase() === number.toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
+  if (getMockState().students.some((student) => student.lrn === lrn)) throw new Error("This LRN already belongs to a student record.");
   const id = nextId("mock-student", getMockState().students);
   updateMockState((state) => {
     state.students.push({
-      id, number, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active",
+      id, lrn, name: input.name.trim(), grade: input.grade, section: input.section, studentStatus: "Active",
       dateOfBirth: input.dateOfBirth ?? null,
       gender: input.gender ?? null,
       residentialAddress: input.residentialAddress?.trim() ?? null,
@@ -744,9 +745,10 @@ export function updateMockStudent(studentId: string, input: MockStudentInput, ac
   updateMockState((state) => {
     const student = state.students.find((item) => item.id === studentId);
     if (!student) return;
-    if (state.students.some((item) => item.id !== studentId && item.number.toLocaleLowerCase() === input.number.trim().toLocaleLowerCase())) throw new Error("This student number already belongs to a student record.");
+    if (!/^\d{12}$/.test(input.lrn.trim())) throw new Error("LRN must contain exactly 12 digits.");
+    if (state.students.some((item) => item.id !== studentId && item.lrn === input.lrn.trim())) throw new Error("This LRN already belongs to a student record.");
     Object.assign(student, {
-      number: input.number.trim(), name: input.name.trim(), grade: input.grade, section: input.section,
+      lrn: input.lrn.trim(), name: input.name.trim(), grade: input.grade, section: input.section,
       ...(input.studentStatus ? { studentStatus: input.studentStatus } : {}),
       ...(input.dateOfBirth !== undefined ? { dateOfBirth: input.dateOfBirth } : {}),
       ...(input.gender !== undefined ? { gender: input.gender } : {}),
@@ -903,9 +905,9 @@ export function signOffMockCloseOut(closeOutId: string, actorId = "user-accounti
   });
 }
 
-export function recordMockBillingPayment(input: { studentNumber: string; billingAccountId?: string; amount: number; paidOn: string }): MockPayment {
+export function recordMockBillingPayment(input: { studentLrn: string; billingAccountId?: string; amount: number; paidOn: string }): MockPayment {
   if (!Number.isInteger(input.amount) || input.amount < 1) throw new Error("Payment amount must be greater than zero.");
-  const student = selectStudents().find((candidate) => candidate.number === input.studentNumber);
+  const student = selectStudents().find((candidate) => candidate.lrn === input.studentLrn);
   if (!student) throw new Error("This student is not available for a payment.");
   const account = input.billingAccountId ? getBillingAccount(input.billingAccountId) : getCurrentBillingAccount(student.id);
   if (!account) throw new Error("This student does not have a current billing account.");

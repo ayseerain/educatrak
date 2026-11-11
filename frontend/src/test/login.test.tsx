@@ -242,7 +242,7 @@ describe("LoginPage", () => {
 
     act(() => {
       createMockStudent({
-        number: "MOCK-SESSION-REGRESSION",
+        lrn: "000000000925",
         name: "Session Regression Student",
         grade: "Grade 7",
         section: "Olive",

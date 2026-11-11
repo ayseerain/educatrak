@@ -397,7 +397,7 @@ Updated: Monday, October 26, 2026 — 10:26:27 +08:00. The MockDB archive confir
 - **Documented access:** Registrar (`student.edit`); MockDB only.
 - **Build scope:** Phase 1 interface for CSV/XLSX selection, column-mapping and review waiting states, row-warning preview structure, and final confirmation affordance.
 - **Build status:** [x] Phase 1 UI built
-- **Resume Note:** Registrar-only route and Students-page entry implemented. File selection checks CSV/XLSX extension and rejects empty files; no file contents are parsed and no MockDB data changes. Mapping and review remain waiting states for later approved phases. Student Number-to-LRN replacement is a separate task and must precede parsing/apply work.
+- **Resume Note:** Registrar-only route and Students-page entry remain in place. Phase 1 styling uses the CLINIQ upload-zone treatment, an Import Student List header, and a centered responsive content column. The MockDB prerequisite now replaces Student Number with unique, 12-digit text LRNs, normalizes saved browser records to synthetic mock LRNs, and preserves internal IDs and financial links. Add/Edit, profile, list/search, billing selections, and mock receipts use unmasked LRNs. Live API fields remain unchanged. CSV/XLSX extension and empty-file checks remain; import parsing, mapping, preview, and MockDB apply are deferred. Focused tests passed (90 tests across four files); production build and visual browser review remain pending.
 ---
 
 # 2. Cross-Check & Audit Phase
@@ -898,7 +898,7 @@ A screen is never marked audited merely because it was previously built.
 - [x] B40 — **Backup & Recovery** (`/admin/backup`)
   - **Resume Note:** Implemented as a mock frontend route. See the detailed Build Resume Note above; formal Phase 2 audit remains pending.
 - [x] B41 — **Student Masterlist Import** (`/students/import`)
-  - **Resume Note:** Phase 1 interface only; file selection and waiting states are implemented. Parsing, row validation, preview, and MockDB apply remain for later approved phases; Student Number-to-LRN replacement is separate.
+  - **Resume Note:** Phase 1 interface and MockDB LRN prerequisite are implemented. Parsing, row validation, preview, and MockDB apply remain for later approved phases; live Student Number API fields are unchanged.
 
 ## Cross-Check & Audit Phase Summary
 

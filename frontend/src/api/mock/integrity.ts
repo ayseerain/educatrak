@@ -53,7 +53,11 @@ export function mockIntegrityErrors(data: typeof rawMockDatabase = rawMockDataba
     if (!ids.students.has(row.studentId)) errors.push(`studentGuardianLinks.studentId ${row.studentId} does not exist`);
     if (!ids.guardians.has(row.guardianId)) errors.push(`studentGuardianLinks.guardianId ${row.guardianId} does not exist`);
   }
+  const lrns = new Set<string>();
   for (const student of data.students) {
+    if (!/^\d{12}$/.test(student.lrn)) errors.push(`students.lrn for ${student.id} must contain exactly 12 digits`);
+    else if (lrns.has(student.lrn)) errors.push(`students.lrn ${student.lrn} duplicates`);
+    else lrns.add(student.lrn);
     const personal = student as unknown as { id: string; dateOfBirth?: unknown; gender?: unknown; residentialAddress?: unknown };
     if (personal.dateOfBirth != null && (typeof personal.dateOfBirth !== "string" || !isValidDateOfBirth(personal.dateOfBirth) || personal.dateOfBirth > todayInManila())) errors.push(`students.dateOfBirth for ${student.id} must be a valid, non-future date`);
     if (personal.gender != null && personal.gender !== "Male" && personal.gender !== "Female") errors.push(`students.gender for ${student.id} must be Male or Female`);

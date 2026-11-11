@@ -377,7 +377,7 @@ export function StudentsPage({ user }: { user: AuthenticatedUser }) {
             value={filters.draft.query}
             onChange={(value) => filters.search("query", value)}
             autoFocus
-            placeholder="Search by student name or number"
+            placeholder="Search by student name or LRN"
             wrapperClassName="min-w-[min(100%,16rem)] flex-1"
             labelClassName="sr-only"
             inputClassName={cn(inputClass, "m-0")}
@@ -462,7 +462,7 @@ function StudentTable({
                   {student.name}
                 </div>
                 <div className="text-sm text-text-secondary">
-                  {student.number}
+                  {student.lrn}
                 </div>
               </td>
               <td className="px-3 py-2">
@@ -544,7 +544,7 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
     const formData = new FormData(form);
     try {
       const input = {
-        number: String(formData.get("number") ?? ""), name: String(formData.get("name") ?? ""), grade, section,
+        lrn: String(formData.get("lrn") ?? ""), name: String(formData.get("name") ?? ""), grade, section,
         studentStatus: student ? studentStatus : "Active",
         dateOfBirth, gender, residentialAddress,
         guardianName: String(formData.get("guardianName") ?? ""),
@@ -570,11 +570,16 @@ export function StudentFormPage({ user, edit }: { user?: AuthenticatedUser; edit
         <Card className="grid gap-4 md:grid-cols-2">
           <h2 className="text-base font-semibold text-text-primary md:col-span-2">Student information</h2>
           <label className="text-sm font-medium">
-            Student number <span aria-hidden="true" className="text-status-error">*</span>
+            LRN <span aria-hidden="true" className="text-status-error">*</span>
             <input
-              name="number"
+              name="lrn"
               required
-              defaultValue={student?.number ?? ""}
+              type="text"
+              inputMode="numeric"
+              maxLength={12}
+              pattern="[0-9]{12}"
+              title="Enter exactly 12 digits."
+              defaultValue={student?.lrn ?? ""}
               className={inputClass}
             />
           </label>
@@ -741,7 +746,7 @@ export function StudentProfilePage({ user }: { user: AuthenticatedUser }) {
     <>
       <PageHeader
         title={student.name}
-        description={`${student.number} - ${student.grade} - ${student.section}`}
+        description={`${student.lrn} - ${student.grade} - ${student.section}`}
         backTo="/students"
         action={
           <div className="flex flex-wrap gap-2">
@@ -774,7 +779,7 @@ function StudentOverviewPanel({
         <Card>
           <h2 className="text-base font-semibold text-text-primary">Academic information</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <StudentProfileField label="Student number" value={student.number} />
+            <StudentProfileField label="LRN" value={student.lrn} />
             <StudentProfileField label="Student name" value={student.name} />
             <StudentProfileField label="Grade level" value={student.grade} />
             <StudentProfileField label="Section" value={student.section} />
@@ -880,7 +885,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
     const student = getStudentById(account.studentId);
     const applied = filters.applied;
     const balance = Number(account.balance) / 100;
-    return (!applied.query || `${student?.name ?? ""} ${student?.number ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
+    return (!applied.query || `${student?.name ?? ""} ${student?.lrn ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
       && (!applied.schoolYear || account.schoolYear.toLowerCase().includes(applied.schoolYear.toLowerCase()))
       && (!applied.grade || student?.grade.toLowerCase().includes(applied.grade.toLowerCase()))
       && (!applied.status || account.status === applied.status)
@@ -901,7 +906,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
         }
       />
       <ListCard
-        toolbar={<TableFilters embedded scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or student number" }} fields={[
+        toolbar={<TableFilters embedded scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or LRN" }} fields={[
         { key: "schoolYear", label: "School year" }, { key: "grade", label: "Grade" },
         { key: "status", label: "Billing status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Current", label: "Current" }, { value: "Due soon", label: "Due soon" }, { value: "Overdue", label: "Overdue" }] },
         { key: "minimumBalance", label: "Minimum balance (PHP)", type: "number", min: "0", step: "0.01" },
@@ -925,7 +930,7 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
   const renewalMode = searchParams.get("mode") === "renew";
   const queryStudent = getStudentById(searchParams.get("student") ?? undefined);
   const [step, setStep] = useState(1);
-  const [studentQuery, setStudentQuery] = useState(queryStudent ? `${queryStudent.name} - ${queryStudent.number}` : "");
+  const [studentQuery, setStudentQuery] = useState(queryStudent ? `${queryStudent.name} - ${queryStudent.lrn}` : "");
   const [studentId, setStudentId] = useState<string | null>(queryStudent?.id ?? null);
   const [schoolYearId, setSchoolYearId] = useState(queryStudent && renewalMode ? getSuggestedRenewalSchoolYear(queryStudent.id)?.id ?? "" : getMockState().config.currentSchoolYearId);
   const [gradeLevel, setGradeLevel] = useState(queryStudent?.grade ?? "");
@@ -952,7 +957,7 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
   }, [schoolYearId, gradeLevel]);
 
   function selectStudent(student: typeof firstStudent) {
-    setStudentQuery(`${student.name} - ${student.number}`);
+    setStudentQuery(`${student.name} - ${student.lrn}`);
     setStudentId(student.id);
     setSchoolYearId(renewalMode ? getSuggestedRenewalSchoolYear(student.id)?.id ?? "" : getMockState().config.currentSchoolYearId);
     setGradeLevel(student.grade);
@@ -1005,8 +1010,8 @@ export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
         <ol className="mb-6 flex flex-wrap gap-2 text-sm">{steps.map((label, index) => <li key={label} className={cn("rounded-md border px-3 py-2", index + 1 === step ? "border-brand-green-light bg-status-success/10 font-semibold text-brand-green-dark" : "border-border bg-white text-text-secondary")}>{index + 1}. {label}</li>)}</ol>
         <h2 className="text-base font-semibold text-text-primary">{steps[step - 1]}</h2>
         <p className="mt-2 text-sm text-text-secondary">{step === 1 ? "Confirm the student, target school year, and grade level." : step === 2 ? "Configured fee items and active payment plans load from the shared mock database." : step === 3 ? "Review installment due dates and amounts before saving." : "Confirm the new account. Earlier financial records will remain unchanged."}</p>
-        {step === 1 && <StudentSearchField value={studentQuery} onChange={(value) => { setStudentQuery(value); if (value !== `${selectedStudent?.name} - ${selectedStudent?.number}`) setStudentId(null); }} onSelect={selectStudent} autoFocus={!queryStudent} placeholder="Search student name or number" wrapperClassName="mt-5" inputClassName={cn(inputClass, "m-0")} />}
-        {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.number}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
+        {step === 1 && <StudentSearchField value={studentQuery} onChange={(value) => { setStudentQuery(value); if (value !== `${selectedStudent?.name} - ${selectedStudent?.lrn}`) setStudentId(null); }} onSelect={selectStudent} autoFocus={!queryStudent} placeholder="Search student name or LRN" wrapperClassName="mt-5" inputClassName={cn(inputClass, "m-0")} />}
+        {step === 1 && selectedStudent && <div className="mt-3 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm text-text-primary"><p role="status">Selected student: <span className="font-medium">{selectedStudent.name}</span> ({selectedStudent.lrn}) · Current profile: {selectedStudent.grade} - {selectedStudent.section}</p><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Target school year<select aria-label="Target school year" className={inputClass} value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setError(""); }}><option value="">Select school year</option>{getMockState().schoolYears.map((year) => <option key={year.id} value={year.id} disabled={getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id)}>{year.label}{getStudentBillingAccounts(selectedStudent.id).some((account) => account.schoolYearId === year.id) ? " (account exists)" : ""}</option>)}</select></label><label className="text-sm font-medium">Target grade level<select aria-label="Target grade level" className={inputClass} value={gradeLevel} onChange={(event) => { setGradeLevel(event.target.value); setError(""); }}><option value="">Select grade level</option>{getMockGradeLevels().map((grade) => <option key={grade} value={grade}>{grade}</option>)}</select><span className="mt-1 block text-xs font-normal text-text-secondary">This account snapshot does not update the student profile.</span></label></div>{getStudentBillingAccounts(selectedStudent.id).length > 0 && <ListCard headers={["School year", "Grade", "Status", "Balance"]} rows={getStudentBillingAccounts(selectedStudent.id).map((account) => [account.schoolYear, account.gradeLevel, account.status, format(account.balance)])} />}</div>}
         {step === 2 && <div className="mt-5 space-y-5">{!feeItems?.length ? <p role="status" className="rounded-md border border-status-warning bg-status-warning/5 p-4 text-sm text-text-primary">No fee schedule is configured for {gradeLevel || "this grade"} in the selected school year. Go back and choose a configured grade or year.</p> : <fieldset><legend className="font-medium">Fee items</legend><p className="mt-1 text-sm text-text-secondary">Required fees are locked. Selected amounts are copied into this billing account.</p><div className="mt-3 space-y-2">{feeItems.map((item) => <label key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface p-3 text-sm"><span className="flex items-center gap-3"><input type="checkbox" checked={feeItemIds.includes(item.id)} disabled={item.required} onChange={(event) => setFeeItemIds((selected) => event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><span><span className="font-medium">{item.name}</span><span className="ml-2 text-text-secondary">{item.category} · {item.required ? "Required" : "Optional"}</span></span></span><span className="font-medium">{format(item.amount)}</span></label>)}</div><p className="mt-3 text-sm font-semibold">Selected total: {format(totalDue)}</p></fieldset>}<fieldset><legend className="font-medium">Installment plan</legend><div className="mt-3 grid gap-3 md:grid-cols-3">{paymentPlans.map((plan) => <label key={plan.id} className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-white p-3 text-sm"><input type="radio" name="paymentPlan" checked={paymentPlanId === plan.id} onChange={() => setPaymentPlanId(plan.id)} /><span><span className="block font-medium">{plan.name}</span><span className="mt-1 block text-text-secondary">Down payment: {format(plan.downPayment)} · {plan.installmentCount} scheduled payment{plan.installmentCount === 1 ? "" : "s"}</span></span></label>)}</div></fieldset></div>}
         {step === 3 && <div className="mt-5"><ListCard rows={schedule.map((installment) => [installment.label, formatDate(installment.dueDate), format(installment.amount)])} headers={["Installment", "Due date", "Amount"]} /><p className="mt-3 text-right text-sm font-semibold">Billing total: {format(totalDue)}</p></div>}
         {step === 4 && <div className="mt-5 space-y-4 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm"><dl className="grid gap-3 md:grid-cols-3"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{selectedStudent?.name}</dd></div><div><dt className="text-text-secondary">School year / grade</dt><dd className="font-medium">{getMockState().schoolYears.find((year) => year.id === schoolYearId)?.label} · {gradeLevel}</dd></div><div><dt className="text-text-secondary">Billing total</dt><dd className="font-medium">{format(totalDue)}</dd></div></dl><p>Creating the account saves the selected fee and schedule snapshots. Existing accounts, payments, receipts, balances, and audits are never changed.</p><label className="flex cursor-pointer items-center gap-2"><input className="shrink-0 cursor-pointer" type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>I confirm that this creates a separate billing account for the selected school year.</span></label></div>}
@@ -1079,7 +1084,7 @@ export function PaymentsPage({
     const applied = filters.applied;
     const student = getStudentById(payment.studentId);
     const amount = Number(payment.amount) / 100;
-    return (!applied.query || `${payment.receiptNo} ${student?.name ?? ""} ${student?.number ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
+    return (!applied.query || `${payment.receiptNo} ${student?.name ?? ""} ${student?.lrn ?? ""}`.toLowerCase().includes(applied.query.toLowerCase()))
       && (!applied.status || payment.status === applied.status)
       && (!applied.dateFrom || payment.paidOn >= applied.dateFrom)
       && (!applied.dateTo || payment.paidOn <= applied.dateTo)
@@ -1250,7 +1255,7 @@ function PaymentWorkflow({
   const initialSuggestedAmount =
     initialDueRecord?.amountDue ?? initialStudent?.balance ?? centavos(0);
   const [studentQuery, setStudentQuery] = useState(
-    initialStudent ? `${initialStudent.name} - ${initialStudent.number}` : "",
+    initialStudent ? `${initialStudent.name} - ${initialStudent.lrn}` : "",
   );
   const [amount, setAmount] = useState(
     initialStudent ? (initialSuggestedAmount / 100).toFixed(2) : "",
@@ -1315,7 +1320,7 @@ function PaymentWorkflow({
   function resetForNextPayment() {
     setStudentQuery(
       preselectedStudent
-        ? `${preselectedStudent.name} - ${preselectedStudent.number}`
+        ? `${preselectedStudent.name} - ${preselectedStudent.lrn}`
         : "",
     );
     setAmount("");
@@ -1334,7 +1339,7 @@ function PaymentWorkflow({
     try {
       const payment = await recordCashPaymentForStudent({
         billingAccountId: selectedAccount?.id ?? getCurrentBillingAccount(selectedStudent!.id)?.id ?? "",
-        studentNumber: selectedStudent!.number,
+        studentLrn: selectedStudent!.lrn,
         amount: enteredCentavos,
         paidOn: manilaDateInput(),
         notificationChannels,
@@ -1381,7 +1386,7 @@ function PaymentWorkflow({
             setIsSaving(false);
           }}
           autoFocus
-          placeholder="Type a student name or number"
+          placeholder="Type a student name or LRN"
           labelClassName="block text-sm font-medium"
           inputClassName={inputClass}
         />
@@ -1673,7 +1678,7 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
 
   if (!payment || !student) return <NotFoundPage />;
   const receipt: PaymentRecord = {
-    id: payment.id, studentId: student.id, studentName: student.name, studentNo: student.number,
+    id: payment.id, studentId: student.id, studentName: student.name, studentNo: student.lrn,
     studentGrade: student.grade, studentSection: student.section, schoolYear: account?.schoolYear ?? null,
     billingAccountId: payment.accountId, amountCents: payment.amount, method: "Cash", paidOn: payment.paidOn,
     status: payment.status === "Voided" ? "voided" : payment.status === "Void pending" ? "void_pending" : "valid",
@@ -1693,8 +1698,8 @@ export function ReceiptPage({ user }: { user: AuthenticatedUser }) {
         backTo={`/payments/${payment.id}`}
         action={canPrint ? <Button onClick={() => void printDocumentWhenReady()}><span className="inline-flex items-center gap-2"><PrinterIcon />Print Receipt</span></Button> : undefined}
       />
-      <div className="overflow-x-auto rounded-md border border-border bg-white p-4"><ReceiptDocument payment={receipt} /></div>
-      <PrintSurface className="receipt-print-root"><ReceiptDocument payment={receipt} /></PrintSurface>
+      <div className="overflow-x-auto rounded-md border border-border bg-white p-4"><ReceiptDocument payment={receipt} identifierLabel="LRN" /></div>
+      <PrintSurface className="receipt-print-root"><ReceiptDocument payment={receipt} identifierLabel="LRN" /></PrintSurface>
     </div>
   );
 }
@@ -2263,7 +2268,7 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
   if (!student || !account) return <NotFoundPage />;
   const statementOptions = Array.from(new Map(billingAccounts.map((billingAccount) => {
     const billingStudent = getStudentById(billingAccount.studentId);
-    return [billingAccount.studentId, { value: billingAccount.studentId, label: billingStudent ? `${billingStudent.name} (${billingStudent.number})` : billingAccount.studentId }];
+    return [billingAccount.studentId, { value: billingAccount.studentId, label: billingStudent ? `${billingStudent.name} (${billingStudent.lrn})` : billingAccount.studentId }];
   })).values());
   const scheduleRows = account.schedule.map((installment) => [
     installment.label,
@@ -2302,7 +2307,7 @@ function MockStudentStatementPage({ user, studentId }: { user: AuthenticatedUser
       <ListCard headers={["Item", "Due date", "Amount", "Paid"]} rows={rows} />
       <PrintSurface className="report-print-root student-statement-print">
         <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${account.schoolYear}`} details={["Development sample data", `Prepared by: ${user.name}`]} />
-        <div className="report-print-summary"><strong>Student:</strong> {student.name} · {student.number} · {student.grade} {student.section}<br /><strong>Total due:</strong> {format(account.totalDue)} · <strong>Total paid:</strong> {format(account.totalPaid)} · <strong>Balance:</strong> {format(account.balance)}</div>
+        <div className="report-print-summary"><strong>Student:</strong> {student.name} · {student.lrn} · {student.grade} {student.section}<br /><strong>Total due:</strong> {format(account.totalDue)} · <strong>Total paid:</strong> {format(account.totalPaid)} · <strong>Balance:</strong> {format(account.balance)}</div>
         <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid"]} rightAlignColumns={[2, 3]} rows={scheduleRows} />
         <PrintDocumentTable title="Payments" headings={["Receipt", "Paid on", "Amount", "Applied"]} rightAlignColumns={[2, 3]} rows={paymentRows} />
         <PrintDocumentFooter preparedBy={user.name} />

@@ -57,7 +57,7 @@ export function StudentSearchField({
     return (
       matches.find((student) => {
         const normalizedName = normalizeStudentSearchQuery(student.name);
-        const normalizedNumber = normalizeStudentSearchQuery(student.number);
+        const normalizedNumber = normalizeStudentSearchQuery(student.lrn);
 
         return normalizedName === normalizedValue || normalizedNumber === normalizedValue;
       }) ?? matches[0]
@@ -158,7 +158,7 @@ export function StudentSearchField({
                 onClick={() => openStudent(student)}
               >
                 <span className="block font-medium text-text-primary">{student.name}</span>
-                <span className="block text-xs text-text-secondary">{student.number}</span>
+                <span className="block text-xs text-text-secondary">{student.lrn}</span>
               </button>
             ))}
           </div>

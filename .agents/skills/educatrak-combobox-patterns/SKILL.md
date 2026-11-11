@@ -1,6 +1,6 @@
 ---
 name: educatrak-combobox-patterns
-description: Apply when building or changing an EducatraK text field with a suggestion list (a combobox), such as the student search by name or number. Keeps every combobox keyboard-usable and in the shared dropdown look. Adapted from CLINIQ's cliniq-combobox-patterns.
+description: Apply when building or changing an EducatraK text field with a suggestion list (a combobox), such as the student search by name or LRN. Keeps every combobox keyboard-usable and in the shared dropdown look. Adapted from CLINIQ's cliniq-combobox-patterns.
 ---
 
 # EducatraK Combobox Patterns
@@ -20,7 +20,7 @@ Use with `educatrak-dropdown-patterns` (panel and option look), `educatrak-input
 ## Results
 
 - Results appear after typing, never on an empty field, and are capped so the list never reads as a roster.
-- Each result shows the name and the student number (and grade/section when it helps tell similar names apart).
+- Each result shows the name and the full LRN (and grade/section when it helps tell similar names apart). Do not mask the LRN.
 - Panel and rows use the dropdown look: white, `shadow-raised`, highlighted row `bg-surface`.
 - No match: say so under the field.
 - After a pick, show the chosen student with a way to change it.

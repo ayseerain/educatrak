@@ -25,21 +25,21 @@ describe("central mock database", () => {
     });
     try {
       const existing = getMockState().students.find((student) => student.id === "sample-1001")!;
-      expect(existing).toMatchObject({ id: "sample-1001", number: "S-1001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite" });
+      expect(existing).toMatchObject({ id: "sample-1001", lrn: "000000000001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite" });
       const existingAccounts = getMockState().billingAccounts.filter((account) => account.studentId === existing.id);
       const updated = updateMockStudent(existing.id, {
-        number: existing.number, name: existing.name, grade: existing.grade, section: existing.section,
+        lrn: existing.lrn, name: existing.name, grade: existing.grade, section: existing.section,
         dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite",
       });
-      expect(updated).toMatchObject({ id: existing.id, number: "S-1001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
+      expect(updated).toMatchObject({ id: existing.id, lrn: "000000000001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
       expect(getMockState().billingAccounts.filter((account) => account.studentId === existing.id)).toEqual(existingAccounts);
 
       const created = createMockStudent({
-        number: "S-9001", name: "Taylor Sample (sample)", grade: "Grade 7", section: "Olive",
+        lrn: "000000000901", name: "Taylor Sample (sample)", grade: "Grade 7", section: "Olive",
         dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite",
       });
-      const saved = updateMockStudent(created.id, { number: created.number, name: created.name, grade: created.grade, section: created.section });
-      expect(saved).toMatchObject({ id: created.id, number: "S-9001", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
+      const saved = updateMockStudent(created.id, { lrn: created.lrn, name: created.name, grade: created.grade, section: created.section });
+      expect(saved).toMatchObject({ id: created.id, lrn: "000000000901", dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "12 Sample Road, Cavite" });
       expect(getMockState().billingAccounts.every((account) => account.studentId !== created.id)).toBe(true);
       expect(window.localStorage.getItem("educatrak.mock-db.v1")).toContain("12 Sample Road, Cavite");
     } finally {
@@ -48,7 +48,7 @@ describe("central mock database", () => {
     }
   });
 
-  it("backfills missing saved fixture details without replacing saved values or billing links", async () => {
+  it("migrates saved Student Numbers to synthetic LRNs without changing IDs or billing links", async () => {
     const originalLocalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
     const values = new Map<string, string>();
     Object.defineProperty(window, "localStorage", {
@@ -61,6 +61,11 @@ describe("central mock database", () => {
     });
     try {
       const savedState = JSON.parse(JSON.stringify(getMockState())) as ReturnType<typeof getMockState>;
+      for (const student of savedState.students) {
+        const legacy = student as typeof student & { number?: string };
+        legacy.number = `S-${student.id}`;
+        delete (legacy as Partial<typeof legacy>).lrn;
+      }
       const missingDetails = savedState.students.find((student) => student.id === "sample-1001")!;
       missingDetails.dateOfBirth = null;
       missingDetails.gender = null;
@@ -70,6 +75,7 @@ describe("central mock database", () => {
       savedDetails.gender = "Female";
       savedDetails.residentialAddress = "Saved Demo Address, Mendez, Cavite";
       const savedAccounts = savedState.billingAccounts;
+      const savedPayments = savedState.payments;
       window.localStorage.setItem("educatrak.mock-db.v1", JSON.stringify({ state: savedState }));
       vi.resetModules();
 
@@ -79,9 +85,14 @@ describe("central mock database", () => {
         dateOfBirth: "2012-06-15", gender: "Female", residentialAddress: "Demo Residence 1, Mendez, Cavite",
       });
       expect(restored.students.find((student) => student.id === "sample-1002")).toMatchObject({
-        dateOfBirth: "2011-03-21", gender: "Female", residentialAddress: "Saved Demo Address, Mendez, Cavite",
+        lrn: "000000000002", dateOfBirth: "2011-03-21", gender: "Female", residentialAddress: "Saved Demo Address, Mendez, Cavite",
       });
+      expect(restored.students.find((student) => student.id === "sample-1001")).toMatchObject({ id: "sample-1001", lrn: "000000000001" });
+      expect("number" in restored.students[0]!).toBe(false);
+      expect(window.localStorage.getItem("educatrak.mock-db.v1")).not.toContain('"number"');
       expect(restored.billingAccounts).toEqual(savedAccounts);
+      expect(restored.payments).toEqual(savedPayments);
+      expect(new Set(restored.students.map((student) => student.lrn)).size).toBe(restored.students.length);
     } finally {
       if (originalLocalStorage) Object.defineProperty(window, "localStorage", originalLocalStorage);
       else Reflect.deleteProperty(window, "localStorage");
@@ -89,7 +100,10 @@ describe("central mock database", () => {
   });
 
   it("rejects invalid, future, or unapproved personal values", () => {
-    const base = { number: "S-9002", name: "Morgan Sample (sample)", grade: "Grade 7", section: "Olive" };
+    const base = { lrn: "000000000902", name: "Morgan Sample (sample)", grade: "Grade 7", section: "Olive" };
+    expect(() => createMockStudent({ ...base, lrn: "00000000000x" })).toThrow("exactly 12 digits");
+    expect(() => createMockStudent({ ...base, lrn: "000000000001" })).toThrow("already belongs");
+    expect(createMockStudent({ ...base, lrn: "000000000009" }).lrn).toBe("000000000009");
     expect(() => createMockStudent({ ...base, dateOfBirth: "2025-02-29" })).toThrow("valid date of birth");
     expect(() => createMockStudent({ ...base, dateOfBirth: "2999-01-01" })).toThrow("not in the future");
     expect(() => createMockStudent({ ...base, gender: "Other" as never })).toThrow("Male or Female");
@@ -154,9 +168,11 @@ describe("central mock database", () => {
     invalid.payments[0]!.studentId = "student-missing";
     invalid.installments[0]!.due = "2026-10-25" as never;
     invalid.frontendOnly.devCredentials[0]!.password = "not-a-demo-password";
+    invalid.students[1]!.lrn = invalid.students[0]!.lrn;
 
     expect(mockIntegrityErrors(invalid)).toEqual(expect.arrayContaining([
       expect.stringContaining("students.id duplicates"),
+      expect.stringContaining("students.lrn"),
       expect.stringContaining("students.dateOfBirth"),
       expect.stringContaining("students.gender"),
       expect.stringContaining("students.residentialAddress"),
@@ -169,7 +185,7 @@ describe("central mock database", () => {
   it("keeps derived balances consistent and writes exactly one audit record", () => {
     setMockToday("2040-03-15");
     const beforeAuditCount = getMockState().auditLog.length;
-    const payment = recordMockBillingPayment({ studentNumber: "S-1001", amount: 125_000, paidOn: "2040-03-15" });
+    const payment = recordMockBillingPayment({ studentLrn: "000000000001", amount: 125_000, paidOn: "2040-03-15" });
 
     expect(payment.balanceAfter).toBe(0);
     expect(getBillingAccount("account-1001-2026")?.balance).toBe(0);
@@ -218,7 +234,7 @@ describe("central mock database", () => {
   });
 
   it("includes newly created due-soon accounts in the shared follow-up queue", () => {
-    const student = createMockStudent({ number: "S-FOLLOW-UP-NEW", name: "Harper Sample", grade: "Grade 7", section: "Olive" });
+    const student = createMockStudent({ lrn: "000000000924", name: "Harper Sample", grade: "Grade 7", section: "Olive" });
     const account = createMockBillingAccount(student.id, {
       schoolYearId: "school-year-2026-2027",
       gradeLevel: "Grade 7",

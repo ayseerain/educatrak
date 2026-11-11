@@ -9,7 +9,7 @@ import { students } from "@/api/mock";
 describe("mock billing database", () => {
   it("allocates a payment to the oldest outstanding installment and synchronizes the account", () => {
     const payment = recordMockBillingPayment({
-      studentNumber: "S-1001",
+      studentLrn: "000000000001",
       amount: 125_000,
       paidOn: "2026-10-22",
     });
@@ -29,7 +29,7 @@ describe("mock billing database", () => {
 
   it("rejects an amount over the live mock balance", () => {
     expect(() => recordMockBillingPayment({
-      studentNumber: "S-1002",
+      studentLrn: "000000000002",
       amount: 420_001,
       paidOn: "2026-10-22",
     })).toThrow(/cannot exceed/i);

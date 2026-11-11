@@ -2187,3 +2187,22 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Confirmed no remaining unmerged paths and no conflict markers in the resolved changelog. No application tests run; this change only resolves merge documentation and removes generated files.
 - **Commit/PR:** Not created; merge remains in progress.
 - **Follow-ups:** Review and commit the completed merge when ready.
+
+### Wednesday, November 11, 2026 — 20:40:14 Asia/Manila | Refine student import Phase 1 interface
+
+- **Agent:** Codex
+- **Summary:** Refined the existing Student Import page with the approved title, a centered responsive content column, CLINIQ-style dashed upload area with full-zone browse and visible keyboard focus, and accessible names for the three step regions. File extension and empty-file checks remain unchanged; parsing, preview, MockDB writes, and Apply behavior remain unavailable.
+- **Files:** Updated `frontend/src/features/students/StudentImportPage.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, and this changelog.
+- **Validation:** `git diff --check` passed. `npm run build` failed because Node ran out of memory; retrying with `NODE_OPTIONS=--max-old-space-size=4096` also failed near 340 MB. Tests and rendered-browser review were not run.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Build and browser review remain pending. LRN identity replacement and functional import phases remain separately gated.
+
+### Wednesday, November 11, 2026 — 21:14:01 Asia/Manila | Replace MockDB Student Number with LRN
+
+- **Agent:** Codex
+- **Summary:** Replaced the MockDB student identifier with a unique 12-digit LRN string. Seed fixtures use synthetic zero-prefixed values. Add/Edit, profile, list/search, billing/payment selection, and MockDB receipts now use unmasked LRN. Legacy saved browser records are normalized and persisted without their Student Number property; internal student IDs, billing links, and payment links remain. Live API and backend Student Number contracts are unchanged.
+- **Files:** Updated .agents/skills/educatrak-combobox-patterns/SKILL.md; EducatraK-Knowledge-Base/06-Decisions/2026-11-07-student-masterlist-import.md; EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md; frontend/src/api/cashierApi.ts; frontend/src/api/mock/integrity.ts, mock-db.json, selectors.ts, store.ts; frontend/src/components/printing/ReceiptDocument.tsx; frontend/src/features/operations/OperationalPages.tsx; frontend/src/features/students/StudentSearchField.tsx and studentSearch.ts; frontend/src/i18n/en.ts; and focused tests in frontend/src/test/login.test.tsx, mockBilling.test.ts, mockDatabase.test.ts, operations.test.tsx, and studentSearchField.test.tsx. Preserved the earlier Phase 1 import interface change in StudentImportPage.tsx.
+- **Validation:** Focused Vitest suites passed: 90 tests across four files; after the final persistence assertion, mockDatabase.test.ts passed (22 tests). npm run build passed (tsc -b and Vite production build). git diff --check passed. No live API/backend behavior changed. Browser visual review was not run.
+- **Skill update:** Combobox result rule changed from showing student number to showing full, unmasked LRN.
+- **Commit/PR:** None.
+- **Follow-ups:** Student import parsing, preview, and apply remain deferred to separately approved phases. Live API/backend migration and the prior Phase 1 browser review remain outside this task.

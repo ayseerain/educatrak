@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { ArrowDownToLine, Check, FileSpreadsheet, LockKeyhole, Upload, X } from "lucide-react";
+import { Check, FileSpreadsheet, LockKeyhole, Upload, X } from "lucide-react";
 import { isLiveCashierApiEnabled } from "@/api/cashierApi";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -14,14 +14,14 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function StepHeading({ number, title, state }: { number: number; title: string; state?: string }) {
+function StepHeading({ number, title, state, id }: { number: number; title: string; state?: string; id: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-green-light/30 text-sm font-semibold text-brand-green-dark">
         {number}
       </span>
-      <h2 className="text-base font-semibold text-text-primary">{title}</h2>
-      {state && <span className="ml-auto text-xs font-medium text-text-secondary">{state}</span>}
+      <h2 id={id} className="text-base font-semibold text-text-primary">{title}</h2>
+      {state && <span aria-current={state === "Current step" ? "step" : undefined} className="ml-auto text-xs font-medium text-text-secondary">{state}</span>}
     </div>
   );
 }
@@ -51,7 +51,7 @@ export function StudentImportPage() {
     event.currentTarget.value = "";
   }
 
-  function onDrop(event: DragEvent<HTMLDivElement>) {
+  function onDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     setDragging(false);
     selectFile(event.dataTransfer.files[0]);
@@ -66,7 +66,7 @@ export function StudentImportPage() {
   if (isLiveCashierApiEnabled()) {
     return (
       <>
-        <PageHeader title="Import student list" description="Upload the Registrar’s complete student masterlist." backTo="/students" backLabel="Back to students" />
+        <PageHeader title="Import Student List" description="Upload the Registrar’s complete student masterlist." backTo="/students" backLabel="Back to students" />
         <Card>
           <p className="text-sm text-text-secondary">Student list import is available in the MockDB workspace only.</p>
         </Card>
@@ -75,37 +75,34 @@ export function StudentImportPage() {
   }
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-5xl">
       <PageHeader
-        title="Import student list"
-        description="Upload the complete masterlist to review student records before applying changes."
+        title="Import Student List"
+        description="Upload the complete current-enrollment masterlist. No student records change during file selection."
         backTo="/students"
         backLabel="Back to students"
       />
 
       <div className="space-y-4">
-        <Card className="space-y-5 p-5">
-          <StepHeading number={1} title="Choose the file" state="Current step" />
-          <div
+        <Card role="region" aria-labelledby="import-file-title" className="space-y-5 p-5">
+          <StepHeading id="import-file-title" number={1} title="Choose the file" state="Current step" />
+          <label
             onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
             onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
             onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false); }}
             onDrop={onDrop}
             className={cn(
-              "rounded-md border border-dashed px-5 py-8 text-center transition-colors duration-150 motion-reduce:transition-none",
-              dragging ? "border-brand-green-dark bg-surface" : "border-border bg-white",
+              "flex cursor-pointer flex-col items-center rounded-md border-2 border-dashed px-5 py-8 text-center transition-colors duration-150 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-green motion-reduce:transition-none",
+              dragging ? "border-brand-green bg-brand-green/5" : "border-border hover:border-brand-green hover:bg-surface",
             )}
           >
-            <ArrowDownToLine aria-hidden="true" className="mx-auto size-5 text-brand-green-dark" />
-            <p className="mt-3 text-sm font-semibold text-text-primary">Drag and drop your masterlist here</p>
-            <p className="mt-1 text-sm text-text-secondary">or browse your files</p>
             <input ref={fileInput} type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFileChange} className="sr-only" aria-label="Choose CSV or XLSX file" />
-            <Button type="button" variant="secondary" className="mt-4" onClick={() => fileInput.current?.click()}>
-              <Upload aria-hidden="true" className="size-4" />
-              Browse files
-            </Button>
-            <p className="mt-4 text-xs text-text-secondary">Supported formats: CSV and XLSX</p>
-          </div>
+            <Upload aria-hidden="true" className="size-7 text-brand-green-dark" />
+            <span className="mt-3 text-sm font-semibold text-text-primary">Drag and drop your masterlist here</span>
+            <span className="mt-1 text-xs text-text-secondary">or</span>
+            <span className="mt-1 text-sm font-semibold text-brand-green-dark underline-offset-2 hover:underline">Browse files</span>
+            <span className="mt-4 text-xs text-text-secondary">Supported formats: CSV and XLSX</span>
+          </label>
 
           {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
 
@@ -124,8 +121,8 @@ export function StudentImportPage() {
           )}
         </Card>
 
-        <Card className="space-y-5 p-5">
-          <StepHeading number={2} title="Match the columns" state="Waiting" />
+        <Card role="region" aria-labelledby="import-columns-title" className="space-y-5 p-5">
+          <StepHeading id="import-columns-title" number={2} title="Match the columns" state="Waiting" />
           <div className="flex items-start gap-3 rounded-md bg-surface px-4 py-3">
             <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-text-secondary" />
             <p className="text-sm text-text-secondary">
@@ -134,8 +131,8 @@ export function StudentImportPage() {
           </div>
         </Card>
 
-        <Card className="space-y-5 p-5">
-          <StepHeading number={3} title="Review before applying" state="Waiting" />
+        <Card role="region" aria-labelledby="import-review-title" className="space-y-5 p-5">
+          <StepHeading id="import-review-title" number={3} title="Review before applying" state="Waiting" />
           <div className="flex items-start gap-3 rounded-md bg-surface px-4 py-3">
             <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-text-secondary" />
             <p className="text-sm text-text-secondary">Review opens after columns are matched and the roster is compared.</p>
@@ -171,6 +168,6 @@ export function StudentImportPage() {
           </div>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
