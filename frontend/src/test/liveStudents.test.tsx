@@ -36,7 +36,7 @@ describe("live Registrar student list", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: [{ id: "student-3", studentNo: "SAMPLE-4003", fullName: "Morgan Sample Student", gradeLevel: "Grade 5", section: "Maple", status: "enrolled", balanceCents: 12345 }], meta: { currentPage: 1, lastPage: 1, total: 1 } }),
+      json: async () => ({ data: [{ id: "student-3", lrn: "SAMPLE-4003", fullName: "Morgan Sample Student", gradeLevel: "Grade 5", section: "Maple", status: "enrolled", balanceCents: 12345 }], meta: { currentPage: 1, lastPage: 1, total: 1 } }),
     }));
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const user: AuthenticatedUser = { id: `user-${role}`, name: `${_label} Test`, role };
@@ -52,7 +52,7 @@ describe("live Registrar student list", () => {
     render(<MemoryRouter><StudentFormPage /></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "Add student" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /LRN/i })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
   });
 
@@ -60,7 +60,7 @@ describe("live Registrar student list", () => {
     render(<MemoryRouter initialEntries={["/students/sample-1001/edit"]}><Routes><Route path="/students/:id/edit" element={<StudentFormPage edit />} /></Routes></MemoryRouter>);
 
     expect(screen.getByRole("heading", { name: "Edit student" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /student number/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /LRN/i })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
   });
 
@@ -68,7 +68,7 @@ describe("live Registrar student list", () => {
     const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };
     render(<MemoryRouter initialEntries={["/students/sample-1001"]}><Routes><Route path="/students/:id" element={<StudentProfilePage user={registrar} />} /></Routes></MemoryRouter>);
 
-    expect(screen.queryByText("Student number")).not.toBeInTheDocument();
+    expect(screen.queryByText("LRN")).not.toBeInTheDocument();
     expect(screen.queryByText("Grade level")).not.toBeInTheDocument();
     expect(screen.queryByText("Section")).not.toBeInTheDocument();
     expect(screen.getByText("Student status")).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe("live Registrar student list", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: { id: "student-1", studentNo: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", balanceCents: 5000, guardians: [{ fullName: "Jamie Sample Guardian", relationship: "Parent", email: "jamie.guardian@example.test", mobile: "00000000000", emailStatus: "unverified" }] } }),
+      json: async () => ({ data: { id: "student-1", lrn: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", balanceCents: 5000, guardians: [{ fullName: "Jamie Sample Guardian", relationship: "Parent", email: "jamie.guardian@example.test", mobile: "00000000000", emailStatus: "unverified" }] } }),
     }));
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const cashier: AuthenticatedUser = { id: "cashier-1", name: "Casey Cashier (sample)", role: "cashier" };
@@ -98,7 +98,7 @@ describe("live Registrar student list", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ data: { id: "student-2", studentNo: "SAMPLE-4002", fullName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", balanceCents: 5000, guardians: [{ fullName: "Alex Sample Guardian", relationship: "Parent", email: "alex.guardian@example.test", mobile: "00000000000", emailStatus: "verified" }] } }),
+      json: async () => ({ data: { id: "student-2", lrn: "SAMPLE-4002", fullName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled", balanceCents: 5000, guardians: [{ fullName: "Alex Sample Guardian", relationship: "Parent", email: "alex.guardian@example.test", mobile: "00000000000", emailStatus: "verified" }] } }),
     }));
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };

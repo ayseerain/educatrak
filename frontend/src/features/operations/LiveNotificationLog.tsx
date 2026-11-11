@@ -88,7 +88,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
         <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["Created", "Student", "Type", "Channel", "Recipient", "Status", "Attempts", "Details", "Actions"].map((heading) => <th key={heading} scope="col" className="px-3 py-2">{heading}</th>)}</tr></thead>
         <tbody>{logs.data.data.map((entry) => <tr key={entry.id} className="border-b align-top last:border-0">
           <td className="whitespace-nowrap px-3 py-2">{formatTimestamp(entry.createdAt)}</td>
-          <td className="px-3 py-2">{entry.studentName ?? entry.studentNo ?? "Unavailable"}</td>
+          <td className="px-3 py-2">{entry.studentName ?? entry.lrn ?? "Unavailable"}</td>
           <td className="px-3 py-2">{entry.type.replace(/_/g, " ")}</td>
           <td className="px-3 py-2">{entry.channel.toUpperCase()}</td>
           <td className="px-3 py-2">{entry.recipient ?? "Unavailable"}</td>
@@ -119,7 +119,7 @@ function NotificationEntryDialog({ entry, onOpenChange }: { entry: NotificationL
       <section className="mt-5" aria-labelledby="notification-entry-details">
         <h2 id="notification-entry-details" className="text-sm font-semibold text-text-primary">Recipient details</h2>
         <dl className="mt-3 grid gap-x-5 gap-y-4 text-sm sm:grid-cols-2">
-          <Detail className="sm:col-span-2" label="Student" value={entry.studentName ?? entry.studentNo ?? "Unavailable"} />
+          <Detail className="sm:col-span-2" label="Student" value={entry.studentName ?? entry.lrn ?? "Unavailable"} />
           <Detail label="Notification type" value={formatLabel(entry.type)} />
           <Detail label="Channel" value={entry.channel.toUpperCase()} />
           <Detail className="sm:col-span-2" label="Recipient" value={entry.recipient ?? "Unavailable"} />

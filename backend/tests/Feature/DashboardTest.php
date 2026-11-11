@@ -36,7 +36,7 @@ class DashboardTest extends TestCase
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $otherCashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-DASH-01', 'full_name' => 'Taylor Sample', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-DASH-01', 'full_name' => 'Taylor Sample', 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier, 'due_soon', 5_000);
         Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'October sample installment', 'sequence' => 1, 'due_date' => '2026-10-27', 'amount_cents' => 10_000, 'paid_cents' => 5_000, 'status' => 'due_soon']);
         $today = $this->createPayment($account, $student, $cashier, 2_500, '2026-10-24', 'valid');
@@ -70,7 +70,7 @@ class DashboardTest extends TestCase
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-DASH-02', 'full_name' => 'Jordan Sample', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-DASH-02', 'full_name' => 'Jordan Sample', 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier, 'overdue', 8_000);
         Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'Past sample installment', 'sequence' => 1, 'due_date' => '2026-10-20', 'amount_cents' => 10_000, 'paid_cents' => 2_000, 'status' => 'overdue']);
         $payment = $this->createPayment($account, $student, $cashier, 4_000, '2026-10-24', 'valid');
@@ -160,7 +160,7 @@ class DashboardTest extends TestCase
     {
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $student = Student::query()->create(['student_no' => 'SAMPLE-DASH-RANGE', 'full_name' => 'Avery Sample', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-DASH-RANGE', 'full_name' => 'Avery Sample', 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier, 'current', 20_000);
         $this->createPayment($account, $student, $cashier, 1_000, '2026-10-17', 'valid');
         $this->createPayment($account, $student, $cashier, 2_000, '2026-10-18', 'valid');

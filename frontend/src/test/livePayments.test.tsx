@@ -142,7 +142,7 @@ describe("live cashier payment entry", () => {
 
   it("shows server notification status and account-scoped payment audit events on detail", async () => {
     getPayment.mockResolvedValue({
-      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", studentNo: "S-TEST-1001",
+      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", lrn: "S-TEST-1001",
       billingAccountId: "billing-account-1", amountCents: 5000, method: "cash", paidOn: "2026-10-24", status: "valid",
       receiptNo: "OR-2026-000001", recordedAt: "2026-10-24T08:00:00Z", recordedBy: "Casey Cashier",
       reprintCount: 0, balanceAfterCents: 15000, allocations: [{ installmentLabel: "Installment 1", amountCents: 5000 }],
@@ -162,7 +162,7 @@ describe("live cashier payment entry", () => {
   it("initiates the audited receipt print from payment detail without navigating away", async () => {
     const user = userEvent.setup();
     const payment = {
-      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", studentNo: "S-TEST-1001",
+      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", lrn: "S-TEST-1001",
       billingAccountId: "billing-account-1", amountCents: 5000, method: "cash", paidOn: "2026-10-24", status: "valid",
       receiptNo: "OR-2026-000001", firstPrintedAt: null, recordedAt: "2026-10-24T08:00:00Z", recordedBy: "Casey Cashier",
       reprintCount: 0, balanceAfterCents: 15000, allocations: [{ installmentLabel: "Installment 1", amountCents: 5000 }],
@@ -184,7 +184,7 @@ describe("live cashier payment entry", () => {
   it("distinguishes the first receipt print from later reprints", async () => {
     const user = userEvent.setup();
     const payment = {
-      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", studentNo: "S-TEST-1001",
+      id: "payment-1", studentId: "student-1", studentName: "Talia Test Student", lrn: "S-TEST-1001",
       billingAccountId: "billing-account-1", amountCents: 5000, method: "cash", paidOn: "2026-10-24", status: "valid",
       receiptNo: "OR-2026-000001", firstPrintedAt: null, recordedAt: "2026-10-24T08:00:00Z", recordedBy: "Casey Cashier",
       reprintCount: 0, balanceAfterCents: 15000,
@@ -222,7 +222,7 @@ describe("live payment history export", () => {
 
   it("exports all payment pages matching the active search, date, cashier, method, and status filters", async () => {
     listPayments.mockImplementation(async ({ page = 1 } = {}) => ({
-      data: [{ id: `payment-${page}`, studentId: `student-${page}`, studentName: `Sample Student ${page}`, studentNo: `SAMPLE-910${page}`, studentGrade: "Grade 4", studentSection: "Olive", billingAccountId: "account-1", amountCents: 12500, method: "cash", paidOn: "2026-10-24", status: "valid", receiptNo: `OR-SAMPLE-910${page}`, recordedAt: "2026-10-24T10:00:00+08:00", recordedBy: "Taylor Sample Cashier", reprintCount: 0, balanceAfterCents: 0 }],
+      data: [{ id: `payment-${page}`, studentId: `student-${page}`, studentName: `Sample Student ${page}`, lrn: `SAMPLE-910${page}`, studentGrade: "Grade 4", studentSection: "Olive", billingAccountId: "account-1", amountCents: 12500, method: "cash", paidOn: "2026-10-24", status: "valid", receiptNo: `OR-SAMPLE-910${page}`, recordedAt: "2026-10-24T10:00:00+08:00", recordedBy: "Taylor Sample Cashier", reprintCount: 0, balanceAfterCents: 0 }],
       currentPage: page,
       lastPage: 2,
       total: 2,

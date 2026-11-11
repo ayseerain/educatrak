@@ -17,7 +17,13 @@ class UpsertStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'student_no' => ['required', 'string', 'max:100', Rule::unique('students', 'student_no')->ignore($this->route('student'))],
+            'lrn' => [
+                'required',
+                'string',
+                'regex:/^\d{12}$/',
+                Rule::unique('students', 'lrn')->ignore($this->route('student')),
+                ...($this->isMethod('PATCH') ? [Rule::in([(string) $this->route('student')?->lrn])] : []),
+            ],
             'full_name' => ['required', 'string', 'max:255'],
             'grade_level_id' => ['required', 'integer', Rule::exists('grade_levels', 'id')],
             'section_id' => ['required', 'integer', Rule::exists('sections', 'id')],

@@ -126,7 +126,7 @@ class BillingStatusSynchronizationTest extends TestCase
             'is_current' => true,
         ]);
         $student = Student::query()->create([
-            'student_no' => 'SAMPLE-STATUS-01',
+            'lrn' => 'SAMPLE-STATUS-01',
             'full_name' => 'Riley Sample',
             'status' => 'enrolled',
         ]);

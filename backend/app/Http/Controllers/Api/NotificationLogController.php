@@ -22,13 +22,13 @@ class NotificationLogController extends Controller
             'per_page' => ['nullable', 'integer', 'in:10,25,50'],
         ]);
         $logs = NotificationLog::query()
-            ->with('student:id,student_no,full_name')
+            ->with('student:id,lrn,full_name')
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['date_from']), fn ($query) => $query->where('created_at', '>=', CarbonImmutable::parse($filters['date_from'], 'Asia/Manila')->startOfDay()->utc()))
             ->when(isset($filters['date_to']), fn ($query) => $query->where('created_at', '<', CarbonImmutable::parse($filters['date_to'], 'Asia/Manila')->addDay()->startOfDay()->utc()))
             ->when(isset($filters['student']) && trim($filters['student']) !== '', fn ($query) => $query->whereHas('student', function ($students) use ($filters): void {
                 $term = '%' . trim($filters['student']) . '%';
-                $students->where('full_name', 'like', $term)->orWhere('student_no', 'like', $term);
+                $students->where('full_name', 'like', $term)->orWhere('lrn', 'like', $term);
             }))
             ->latest('created_at')
             ->latest('id')
@@ -38,7 +38,7 @@ class NotificationLogController extends Controller
             'data' => $logs->getCollection()->map(fn (NotificationLog $log): array => [
                 'id' => (string) $log->id,
                 'studentId' => (string) $log->student_id,
-                'studentNo' => $log->student?->student_no,
+                'lrn' => $log->student?->lrn,
                 'studentName' => $log->student?->full_name,
                 'paymentId' => $log->payment_id === null ? null : (string) $log->payment_id,
                 'channel' => $log->channel,

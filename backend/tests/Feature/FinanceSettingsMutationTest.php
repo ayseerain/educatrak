@@ -215,7 +215,7 @@ class FinanceSettingsMutationTest extends TestCase
     {
         $schoolYearId = DB::table('fee_schedules')->where('id', $scheduleId)->value('school_year_id');
         $studentId = DB::table('students')->insertGetId([
-            'student_no' => 'SAMPLE-FEE-5001',
+            'lrn' => 'SAMPLE-FEE-5001',
             'full_name' => 'Jordan Sample Student',
             'status' => 'enrolled',
             'created_at' => now(),

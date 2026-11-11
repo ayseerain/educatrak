@@ -14,7 +14,7 @@ describe("live Registrar dashboard search", () => {
       ok: true,
       status: 200,
       json: async () => ({
-        data: [{ id: "student-1", studentNo: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
+        data: [{ id: "student-1", lrn: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
         meta: { currentPage: 1, lastPage: 1, total: 1 },
       }),
     });
@@ -43,7 +43,7 @@ describe("live Registrar dashboard search", () => {
       ok: true,
       status: 200,
       json: async () => ({
-        data: [{ id: "student-1", studentNo: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
+        data: [{ id: "student-1", lrn: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
         meta: { currentPage: 1, lastPage: 1, total: 1 },
       }),
     }));
@@ -64,7 +64,7 @@ describe("live Registrar dashboard search", () => {
       ok: true,
       status: 200,
       json: async () => ({
-        data: [{ id: "student-1", studentNo: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
+        data: [{ id: "student-1", lrn: "SAMPLE-4001", fullName: "Jordan Sample Student", gradeLevel: "Grade 4", section: "Orchid", status: "enrolled" }],
         meta: { currentPage: 1, lastPage: 1, total: 1 },
       }),
     }));

@@ -29,7 +29,7 @@ class FollowUpController extends Controller
         $installments = Installment::query()
             ->withMax(['notificationLogs as last_reminder_at' => fn ($logs) => $logs->where('kind', 'reminder')->whereIn('status', ['queued', 'sent', 'failed'])], 'created_at')
             ->with([
-                'billingAccount.student:id,student_no,full_name,grade_level_id,section_id',
+                'billingAccount.student:id,lrn,full_name,grade_level_id,section_id',
                 'billingAccount.student.guardians:id,full_name,email,mobile,email_status',
                 'billingAccount.student.gradeLevel:id,name',
                 'billingAccount.student.section:id,name',
@@ -53,7 +53,7 @@ class FollowUpController extends Controller
             ->when(isset($filters['section']), fn ($query) => $query->whereHas('billingAccount.student.section', fn ($section) => $section->where('name', $filters['section'])))
             ->when(isset($filters['search']) && trim($filters['search']) !== '', function ($query) use ($filters): void {
                 $term = '%' . trim($filters['search']) . '%';
-                $query->whereHas('billingAccount.student', fn ($student) => $student->where('full_name', 'like', $term)->orWhere('student_no', 'like', $term));
+                $query->whereHas('billingAccount.student', fn ($student) => $student->where('full_name', 'like', $term)->orWhere('lrn', 'like', $term));
             });
 
         $sort = $filters['sort'] ?? 'due_date';
@@ -76,7 +76,7 @@ class FollowUpController extends Controller
                 return [
                     'id' => (string) $installment->id,
                     'studentId' => $student === null ? null : (string) $student->id,
-                    'studentNo' => $student?->student_no,
+                    'lrn' => $student?->lrn,
                     'studentName' => $student?->full_name ?? 'Unavailable',
                     'grade' => $student?->gradeLevel?->name,
                     'section' => $student?->section?->name,

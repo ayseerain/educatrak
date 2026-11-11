@@ -3,7 +3,7 @@ import { request } from "@/api/cashierApi";
 export interface NotificationLogEntry {
   id: string;
   studentId: string;
-  studentNo: string | null;
+  lrn: string | null;
   studentName: string | null;
   paymentId: string | null;
   channel: string;

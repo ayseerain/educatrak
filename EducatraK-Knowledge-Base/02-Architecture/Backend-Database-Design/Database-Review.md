@@ -19,7 +19,7 @@ branch documentation conflicts are listed below.
 | Area | Tables and persisted relationships |
 |---|---|
 | School structure | `school_years` → `terms` → `exam_periods`; `grade_levels` → `sections`. |
-| People | `students` reference optional `grade_levels` and `sections`; `guardians` and `students` join through `guardian_student` with `is_primary`. Student identifier is unique `student_no`. |
+| People | `students` reference optional `grade_levels` and `sections`; `guardians` and `students` join through `guardian_student` with `is_primary`. Student identifier is unique 12-digit `lrn`. |
 | Fees and plans | `school_years` and `grade_levels` own `fee_schedules`; schedules own `fee_items`. `payment_plans` own ordered `payment_plan_installments`. `system_settings` stores JSON values and nullable updater user. |
 | Accounts | A `billing_accounts` row references a student and school year, with optional fee schedule and payment plan. Unique `(student_id, school_year_id)`. Accounts own snapshot `billing_account_items`, `adjustments`, and ordered `installments`. |
 | Payments | `payments` reference account, student, and recording user. A payment has one `receipts` row, zero or more `payment_allocations`, and at most one `void_requests` row. Amounts and receipt sequence are unique/integer fields as described below. |
@@ -60,7 +60,7 @@ audit writes are added.
 
 | ID | Severity | Finding and evidence | Next action |
 |---|---|---|---|
-| DB-01 | Medium, deferred | `students.student_no` is the only student identifier; there is no LRN column or index. The current masterlist decision requires matching by LRN but explicitly defers replacing Student Number until a separate task. | Decide LRN semantics, uniqueness, and migration/backfill plan in that separate approved task. Do not alter schema in this preparation phase. |
+| DB-01 | Resolved | `students.lrn` is the unique 12-digit student identifier. Test records use fictional values. | Preserve `students.id` and all linked financial relationships when migrating existing environments. |
 | DB-02 | Medium, incomplete model layer | 28 model files exist, but explicit relationship methods appear only on `BillingAccount` (installments, payments) and `Payment` (allocations). The development ledger says domain relationships remain incomplete. | Add relationships only with their approved domain implementation; preserve foreign keys and snapshots. |
 | DB-03 | Decision needed | `school_years.is_current` is indexed but not unique, so the database permits more than one current school year. The business rule for ownership/transitions is not settled in this branch. | Confirm whether exactly one current year must be enforced, then choose transaction and database constraints. |
 | DB-04 | Decision needed | `guardian_student` stores a many-to-many link and `is_primary`, but there is no ownership or maintenance lifecycle for guardian data. | Confirm guardian-data owner and whether one primary guardian per student is required. |
@@ -72,7 +72,7 @@ policy. No other DDL violation is claimed without an approved target schema.
 
 ## Approval checklist
 
-- [ ] Student Number versus LRN semantics, matching and uniqueness.
+- [x] LRN is a unique 12-digit text identifier and is used for matching.
 - [ ] Guardian ownership, primary-contact semantics, and linked-record lifecycle.
 - [ ] School-year ownership and current-year transition/uniqueness.
 - [ ] Integer-centavo types and payment/allocation/receipt invariants.

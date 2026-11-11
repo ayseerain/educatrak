@@ -19,7 +19,7 @@ describe("live installment follow-up", () => {
         data: [{
           id: "installment-1",
           studentId: "student-1",
-          studentNo: "SAMPLE-5001",
+          lrn: "SAMPLE-5001",
           studentName: "Avery Sample Student",
           grade: "Grade 4",
           section: "Orchid",
@@ -63,8 +63,8 @@ describe("live installment follow-up", () => {
         status: 200,
         json: async () => ({
           data: [
-            { id: "eligible-1", studentId: "student-1", studentNo: "SAMPLE-5001", studentName: "Avery Sample Student", grade: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", installment: "October sample installment", dueDate: "2026-10-20", amountDueCents: 7500, daysOverdue: 4, status: "overdue", guardians: [{ name: "Casey Sample Guardian", email: "guardian@example.test", mobile: "09990000000", emailStatus: "verified" }], lastReminderAt: null },
-            { id: "no-contact-2", studentId: "student-2", studentNo: "SAMPLE-5002", studentName: "Jamie Sample Student", grade: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", installment: "October sample installment", dueDate: "2026-10-20", amountDueCents: 7500, daysOverdue: 4, status: "overdue", guardians: [], lastReminderAt: null },
+            { id: "eligible-1", studentId: "student-1", lrn: "SAMPLE-5001", studentName: "Avery Sample Student", grade: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", installment: "October sample installment", dueDate: "2026-10-20", amountDueCents: 7500, daysOverdue: 4, status: "overdue", guardians: [{ name: "Casey Sample Guardian", email: "guardian@example.test", mobile: "09990000000", emailStatus: "verified" }], lastReminderAt: null },
+            { id: "no-contact-2", studentId: "student-2", lrn: "SAMPLE-5002", studentName: "Jamie Sample Student", grade: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", installment: "October sample installment", dueDate: "2026-10-20", amountDueCents: 7500, daysOverdue: 4, status: "overdue", guardians: [], lastReminderAt: null },
           ],
           meta: { currentPage: 1, lastPage: 1, total: 2, perPage: 10, today: "2026-10-24" },
         }),

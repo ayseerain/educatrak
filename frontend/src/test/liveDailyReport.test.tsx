@@ -19,7 +19,7 @@ describe("live daily collection report", () => {
     totalCents: 12500,
     byMethod: [{ method: "cash", totalCents: 12500, transactionCount: 1 }],
     byCashier: [{ cashierId: "cashier-1", cashier: "Taylor Sample Cashier", totalCents: 12500, transactionCount: 1 }],
-    payments: [{ id: "payment-1", studentNo: "SAMPLE-9101", studentName: "Riley Sample Student", receiptNo: "OR-SAMPLE-9101", amountCents: 12500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }],
+    payments: [{ id: "payment-1", lrn: "SAMPLE-9101", studentName: "Riley Sample Student", receiptNo: "OR-SAMPLE-9101", amountCents: 12500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }],
     voids: [],
     meta: { currentPage: 1, lastPage: 1, totalPayments: 1, perPage: 10 },
     voidMeta: { currentPage: 1, lastPage: 1, total: 0, perPage: 10 },
@@ -43,9 +43,9 @@ describe("live daily collection report", () => {
       byMethod: [],
       byCashier: [],
       payments: page === 1
-        ? [{ id: "payment-1", studentNo: "SAMPLE-9101", studentName: "Riley Sample Student", receiptNo: "OR-SAMPLE-9101", amountCents: 12500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }]
-        : [{ id: "payment-2", studentNo: "SAMPLE-9102", studentName: "Casey Sample Student", receiptNo: "OR-SAMPLE-9102", amountCents: 7500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }],
-      voids: page === 1 ? [{ id: "void-1", paymentId: "payment-1", receiptNo: "OR-SAMPLE-9101", studentNo: "SAMPLE-9101", studentName: "Riley Sample Student", amountCents: 12500, status: "pending", reason: "Duplicate sample", requestedBy: "Taylor Sample Cashier", requestedAt: "2026-10-24T09:00:00+08:00", decidedAt: null }] : [],
+        ? [{ id: "payment-1", lrn: "SAMPLE-9101", studentName: "Riley Sample Student", receiptNo: "OR-SAMPLE-9101", amountCents: 12500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }]
+        : [{ id: "payment-2", lrn: "SAMPLE-9102", studentName: "Casey Sample Student", receiptNo: "OR-SAMPLE-9102", amountCents: 7500, method: "cash", status: "valid", cashier: "Taylor Sample Cashier", voidStatus: null }],
+      voids: page === 1 ? [{ id: "void-1", paymentId: "payment-1", receiptNo: "OR-SAMPLE-9101", lrn: "SAMPLE-9101", studentName: "Riley Sample Student", amountCents: 12500, status: "pending", reason: "Duplicate sample", requestedBy: "Taylor Sample Cashier", requestedAt: "2026-10-24T09:00:00+08:00", decidedAt: null }] : [],
       meta: { currentPage: page, lastPage: 2, totalPayments: 2, perPage: 10 },
       voidMeta: { currentPage: 1, lastPage: 1, total: page === 1 ? 1 : 0, perPage: 10 },
     }));

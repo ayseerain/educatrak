@@ -45,9 +45,9 @@ class DemoDataSeeder extends Seeder
             );
 
             foreach ([
-                ['number' => 'S-1001', 'name' => 'Amara Villanueva (sample)', 'grade' => 'Grade 7', 'section' => 'Olive', 'balance' => 125_000, 'total' => 1_250_000, 'paid' => 1_125_000, 'status' => 'due_soon', 'email' => 'amara.guardian@example.test'],
-                ['number' => 'S-1002', 'name' => 'Basil Mercado (sample)', 'grade' => 'Grade 8', 'section' => 'Maple', 'balance' => 420_000, 'total' => 1_000_000, 'paid' => 580_000, 'status' => 'due_soon', 'email' => 'basil.guardian@example.test'],
-                ['number' => 'S-1003', 'name' => 'Cora Navarro (sample)', 'grade' => 'Grade 9', 'section' => 'Pine', 'balance' => 850_000, 'total' => 1_500_000, 'paid' => 650_000, 'status' => 'overdue', 'email' => null],
+                ['lrn' => '000000000001', 'name' => 'Amara Villanueva (sample)', 'grade' => 'Grade 7', 'section' => 'Olive', 'balance' => 125_000, 'total' => 1_250_000, 'paid' => 1_125_000, 'status' => 'due_soon', 'email' => 'amara.guardian@example.test'],
+                ['lrn' => '000000000002', 'name' => 'Basil Mercado (sample)', 'grade' => 'Grade 8', 'section' => 'Maple', 'balance' => 420_000, 'total' => 1_000_000, 'paid' => 580_000, 'status' => 'due_soon', 'email' => 'basil.guardian@example.test'],
+                ['lrn' => '000000000003', 'name' => 'Cora Navarro (sample)', 'grade' => 'Grade 9', 'section' => 'Pine', 'balance' => 850_000, 'total' => 1_500_000, 'paid' => 650_000, 'status' => 'overdue', 'email' => null],
             ] as $demoStudent) {
                 $grade = GradeLevel::query()->updateOrCreate(
                     ['name' => $demoStudent['grade']],
@@ -58,7 +58,7 @@ class DemoDataSeeder extends Seeder
                     ['active' => true],
                 );
                 $student = Student::query()->updateOrCreate(
-                    ['student_no' => $demoStudent['number']],
+                    ['lrn' => $demoStudent['lrn']],
                     ['full_name' => $demoStudent['name'], 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled'],
                 );
                 $guardian = Guardian::query()->updateOrCreate(

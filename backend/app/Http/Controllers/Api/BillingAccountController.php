@@ -42,7 +42,7 @@ class BillingAccountController extends Controller
             ->with(['student.gradeLevel:id,name', 'student.section:id,name', 'schoolYear:id,label'])
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
                 $search = trim($filters['query']);
-                $query->whereHas('student', fn ($students) => $students->where('full_name', 'like', "%{$search}%")->orWhere('student_no', 'like', "%{$search}%"));
+                $query->whereHas('student', fn ($students) => $students->where('full_name', 'like', "%{$search}%")->orWhere('lrn', 'like', "%{$search}%"));
             })
             ->when(isset($filters['school_year']) && trim($filters['school_year']) !== '', fn ($query) => $query->whereHas('schoolYear', fn ($years) => $years->where('label', 'like', '%' . trim($filters['school_year']) . '%')))
             ->when(isset($filters['school_year_id']), fn ($query) => $query->where('school_year_id', $filters['school_year_id']))
@@ -258,7 +258,7 @@ class BillingAccountController extends Controller
         return [
             'id' => (string) $account->id,
             'studentId' => (string) $account->student_id,
-            'studentNo' => $account->student->student_no,
+            'lrn' => $account->student->lrn,
             'studentName' => $account->student->full_name,
             'gradeLevel' => $account->student->gradeLevel?->name,
             'section' => $account->student->section?->name,

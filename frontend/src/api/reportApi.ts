@@ -5,8 +5,8 @@ export interface DailyReport {
   totalCents: number;
   byMethod: { method: string; totalCents: number; transactionCount: number }[];
   byCashier: { cashierId: string; cashier: string; totalCents: number; transactionCount: number }[];
-  payments: { id: string; studentNo: string; studentName: string; receiptNo: string | null; amountCents: number; method: string; status: string; cashier: string; voidStatus: string | null }[];
-  voids: { id: string; paymentId: string; receiptNo: string | null; studentNo: string; studentName: string; amountCents: number; status: string; reason: string; requestedBy: string; requestedAt: string; decidedAt: string | null }[];
+  payments: { id: string; lrn: string; studentName: string; receiptNo: string | null; amountCents: number; method: string; status: string; cashier: string; voidStatus: string | null }[];
+  voids: { id: string; paymentId: string; receiptNo: string | null; lrn: string; studentName: string; amountCents: number; status: string; reason: string; requestedBy: string; requestedAt: string; decidedAt: string | null }[];
   meta: { currentPage: number; lastPage: number; totalPayments: number; perPage: number };
   voidMeta: { currentPage: number; lastPage: number; total: number; perPage: number };
 }
@@ -19,7 +19,7 @@ export async function getDailyReport(date: string, page = 1, perPage = 10, voidP
 
 export interface StudentStatement {
   studentId: string;
-  studentNo: string;
+  lrn: string;
   studentName: string;
   schoolYear: string;
   totalDueCents: number;
@@ -38,7 +38,7 @@ export async function getStudentStatement(studentId: string): Promise<StudentSta
 export interface OutstandingAccount {
   id: string;
   studentId: string;
-  studentNo: string;
+  lrn: string;
   studentName: string;
   gradeLevel: string | null;
   section: string | null;

@@ -21,7 +21,7 @@ describe("live notification log", () => {
     data: [{
       id: "notification-1",
       studentId: "student-1",
-      studentNo: "SAMPLE-8001",
+      lrn: "SAMPLE-8001",
       studentName: "Casey Sample Student",
       paymentId: "payment-1",
       channel: "email",
@@ -91,7 +91,7 @@ describe("live notification log", () => {
       data: [{
         id: "notification-failed",
         studentId: "student-1",
-        studentNo: "SAMPLE-8001",
+        lrn: "SAMPLE-8001",
         studentName: "Casey Sample Student",
         paymentId: null,
         channel: "email",
@@ -122,7 +122,7 @@ describe("live notification log", () => {
       data: [{
         id: "notification-failed",
         studentId: "student-1",
-        studentNo: "SAMPLE-8001",
+        lrn: "SAMPLE-8001",
         studentName: "Casey Sample Student",
         paymentId: null,
         channel: "email",
@@ -144,7 +144,7 @@ describe("live notification log", () => {
     vi.mocked(retryNotification).mockResolvedValue({ data: {
       id: "notification-failed",
       studentId: "student-1",
-      studentNo: "SAMPLE-8001",
+      lrn: "SAMPLE-8001",
       studentName: "Casey Sample Student",
       paymentId: null,
       channel: "email",

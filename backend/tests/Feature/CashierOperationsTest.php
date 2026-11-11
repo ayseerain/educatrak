@@ -32,7 +32,7 @@ class CashierOperationsTest extends TestCase
             $this->actingAs($reader)->getJson('/api/payments')
                 ->assertOk()
                 ->assertJsonPath('meta.total', 1)
-                ->assertJsonPath('data.0.student_no', 'S-TEST-1001')
+                ->assertJsonPath('data.0.lrn', 'S-TEST-1001')
                 ->assertJsonPath('data.0.student_grade', 'Test Grade')
                 ->assertJsonPath('data.0.student_section', 'Test Section');
             $this->actingAs($reader)->getJson("/api/payments/{$payment->id}")->assertOk();
@@ -448,7 +448,7 @@ class CashierOperationsTest extends TestCase
         $gradeLevel = GradeLevel::query()->forceCreate(['name' => 'Test Grade', 'sort_order' => 99]);
         $section = Section::query()->forceCreate(['grade_level_id' => $gradeLevel->id, 'name' => 'Test Section']);
         $student = Student::query()->create([
-            'student_no' => 'S-TEST-1001',
+            'lrn' => 'S-TEST-1001',
             'full_name' => 'Talia Test Student (sample)',
             'grade_level_id' => $gradeLevel->id,
             'section_id' => $section->id,

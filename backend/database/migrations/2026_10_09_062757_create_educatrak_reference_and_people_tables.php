@@ -69,7 +69,7 @@ return new class extends Migration
 
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_no')->unique();
+            $table->string('lrn', 12)->unique();
             $table->string('full_name');
             $table->foreignId('grade_level_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('section_id')->nullable()->constrained()->nullOnDelete();

@@ -110,9 +110,9 @@ Registrar (`REG`) can view the same financial balance and guardian-contact conte
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search students | Search by name or student number; filter by grade, section, status | REG, CSH, ACC |
+| List and search students | Search by name or LRN; filter by grade, section, status | REG, CSH, ACC |
 | View student profile | Student data with read-only balance and guardian context | REG, CSH, ACC |
-| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | REG |
+| Add student | LRN, name, grade, section, guardian(s); rejects duplicate LRNs | REG |
 | Edit student | Change name, grade, section, guardian links | REG |
 | Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | REG |
 | Delete student | **Not allowed.** Use Set inactive | - |

@@ -2206,3 +2206,14 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Skill update:** Combobox result rule changed from showing student number to showing full, unmasked LRN.
 - **Commit/PR:** None.
 - **Follow-ups:** Student import parsing, preview, and apply remain deferred to separately approved phases. Live API/backend migration and the prior Phase 1 browser review remain outside this task.
+
+- **Timestamp:** Thursday, November 12, 2026 — 01:09:16 Asia/Manila
+- **Summary:** Completed the test-data Student Number to LRN transition. The Laravel schema, model, validation, API responses, searches, billing/payment/report/follow-up/notification paths, live frontend adapters and labels now use `lrn`. LRN is unique, stored as text, and validated as exactly 12 digits. Existing student IDs and all financial relationships remain unchanged.
+- **Files:** Updated live frontend and backend identifier consumers, backend feature fixtures, `backend/database/migrations/2026_10_09_062757_create_educatrak_reference_and_people_tables.php`, `backend/database/seeders/DemoDataSeeder.php`, and active requirement/database-design documentation.
+- **Validation:** `php artisan test` passed: 145 tests, 1,028 assertions. `npm.cmd run build` passed. `git diff --check` passed.
+- **Commit/PR:** None.
+- **Follow-ups:** Full LRN masking is intentionally not implemented. The dedicated controlled LRN-correction workflow remains a future approval item; ordinary student updates must retain the saved LRN and the edit form renders it read-only.
+
+- **Timestamp:** Thursday, November 12, 2026 — 01:11:18 Asia/Manila
+- **Update:** Enforced immutable LRN values on ordinary student updates and made the live edit-form LRN input read-only. A future dedicated correction workflow is required to change an LRN.
+- **Validation:** `php artisan test` passed: 145 tests, 1,028 assertions. `npm.cmd run build` passed. `git diff --check` passed.

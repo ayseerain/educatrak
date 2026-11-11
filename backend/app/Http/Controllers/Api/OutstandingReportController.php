@@ -47,7 +47,7 @@ class OutstandingReportController extends Controller
             'data' => $accounts->getCollection()->map(fn (BillingAccount $account): array => [
                 'id' => (string) $account->id,
                 'studentId' => (string) $account->student_id,
-                'studentNo' => $account->student->student_no,
+                'lrn' => $account->student->lrn,
                 'studentName' => $account->student->full_name,
                 'gradeLevel' => $account->student->gradeLevel?->name,
                 'section' => $account->student->section?->name,

@@ -12,7 +12,7 @@ vi.mock("@/lib/printing", () => ({ printDocumentWhenReady: vi.fn(() => Promise.r
 
 describe("live outstanding report", () => {
   beforeEach(() => vi.mocked(getOutstandingReport).mockResolvedValue({
-    data: [{ id: "account-1", studentId: "student-1", studentNo: "SAMPLE-9201", studentName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
+    data: [{ id: "account-1", studentId: "student-1", lrn: "SAMPLE-9201", studentName: "Avery Sample Student", gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
     currentPage: 1,
     lastPage: 1,
     total: 1,
@@ -34,7 +34,7 @@ describe("live outstanding report", () => {
 
   it("exports every page of outstanding accounts matching the active filters", async () => {
     vi.mocked(getOutstandingReport).mockImplementation(async ({ page = 1 } = {}) => ({
-      data: [{ id: `account-${page}`, studentId: `student-${page}`, studentNo: `SAMPLE-920${page}`, studentName: `Sample Student ${page}`, gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
+      data: [{ id: `account-${page}`, studentId: `student-${page}`, lrn: `SAMPLE-920${page}`, studentName: `Sample Student ${page}`, gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
       currentPage: page,
       lastPage: 2,
       total: 2,
@@ -57,7 +57,7 @@ describe("live outstanding report", () => {
 
   it("prints every authorized outstanding-account page", async () => {
     vi.mocked(getOutstandingReport).mockImplementation(async ({ page = 1 } = {}) => ({
-      data: [{ id: `account-${page}`, studentId: `student-${page}`, studentNo: `SAMPLE-920${page}`, studentName: `Sample Student ${page}`, gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
+      data: [{ id: `account-${page}`, studentId: `student-${page}`, lrn: `SAMPLE-920${page}`, studentName: `Sample Student ${page}`, gradeLevel: "Grade 4", section: "Orchid", schoolYear: "SY 2026-2027", balanceCents: 15000, status: "overdue" }],
       currentPage: page, lastPage: 2, total: 2, perPage: 50,
     }));
     const { default: userEvent } = await import("@testing-library/user-event");

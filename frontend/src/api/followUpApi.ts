@@ -3,7 +3,7 @@ import { request } from "@/api/cashierApi";
 export interface FollowUpItem {
   id: string;
   studentId: string | null;
-  studentNo: string | null;
+  lrn: string | null;
   studentName: string;
   grade: string | null;
   section: string | null;

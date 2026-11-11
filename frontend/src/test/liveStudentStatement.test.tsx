@@ -15,7 +15,7 @@ describe("live student statement", () => {
   it("shows persisted fees, schedule, payment history, balance, and Accounting print action", async () => {
     vi.mocked(getStudentStatement).mockResolvedValue({
       studentId: "student-1",
-      studentNo: "SAMPLE-9101",
+      lrn: "SAMPLE-9101",
       studentName: "Riley Sample Student",
       schoolYear: "SY 2026-2027",
       totalDueCents: 20000,
@@ -37,7 +37,7 @@ describe("live student statement", () => {
 
   it("does not expose standalone report actions to Auditor", async () => {
     vi.mocked(getStudentStatement).mockResolvedValue({
-      studentId: "student-1", studentNo: "SAMPLE-9101", studentName: "Riley Sample Student", schoolYear: "SY 2026-2027", totalDueCents: 20000, totalPaidCents: 15000, balanceCents: 5000,
+      studentId: "student-1", lrn: "SAMPLE-9101", studentName: "Riley Sample Student", schoolYear: "SY 2026-2027", totalDueCents: 20000, totalPaidCents: 15000, balanceCents: 5000,
       items: [{ name: "Sample tuition", category: "tuition", amountCents: 20000 }],
       installments: [{ label: "First installment", dueDate: "2026-10-01", amountCents: 20000, paidCents: 15000, status: "current" }],
       payments: [{ receiptNo: "OR-SAMPLE-9101", amountCents: 15000, paidOn: "2026-10-24", status: "valid" }],
