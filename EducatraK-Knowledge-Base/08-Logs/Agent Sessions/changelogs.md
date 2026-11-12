@@ -2302,3 +2302,92 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Timestamp:** Thursday, November 12, 2026 — 01:11:18 Asia/Manila
 - **Update:** Enforced immutable LRN values on ordinary student updates and made the live edit-form LRN input read-only. A future dedicated correction workflow is required to change an LRN.
 - **Validation:** `php artisan test` passed: 145 tests, 1,028 assertions. `npm.cmd run build` passed. `git diff --check` passed.
+### Thursday, November 12, 2026 — 02:14:59 Asia/Manila | B00 API contract reconciliation
+
+- **Agent:** Codex
+- **Summary:** Corrected stale API-contract entries that described `student_no` and an unimplemented LRN transition. The live migration and request validation already use a unique 12-digit `lrn`; ordinary student updates must submit the persisted LRN. Updated the backend loop Phase 0 and B00 resume notes to record current branch, isolated test evidence, and remaining blockers.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b00.md`.
+- **Validation:** `php artisan route:list --path=api --except-vendor` passed (51 routes). `php artisan test --compact` passed (146 tests / 1,029 assertions) on SQLite `:memory:`. `vendor/bin/pint --test --format agent` reported pre-existing formatting drift in 27 files. No database migration, SQL, external delivery, frontend change, deployment, or live-data operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of B00. Guardian relationship persistence, LRN correction/backfill, current-school-year policy, retention, target-MySQL validation, and deployment remain unresolved.
+
+### Thursday, November 12, 2026 — 02:18:00 Asia/Manila | B00 accepted
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B00 after confirmation that the current student contract uses a 12-digit LRN and ordinary updates retain it.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b00.md`.
+- **Validation:** No code changed. Prior B00 validation remains: 51 API routes and 146 passing isolated Laravel tests / 1,029 assertions.
+- **Commit/PR:** None.
+- **Follow-ups:** Prepare one independently approvable B01 authentication, user, session, and authorization workstream. B02 remains blocked by guardian persistence reconciliation.
+
+### Thursday, November 12, 2026 — 02:21:33 Asia/Manila | B01 verification complete
+
+- **Agent:** Codex
+- **Summary:** Verified authentication, user administration, 30-minute session configuration, server authorization, protected Super Admin bootstrap, archive safeguards, and audit-redaction coverage. No backend code change was needed.
+- **Files:** Updated `Backend-Loop-Engineering.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b01.md`.
+- **Validation:** Focused B01 tests passed (27 tests / 180 assertions). Full isolated Laravel suite passed (146 tests / 1,029 assertions). `session.lifetime` returned 30. `schedule:list` listed the two Manila scheduled commands. No production scheduler, database, external service, frontend change, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await B01 acceptance. B02 needs guardian-persistence resolution before schema/API work; account recovery, privileged assignment, retention, cookie/TLS, and scheduler operation remain unresolved.
+
+### Thursday, November 12, 2026 — 02:23:30 Asia/Manila | B01 accepted
+
+- **Agent:** Codex
+- **Summary:** Recorded B01 acceptance under the owner's standing instruction to approve completed workstreams automatically. The instruction preserves explicit pauses for unresolved policy, data-migration, or other decisions that require the owner's statement.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b01.md`.
+- **Validation:** No code changed. B01's focused and full isolated test evidence remains valid.
+- **Commit/PR:** None.
+- **Follow-ups:** Proceed to B02 verification. Do not migrate guardian relationship data without an approved persisted-data plan.
+
+### Thursday, November 12, 2026 — 02:24:24 Asia/Manila | B02 blocked by guardian persistence decision
+
+- **Agent:** Codex
+- **Summary:** Verified the current LRN and student-access paths, then recorded the confirmed guardian relationship mismatch. The owner-defined per-link relationship cannot be represented by the current guardian-wide field without an approved data migration and lifecycle rules.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b02.md`.
+- **Validation:** `StudentAccessTest.php` passed (8 tests / 60 assertions). No schema/data operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B02 remains blocked. Continue independently with B03 verification.
+
+### Thursday, November 12, 2026 — 02:25:32 Asia/Manila | B03 blocked by settings and school-year decisions
+
+- **Agent:** Codex
+- **Summary:** Verified current fee/plan read and fee-item mutation paths. Recorded missing live management contracts for school years, terms, payment plans, receipt settings, and school settings, plus unresolved current-year behavior.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b03.md`.
+- **Validation:** Focused B03 tests passed (11 tests / 127 assertions). No schema/data operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B03 remains blocked. Continue independently with B04 verification.
+
+### Thursday, November 12, 2026 — 02:34:37 Asia/Manila | B02 guardian-link correction and B03 current-year guard
+
+- **Agent:** Codex
+- **Summary:** Added an additive guardian-link relationship column and backfill, preserved the historical guardian-wide field, and updated student serialization/mutation to use the per-link relationship with one primary link per student. Dashboard school-year requests now reject missing or multiple current years with 409.
+- **Files:** Updated `backend/app/Http/Controllers/Api/StudentController.php`, `backend/app/Http/Controllers/Api/DashboardController.php`, `backend/app/Models/Student.php`, `backend/tests/Feature/StudentAccessTest.php`, `backend/tests/Feature/DashboardTest.php`; added `backend/database/migrations/2026_11_12_023223_add_relationship_to_guardian_student_table.php`; updated B02/B03 session and loop records.
+- **Validation:** Focused tests passed (16 tests / 125 assertions); full isolated Laravel suite passed (148 tests / 1,037 assertions); Pint formatted changed PHP files; `git diff --check` passed. No frontend diff, migration execution outside isolated tests, live data, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B02 awaits automatic acceptance after diff review. B03 remains blocked on school-year/term/payment-plan/receipt/school-setting management contracts. Target-MySQL migration and concurrency checks remain required before deployment.
+
+### Thursday, November 12, 2026 — 02:39:49 Asia/Manila | B04 blocked by missing account-provisioning contract
+
+- **Agent:** Codex
+- **Summary:** Verified existing billing reads, adjustments, snapshots, and status recalculation. Recorded that the approved account-creation flow has no route and depends on B03 settings management.
+- **Files:** Updated `Backend-Loop-Engineering.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b04.md`.
+- **Validation:** Focused B04 tests passed (7 tests / 67 assertions). No code or database operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B04 remains blocked pending B03 contracts. Proceed to B05 verification.
+
+### Thursday, November 12, 2026 — 02:40:23 Asia/Manila | B05 blocked on target-MySQL proof
+
+- **Agent:** Codex
+- **Summary:** Verified current SQLite payment, allocation, idempotency, receipt, and status-synchronization coverage. Recorded the remaining target-MySQL concurrency gate.
+- **Files:** Updated `Backend-Loop-Engineering.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b05.md`.
+- **Validation:** Full isolated Laravel suite passed (148 tests / 1,037 assertions). No MySQL operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B05 remains environment-blocked. Proceed to B06 verification.
+
+### Thursday, November 12, 2026 — 02:44:13 Asia/Manila | B06 blocked on target-MySQL proof
+
+- **Agent:** Codex
+- **Summary:** Verified void request/approval safeguards and recorded the target-MySQL concurrency gate.
+- **Files:** Updated `Backend-Loop-Engineering.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b06.md`.
+- **Validation:** Focused tests passed (22 tests / 260 assertions). No code or database operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Proceed to B07 verification.

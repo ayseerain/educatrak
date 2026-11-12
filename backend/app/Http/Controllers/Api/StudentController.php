@@ -41,7 +41,7 @@ class StudentController extends Controller
             ))
             ->when(isset($filters['query']) && trim($filters['query']) !== '', function ($query) use ($filters): void {
                 $search = trim($filters['query']);
-            $query->where(function ($matches) use ($search): void {
+                $query->where(function ($matches) use ($search): void {
                     $matches->where('full_name', 'like', "%{$search}%")
                         ->orWhere('lrn', 'like', "%{$search}%");
                 });
@@ -164,16 +164,21 @@ class StudentController extends Controller
             return;
         }
 
-        $guardian = $student->guardians()->first() ?? new Guardian();
+        $guardian = $student->guardians()->first() ?? new Guardian;
         $guardian->fill([
             'full_name' => trim((string) $input['guardian_name']),
-            'relationship' => trim((string) $input['guardian_relationship']),
             'email' => filled($input['guardian_email'] ?? null) ? trim((string) $input['guardian_email']) : null,
             'mobile' => filled($input['guardian_mobile'] ?? null) ? trim((string) $input['guardian_mobile']) : null,
             'email_status' => filled($input['guardian_email'] ?? null) ? 'unverified' : 'missing',
         ]);
         $guardian->save();
-        $student->guardians()->syncWithoutDetaching([$guardian->id => ['is_primary' => true]]);
+        $student->guardians()->newPivotStatement()
+            ->where('student_id', $student->id)
+            ->update(['is_primary' => false]);
+        $student->guardians()->syncWithoutDetaching([$guardian->id => [
+            'is_primary' => true,
+            'relationship' => trim((string) $input['guardian_relationship']),
+        ]]);
     }
 
     /** @return array<string, mixed> */
@@ -193,7 +198,7 @@ class StudentController extends Controller
         if ($includeGuardians) {
             $data['guardians'] = $student->guardians->map(fn ($guardian): array => [
                 'fullName' => $guardian->full_name,
-                'relationship' => $guardian->relationship,
+                'relationship' => $guardian->pivot->relationship ?? $guardian->relationship,
                 'email' => $guardian->email,
                 'mobile' => $guardian->mobile,
                 'emailStatus' => $guardian->email_status,

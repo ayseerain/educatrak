@@ -192,6 +192,38 @@ class StudentAccessTest extends TestCase
             ->assertJsonPath('data.guardians.0.fullName', 'Alex Sample Guardian');
     }
 
+    public function test_guardian_relationship_is_stored_per_student_link(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        $firstStudent = Student::factory()->create(['lrn' => '000000003003', 'full_name' => 'First Sample Student']);
+        $secondStudent = Student::factory()->create(['lrn' => '000000003004', 'full_name' => 'Second Sample Student']);
+        $guardianId = DB::table('guardians')->insertGetId([
+            'full_name' => 'Morgan Sample Guardian',
+            'relationship' => 'Parent',
+            'email_status' => 'missing',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        foreach ([[$firstStudent->id, 'Parent'], [$secondStudent->id, 'Aunt']] as [$studentId, $relationship]) {
+            DB::table('guardian_student')->insert([
+                'guardian_id' => $guardianId,
+                'student_id' => $studentId,
+                'is_primary' => true,
+                'relationship' => $relationship,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $this->actingAs($registrar)->getJson('/api/students/'.$firstStudent->id)
+            ->assertOk()
+            ->assertJsonPath('data.guardians.0.relationship', 'Parent');
+        $this->actingAs($registrar)->getJson('/api/students/'.$secondStudent->id)
+            ->assertOk()
+            ->assertJsonPath('data.guardians.0.relationship', 'Aunt');
+    }
+
     public function test_registrar_can_create_and_update_a_student_while_cashier_cannot(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);

@@ -108,7 +108,9 @@ class DashboardController extends Controller
         $payments = $this->paymentsInRange($start, $today);
         $trend = [];
         foreach ($payments as $payment) {
-            if ($payment->status === 'voided') continue;
+            if ($payment->status === 'voided') {
+                continue;
+            }
             $date = $payment->paid_on->toDateString();
             $trend[$date] = ($trend[$date] ?? 0) + $payment->amount_cents;
         }
@@ -202,8 +204,15 @@ class DashboardController extends Controller
 
     private function schoolYearStart(CarbonImmutable $today): CarbonImmutable
     {
-        $startsOn = SchoolYear::query()->where('is_current', true)->value('starts_on');
+        $currentYears = SchoolYear::query()
+            ->where('is_current', true)
+            ->orderBy('id')
+            ->get(['starts_on']);
 
-        return $startsOn === null ? $today : CarbonImmutable::parse($startsOn, 'Asia/Manila')->startOfDay();
+        if ($currentYears->count() !== 1) {
+            abort(409, 'Exactly one current school year must be configured.');
+        }
+
+        return CarbonImmutable::parse($currentYears->sole()->starts_on, 'Asia/Manila')->startOfDay();
     }
 }

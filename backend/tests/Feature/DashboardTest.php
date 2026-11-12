@@ -178,6 +178,22 @@ class DashboardTest extends TestCase
             ->assertJsonPath('data.paymentsInRangeCount', 3);
     }
 
+    public function test_school_year_range_requires_exactly_one_current_school_year(): void
+    {
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+
+        $this->actingAs($cashier)->getJson('/api/dashboard?range=school_year')
+            ->assertConflict()
+            ->assertJsonPath('message', 'Exactly one current school year must be configured.');
+
+        SchoolYear::query()->forceCreate(['label' => 'SY 2025-2026', 'starts_on' => '2025-06-01', 'ends_on' => '2026-05-31', 'is_current' => true]);
+        SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
+
+        $this->actingAs($cashier)->getJson('/api/dashboard?range=school_year')
+            ->assertConflict()
+            ->assertJsonPath('message', 'Exactly one current school year must be configured.');
+    }
+
     private function createAccount(Student $student, SchoolYear $year, User $cashier, string $status, int $balance): BillingAccount
     {
         return BillingAccount::query()->create([
