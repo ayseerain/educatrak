@@ -54,7 +54,7 @@ erDiagram
 ### Notes and omitted framework tables
 
 - `students.student_no` is the current unique business identifier. No LRN column exists. Owner approved Student Number-to-LRN only for separately authorized future work; no semantics or schema change is approved here.
-- `billing_account_items` preserve name/category/amount snapshots; linked `fee_item_id` is nullable. Fee revisions create versions; owner-approved new-fee propagation is implemented in application code.
+- `billing_account_items` preserve name/category/amount snapshots; linked `fee_item_id` is nullable. Fee revisions create versions; existing account snapshots remain unchanged and revised schedules apply to new accounts only.
 - `audit_entries.entity_type` plus string `entity_id` is a polymorphic reference, not a numeric foreign key. `before` and `after` JSON are nullable; database immutability is not enforced by these migrations.
 - `clearance_rules` and `clearance_records` remain historical schema. Active clearance and exam permit flows are retired by the November 5 decision.
 - `receipt_sequences` is a singleton-style sequence row seeded by migration; its key has no check constraint enforcing only `id = 1`.

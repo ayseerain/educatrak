@@ -40,4 +40,9 @@ class VoidRequest extends Model
     {
         return $this->belongsTo(User::class, 'requested_by');
     }
+
+    public function decidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by');
+    }
 }

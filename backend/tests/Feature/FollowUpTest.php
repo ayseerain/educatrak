@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\DeliverNotification;
 use App\Models\BillingAccount;
 use App\Models\GradeLevel;
 use App\Models\Guardian;
@@ -15,6 +16,7 @@ use App\UserRole;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class FollowUpTest extends TestCase
@@ -129,6 +131,7 @@ class FollowUpTest extends TestCase
         $student->guardians()->attach($guardian->id, ['is_primary' => true]);
         config(['mail.default' => 'array', 'services.twilio.account_sid' => 'AC00000000000000000000000000000000', 'services.twilio.auth_token' => 'test-token', 'services.twilio.messaging_service_sid' => 'MG00000000000000000000000000000000']);
         Http::fake(['api.twilio.com/*' => Http::response(['sid' => 'SM00000000000000000000000000000000', 'status' => 'queued'], 201)]);
+        Queue::fake();
         $payload = ['idempotency_key' => '3f2c1f5c-38f4-4f50-95f2-9bb676271b04', 'installment_ids' => [$installment->id], 'channels' => ['email', 'sms']];
 
         $response = $this->actingAs($cashier)->postJson('/api/follow-up/reminders', $payload)
@@ -136,18 +139,25 @@ class FollowUpTest extends TestCase
             ->assertJsonPath('summary.queued', 2)
             ->assertJsonPath('summary.failed', 0);
         $this->assertDatabaseCount('notification_logs', 2);
-        $this->assertDatabaseHas('notification_logs', ['installment_id' => $installment->id, 'channel' => 'sms', 'status' => 'queued', 'provider_message_sid' => 'SM00000000000000000000000000000000']);
+        $this->assertDatabaseHas('notification_logs', ['installment_id' => $installment->id, 'channel' => 'sms', 'status' => 'queued', 'provider_message_sid' => null]);
+        Queue::assertPushed(DeliverNotification::class, 2);
+        Http::assertNothingSent();
 
         $this->actingAs($cashier)->postJson('/api/follow-up/reminders', $payload)->assertStatus(202);
         $this->assertDatabaseCount('notification_logs', 2);
-        Http::assertSentCount(1);
+        Queue::assertPushed(DeliverNotification::class, 2);
 
         $smsLog = NotificationLog::query()->where('channel', 'sms')->firstOrFail();
-        $url = 'http://localhost/api/webhooks/twilio/messages/' . $smsLog->id;
+        (new DeliverNotification($smsLog->id))->handle();
+        Http::assertSentCount(1);
+        $this->assertDatabaseHas('notification_logs', ['id' => $smsLog->id, 'status' => 'queued', 'provider_message_sid' => 'SM00000000000000000000000000000000', 'attempts' => 1]);
+        $url = 'http://localhost/api/webhooks/twilio/messages/'.$smsLog->id;
         $params = ['AccountSid' => 'AC00000000000000000000000000000000', 'MessageSid' => 'SM00000000000000000000000000000000', 'MessageStatus' => 'delivered'];
         ksort($params);
         $signed = $url;
-        foreach ($params as $key => $value) $signed .= $key . $value;
+        foreach ($params as $key => $value) {
+            $signed .= $key.$value;
+        }
         $signature = base64_encode(hash_hmac('sha1', $signed, 'test-token', true));
         $this->post($url, $params, ['X-Twilio-Signature' => $signature])->assertOk();
         $this->assertDatabaseHas('notification_logs', ['id' => $smsLog->id, 'status' => 'sent']);
@@ -162,7 +172,7 @@ class FollowUpTest extends TestCase
         $account = $this->createAccount($student, $year, $user);
         $installment = Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'October installment', 'sequence' => 1, 'due_date' => '2026-10-20', 'amount_cents' => 10_000, 'paid_cents' => 0, 'status' => 'overdue']);
         $log = NotificationLog::query()->create(['student_id' => $student->id, 'installment_id' => $installment->id, 'guardian_mobile' => '+639990000000', 'channel' => 'sms', 'kind' => 'reminder', 'status' => 'queued']);
-        $this->post('/api/webhooks/twilio/messages/' . $log->id, ['MessageSid' => 'SM-invalid', 'MessageStatus' => 'delivered'], ['X-Twilio-Signature' => 'invalid'])->assertForbidden();
+        $this->post('/api/webhooks/twilio/messages/'.$log->id, ['MessageSid' => 'SM-invalid', 'MessageStatus' => 'delivered'], ['X-Twilio-Signature' => 'invalid'])->assertForbidden();
     }
 
     private function createAccount(Student $student, SchoolYear $year, User $cashier): BillingAccount

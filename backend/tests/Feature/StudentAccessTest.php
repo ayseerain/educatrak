@@ -57,6 +57,25 @@ class StudentAccessTest extends TestCase
             ->assertJsonMissingPath('data.0.guardians');
     }
 
+    public function test_registrar_can_read_active_student_record_options_contract(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        $activeGradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 3', 'sort_order' => 3, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $inactiveGradeId = DB::table('grade_levels')->insertGetId(['name' => 'Archived Grade', 'sort_order' => 99, 'active' => false, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('sections')->insert([
+            ['grade_level_id' => $activeGradeId, 'name' => 'Acacia', 'active' => true, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level_id' => $activeGradeId, 'name' => 'Archived Acacia', 'active' => false, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level_id' => $inactiveGradeId, 'name' => 'Archived Grade Section', 'active' => true, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($registrar)->getJson('/api/student-record-options')
+            ->assertOk()
+            ->assertJsonPath('data.grades.0.name', 'Grade 3')
+            ->assertJsonPath('data.grades.0.sections.0.name', 'Acacia')
+            ->assertJsonPath('data.statuses', ['enrolled', 'inactive'])
+            ->assertJsonMissingPath('data.grades.0.sections.1');
+    }
+
     public function test_accounting_can_read_student_list_with_active_year_balance_field(): void
     {
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);

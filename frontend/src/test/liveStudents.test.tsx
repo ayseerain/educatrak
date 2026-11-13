@@ -64,17 +64,18 @@ describe("live Registrar student list", () => {
     expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
   });
 
-  it("shows financial and guardian context while retaining Registrar student-record widgets", () => {
+  it("shows approved Registrar academic, personal, and guardian context without billing content", () => {
     const registrar: AuthenticatedUser = { id: "registrar-1", name: "Riley Registrar (sample)", role: "registrar" };
     render(<MemoryRouter initialEntries={["/students/sample-1001"]}><Routes><Route path="/students/:id" element={<StudentProfilePage user={registrar} />} /></Routes></MemoryRouter>);
 
-    expect(screen.queryByText("LRN")).not.toBeInTheDocument();
-    expect(screen.queryByText("Grade level")).not.toBeInTheDocument();
-    expect(screen.queryByText("Section")).not.toBeInTheDocument();
-    expect(screen.getByText("Student status")).toBeInTheDocument();
-    expect(screen.getByText("Account balance")).toBeInTheDocument();
-    expect(screen.getByText("Active").parentElement).toHaveClass("text-lg", "font-semibold", "leading-tight");
+    expect(screen.getByText("LRN")).toBeInTheDocument();
+    expect(screen.getByText("Grade level")).toBeInTheDocument();
+    expect(screen.getByText("Section")).toBeInTheDocument();
+    expect(screen.getByText("Enrollment status")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Personal information" })).toBeInTheDocument();
     expect(screen.getByText("Guardian details")).toBeInTheDocument();
+    expect(screen.queryByText("Account balance")).not.toBeInTheDocument();
+    expect(screen.queryByText("Billing status")).not.toBeInTheDocument();
   });
 
   it("links a Cashier live student profile to payment entry only", async () => {

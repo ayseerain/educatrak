@@ -12,7 +12,7 @@ class FinanceSettingsMutationTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_accounting_adds_fees_to_matching_existing_accounts_and_prevents_duplicates(): void
+    public function test_accounting_preserves_existing_account_fee_snapshots_when_creating_and_revising_fees(): void
     {
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $scheduleId = $this->createFeeSchedule();
@@ -40,10 +40,10 @@ class FinanceSettingsMutationTest extends TestCase
             ->assertJsonPath('data.name', 'Laboratory (sample)')
             ->assertJsonPath('data.version', 1)
             ->assertJsonPath('data.active', true)
-            ->assertJsonPath('data.updatedAccountCount', 1);
+            ->assertJsonPath('data.updatedAccountCount', 0);
         $laboratoryId = (int) $created->json('data.id');
 
-        $this->assertDatabaseHas('billing_account_items', [
+        $this->assertDatabaseMissing('billing_account_items', [
             'billing_account_id' => $billingAccountId,
             'fee_item_id' => $laboratoryId,
             'name' => 'Laboratory (sample)',
@@ -51,15 +51,11 @@ class FinanceSettingsMutationTest extends TestCase
         ]);
         $this->assertDatabaseHas('billing_accounts', [
             'id' => $billingAccountId,
-            'total_due_cents' => 300_000,
-            'balance_cents' => 300_000,
+            'total_due_cents' => 250_000,
+            'balance_cents' => 250_000,
         ]);
-        $this->assertDatabaseHas('installments', [
-            'billing_account_id' => $billingAccountId,
-            'label' => 'Fee: Laboratory (sample)',
-            'amount_cents' => 50_000,
-            'paid_cents' => 0,
-        ]);
+        $this->assertDatabaseCount('billing_account_items', 1);
+        $this->assertDatabaseCount('installments', 0);
 
         $this->actingAs($accounting)->postJson("/api/settings/finance/fees/{$scheduleId}/items", [
             'name' => 'laboratory (SAMPLE)',
@@ -67,7 +63,7 @@ class FinanceSettingsMutationTest extends TestCase
             'amount_cents' => 50_000,
             'required' => true,
         ])->assertUnprocessable();
-        $this->assertDatabaseCount('billing_account_items', 2);
+        $this->assertDatabaseCount('billing_account_items', 1);
 
         $revised = $this->actingAs($accounting)->patchJson("/api/settings/finance/fee-items/{$laboratoryId}", [
             'name' => 'Tuition revised (sample)',
@@ -92,13 +88,20 @@ class FinanceSettingsMutationTest extends TestCase
         ]);
         $this->assertDatabaseHas('billing_account_items', [
             'billing_account_id' => $billingAccountId,
-            'fee_item_id' => $laboratoryId,
-            'name' => 'Laboratory (sample)',
-            'amount_cents' => 50_000,
+            'fee_item_id' => $originalId,
+            'name' => 'Tuition (sample)',
+            'amount_cents' => 250_000,
         ]);
         $this->actingAs($accounting)->getJson("/api/billing-accounts/{$billingAccountId}")
             ->assertOk()
-            ->assertJsonPath('data.totalDueCents', 300_000);
+            ->assertJsonPath('data.totalDueCents', 250_000);
+        $this->assertDatabaseHas('billing_accounts', [
+            'id' => $billingAccountId,
+            'total_due_cents' => 250_000,
+            'balance_cents' => 250_000,
+        ]);
+        $this->assertDatabaseCount('billing_account_items', 1);
+        $this->assertDatabaseCount('installments', 0);
 
         $this->actingAs($accounting)->postJson("/api/settings/finance/fee-items/{$revisedId}/deactivate")
             ->assertOk()
@@ -151,6 +154,26 @@ class FinanceSettingsMutationTest extends TestCase
             'amount_cents' => 100,
             'required' => true,
         ])->assertUnprocessable()->assertJsonValidationErrors('category');
+    }
+
+    public function test_accounting_can_deactivate_an_active_fee_item_contract(): void
+    {
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $scheduleId = $this->createFeeSchedule();
+        $feeItemId = DB::table('fee_items')->insertGetId([
+            'fee_schedule_id' => $scheduleId, 'name' => 'Library (sample)', 'category' => 'other', 'amount_cents' => 1_500,
+            'required' => false, 'sort_order' => 1, 'active' => true, 'version' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->actingAs($accounting)->postJson("/api/settings/finance/fee-items/{$feeItemId}/deactivate")
+            ->assertOk()
+            ->assertJsonPath('data.id', (string) $feeItemId)
+            ->assertJsonPath('data.active', false)
+            ->assertJsonPath('data.version', 1);
+
+        $this->assertDatabaseHas('fee_items', ['id' => $feeItemId, 'active' => false]);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'finance.fee_item.deactivated', 'entity_id' => (string) $feeItemId]);
+        $this->actingAs($accounting)->postJson("/api/settings/finance/fee-items/{$feeItemId}/deactivate")->assertConflict();
     }
 
     public function test_accounting_can_apply_new_and_revised_fees_to_all_grade_schedules_without_duplicates(): void

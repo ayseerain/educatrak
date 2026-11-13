@@ -45,15 +45,15 @@ class DailyReportTest extends TestCase
             Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'First installment', 'sequence' => 1, 'due_date' => '2026-10-01', 'amount_cents' => 20_000, 'paid_cents' => 15_000, 'status' => 'current']);
             $firstPayment = $this->createPayment($account, $student, $cashier, 10_000, 'OR-SAMPLE-9101');
             $this->createPayment($account, $student, $otherCashier, 5_000, 'OR-SAMPLE-9102');
-    
+
             $this->actingAs($cashier)->getJson('/api/reports/daily?date=2026-10-24')->assertForbidden();
-    
+
             $accounting = User::factory()->create(['role' => UserRole::Accounting]);
             $this->actingAs($accounting)->getJson('/api/reports/daily?date=2026-10-24')
                 ->assertOk()
                 ->assertJsonPath('data.totalCents', 15_000)
                 ->assertJsonPath('data.meta.totalPayments', 2);
-    
+
             $auditor = User::factory()->create(['role' => UserRole::Auditor]);
             $this->actingAs($auditor)->getJson('/api/reports/daily?date=2026-10-24')
                 ->assertForbidden();
@@ -65,7 +65,7 @@ class DailyReportTest extends TestCase
             $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin]);
             $this->actingAs($superAdmin)->getJson('/api/reports/daily?date=2026-10-24')->assertForbidden();
             $this->actingAs($superAdmin)->getJson("/api/reports/students/{$student->id}/statement")->assertForbidden();
-    
+
             $this->actingAs($cashier)->getJson("/api/reports/students/{$student->id}/statement")->assertForbidden();
             $this->actingAs($auditor)->getJson("/api/reports/students/{$student->id}/statement")->assertForbidden();
             $this->actingAs($accounting)->getJson("/api/reports/students/{$student->id}/statement")
@@ -80,6 +80,30 @@ class DailyReportTest extends TestCase
             $this->actingAs($registrar)->getJson('/api/reports/daily?date=2026-10-24')->assertForbidden();
             $this->actingAs($registrar)->getJson("/api/reports/students/{$student->id}/statement")->assertForbidden();
         });
+    }
+
+    public function test_accounting_student_statement_returns_only_the_current_account_contract(): void
+    {
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $student = Student::query()->create(['lrn' => 'SAMPLE-9201', 'full_name' => 'Statement Sample Student', 'status' => 'enrolled']);
+        $currentYear = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
+        $priorYear = SchoolYear::query()->forceCreate(['label' => 'SY 2025-2026', 'starts_on' => '2025-06-01', 'ends_on' => '2026-05-31', 'is_current' => false]);
+        BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $priorYear->id, 'status' => 'paid', 'total_due_cents' => 1_000, 'total_paid_cents' => 1_000, 'balance_cents' => 0, 'created_by' => $accounting->id]);
+        BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $currentYear->id, 'status' => 'current', 'total_due_cents' => 20_000, 'total_paid_cents' => 5_000, 'balance_cents' => 15_000, 'created_by' => $accounting->id]);
+        $withoutCurrentAccount = Student::query()->create(['lrn' => 'SAMPLE-9202', 'full_name' => 'No Current Account (sample)', 'status' => 'enrolled']);
+
+        $this->actingAs($accounting)->getJson("/api/reports/students/{$student->id}/statement")
+            ->assertOk()
+            ->assertJsonPath('data.studentId', (string) $student->id)
+            ->assertJsonPath('data.lrn', 'SAMPLE-9201')
+            ->assertJsonPath('data.schoolYear', 'SY 2026-2027')
+            ->assertJsonPath('data.totalDueCents', 20_000)
+            ->assertJsonPath('data.totalPaidCents', 5_000)
+            ->assertJsonPath('data.balanceCents', 15_000);
+
+        $this->actingAs($accounting)->getJson("/api/reports/students/{$withoutCurrentAccount->id}/statement")
+            ->assertNotFound()
+            ->assertJsonPath('message', 'No billing account exists for the current school year.');
     }
 
     private function createPayment(BillingAccount $account, Student $student, User $cashier, int $amount, string $receiptNo): Payment

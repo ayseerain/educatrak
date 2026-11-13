@@ -23,7 +23,7 @@ describe("live daily close-out", () => {
     let submitted = false;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === "/api/close-outs/today" && !init?.method) return jsonResponse({ data: { business_date: "2026-10-24", system_cash_cents: 10000, close_out: submitted ? closeOut() : null } });
+      if (url === "/api/close-outs/today" && !init?.method) return jsonResponse({ data: { business_date: "2026-10-24", system_cash_cents: 10000, system_totals: { cash: 10000, check: 5000 }, close_out: submitted ? closeOut() : null } });
       if (url === "/sanctum/csrf-cookie") return jsonResponse({}, 204);
       if (url === "/api/close-outs") {
         expect(JSON.parse(String(init?.body))).toEqual({ counted_cash_cents: 12050, variance_reason: "Drawer overage found during recount." });
@@ -38,6 +38,9 @@ describe("live daily close-out", () => {
     render(<QueryClientProvider client={queryClient}><LiveDailyCloseOut user={cashier} /></QueryClientProvider>);
 
     expect(await screen.findByText("₱100.00")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "System totals by payment method" })).toBeInTheDocument();
+    expect(screen.getByText("Check")).toBeInTheDocument();
+    expect(screen.getByText("₱50.00")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Counted cash"), "120.50");
     await user.type(screen.getByLabelText("Variance explanation *"), "Drawer overage found during recount.");
     await user.click(screen.getByRole("button", { name: "Review close-out" }));
@@ -68,7 +71,7 @@ describe("live daily close-out", () => {
   it("shows a cashier's own history in the same close-out workspace", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === "/api/close-outs/today") return jsonResponse({ data: { business_date: "2026-10-24", system_cash_cents: 10000, close_out: null } });
+      if (url === "/api/close-outs/today") return jsonResponse({ data: { business_date: "2026-10-24", system_cash_cents: 10000, system_totals: { cash: 10000 }, close_out: null } });
       if (url === "/api/close-outs") return jsonResponse({ data: [] });
       throw new Error(`Unexpected request: ${url}`);
     });
@@ -90,6 +93,7 @@ function closeOut() {
     business_date: "2026-10-24",
     cashier: "Casey Cashier (sample)",
     system_cash_cents: 10000,
+    system_totals: { cash: 10000, check: 5000 },
     counted_cash_cents: 12050,
     variance_cents: 2050,
     variance_reason: "Drawer overage found during recount.",

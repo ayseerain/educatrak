@@ -137,6 +137,39 @@ class UserAdministrationTest extends TestCase
         }
     }
 
+    public function test_administrator_user_list_filters_ordinary_accounts_by_query_role_and_status(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $matchingCashier = User::factory()->create(['role' => UserRole::Cashier, 'username' => 'fictional.matching.cashier', 'full_name' => 'Matching Cashier (sample)']);
+        User::factory()->create(['role' => UserRole::Cashier, 'username' => 'fictional.inactive.cashier', 'active' => false]);
+        User::factory()->create(['role' => UserRole::Registrar, 'username' => 'fictional.matching.registrar', 'full_name' => 'Matching Registrar (sample)']);
+
+        $this->actingAs($administrator)->getJson('/api/admin/users?query=matching&role=cashier&status=active&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('meta.perPage', 10)
+            ->assertJsonPath('data.0.id', (string) $matchingCashier->id)
+            ->assertJsonPath('data.0.role', UserRole::Cashier->value)
+            ->assertJsonPath('data.0.active', true);
+    }
+
+    public function test_administrator_can_update_an_ordinary_user_contract(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier, 'full_name' => 'Before Update (sample)', 'must_change_password' => false]);
+
+        $this->actingAs($administrator)->patchJson("/api/admin/users/{$cashier->id}", [
+            'full_name' => 'After Update (sample)',
+            'active' => false,
+        ])->assertOk()
+            ->assertJsonPath('data.id', (string) $cashier->id)
+            ->assertJsonPath('data.fullName', 'After Update (sample)')
+            ->assertJsonPath('data.active', false);
+
+        $this->assertDatabaseHas('users', ['id' => $cashier->id, 'full_name' => 'After Update (sample)', 'active' => false]);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'user.updated', 'entity_id' => (string) $cashier->id, 'user_id' => $administrator->id]);
+    }
+
     public function test_administrator_security_log_returns_account_identity_and_excludes_password_fields(): void
     {
         $administrator = User::factory()->create(['role' => UserRole::Admin]);
@@ -171,6 +204,25 @@ class UserAdministrationTest extends TestCase
             ->assertJsonMissingPath('data.0.details.guardian_email')
             ->assertJsonPath('data.0.details.username', $cashier->username)
             ->assertJsonPath('data.0.details.role', UserRole::Cashier->value);
+    }
+
+    public function test_administrator_security_log_includes_the_trusted_super_admin_bootstrap_event(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_protected' => true]);
+        $event = AuditEntry::query()->forceCreate([
+            'user_id' => null,
+            'action' => 'user.super_admin_bootstrapped',
+            'entity_type' => $superAdmin->getMorphClass(),
+            'entity_id' => (string) $superAdmin->id,
+            'after' => ['username' => $superAdmin->username, 'role' => UserRole::SuperAdmin->value],
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($administrator)->getJson('/api/admin/security-events?action=user.super_admin_bootstrapped')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', (string) $event->id)
+            ->assertJsonPath('data.0.account', $superAdmin->username);
     }
 
     public function test_security_log_rejects_nested_values_in_safe_metadata_fields(): void
@@ -248,6 +300,31 @@ class UserAdministrationTest extends TestCase
             ->assertJsonPath('meta.total', 1);
     }
 
+    public function test_administrator_security_log_paginates_the_safe_event_contract(): void
+    {
+        $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+        foreach (range(1, 11) as $index) {
+            AuditEntry::query()->forceCreate([
+                'user_id' => $administrator->id,
+                'action' => 'user.updated',
+                'entity_type' => $cashier->getMorphClass(),
+                'entity_id' => (string) $cashier->id,
+                'after' => ['username' => $cashier->username, 'outcome' => "sample-{$index}"],
+                'occurred_at' => now()->addSeconds($index),
+            ]);
+        }
+
+        $this->actingAs($administrator)->getJson('/api/admin/security-events?per_page=10&page=2')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.currentPage', 2)
+            ->assertJsonPath('meta.lastPage', 2)
+            ->assertJsonPath('meta.total', 11)
+            ->assertJsonPath('meta.perPage', 10)
+            ->assertJsonPath('data.0.details.outcome', 'sample-1');
+    }
+
     public function test_administrator_cannot_deactivate_their_own_account_or_the_last_active_administrator(): void
     {
         $administrator = User::factory()->create(['role' => UserRole::Admin]);
@@ -278,6 +355,10 @@ class UserAdministrationTest extends TestCase
         $this->assertSame($administrator->id, $cashier->archived_by);
         $this->assertEqualsWithDelta(30, now()->diffInDays($cashier->anonymize_at), 0.001);
         $this->assertDatabaseHas('audit_entries', ['action' => 'user.archived', 'entity_id' => (string) $cashier->id]);
+        $this->actingAs($administrator)->getJson('/api/admin/security-events?action=user.archived')
+            ->assertOk()
+            ->assertJsonPath('data.0.entityId', (string) $cashier->id)
+            ->assertJsonPath('data.0.action', 'user.archived');
         $this->actingAs($cashier)->getJson('/api/auth/me')->assertUnauthorized();
 
         $this->actingAs($administrator)->getJson('/api/admin/users?status=archived')
@@ -294,6 +375,10 @@ class UserAdministrationTest extends TestCase
         $this->assertNull($cashier->archived_at);
         $this->assertNull($cashier->anonymize_at);
         $this->assertDatabaseHas('audit_entries', ['action' => 'user.restored', 'entity_id' => (string) $cashier->id]);
+        $this->actingAs($administrator)->getJson('/api/admin/security-events?action=user.restored')
+            ->assertOk()
+            ->assertJsonPath('data.0.entityId', (string) $cashier->id)
+            ->assertJsonPath('data.0.action', 'user.restored');
     }
 
     public function test_archived_account_cannot_be_reactivated_through_general_user_update(): void

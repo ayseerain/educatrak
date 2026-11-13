@@ -2391,3 +2391,452 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused tests passed (22 tests / 260 assertions). No code or database operation ran.
 - **Commit/PR:** None.
 - **Follow-ups:** Proceed to B07 verification.
+
+### Thursday, November 12, 2026 — 16:00:43 Asia/Manila | B06 void-decision response contract
+
+- **Agent:** Codex
+- **Summary:** Added the missing `decided_by` and `decided_at` fields to void-request responses so Accounting history can identify the decision actor and time. Added regression assertions for that metadata and for the existing voided receipt-status signal used by the print surface.
+- **Files:** Updated `backend/app/Models/VoidRequest.php`, `backend/app/Http/Controllers/Api/VoidRequestController.php`, `backend/tests/Feature/CashierOperationsTest.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b06.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** `git diff --check` passed. Focused/full Laravel tests and Pint were unavailable because PHP, Composer, and `backend/vendor/autoload.php` are absent; no database, migration, external delivery, frontend, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B06 remains environment-blocked pending executable focused/full tests and approved disposable-MySQL concurrency proof.
+
+### Thursday, November 12, 2026 — 16:43:03 Asia/Manila | B06 isolated validation
+
+- **Agent:** Codex
+- **Summary:** Restored a local PHP 8.4 validation toolchain and ran the approved B06 regression coverage without changing project dependencies or configuration. PHP 8.3 was incompatible with the locked Laravel 13.35 dependency set; PHP 8.4 was used without a lockfile update.
+- **Validation:** `CashierOperationsTest.php` passed (19 tests / 240 assertions); full isolated SQLite PHPUnit suite passed (148 tests / 1,041 assertions); Pint completed on dirty PHP files; `git diff --check` passed. Tests used `phpunit.xml` SQLite `:memory:` and an ephemeral process-only `APP_KEY`; no `.env`, shared database, migration outside the isolated test lifecycle, frontend, external delivery, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B06 is still environment-blocked pending owner-approved disposable-MySQL duplicate-request/decision concurrency proof.
+
+### Thursday, November 12, 2026 — 16:49:13 Asia/Manila | B06 owner acceptance with deferred MySQL proof
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's approval of B06 for this loop. The target-MySQL duplicate-request/decision concurrency proof is explicitly deferred rather than represented as completed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b06.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior recorded validation remains: focused B06 coverage (19 tests / 240 assertions), full isolated SQLite suite (148 tests / 1,041 assertions), Pint, and `git diff --check` passed. No database, migration, external delivery, frontend, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Present B07 for separate owner approval; retain the deferred B06 MySQL concurrency proof as an open verification item.
+
+### Thursday, November 12, 2026 — 16:57:00 Asia/Manila | B07 notification and follow-up audit
+
+- **Agent:** Codex
+- **Summary:** Audited notification logging, reminder delivery, retry/callback controls, and operational declarations. Confirmed that payment confirmations are log-only and that reminder provider calls run synchronously in HTTP requests; recorded the missing email-confirmation contract and settings/runtime gates without changing delivery behavior.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b07.md`.
+- **Validation:** `FollowUpTest.php` and `NotificationLogReadTest.php` passed (7 tests / 56 assertions) with isolated SQLite and faked/local providers. No live mail/SMS, sandbox credential, external request, shared database, migration, scheduler, queue worker, frontend, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner approval is needed for the narrow B07 queued-delivery remediation; email delivery confirmation, sender/daily-limit policy, and operational worker ownership remain decisions.
+
+### Thursday, November 12, 2026 — 17:08:29 Asia/Manila | B07 queued delivery and payment-email retry
+
+- **Agent:** Codex
+- **Summary:** Replaced direct HTTP-handler reminder delivery with the one-attempt queued `DeliverNotification` job and dispatches payment confirmations after commit. Added Cashier retry for failed payment-confirmation emails and locked notification rows during retry to prevent a second enqueue. Provider acceptance remains queued until an approved delivery result exists; reminders remain fail-closed when disabled.
+- **Files:** Added `backend/app/Jobs/DeliverNotification.php`; updated `backend/app/Http/Controllers/Api/PaymentController.php`, `backend/app/Http/Controllers/Api/ReminderDeliveryController.php`, `backend/tests/Feature/CashierOperationsTest.php`, `backend/tests/Feature/FollowUpTest.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b07.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused B07/payment coverage passed (27 tests / 313 assertions); full isolated SQLite PHPUnit suite passed (149 tests / 1,058 assertions); Pint and `git diff --check` passed. Tests used faked queue/HTTP behavior and a process-only test key. No live mail/SMS, sandbox credential, external provider, shared database, migration, scheduler, queue worker, frontend, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B07 remains decision/environment-blocked on email delivery-confirmation semantics, sender/daily-send-limit policy, configured queue-worker ownership, and target-provider sandbox proof. Automated reminder scheduling remains prohibited.
+
+### Thursday, November 12, 2026 — 17:11:53 Asia/Manila | B07 owner acceptance with deferred runtime verification
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B07 for this loop. Email delivery-confirmation semantics, sender/daily-send-limit policy, queue-worker ownership, and target-provider sandbox proof remain explicitly deferred rather than completed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b07.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior recorded evidence remains: focused B07/payment coverage (27 tests / 313 assertions), full isolated SQLite suite (149 tests / 1,058 assertions), Pint, and `git diff --check` passed. No external provider, database, migration, scheduler, queue worker, frontend, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Present B08 for separate owner approval; retain B07's deferred email-policy and runtime verification work.
+
+### Thursday, November 12, 2026 — 17:20:42 +08:00 | B08 reports, statements, exports, and dashboards audit
+
+- **Agent:** Codex
+- **Summary:** Audited role-limited dashboards plus daily collections, outstanding balances, and current-year student statements. Corrected the outstanding-report query so ties use `balance_cents DESC, id ASC`, preventing unstable page boundaries; added a regression test for tied balances. Monthly reporting remains unavailable because an approved category/billed-data aggregation contract does not exist. Existing report exports remain client-side Excel-compatible CSV; no native XLSX/PDF/streaming dependency or contract was introduced.
+- **Files:** Updated `backend/app/Http/Controllers/Api/OutstandingReportController.php`, `backend/tests/Feature/OutstandingReportTest.php`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b08.md`.
+- **Validation:** Focused daily/outstanding/dashboard coverage passed (11 tests / 95 assertions). The full isolated SQLite PHPUnit suite passed (150 tests / 1,062 assertions). Pint formatted the changed controller; a clean Pint verification and `git diff --check` remain to be recorded after this documentation update. No report export, shared database, migration, external provider, frontend change, browser print interaction, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner disposition is needed for B08. Finance/report ownership must define monthly data aggregation and a native-export contract before that unavailable scope is built; browser print-layout acceptance remains tracked separately.
+
+### Thursday, November 12, 2026 — 17:22:21 +08:00 | B08 final static validation
+
+- **Agent:** Codex
+- **Summary:** Completed final static validation after recording the B08 audit.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b08.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** Pint check-only verification passed; `git diff --check` passed. The earlier B08 focused coverage (11 tests / 95 assertions) and complete isolated SQLite suite (150 tests / 1,062 assertions) remain passing evidence.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance/disposition; no monthly or native-export behavior is implemented without the required contract.
+
+### Thursday, November 12, 2026 — 17:32:45 +08:00 | B08 owner acceptance with deferred report scope
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B08 for this loop. The accepted scope is daily collections, outstanding balances, current-year statements, and role dashboards with the stable outstanding-pagination correction.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b08.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B08 evidence remains: focused reports/dashboard coverage passed (11 tests / 95 assertions), full isolated SQLite suite passed (150 tests / 1,062 assertions), Pint check-only verification passed, and `git diff --check` passed. No report export, database, migration, external provider, frontend, browser print interaction, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Monthly reporting/native export and browser print-layout/physical-print verification remain explicitly deferred; acceptance does not mark them complete.
+
+### Thursday, November 12, 2026 — 17:41:29 +08:00 | B09 audit, security events, backups, and recovery
+
+- **Agent:** Codex
+- **Summary:** Audited M8 audit/security/backup behavior and corrected the Security Events allowlist so archive, restore, and trusted Super Admin bootstrap actions are visible in the protected feed. Recorded the unimplemented atomic-audit transaction boundaries, backup/restore operations and proof, and retention-policy conflict as open work rather than claiming readiness.
+- **Files:** Updated `backend/app/Http/Controllers/Api/SecurityEventController.php`, `backend/tests/Feature/UserAdministrationTest.php`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b09.md`.
+- **Validation:** Focused `AuditLogReadTest`, `BackupReadTest`, `UserAdministrationTest`, and `AuthenticationTest` passed (30 tests / 198 assertions). Earlier full isolated SQLite suite passed (150 tests / 1,068 assertions). Pint formatting was applied to the controller; final full-suite/Pint-check/static-diff verification remains to be recorded after this documentation update. No backup, restore, credential inspection, external service, frontend, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner disposition is required. Do not claim atomic audit history, backup/recovery readiness, or a resolved retention policy without the recorded follow-up work.
+
+### Thursday, November 12, 2026 — 17:47:52 +08:00 | B09 final backend validation
+
+- **Agent:** Codex
+- **Summary:** Completed final backend validation for the B09 security-event correction and audit record.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b09.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** Pint check-only verification passed. The complete isolated SQLite PHPUnit suite passed (151 tests / 1,071 assertions). `git diff --check` remains to run after this documentation update.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner disposition; backup/recovery, audit atomicity, and retention remain open.
+
+### Thursday, November 12, 2026 — 17:49:29 +08:00 | B09 owner acceptance with deferred security and recovery work
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B09 for this loop. The corrected security-event coverage is accepted; audit transaction coupling, backup/recovery readiness, and retention-policy reconciliation remain deferred.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b09.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B09 evidence remains: focused coverage passed (30 tests / 198 assertions), full isolated SQLite suite passed (151 tests / 1,071 assertions), Pint passed, and `git diff --check` passed. No backup, restore, external service, frontend, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Retain the explicit B09 atomic-audit, backup/recovery, and retention entries as open; acceptance does not mark them complete.
+
+### Thursday, November 12, 2026 — 17:54:23 +08:00 | B10 close-out and reconciliation audit
+
+- **Agent:** Codex
+- **Summary:** Audited the close-out lifecycle, role boundaries, test-only business-date simulator, and concurrency safeguards. Confirmed the implemented Cashier/Accounting flow in isolated tests and recorded the missing M13 per-method totals plus unproven target-MySQL concurrency behavior without changing operational close-out behavior.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b10.md`.
+- **Validation:** Focused `CashierOperationsTest` and `CapabilityMapTest` passed (77 tests / 494 assertions). No code changed, so no full suite or Pint run was required for this audit record. No business date, close-out, sign-off, shared database, external service, frontend, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner disposition is required. Per-method close-out totals require a scoped contract/UI change; target-MySQL concurrency validation and B09 atomic-audit remediation remain open.
+
+### Thursday, November 12, 2026 — 17:56:50 +08:00 | B10 owner acceptance with deferred reconciliation work
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B10 for this loop. The verified Cashier/Accounting close-out flow is accepted; per-method totals, target-MySQL concurrency proof, and B09 audit atomicity remain deferred.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b10.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B10 focused coverage passed (77 tests / 494 assertions), and `git diff --check` passed. No business date, close-out, sign-off, shared database, external service, frontend, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Keep the per-method totals, target-MySQL concurrency, and B09 atomic-audit entries open; acceptance does not mark them complete.
+
+### Thursday, November 12, 2026 — 17:59:35 +08:00 | B11 student masterlist and ledger-import boundary audit
+
+- **Agent:** Codex
+- **Summary:** Audited and preserved the separation between the approved MockDB-only Registrar masterlist Phase 1 prototype and the unapproved live student/ledger import paths. Confirmed no Laravel import endpoint, all-role ledger-import denial, and no parsing/apply behavior in the prototype. Recorded missing focused prototype coverage without adding import functionality.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b11.md`.
+- **Validation:** `frontend/src/test/operations.test.tsx` passed (65 tests). The initial sandboxed run could not read Vite's configuration directory; the approved rerun outside the sandbox passed. No code changed, so no backend/full-suite/Pint run was required. No file upload, parsing, record mutation, backend import, financial import, external service, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner disposition is required. Keep live student import and ledger import decision-blocked until their independent contracts and approvals exist.
+
+### Thursday, November 12, 2026 — 18:01:02 +08:00 | B11 owner acceptance with imports deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B11 for this loop. The MockDB-only Phase 1 boundary and all-role ledger-import denial are accepted; focused prototype coverage and every live import behavior remain decision-blocked.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b11.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B11 frontend capability coverage passed (65 tests), and `git diff --check` passed. No file upload, parsing, record mutation, backend import, financial import, external service, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Retain the focused prototype-test gap and all live student/ledger-import contracts as open; acceptance does not mark them complete.
+
+### Thursday, November 12, 2026 — 18:02:36 +08:00 | B12 optional-functionality inventory
+
+- **Agent:** Codex
+- **Summary:** Inventoried optional PDF, export, sorting, maintenance, and integration scope. Confirmed existing CSV exports and MockDB sorting through focused tests; preserved unavailable optional work and its existing trackers rather than introducing behavior by assumption.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b12.md`.
+- **Validation:** Focused frontend export/sorting coverage passed (23 tests across 6 files). No code changed, so no full suite or formatter run was required. No export file, PDF, dependency, integration, external service, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Owner disposition is required. Existing PDF, native-export, live-sorting, and operational-integration decisions remain open.
+
+### Thursday, November 12, 2026 — 18:04:12 +08:00 | B12 owner acceptance with optional scope deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B12 for this loop. Existing CSV/print behavior and MockDB sorting are accepted; unapproved optional PDF, native export, live sorting, maintenance, and integration work remains deferred.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b12.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B12 focused export/sorting coverage passed (23 tests across 6 files), and `git diff --check` passed. No export file, PDF, dependency, integration, external service, or deployment operation ran for this update.
+- **Commit/PR:** None.
+- **Follow-ups:** Retain all optional-feature tracker entries as open; acceptance does not mark them complete.
+
+### Thursday, November 12, 2026 — 18:11:13 +08:00 | B13 operational-prerequisite and deployment-readiness audit
+
+- **Agent:** Codex
+- **Summary:** Recorded a read-only local environment matrix and distinguished local compatibility from deployment evidence. PHP 8.4.27, Laravel 13.35.0, the locked dependency set, and the required PHP extensions are compatible for isolated checks; no target MySQL/deployment topology/ownership or production operations were available. The workstream is explicitly environment-blocked rather than deployment-ready.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b13.md`.
+- **Validation:** `php -v` reported PHP 8.4.27; extension inventory found `curl`, `fileinfo`, `mbstring`, `openssl`, `pdo_mysql`, `pdo_sqlite`, `sqlite3`, and `zip`; `artisan about --only=environment` reported Laravel 13.35.0, resolved production/debug-off/Asia-Manila CLI settings, and no Composer version. Node 22.15.0 and npm 10.9.2 are installed. The local machine has no MySQL CLI, no Docker Compose file, no deployment manifest, and no backend `.env`. A read-only `artisan schedule:list` attempt failed before listing because overlap locking targeted an absent local SQLite `cache_locks` database. No migration, database connection, backup/restore, provider message, scheduler tick, queue worker, secret inspection, deployment, or external service operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** MCA deployment/database ownership must supply a matching disposable MySQL environment and the actual environment matrix, then separately authorize migration/schema/concurrency and restore validation. Retain existing B06/B10 MySQL-race, B07 worker/provider, and B09 backup/recovery blockers.
+
+### Thursday, November 12, 2026 — 20:26:01 +08:00 | B13 owner acceptance with environment blockers deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B13 for this loop. The local readiness audit is accepted; every deployment, MySQL, runtime, recovery, and operational prerequisite remains explicitly deferred.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b13.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B13 evidence remains: PHP 8.4.27/Laravel 13.35.0 local compatibility and the documented environment blockers. `git diff --check` passed. No migration, database, provider, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Preserve B13 and referenced B06/B07/B09/B10 environment blockers. Before formal deployment work, obtain the actual target matrix, an owner-approved disposable matching MySQL environment, and separate operational approval.
+
+### Thursday, November 12, 2026 — 20:36:35 +08:00 | Formal A01 requirements, route, and contract traceability audit
+
+- **Agent:** Codex
+- **Summary:** Completed the first formal-audit trace across all 51 current API routes, Must modules, authorized optional modules, role middleware, current LRN/guardian contracts, and frontend live adapters. Corrected the current API contract's stale session-setting statement; recorded the guardian-management decision conflict, endpoint-coverage gaps, and a frontend table-markup defect without changing application behavior.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a01.md`.
+- **Validation:** Read-only Laravel route inventory returned 51 API routes. Full isolated Laravel PHPUnit passed (151 tests / 1,071 assertions). Focused live-API Vitest coverage produced 34 passes and one existing failing Registrar/LRN assertion in `liveStudents.test.tsx:71`; it also reported a React table-whitespace nesting warning in `LiveBillingAccounts`. No MySQL, migration, external provider, scheduler, worker, backup/restore, secret inspection, or deployment operation ran. `git diff --check` passed.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A01. Do not implement the discovered frontend/backend fixes or guardian lifecycle without separately scoped approval. A02 is the next formal audit only after A01 acceptance.
+
+### Thursday, November 12, 2026 — 20:47:27 +08:00 | Formal A01 owner acceptance with findings deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A01. The completed route/requirement trace is accepted; its frontend, guardian-contract, endpoint-coverage, MySQL, deployment, and pre-existing build findings remain open.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a01.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior A01 evidence remains: 51 registered routes, 151 passing Laravel tests / 1,071 assertions, and the focused frontend result of 34 passes with one known failure plus the documented React warning. `git diff --check` passed. No migration, database, external service, scheduler/worker, backup/restore, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** A02 financial/database/race-condition audit is the next workstream. Keep every A01 finding explicitly open until separately approved and verified.
+
+### Thursday, November 12, 2026 — 20:52:46 +08:00 | Formal A02 financial, database, and race-condition audit
+
+- **Agent:** Codex
+- **Summary:** Completed the read-only A02 audit of financial storage, transaction paths, reconciliation, idempotency, receipts, void compensation, fee revisions, close-out state, audit coupling, and database/race-condition evidence. Confirmed that fee-item create/revise behavior retroactively adds charges to existing accounts, contrary to M9.1's new-accounts-only requirement; recorded it as a FIX without changing application behavior.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a02.md`.
+- **Validation:** Focused isolated SQLite PHPUnit passed: 30 tests / 371 assertions across `CashierOperationsTest`, `BillingStatusSynchronizationTest`, `FinanceSettingsMutationTest`, and `BillingAccountReadTest`. The audit retained existing B09 audit-atomicity, B10 per-method-close-out, school-year-management, and target-MySQL concurrency gaps. Matching MySQL behavior is NOT VERIFIED: no owner-approved disposable MySQL environment, migration, concurrent request exercise, provider, scheduler, worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A02. A separately approved correction is required before changing fee-revision behavior; acceptance does not authorize code, schema, MySQL, or deployment work.
+
+### Thursday, November 12, 2026 — 20:55:37 +08:00 | Formal A02 owner acceptance with findings deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A02. The financial/database/race-condition audit is accepted; its confirmed existing-account fee-snapshot defect and all referenced audit, close-out, school-year, MySQL, and environment gaps remain explicitly open.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a02.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior A02 focused isolated SQLite evidence remains: 30 tests / 371 assertions. `git diff --check` passed. No application behavior, schema, migration, MySQL database, provider, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** A03 security, authorization, and privacy audit is the next formal workstream. Keep every A02 finding open until separately approved and verified.
+
+### Thursday, November 12, 2026 — 21:00:30 +08:00 | Formal A03 security, authorization, and privacy audit
+
+- **Agent:** Codex
+- **Summary:** Completed the read-only A03 audit of roles, route middleware, object scope, session/login controls, CSRF configuration, Twilio callback validation, error exposure, audit redaction, and privacy boundaries. No new confirmed authorization bypass or data-exposure defect was found in the isolated evidence; retained target-environment and browser-session limitations as open verification work.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a03.md`.
+- **Validation:** Focused feature PHPUnit passed (64 tests / 569 assertions). Route/capability PHPUnit passed (57 tests / 241 assertions). The audit compared official Laravel Sanctum, CSRF, authentication, error, and rate-limiting guidance to the current code. No browser-CSRF session, target TLS/cookie/proxy/CORS/debug/rate-limit backing-store, MySQL, provider callback, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A03. Existing B13 environment, endpoint/response-field coverage, production throttle UX, audit retention, and provider-runtime trackers remain open; acceptance does not authorize production configuration or code changes.
+
+### Thursday, November 12, 2026 — 21:02:15 +08:00 | Formal A03 owner acceptance with verification limits deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A03. The security/authorization/privacy audit is accepted; all browser session, endpoint coverage, environment, provider/runtime, audit-retention, and policy verification limits remain explicitly open.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a03.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior A03 evidence remains: focused feature PHPUnit passed (64 tests / 569 assertions) and route/capability PHPUnit passed (57 tests / 241 assertions). `git diff --check` passed. No application behavior, production configuration, MySQL database, provider, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** A04 regression, integration contract, and performance audit is the next formal workstream. Keep every A03 finding open until separately approved and verified.
+
+### Thursday, November 12, 2026 — 21:05:13 +08:00 | Formal A04 regression, integration contract, and performance audit
+
+- **Agent:** Codex
+- **Summary:** Completed the read-only A04 audit. Full isolated Laravel coverage passed, and the live frontend adapter comparison reproduced one existing Registrar/LRN assertion failure plus the existing billing-table whitespace warning without modifying frontend code. Recorded the absence of a matching-MySQL query-count, execution-plan, duration, and load baseline as a verification gap.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a04.md`.
+- **Validation:** Full isolated Laravel PHPUnit passed (151 tests / 1,071 assertions). Focused live-API frontend Vitest ran ten files: 48 passed and one existing Registrar/LRN assertion failed in `liveStudents.test.tsx:71`; React repeated the known invalid table-whitespace warning in `LiveBillingAccounts`. `git diff --check` passed. No frontend source edit, matching MySQL/database, import, provider, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A04. A separate owner-authorized matching-MySQL environment and fictional workload are required before query-plan, capacity, or index-effectiveness claims; frontend defects remain separately scoped.
+
+### Thursday, November 12, 2026 — 21:09:22 +08:00 | Formal A04 owner acceptance with findings deferred
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A04. The regression/integration/performance audit is accepted; existing frontend findings, target-MySQL performance evidence, environment, and import gaps remain explicitly open.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a04.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior A04 evidence remains: full isolated Laravel PHPUnit passed (151 tests / 1,071 assertions) and ten focused live-API frontend suites produced 48 passes with one known failure plus the documented React warning. `git diff --check` passed. No frontend source edit, matching MySQL/database, import, provider, scheduler/worker, backup/restore, secret inspection, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** A05 deployment, recovery, and release-readiness audit is the next formal workstream. Keep every A04 finding open until separately approved and verified.
+
+### Thursday, November 12, 2026 — 21:15:41 +08:00 | Formal A05 deployment, recovery, and release-readiness audit
+
+- **Agent:** Codex
+- **Summary:** Completed the read-only A05 release-readiness audit. Local PHP, Laravel, extension, configuration, lockfile, and operational-source evidence was reviewed without contacting a target service. Composer reported eight security advisories across five locked Symfony packages, which blocks release consideration until a separately approved remediation is tested.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a05.md`.
+- **Validation:** Local PHP extensions required by the application were present. Running Laravel from `backend/` reported Laravel 13.35.0, PHP 8.4.27, `production`/debug-off CLI resolution, URL `localhost`, and Asia/Manila; this is not target-environment proof. `composer audit --locked --no-interaction` exited 1 with eight advisories affecting five locked Symfony packages. `git diff --check` passed; `git diff --name-only -- frontend` returned no paths. No dependency update, migration, database connection, provider delivery, scheduler/worker execution, backup/restore, secret inspection, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A05. Before release consideration, separately approve and validate dependency remediation; supply and authorize the B13 target-environment, disposable matching-MySQL, runtime, provider, backup/recovery, TLS/cookie/secrets, monitoring, and rollback evidence.
+
+### Thursday, November 12, 2026 — 21:20:23 +08:00 | Formal A05 owner acceptance with release blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A05. The audit is accepted, but its eight Composer advisories and every B13 deployment/recovery prerequisite remain open release blockers.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a05.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. The prior A05 evidence remains: local PHP 8.4.27/Laravel 13.35.0 compatibility, `composer audit --locked --no-interaction` exit 1 with eight advisories across five locked Symfony packages, and no target-environment proof. `git diff --check` passed; `git diff --name-only -- frontend` returned no paths. No dependency update, migration, database connection, provider delivery, scheduler/worker execution, backup/restore, secret inspection, infrastructure configuration, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** A06 final reconciliation and delivery is the next formal workstream. Release consideration remains blocked until separately approved dependency remediation and the B13 deployment, MySQL, runtime, recovery, security, monitoring, and rollback evidence are completed.
+
+### Thursday, November 12, 2026 — 21:25:41 +08:00 | Formal A06 final reconciliation and delivery audit
+
+- **Agent:** Codex
+- **Summary:** Completed the read-only final reconciliation and handoff. Corrected A01's stale ledger state to match its recorded owner acceptance, consolidated the accepted audit records and remaining blockers, and confirmed that the current handoff is not release approval.
+- **Files:** Updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a06.md`.
+- **Validation:** `git diff --check` passed. No tracked or untracked frontend paths were present in the worktree diff; no dependency manifest changed. A non-disclosing changed-line credential-pattern scan found only a configuration-key reference in `ReminderDeliveryController`, not a credential value. The latest full isolated Laravel evidence remains A04: 151 tests / 1,071 assertions; the latest focused frontend adapter result remains 48 passes, one known Registrar/LRN assertion failure, and the known table-whitespace warning. A05's Composer audit remains exit 1 with eight advisories across five locked Symfony packages. No code remediation, dependency update, migration, database connection, provider delivery, scheduler/worker execution, backup/restore, secret inspection, infrastructure configuration, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of A06. Acceptance does not accept B02 or unblock B03–B05, and it does not authorize remediation or release. Resolve the tracker and B13 environment prerequisites through separately scoped approvals before any release consideration.
+
+### Thursday, November 12, 2026 — 21:27:49 +08:00 | Formal A06 owner acceptance with release blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of A06 as the final reconciliation and delivery audit. The formal audit handoff is accepted; no existing tracker item, build blocker, or release blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a06.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior A06 evidence remains: `git diff --check` passed, no frontend or dependency-manifest path changed, the credential-value screen found no value, latest full isolated Laravel evidence was 151 tests / 1,071 assertions, and A05's Composer audit reported eight advisories. No remediation, dependency update, migration, database connection, provider delivery, scheduler/worker execution, backup/restore, secret inspection, infrastructure configuration, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** The formal audit sequence is complete. Future work must be separately approved and scoped from the existing tracker; release consideration remains blocked pending dependency remediation, outstanding product/financial/frontend work, matching-MySQL and recovery validation, and B13 deployment evidence.
+
+### Thursday, November 12, 2026 — 23:04:27 +08:00 | R01 locked Symfony dependency-security remediation
+
+- **Agent:** Codex
+- **Summary:** Updated the five Symfony packages identified by A05 to their compatible patched versions. Composer's locked advisory audit now reports no vulnerabilities, and the full isolated Laravel regression suite passes.
+- **Files:** Updated `backend/composer.lock`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r01-security-dependency-remediation.md`.
+- **Validation:** Composer updated five packages with zero installs/removals and scripts disabled: HTTP Foundation, HTTP Kernel, Routing, and YAML to 8.1.11, and MIME to 8.1.10. `composer validate --no-check-publish` passed. `composer audit --locked --no-interaction` reported no advisories. Full isolated PHPUnit passed: 151 tests / 1,071 assertions in 8.912 seconds. Final `git diff --check` passed; no frontend path changed; only `backend/composer.lock` changed among dependency manifests. No migration, database operation outside the test configuration, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R01. The advisory tracker item is resolved, but every non-advisory A06/B13 blocker remains open; release is not approved.
+
+### Thursday, November 12, 2026 — 23:26:35 +08:00 | R01 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R01. The verified Symfony advisory remediation is accepted and its tracker item remains resolved; no other release blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r01-security-dependency-remediation.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R01 evidence remains: Composer validation passed, the locked audit reported no advisories, full isolated PHPUnit passed (151 tests / 1,071 assertions), and `git diff --check` passed. No migration, database operation outside the test configuration, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Release remains blocked by B02/B03-B05, the financial/frontend findings, matching-MySQL evidence, and B13 operational/recovery prerequisites.
+
+### Thursday, November 12, 2026 — 23:32:53 +08:00 | R02 preserve existing billing-account fee snapshots
+
+- **Agent:** Codex
+- **Summary:** Corrected the confirmed M9.1 defect that allowed fee-item create/revise operations to retroactively change existing billing accounts. Existing account snapshots are now preserved; modified schedules and fee-item versions apply only to future account creation.
+- **Files:** Deleted `backend/app/Actions/ApplyFeeItemToBillingAccountsAction.php`; updated `backend/app/Http/Controllers/Api/FinanceSettingsController.php`, `backend/tests/Feature/FinanceSettingsMutationTest.php`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/ERD.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r02-billing-snapshot-preservation.md`.
+- **Validation:** Focused `FinanceSettingsMutationTest` passed: 3 tests / 55 assertions. Pint completed successfully. Full isolated PHPUnit passed: 151 tests / 1,075 assertions. Final `git diff --check` passed; no frontend path changed; no reference to the removed propagation action remains. No migration, target-MySQL exercise, shared/production database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R02. The fee-snapshot defect is resolved in SQLite evidence only; matching-MySQL, B02/B03-B05, frontend, and B13 operational/recovery blockers remain open.
+
+### Thursday, November 12, 2026 — 23:37:37 +08:00 | R02 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R02. The M9.1 fee-snapshot remediation is accepted in isolated SQLite evidence; no other blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r02-billing-snapshot-preservation.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R02 evidence remains: focused finance PHPUnit passed (3 tests / 55 assertions), Pint passed, full isolated PHPUnit passed (151 tests / 1,075 assertions), and `git diff --check` passed. No migration, target-MySQL exercise, shared/production data operation, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Release remains blocked by B02/B03-B05, frontend findings, matching-MySQL evidence, and B13 operational/recovery prerequisites.
+
+### Thursday, November 12, 2026 — 23:41:56 +08:00 | B02 owner acceptance with MySQL and policy limits retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of B02. The verified student/LRN/guardian-link work is accepted; target-MySQL and guardian-lifecycle policy work remains open.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-backend-b02.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior B02 evidence remains: focused Student/Dashboard tests passed (16 tests / 125 assertions) and the full isolated suite passed (148 tests / 1,037 assertions). Final `git diff --check` passed; no frontend path changed. No migration, database operation, provider action, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Release remains blocked by B03-B05, frontend findings, matching-MySQL evidence, and B13 operational/recovery prerequisites.
+
+### Friday, November 13, 2026 — 10:43:23 +08:00 | R04 close-out system totals by payment method
+
+- **Agent:** Codex
+- **Summary:** Added method-by-method system totals to the live daily close-out contract and persisted snapshot while retaining cash-only drawer variance. The live Cashier close-out form and locked summary now render the API-provided breakdown without hard-coding payment methods.
+- **Files:** Added `backend/app/Actions/CalculateCloseOutSystemTotalsAction.php` and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r04-closeout-method-totals.md`; updated `backend/app/Actions/SubmitCloseOutAction.php`, `backend/app/Http/Controllers/Api/CloseOutController.php`, `backend/tests/Feature/CashierOperationsTest.php`, `frontend/src/api/cashierApi.ts`, `frontend/src/features/operations/LiveCloseouts.tsx`, `frontend/src/test/liveCloseouts.test.tsx`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused `CashierOperationsTest` passed: 25 tests / 290 assertions. Focused `liveCloseouts.test.tsx` passed: 3 tests. Pint completed; unrelated format-only changes were restored before final review. Full isolated PHPUnit passed: 156 tests / 1,112 assertions. Frontend production build passed. Full frontend Vitest retained one existing unrelated Registrar/LRN assertion failure and the existing LiveBillingAccounts table-whitespace warning; the R04 focused test passed. Final `git diff --check` passed and the only frontend changes are the approved R04 API mapper, live close-out screen, and its test. No migration, target-MySQL exercise, shared/production data access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R04. Matching-MySQL transaction/concurrency behavior and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 10:44:24 +08:00 | R04 API-contract ledger completion
+
+- **Agent:** Codex
+- **Summary:** Completed the R04 API-contract ledger so the close-out list and submission rows explicitly identify the immutable `system_cash_cents` and `system_totals` snapshots.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`.
+- **Validation:** Documentation-only clarification. Prior R04 implementation evidence remains: focused cashier PHPUnit passed (25 tests / 290 assertions), focused live-close-out Vitest passed (3 tests), full isolated PHPUnit passed (156 tests / 1,112 assertions), frontend production build passed, and `git diff --check` passed. No runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** R04 remains awaiting owner acceptance; matching-MySQL and unrelated A06/B13 blockers remain open.
+
+### Friday, November 13, 2026 — 10:45:06 +08:00 | R04 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R04. The M13 close-out total remediation is accepted in isolated SQLite/frontend evidence; no other blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r04-closeout-method-totals.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R04 evidence remains: focused cashier PHPUnit passed (25 tests / 290 assertions), focused live-close-out Vitest passed (3 tests), full isolated PHPUnit passed (156 tests / 1,112 assertions), frontend production build passed, and `git diff --check` passed. The full frontend suite retains its pre-existing Registrar/LRN assertion failure and table-whitespace warning. No migration, target-MySQL exercise, shared/production database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Release remains blocked by B03-B05, frontend findings, matching-MySQL evidence, and B13 operational/recovery prerequisites.
+
+### Thursday, November 12, 2026 — 23:58:16 +08:00 | R03 financial audit atomicity
+
+- **Agent:** Codex
+- **Summary:** Coupled the identified financial mutations to their required audit writes in one outer database transaction, preventing an audit-recording failure from leaving a persisted adjustment, close-out, void request, or void decision without its audit history.
+- **Files:** Updated `backend/app/Http/Controllers/Api/BillingAccountController.php`, `backend/app/Http/Controllers/Api/CloseOutController.php`, `backend/app/Http/Controllers/Api/VoidRequestController.php`, `backend/tests/Feature/CashierOperationsTest.php`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r03-audit-atomicity.md`.
+- **Validation:** Focused `CashierOperationsTest` passed: 24 tests / 278 assertions. Pint completed on modified PHP files; unrelated format-only changes were restored before final review. Full isolated PHPUnit passed: 155 tests / 1,100 assertions. Final `git diff --check` passed. No migration, target-MySQL exercise, shared/production database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R03. Matching-MySQL transaction/concurrency behavior and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 00:01:22 +08:00 | R03 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R03. The financial audit-atomicity remediation is accepted in isolated SQLite evidence; no other blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r03-audit-atomicity.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R03 evidence remains: focused cashier PHPUnit passed (24 tests / 278 assertions), Pint completed, full isolated PHPUnit passed (155 tests / 1,100 assertions), and `git diff --check` passed. No migration, target-MySQL exercise, shared/production database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Release remains blocked by B03-B05, frontend findings, matching-MySQL evidence, and B13 operational/recovery prerequisites.
+
+### Friday, November 13, 2026 — 13:07:31 +08:00 | R05 invalid billing-table whitespace remediation
+
+- **Agent:** Codex
+- **Summary:** Removed the invalid literal whitespace text node between mapped live billing-account table cells and added a focused render assertion that no React `validateDOMNesting` warning is emitted.
+- **Files:** Updated `frontend/src/features/billing/LiveBillingAccounts.tsx`, `frontend/src/test/liveBillingAccounts.test.tsx`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r05-billing-table-whitespace.md`.
+- **Validation:** Focused `liveBillingAccounts.test.tsx` passed: 5 tests. Frontend production build passed. Full frontend Vitest produced 249 passes and one pre-existing unrelated Registrar/LRN assertion failure at `src/test/liveStudents.test.tsx:71`; the previous billing-table whitespace warning was not emitted. Final `git diff --check` passed. No migration, database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R05. The unrelated Registrar/LRN assertion and all A06/B13 and matching-MySQL release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:09:23 +08:00 | R05 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R05. The invalid live billing-account table whitespace remediation is accepted in focused frontend evidence; no unrelated issue is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r05-billing-table-whitespace.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R05 evidence remains: focused `liveBillingAccounts.test.tsx` passed (5 tests), frontend production build passed, the full frontend suite had 249 passes and one pre-existing unrelated Registrar/LRN assertion failure, and `git diff --check` passed. No runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. The unrelated Registrar/LRN assertion and all A06/B13 and matching-MySQL release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:14:25 +08:00 | R06 Registrar profile baseline-test reconciliation
+
+- **Agent:** Codex
+- **Summary:** Corrected stale MockDB Registrar-profile test expectations to enforce the approved LRN, academic, personal, guardian, and no-billing-content contract. No application behavior changed.
+- **Files:** Updated `frontend/src/test/liveStudents.test.tsx`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r06-registrar-profile-test.md`.
+- **Validation:** Focused `liveStudents.test.tsx` passed: 11 tests. Complete frontend Vitest passed: 36 files / 250 tests. Final `git diff --check` passed. No migration, database access, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R06. All unrelated A06/B13 and matching-MySQL release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:16:57 +08:00 | R06 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R06. The stale MockDB Registrar-profile baseline test correction is accepted in frontend evidence; no unrelated issue is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r06-registrar-profile-test.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R06 evidence remains: focused `liveStudents.test.tsx` passed (11 tests), complete frontend Vitest passed (36 files / 250 tests), and `git diff --check` passed. No runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. All A06/B13 and matching-MySQL release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:31:24 +08:00 | R07 direct API-contract regression coverage
+
+- **Agent:** Codex
+- **Summary:** Added direct isolated Laravel tests for the seven documented API-contract gaps and updated the API-contract evidence ledger. No endpoint behavior changed.
+- **Files:** Updated `backend/tests/Feature/StudentAccessTest.php`, `backend/tests/Feature/DailyReportTest.php`, `backend/tests/Feature/FinanceSettingsMutationTest.php`, `backend/tests/Feature/CashierOperationsTest.php`, `backend/tests/Feature/UserAdministrationTest.php`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r07-api-contract-regression-coverage.md`.
+- **Validation:** Focused Laravel feature coverage passed: 62 tests / 617 assertions. Pint completed on the five touched test files. Full isolated Laravel PHPUnit passed: 163 tests / 1,160 assertions. Final `git diff --check` passed. No migration, database access outside isolated test SQLite, provider delivery, scheduler/worker execution, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R07. Matching-MySQL behavior and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:33:42 +08:00 | R07 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R07. The seven direct API-contract coverage gaps are accepted as resolved in isolated SQLite evidence; no unrelated issue is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r07-api-contract-regression-coverage.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R07 evidence remains: focused Laravel coverage passed (62 tests / 617 assertions), Pint completed, full isolated Laravel PHPUnit passed (163 tests / 1,160 assertions), and `git diff --check` passed. No runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Future work must be separately approved from the remaining tracker. Matching-MySQL behavior and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:41:49 +08:00 | R08 StudentImportPage prototype regression coverage
+
+- **Agent:** Codex
+- **Summary:** Added focused UI regression coverage for the approved MockDB-only, selection-only StudentImportPage prototype. No user-facing prototype behavior changed.
+- **Files:** Added `frontend/src/test/studentImport.test.tsx` and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r08-student-import-prototype-coverage.md`; updated `Backend-Loop-Engineering.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused Vitest passed: 3 tests. Full frontend Vitest passed: 37 files / 253 tests. Final `git diff --check` passed. No API, parsing, import/apply, persistence, database, provider, infrastructure, deployment, commit, or push ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of R08. Import parsing/apply remains separately unapproved; matching-MySQL behavior and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 13:47:15 +08:00 | R08 owner acceptance with remaining blockers retained
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of R08. The StudentImportPage selection-only prototype coverage gap is accepted as resolved; no import functionality or unrelated blocker is closed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r08-student-import-prototype-coverage.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation-only disposition update. Prior R08 evidence remains: focused Vitest passed (3 tests), full frontend Vitest passed (37 files / 253 tests), and `git diff --check` passed. No runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** File parsing, column matching, roster comparison, import/apply behavior, API/persistence, matching-MySQL behavior, and all unrelated A06/B13 release blockers remain open; release is not approved.

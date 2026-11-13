@@ -4,16 +4,16 @@ namespace App\Actions;
 
 use App\Contracts\BusinessDateProvider;
 use App\Models\CloseOut;
-use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SubmitCloseOutAction
 {
-    public function __construct(private readonly BusinessDateProvider $businessDate)
-    {
-    }
+    public function __construct(
+        private readonly BusinessDateProvider $businessDate,
+        private readonly CalculateCloseOutSystemTotalsAction $calculateSystemTotals,
+    ) {}
 
     public function handle(User $cashier, int $countedCashCents, ?string $varianceReason): CloseOut
     {
@@ -29,13 +29,8 @@ class SubmitCloseOutAction
                 throw ValidationException::withMessages(['close_out' => 'The close-out for this business date has already been submitted and is locked.']);
             }
 
-            $systemCashCents = (int) Payment::query()
-                ->where('recorded_by', $cashier->id)
-                ->whereDate('paid_on', $businessDate)
-                ->where('method', 'cash')
-                ->where('status', 'valid')
-                ->sum('amount_cents');
-            $varianceCents = $countedCashCents - $systemCashCents;
+            $systemTotals = $this->calculateSystemTotals->handle($cashier, $businessDate);
+            $varianceCents = $countedCashCents - $systemTotals['cash_cents'];
 
             if ($varianceCents !== 0 && $varianceReason === null) {
                 throw ValidationException::withMessages(['variance_reason' => 'Explain the non-zero cash variance before submitting the close-out.']);
@@ -44,7 +39,7 @@ class SubmitCloseOutAction
             return CloseOut::query()->create([
                 'business_date' => $businessDate,
                 'cashier_id' => $cashier->id,
-                'system_totals' => ['cash_cents' => $systemCashCents],
+                'system_totals' => $systemTotals,
                 'counted_cash_cents' => $countedCashCents,
                 'variance_cents' => $varianceCents,
                 'variance_reason' => $varianceReason,

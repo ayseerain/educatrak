@@ -945,7 +945,7 @@ A screen is never marked audited merely because it was previously built.
 - [ ] A21 — **Exam Permit Print View** (`/permits/:studentId/:period/print`)
   - **Resume Note:** Production route is unavailable under U03; development permit is fixed mock data without eligibility enforcement, route binding, or print audit. See A21 countercheck.
 - [ ] A22 — **End-of-Day Close-out** (`/closeout`)
-  - **Resume Note:** Cashier print-summary action is implemented; `liveCloseouts.test.tsx` (3 tests) and production build pass. Browser/print evidence remains.
+  - **Resume Note:** The live Cashier close-out view now shows the API-provided valid daily system totals by recorded payment method before submission and in the locked summary, while cash-only variance stays unchanged. `liveCloseouts.test.tsx` (3 tests) and the production build pass. Browser/print evidence remains.
 - [ ] A23 — **Close-out History** (`/closeout/history`)
   - **Resume Note:** Cashier own-history and Accounting sign-off boundaries verified; print-summary control is limited to Cashier/Accounting. Browser/print evidence remains.
 - [ ] A24 — **Reports Hub** (`/reports`)

@@ -34,6 +34,25 @@ describe("live billing account pages", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/billing-accounts?school_year_scope=current&page=1&per_page=10", expect.objectContaining({ credentials: "include" }));
   });
 
+  it("renders account rows without invalid table whitespace", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [summary], meta: { currentPage: 1, lastPage: 1, total: 1, perPage: 10, currentSchoolYearId: "year-1", schoolYears: [{ id: "year-1", label: "SY 2026-2027" }] } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      renderPage(<LiveBillingAccounts />);
+
+      expect(await screen.findByText("Morgan Sample Student")).toBeInTheDocument();
+      expect(consoleError.mock.calls.flat().join(" ")).not.toContain("validateDOMNesting");
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it("sends the selected search, school-year, grade and status filters and resets pagination", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

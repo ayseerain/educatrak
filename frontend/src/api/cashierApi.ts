@@ -216,6 +216,7 @@ export interface CloseOutRecord {
   businessDate: string;
   cashier: string | null;
   systemCashCents: number;
+  systemTotals: Record<string, number>;
   countedCashCents: number;
   varianceCents: number;
   varianceReason: string | null;
@@ -225,7 +226,7 @@ export interface CloseOutRecord {
 }
 
 function mapCloseOut(item: {
-  id: string; business_date: string; cashier: string | null; system_cash_cents: number; counted_cash_cents: number;
+  id: string; business_date: string; cashier: string | null; system_cash_cents: number; system_totals?: Record<string, number>; counted_cash_cents: number;
   variance_cents: number; variance_reason: string | null; submitted_at: string; signed_off_at: string | null; signed_off_by: string | null;
 }): CloseOutRecord {
   return {
@@ -233,6 +234,7 @@ function mapCloseOut(item: {
     businessDate: item.business_date,
     cashier: item.cashier,
     systemCashCents: item.system_cash_cents,
+    systemTotals: item.system_totals ?? { cash: item.system_cash_cents },
     countedCashCents: item.counted_cash_cents,
     varianceCents: item.variance_cents,
     varianceReason: item.variance_reason,
@@ -242,11 +244,12 @@ function mapCloseOut(item: {
   };
 }
 
-export async function getTodayCloseOut(): Promise<{ businessDate: string; systemCashCents: number; closeOut: CloseOutRecord | null }> {
-  const result = await request<{ data: { business_date: string; system_cash_cents: number; close_out: Parameters<typeof mapCloseOut>[0] | null } }>("/close-outs/today");
+export async function getTodayCloseOut(): Promise<{ businessDate: string; systemCashCents: number; systemTotals: Record<string, number>; closeOut: CloseOutRecord | null }> {
+  const result = await request<{ data: { business_date: string; system_cash_cents: number; system_totals?: Record<string, number>; close_out: Parameters<typeof mapCloseOut>[0] | null } }>("/close-outs/today");
   return {
     businessDate: result.data.business_date,
     systemCashCents: result.data.system_cash_cents,
+    systemTotals: result.data.system_totals ?? { cash: result.data.system_cash_cents },
     closeOut: result.data.close_out ? mapCloseOut(result.data.close_out) : null,
   };
 }

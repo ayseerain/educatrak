@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Actions\ApplyFeeItemToBillingAccountsAction;
 use App\Actions\ReviseFeeItemAction;
 use App\Http\Controllers\Controller;
 use App\Models\FeeItem;
@@ -71,13 +70,12 @@ class FinanceSettingsController extends Controller
         return response()->json(['data' => $plans->values()]);
     }
 
-    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, ApplyFeeItemToBillingAccountsAction $applyFeeItem, AuditLogger $auditLogger): JsonResponse
+    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
         $applyToAll = $request->boolean('apply_to_all');
-        [$feeItem, $updatedAccounts] = DB::transaction(function () use ($request, $feeSchedule, $applyFeeItem, $auditLogger, $validated, $applyToAll): array {
+        $feeItem = DB::transaction(function () use ($request, $feeSchedule, $auditLogger, $validated, $applyToAll): FeeItem {
             $created = [];
-            $updatedAccountIds = [];
 
             foreach ($this->targetSchedules($feeSchedule, $applyToAll) as $schedule) {
                 $this->ensureFeeNameAvailable($schedule, $validated['name']);
@@ -87,21 +85,20 @@ class FinanceSettingsController extends Controller
                     'version' => 1,
                 ]);
                 $created[] = $item;
-                $updatedAccountIds = [...$updatedAccountIds, ...$applyFeeItem->handle($schedule, $item)];
                 $auditLogger->record($request, 'finance.fee_item.created', $item, null, $this->feeItemData($item));
             }
 
-            return [$created[0], $updatedAccountIds];
+            return $created[0];
         });
 
-        return response()->json(['data' => [...$this->feeItemData($feeItem), 'updatedAccountCount' => count($updatedAccounts)]], 201);
+        return response()->json(['data' => [...$this->feeItemData($feeItem), 'updatedAccountCount' => 0]], 201);
     }
 
-    public function reviseFeeItem(Request $request, FeeItem $feeItem, ApplyFeeItemToBillingAccountsAction $applyFeeItem, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
+    public function reviseFeeItem(Request $request, FeeItem $feeItem, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
         $applyToAll = $request->boolean('apply_to_all');
-        $revisedFeeItem = DB::transaction(function () use ($request, $feeItem, $applyFeeItem, $reviseFeeItem, $auditLogger, $validated, $applyToAll): FeeItem {
+        $revisedFeeItem = DB::transaction(function () use ($request, $feeItem, $reviseFeeItem, $auditLogger, $validated, $applyToAll): FeeItem {
             $feeItem->loadMissing('schedule');
             $revisedForSelectedSchedule = null;
 
@@ -118,7 +115,6 @@ class FinanceSettingsController extends Controller
                 if ($current === null) {
                     $this->ensureFeeNameAvailable($schedule, $validated['name']);
                     $revised = $schedule->items()->create([...$validated, 'active' => true, 'version' => 1]);
-                    $applyFeeItem->handle($schedule, $revised);
                     $before = null;
                 } else {
                     $this->ensureFeeNameAvailable($schedule, $validated['name'], $current->id);

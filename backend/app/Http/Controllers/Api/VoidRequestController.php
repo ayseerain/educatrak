@@ -13,6 +13,7 @@ use App\Models\VoidRequest;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VoidRequestController extends Controller
 {
@@ -21,7 +22,7 @@ class VoidRequestController extends Controller
         /** @var User $user */
         $user = $request->user();
         $voidRequests = VoidRequest::query()
-            ->with(['payment.receipt', 'requestedBy'])
+            ->with(['payment.receipt', 'requestedBy', 'decidedBy'])
             ->when($user->role->value === 'cashier', fn ($query) => $query->where('requested_by', $user->id))
             ->latest('requested_at')
             ->latest('id')
@@ -35,16 +36,19 @@ class VoidRequestController extends Controller
         Payment $payment,
         RequestVoidAction $requestVoid,
         AuditLogger $auditLogger,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         /** @var User $user */
         $user = $request->user();
         if ($user->role->value === 'cashier' && $payment->recorded_by !== $user->id) {
             abort(404);
         }
 
-        $voidRequest = $requestVoid->handle($payment, $user, $request->validated('reason'));
-        $auditLogger->record($request, 'payment.void_requested', $payment, ['status' => 'valid'], ['status' => 'void_pending']);
+        $voidRequest = DB::transaction(function () use ($request, $payment, $user, $requestVoid, $auditLogger): VoidRequest {
+            $voidRequest = $requestVoid->handle($payment, $user, $request->validated('reason'));
+            $auditLogger->record($request, 'payment.void_requested', $voidRequest->payment, ['status' => 'valid'], ['status' => 'void_pending']);
+
+            return $voidRequest;
+        });
 
         return response()->json(['data' => $this->voidRequestData($voidRequest)], 201);
     }
@@ -54,19 +58,22 @@ class VoidRequestController extends Controller
         VoidRequest $voidRequest,
         DecideVoidRequestAction $decideVoidRequest,
         AuditLogger $auditLogger,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         /** @var User $user */
         $user = $request->user();
         $validated = $request->validated();
-        $resolvedRequest = $decideVoidRequest->handle(
-            $voidRequest,
-            $user,
-            $validated['decision'],
-            $validated['decision_note'],
-        );
-        $action = $validated['decision'] === 'approved' ? 'payment.void_approved' : 'payment.void_rejected';
-        $auditLogger->record($request, $action, $resolvedRequest->payment, ['status' => 'void_pending'], ['status' => $resolvedRequest->payment->status]);
+        $resolvedRequest = DB::transaction(function () use ($request, $voidRequest, $user, $validated, $decideVoidRequest, $auditLogger): VoidRequest {
+            $resolvedRequest = $decideVoidRequest->handle(
+                $voidRequest,
+                $user,
+                $validated['decision'],
+                $validated['decision_note'],
+            );
+            $action = $validated['decision'] === 'approved' ? 'payment.void_approved' : 'payment.void_rejected';
+            $auditLogger->record($request, $action, $resolvedRequest->payment, ['status' => 'void_pending'], ['status' => $resolvedRequest->payment->status]);
+
+            return $resolvedRequest;
+        });
 
         return response()->json(['data' => $this->voidRequestData($resolvedRequest)]);
     }
@@ -84,6 +91,8 @@ class VoidRequestController extends Controller
             'requested_by' => $voidRequest->requestedBy->full_name,
             'requested_at' => $voidRequest->requested_at->toISOString(),
             'decision_note' => $voidRequest->decision_note,
+            'decided_by' => $voidRequest->decidedBy?->full_name,
+            'decided_at' => $voidRequest->decided_at?->toISOString(),
         ];
     }
 }

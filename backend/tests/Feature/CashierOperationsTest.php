@@ -2,19 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\DeliverNotification;
 use App\Models\BillingAccount;
 use App\Models\CloseOut;
 use App\Models\GradeLevel;
 use App\Models\Guardian;
 use App\Models\Installment;
+use App\Models\NotificationLog;
 use App\Models\Payment;
 use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class CashierOperationsTest extends TestCase
@@ -123,6 +129,7 @@ class CashierOperationsTest extends TestCase
     public function test_cashier_can_record_a_cash_payment_with_oldest_first_allocation_and_receipt(): void
     {
         [$cashier, $account] = $this->createBillingContext();
+        Queue::fake();
 
         $response = $this->actingAs($cashier)->withHeader('Idempotency-Key', 'payment-receipt-test-001')->postJson('/api/payments', [
             'billing_account_id' => $account->id,
@@ -145,6 +152,7 @@ class CashierOperationsTest extends TestCase
         $this->assertDatabaseHas('payment_allocations', ['amount_cents' => 12_500]);
         $this->assertDatabaseHas('receipts', ['receipt_no' => 'OR-2026-000001']);
         $this->assertDatabaseHas('notification_logs', ['kind' => 'payment_confirmation', 'status' => 'queued']);
+        Queue::assertPushed(DeliverNotification::class, 1);
         $this->assertDatabaseHas('audit_entries', ['action' => 'payment.recorded']);
         $this->assertSame(7_500, $account->fresh()->balance_cents);
         $this->assertSame(12_500, Installment::query()->whereBelongsTo($account)->orderBy('sequence')->value('paid_cents'));
@@ -168,6 +176,7 @@ class CashierOperationsTest extends TestCase
     {
         [$cashier, $account] = $this->createBillingContext();
         config()->set('services.sms.load_fee_cents', 75);
+        Queue::fake();
 
         $response = $this->actingAs($cashier)->withHeader('Idempotency-Key', 'payment-receipt-test-003')->postJson('/api/payments', [
             'billing_account_id' => $account->id,
@@ -192,7 +201,30 @@ class CashierOperationsTest extends TestCase
             'load_fee_cents' => 75,
             'status' => 'queued',
         ]);
+        Queue::assertPushed(DeliverNotification::class, 2);
         $this->assertSame(7_500, $account->fresh()->balance_cents);
+    }
+
+    public function test_cashier_can_retry_a_failed_payment_confirmation_email(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $payment = $this->recordPayment($cashier, $account, 12_500);
+        $notification = NotificationLog::query()->where('payment_id', $payment->id)->where('channel', 'email')->firstOrFail();
+        $notification->forceFill(['status' => 'failed', 'failure_reason' => 'Test provider rejection.', 'attempts' => 1])->save();
+        Queue::fake();
+
+        $this->actingAs($cashier)->postJson("/api/notifications/{$notification->id}/retry")
+            ->assertAccepted()
+            ->assertJsonPath('data.id', (string) $notification->id)
+            ->assertJsonPath('data.status', 'queued');
+
+        $this->assertDatabaseHas('notification_logs', ['id' => $notification->id, 'status' => 'queued', 'failure_reason' => null, 'attempts' => 1]);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'notification.retried', 'entity_id' => (string) $notification->id]);
+        Queue::assertPushed(DeliverNotification::class, fn (DeliverNotification $job): bool => $job->notificationLogId === $notification->id);
+        $this->actingAs($cashier)->postJson("/api/notifications/{$notification->id}/retry")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('notification');
+        Queue::assertPushed(DeliverNotification::class, 1);
     }
 
     public function test_same_student_and_amount_within_ten_minutes_requires_an_override_reason(): void
@@ -254,10 +286,15 @@ class CashierOperationsTest extends TestCase
 
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'void_pending']);
 
-        $this->actingAs($accounting)->patchJson("/api/void-requests/{$voidRequestId}", [
+        $decisionResponse = $this->actingAs($accounting)->patchJson("/api/void-requests/{$voidRequestId}", [
             'decision' => 'approved',
             'decision_note' => 'Verified duplicate entry in the test drawer.',
-        ])->assertOk()->assertJsonPath('data.status', 'approved');
+        ]);
+
+        $decisionResponse->assertOk()
+            ->assertJsonPath('data.status', 'approved')
+            ->assertJsonPath('data.decided_by', $accounting->full_name);
+        $this->assertNotNull($decisionResponse->json('data.decided_at'));
 
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'voided']);
         $this->assertSame(20_000, $account->fresh()->balance_cents);
@@ -271,6 +308,52 @@ class CashierOperationsTest extends TestCase
         $this->assertDatabaseHas('audit_entries', ['action' => 'payment.void_approved']);
         $this->assertDatabaseHas('audit_entries', ['user_id' => $cashier->id, 'action' => 'payment.void_requested']);
         $this->assertDatabaseHas('audit_entries', ['user_id' => $accounting->id, 'action' => 'payment.void_approved']);
+
+        $this->actingAs($cashier)->postJson("/api/payments/{$payment->id}/reprint")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'voided');
+    }
+
+    public function test_void_request_is_rolled_back_when_audit_recording_fails(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $payment = $this->recordPayment($cashier, $account, 12_500);
+
+        $this->mock(AuditLogger::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit storage failed.'));
+        });
+
+        $this->actingAs($cashier)->postJson("/api/payments/{$payment->id}/void-requests", [
+            'reason' => 'Fictional request used to prove audit rollback.',
+        ])->assertInternalServerError();
+
+        $this->assertDatabaseCount('void_requests', 0);
+        $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'valid']);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'payment.void_requested']);
+    }
+
+    public function test_void_decision_is_rolled_back_when_audit_recording_fails(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $payment = $this->recordPayment($cashier, $account, 12_500);
+        $voidRequestId = $this->actingAs($cashier)->postJson("/api/payments/{$payment->id}/void-requests", [
+            'reason' => 'Fictional request used to prove decision rollback.',
+        ])->assertCreated()->json('data.id');
+
+        $this->mock(AuditLogger::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit storage failed.'));
+        });
+
+        $this->actingAs($accounting)->patchJson("/api/void-requests/{$voidRequestId}", [
+            'decision' => 'approved',
+            'decision_note' => 'Fictional approval used to prove audit rollback.',
+        ])->assertInternalServerError();
+
+        $this->assertDatabaseHas('void_requests', ['id' => $voidRequestId, 'status' => 'pending', 'decided_by' => null]);
+        $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'void_pending']);
+        $this->assertSame(7_500, $account->fresh()->balance_cents);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'payment.void_approved']);
     }
 
     public function test_cashier_void_request_history_is_own_scoped_while_accounting_sees_all_requests(): void
@@ -353,6 +436,91 @@ class CashierOperationsTest extends TestCase
         $this->actingAs($cashier)->postJson('/api/close-outs', [
             'counted_cash_cents' => 10_000,
         ])->assertUnprocessable()->assertJsonValidationErrors('close_out');
+    }
+
+    public function test_cashier_close_out_returns_system_totals_by_payment_method_while_variance_uses_cash_only(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $this->recordPayment($cashier, $account, 10_000);
+        $checkPayment = $this->recordPayment($cashier, $account, 5_000);
+        $checkPayment->update(['method' => 'check']);
+
+        $this->actingAs($cashier)->getJson('/api/close-outs/today')
+            ->assertOk()
+            ->assertJsonPath('data.system_cash_cents', 10_000)
+            ->assertJsonPath('data.system_totals.cash', 10_000)
+            ->assertJsonPath('data.system_totals.check', 5_000);
+
+        $submitted = $this->actingAs($cashier)->postJson('/api/close-outs', [
+            'counted_cash_cents' => 10_000,
+        ])->assertCreated()
+            ->assertJsonPath('data.system_cash_cents', 10_000)
+            ->assertJsonPath('data.system_totals.cash', 10_000)
+            ->assertJsonPath('data.system_totals.check', 5_000)
+            ->assertJsonPath('data.variance_cents', 0);
+
+        $closeOut = CloseOut::query()->findOrFail($submitted->json('data.id'));
+        $this->assertSame([
+            'cash_cents' => 10_000,
+            'by_method' => ['cash' => 10_000, 'check' => 5_000],
+        ], $closeOut->system_totals);
+    }
+
+    public function test_close_out_submission_is_rolled_back_when_audit_recording_fails(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $this->recordPayment($cashier, $account, 10_000);
+
+        $this->mock(AuditLogger::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit storage failed.'));
+        });
+
+        $this->actingAs($cashier)->postJson('/api/close-outs', [
+            'counted_cash_cents' => 10_000,
+        ])->assertInternalServerError();
+
+        $this->assertDatabaseCount('close_outs', 0);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'closeout.submitted']);
+    }
+
+    public function test_adjustment_is_rolled_back_when_audit_recording_fails(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+
+        $this->mock(AuditLogger::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit storage failed.'));
+        });
+
+        $this->actingAs($cashier)->postJson("/api/billing-accounts/{$account->id}/adjustments", [
+            'type' => 'correction',
+            'amount_cents' => 1_000,
+            'reason' => 'Fictional correction used to prove audit rollback.',
+        ])->assertInternalServerError();
+
+        $this->assertDatabaseCount('adjustments', 0);
+        $this->assertSame(20_000, $account->fresh()->total_due_cents);
+        $this->assertSame(20_000, $account->fresh()->balance_cents);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'adjustment.created']);
+    }
+
+    public function test_cashier_can_create_a_billing_adjustment_contract(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+
+        $response = $this->actingAs($cashier)->postJson("/api/billing-accounts/{$account->id}/adjustments", [
+            'type' => 'discount',
+            'amount_cents' => -1_500,
+            'reason' => 'Fictional scholarship review approval.',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.type', 'discount')
+            ->assertJsonPath('data.amountCents', -1_500)
+            ->assertJsonPath('data.reason', 'Fictional scholarship review approval.')
+            ->assertJsonPath('data.createdBy', $cashier->full_name);
+        $this->assertSame(18_500, $account->fresh()->total_due_cents);
+        $this->assertSame(18_500, $account->fresh()->balance_cents);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'adjustment.created', 'user_id' => $cashier->id]);
     }
 
     public function test_business_date_simulator_uses_date_matched_fictional_payments_and_preserves_locks_and_sign_off(): void

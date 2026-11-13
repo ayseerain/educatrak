@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -73,17 +74,22 @@ class BillingAccountController extends Controller
         ]);
         /** @var User $user */
         $user = $request->user();
-        $before = ['total_due_cents' => (int) $billingAccount->total_due_cents, 'balance_cents' => (int) $billingAccount->balance_cents];
-        $adjustment = $applyAdjustment->handle($billingAccount, $validated['type'], $validated['amount_cents'], $validated['reason'], $user);
-        $account = $billingAccount->freshOrFail();
-        $auditLogger->record($request, 'adjustment.created', $adjustment, $before, [
-            'billing_account_id' => $account->id,
-            'type' => $adjustment->type,
-            'amount_cents' => (int) $adjustment->amount_cents,
-            'reason' => $adjustment->reason,
-            'total_due_cents' => (int) $account->total_due_cents,
-            'balance_cents' => (int) $account->balance_cents,
-        ]);
+        $adjustment = DB::transaction(function () use ($request, $billingAccount, $applyAdjustment, $auditLogger, $validated, $user): Adjustment {
+            $account = BillingAccount::query()->lockForUpdate()->findOrFail($billingAccount->id);
+            $before = ['total_due_cents' => (int) $account->total_due_cents, 'balance_cents' => (int) $account->balance_cents];
+            $adjustment = $applyAdjustment->handle($account, $validated['type'], $validated['amount_cents'], $validated['reason'], $user);
+            $account = BillingAccount::query()->lockForUpdate()->findOrFail($account->id);
+            $auditLogger->record($request, 'adjustment.created', $adjustment, $before, [
+                'billing_account_id' => $account->id,
+                'type' => $adjustment->type,
+                'amount_cents' => (int) $adjustment->amount_cents,
+                'reason' => $adjustment->reason,
+                'total_due_cents' => (int) $account->total_due_cents,
+                'balance_cents' => (int) $account->balance_cents,
+            ]);
+
+            return $adjustment;
+        });
 
         return response()->json(['data' => $this->adjustmentData($adjustment)], 201);
     }

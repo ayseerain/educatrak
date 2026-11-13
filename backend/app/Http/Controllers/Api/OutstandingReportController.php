@@ -7,6 +7,7 @@ use App\Models\BillingAccount;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class OutstandingReportController extends Controller
 {
@@ -30,17 +31,18 @@ class OutstandingReportController extends Controller
         $minimum = (int) ($filters['minimum_balance_cents'] ?? 0);
         $maximum = $filters['maximum_balance_cents'] ?? null;
         if ($maximum !== null && (int) $maximum < $minimum) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['maximum_balance_cents' => 'Maximum balance must be greater than or equal to minimum balance.']);
+            throw ValidationException::withMessages(['maximum_balance_cents' => 'Maximum balance must be greater than or equal to minimum balance.']);
         }
         $accounts = BillingAccount::query()
             ->with(['student.gradeLevel:id,name', 'student.section:id,name', 'schoolYear:id,label'])
             ->where('balance_cents', '>', 0)
             ->where('balance_cents', '>=', $minimum)
             ->when($maximum !== null, fn ($query) => $query->where('balance_cents', '<=', (int) $maximum))
-            ->when(isset($filters['grade']) && trim($filters['grade']) !== '', fn ($query) => $query->whereHas('student.gradeLevel', fn ($grades) => $grades->where('name', 'like', '%' . trim($filters['grade']) . '%')))
-            ->when(isset($filters['section']) && trim($filters['section']) !== '', fn ($query) => $query->whereHas('student.section', fn ($sections) => $sections->where('name', 'like', '%' . trim($filters['section']) . '%')))
+            ->when(isset($filters['grade']) && trim($filters['grade']) !== '', fn ($query) => $query->whereHas('student.gradeLevel', fn ($grades) => $grades->where('name', 'like', '%'.trim($filters['grade']).'%')))
+            ->when(isset($filters['section']) && trim($filters['section']) !== '', fn ($query) => $query->whereHas('student.section', fn ($sections) => $sections->where('name', 'like', '%'.trim($filters['section']).'%')))
             ->when(filter_var($filters['overdue_only'] ?? false, FILTER_VALIDATE_BOOLEAN), fn ($query) => $query->whereHas('installments', fn ($installments) => $installments->whereDate('due_date', '<', today('Asia/Manila'))->whereColumn('paid_cents', '<', 'amount_cents')))
-            ->latest('balance_cents')
+            ->orderByDesc('balance_cents')
+            ->orderBy('id')
             ->paginate((int) ($filters['per_page'] ?? 10));
 
         return response()->json([

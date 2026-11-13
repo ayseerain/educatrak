@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\RecordPaymentAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentRequest;
+use App\Jobs\DeliverNotification;
 use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\NotificationLog;
@@ -13,11 +14,12 @@ use App\Models\PaymentIdempotencyKey;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AuditLogger;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
 {
@@ -41,7 +43,7 @@ class PaymentController extends Controller
             'per_page' => ['nullable', 'integer', 'in:10,25,50'],
         ]);
         if (isset($filters['amount_min_cents'], $filters['amount_max_cents']) && $filters['amount_max_cents'] < $filters['amount_min_cents']) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['amount_max_cents' => 'Maximum amount must be greater than or equal to minimum amount.']);
+            throw ValidationException::withMessages(['amount_max_cents' => 'Maximum amount must be greater than or equal to minimum amount.']);
         }
         /** @var User $user */
         $user = $request->user();
@@ -61,7 +63,7 @@ class PaymentController extends Controller
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['date_from']), fn ($query) => $query->whereDate('paid_on', '>=', $filters['date_from']))
             ->when(isset($filters['date_to']), fn ($query) => $query->whereDate('paid_on', '<=', $filters['date_to']))
-            ->when(isset($filters['cashier']) && trim($filters['cashier']) !== '', fn ($query) => $query->whereHas('recordedBy', fn ($cashier) => $cashier->where('full_name', 'like', '%' . trim($filters['cashier']) . '%')))
+            ->when(isset($filters['cashier']) && trim($filters['cashier']) !== '', fn ($query) => $query->whereHas('recordedBy', fn ($cashier) => $cashier->where('full_name', 'like', '%'.trim($filters['cashier']).'%')))
             ->when(isset($filters['method']) && trim($filters['method']) !== '', fn ($query) => $query->where('method', trim($filters['method'])))
             ->when(isset($filters['amount_min_cents']), fn ($query) => $query->where('amount_cents', '>=', $filters['amount_min_cents']))
             ->when(isset($filters['amount_max_cents']), fn ($query) => $query->where('amount_cents', '<=', $filters['amount_max_cents']))
@@ -192,6 +194,9 @@ class PaymentController extends Controller
                             ? ($isSms ? 'No guardian mobile number is available.' : 'No guardian email is available.')
                             : null,
                     ]);
+                    if ($recipient !== null) {
+                        DeliverNotification::dispatch($notificationLogs[$channel]->id)->afterCommit();
+                    }
                 }
                 $auditLogger->record($request, 'payment.recorded', $payment, null, [
                     'amount_cents' => $payment->amount_cents,
@@ -332,7 +337,7 @@ class PaymentController extends Controller
 
         if ($includeAllocations) {
             $data['school_year'] = $payment->billingAccount?->schoolYear?->label;
-            $data['allocations'] =$payment->allocations->map(fn ($allocation): array => [
+            $data['allocations'] = $payment->allocations->map(fn ($allocation): array => [
                 'installment_label' => $allocation->installment->label,
                 'amount_cents' => $allocation->amount_cents,
             ])->all();

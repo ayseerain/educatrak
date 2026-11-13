@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\CalculateCloseOutSystemTotalsAction;
 use App\Actions\SubmitCloseOutAction;
 use App\Contracts\BusinessDateProvider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCloseOutRequest;
 use App\Models\CloseOut;
-use App\Models\Payment;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -16,17 +16,12 @@ use Illuminate\Http\Request;
 
 class CloseOutController extends Controller
 {
-    public function today(Request $request, BusinessDateProvider $businessDate): JsonResponse
+    public function today(Request $request, BusinessDateProvider $businessDate, CalculateCloseOutSystemTotalsAction $calculateSystemTotals): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
         $businessDate = $businessDate->current()->toDateString();
-        $systemCashCents = (int) Payment::query()
-            ->where('recorded_by', $user->id)
-            ->whereDate('paid_on', $businessDate)
-            ->where('method', 'cash')
-            ->where('status', 'valid')
-            ->sum('amount_cents');
+        $systemTotals = $calculateSystemTotals->handle($user, $businessDate);
         $closeOut = CloseOut::query()
             ->with(['cashier', 'signedOffBy'])
             ->where('cashier_id', $user->id)
@@ -35,7 +30,8 @@ class CloseOutController extends Controller
 
         return response()->json(['data' => [
             'business_date' => $businessDate,
-            'system_cash_cents' => $systemCashCents,
+            'system_cash_cents' => $systemTotals['cash_cents'],
+            'system_totals' => $systemTotals['by_method'],
             'close_out' => $closeOut === null ? null : $this->closeOutData($closeOut),
         ]]);
     }
@@ -45,8 +41,12 @@ class CloseOutController extends Controller
         /** @var User $user */
         $user = $request->user();
         $validated = $request->validated();
-        $closeOut = $submitCloseOut->handle($user, $validated['counted_cash_cents'], $validated['variance_reason'] ?? null);
-        $auditLogger->record($request, 'closeout.submitted', $closeOut, null, $this->closeOutData($closeOut));
+        $closeOut = DB::transaction(function () use ($request, $submitCloseOut, $auditLogger, $user, $validated): CloseOut {
+            $closeOut = $submitCloseOut->handle($user, $validated['counted_cash_cents'], $validated['variance_reason'] ?? null);
+            $auditLogger->record($request, 'closeout.submitted', $closeOut, null, $this->closeOutData($closeOut));
+
+            return $closeOut;
+        });
 
         return response()->json(['data' => $this->closeOutData($closeOut)], 201);
     }
@@ -100,6 +100,7 @@ class CloseOutController extends Controller
             'business_date' => $closeOut->business_date->toDateString(),
             'cashier' => $closeOut->cashier?->full_name,
             'system_cash_cents' => $closeOut->system_totals['cash_cents'],
+            'system_totals' => $closeOut->system_totals['by_method'] ?? ['cash' => $closeOut->system_totals['cash_cents']],
             'counted_cash_cents' => $closeOut->counted_cash_cents,
             'variance_cents' => $closeOut->variance_cents,
             'variance_reason' => $closeOut->variance_reason,

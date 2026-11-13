@@ -117,7 +117,9 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Student + guardian data-contract tests, LRN collision/legacy-backfill tests, role-sanitization tests and relationship-integrity checks.
 
-**Resume Note:** _State: WAITING_FOR_ACCEPTANCE. Owner approved per-link relationship storage, Registrar ownership, one primary link per student, and copying existing values to every existing link. Added nullable `guardian_student.relationship` with deterministic backfill; retained the guardian-wide historical field. Student API now reads/writes the pivot value and clears other primary flags before assigning the selected primary link. Focused tests passed (16 tests, 125 assertions); full isolated suite passed (148 tests, 1,037 assertions). Await MySQL migration/concurrency validation before deployment. Logged Thursday, November 12, 2026 — 02:34:37 Asia/Manila._
+**Resume Note:** _State: ACCEPTED. Owner approved per-link relationship storage, Registrar ownership, one primary link per student, and copying existing values to every existing link. Added nullable `guardian_student.relationship` with deterministic backfill; retained the guardian-wide historical field. Student API now reads/writes the pivot value and clears other primary flags before assigning the selected primary link. Focused tests passed (16 tests, 125 assertions); full isolated suite passed (148 tests, 1,037 assertions). Target-MySQL migration/concurrency validation remains unverified before deployment. Accepted Thursday, November 12, 2026 — 23:41:56 +08:00._
+
+**Owner disposition:** _Accepted for this loop with target-MySQL migration/concurrency validation and the separate guardian-lifecycle policy decisions retained as open. Acceptance does not authorize a migration, target/shared/production database access, new guardian workflow, or deployment. Accepted Thursday, November 12, 2026 — 23:41:56 +08:00._
 
 ## B03. School year, fees, payment plans, settings — M9
 
@@ -160,6 +162,12 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Allow/deny role matrix, self-approval denial, double-request/approval race, no-delete and balance-restoration tests.
 
+**Validation update:** _Focused `CashierOperationsTest.php` passed (19 tests / 240 assertions); full isolated SQLite PHPUnit suite passed (148 tests / 1,041 assertions). Pint completed on dirty PHP files and `git diff --check` passed. Tests used a process-only `APP_KEY` and SQLite `:memory:`; no `.env`, shared database, migration outside the isolated test lifecycle, frontend, external delivery, or deployment operation ran. B06 remains environment-blocked only on owner-approved disposable-MySQL duplicate-request/decision concurrency proof. Updated Thursday, November 12, 2026 — 16:41:43 Asia/Manila._
+
+**Owner disposition:** _Accepted for this loop with the target-MySQL duplicate-request/decision concurrency proof explicitly deferred. The focused B06 and full isolated SQLite evidence remains recorded above; deferred MySQL proof is a non-blocking follow-up, not completed validation. Approved Thursday, November 12, 2026 — 16:49:13 Asia/Manila._
+
+**Current update:** _Owner approved a narrow response-contract completion. Void-history responses now include `decided_by` and `decided_at`; focused regression coverage asserts those fields and the `voided` receipt-status response. Static diff validation passes, but focused/full Laravel tests and Pint could not run because PHP, Composer, and `backend/vendor/autoload.php` are unavailable. Target-MySQL concurrent duplicate-request/decision proof also remains unavailable. Updated Thursday, November 12, 2026 — 15:58:37 Asia/Manila._
+
 **Resume Note:** _State: ENVIRONMENT-BLOCKED. Focused void/payment tests passed (22 tests, 260 assertions): valid-only requests, Cashier ownership, Accounting-only decision, recorder self-approval denial, no-delete balance/allocation restoration, rejection restoration, and audit actors. Actions use transactions and locks. Target-MySQL concurrent duplicate-request/decision proof remains unavailable. Blocked Thursday, November 12, 2026 — 02:44:13 Asia/Manila._
 
 ## B07. Notifications, email/SMS delivery, follow-up — M6, approved M11
@@ -171,7 +179,13 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Faked provider tests, delivery callback signature tests, queued/failure behavior, no real outgoing messages.
 
-**Resume Note:** _Unstarted._
+**Audit update:** _Focused notification/follow-up coverage passed (7 tests / 56 assertions) using faked local mail/HTTP behavior. The audit confirmed that payment confirmations only create `queued` log rows—no job or other delivery path exists—and reminder email/SMS provider calls occur synchronously in the HTTP request despite the queue requirement. Email attempts have no delivery-confirmation callback or state transition to `sent`; sender/daily-limit settings, a queue-worker owner, and deployment scheduler ownership are also unverified. No live mail/SMS, provider configuration, or external delivery test ran. Audited Thursday, November 12, 2026 — 16:57:00 Asia/Manila._
+
+**Remediation update:** _Payment confirmations and reminder attempts now dispatch the one-attempt `DeliverNotification` job after persistence (after commit for payment/retry transactions). The job preserves queued state after provider acceptance, records failures, remains fail-closed for disabled reminders, and sends no direct provider call from an HTTP handler. Cashier may retry a failed payment-confirmation email or failed eligible reminder; the retry row is locked transactionally so a second retry is denied. Focused B07/payment coverage passed (27 tests / 313 assertions); the full isolated SQLite suite passed (149 tests / 1,058 assertions); Pint and `git diff --check` passed. No live mail/SMS, sandbox credential, external provider, shared database, migration, scheduler, queue worker, frontend, or deployment operation ran. Updated Thursday, November 12, 2026 — 17:08:29 Asia/Manila._
+
+**Owner disposition:** _Accepted for this loop with email delivery-confirmation semantics, sender/daily-send-limit policy, queue-worker ownership, and target-provider sandbox proof explicitly deferred. Approval does not represent those deferred items as completed. Accepted Thursday, November 12, 2026 — 17:11:53 Asia/Manila._
+
+**Resume Note:** _State: DECISION/ENVIRONMENT-BLOCKED. Queue-dispatch code and faked-provider coverage are complete. Email delivery-confirmation semantics, sender/daily-limit policy, configured queue-worker ownership, and target-provider sandbox proof remain unverified; automated reminder scheduling remains prohibited._
 
 ## B08. Reports, statements, exports and dashboards — M0, M7
 
@@ -182,7 +196,11 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Reconciled report totals and role data projections, date-boundary/report and export tests, contract examples.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 17:20:42 +08:00:** Daily collections, outstanding balances, current-year student statements, and role-specific dashboards have live, role-limited API paths. Focused report/dashboard coverage passed (11 tests / 95 assertions), including Asia/Manila date filtering and permission denials. The full isolated SQLite backend suite passed (150 tests / 1,062 assertions). A tied outstanding balance lacked a deterministic secondary ordering key; the query now orders by `balance_cents DESC, id ASC` and the new regression test confirms the contract. Monthly reporting remains intentionally unavailable because no approved fee-category allocation or billed-data contract exists. Current exports are client-side Excel-compatible CSV and print; no native XLSX/PDF/streaming contract or dependency was introduced. Browser print-layout evidence remains tracked separately.
+
+**Owner disposition:** _Accepted for this loop with monthly reporting/native export and browser-print evidence explicitly deferred. The accepted scope does not imply an approved monthly data source, export format, or physical-print proof. Accepted Thursday, November 12, 2026 — 17:32:45 +08:00._
+
+**Resume Note:** _State: DECISION-BLOCKED. Daily, outstanding, statement, and dashboard paths are accepted. Do not implement monthly reports or native export without the finance/report contract; retain browser-print verification as a separate open item._
 
 ## B09. Audit, security events, backups and recovery — M8
 
@@ -193,7 +211,11 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Audit coverage matrix, denial tests, backup/restore proof or explicit environment blocker, no sensitive leak.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 17:41:29 +08:00:** Verified authenticated capability boundaries, protected security-event search, audit-log response minimization, and read-only backup history. Archive, restore, and trusted Super Admin bootstrap events were missing from the security-event allowlist; they are now included and regression-tested. Focused B09 coverage passed (30 tests / 198 assertions); prior full isolated SQLite suite passed (150 tests / 1,068 assertions). The audit found two readiness blockers: several mutation endpoints commit their business change before writing the audit entry, and `/api/backups` only lists `backup_records`—there is no backup executor, destination, retention/restore operator, restore-test record, run-backup route, or nightly backup schedule. Existing privacy retention conflict remains unresolved. No backup, restore, credential inspection, external service, or deployment operation ran.
+
+**Owner disposition:** _Accepted for this loop with audit atomicity, backup/recovery readiness, and retention policy explicitly deferred. Acceptance does not claim those controls or evidence are complete. Accepted Thursday, November 12, 2026 — 17:49:29 +08:00._
+
+**Resume Note:** _State: DECISION-ENVIRONMENT-BLOCKED. Security-feed omission is accepted; audit atomicity, backup/restore operation and proof, and retention policy remain open. Do not claim backup or recovery readiness._
 
 ## B10. Close-out and cashier/accounting reconciliation — M13 (already implemented portions; optional scope policy)
 
@@ -203,7 +225,11 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Double-closeout and sign-off concurrency tests, role matrix and sum reconciliation.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 17:54:23 +08:00:** Focused close-out/capability coverage passed (77 tests / 494 assertions). It verifies Cashier-only submission, one close-out per Cashier/business date, required reason for non-zero variance, locked records, Accounting-only one-time sign-off, history scope, and nonproduction-only session date simulation. The API totals only cash even though M13 calls for current system totals by method. The application has locks and a unique cashier/date constraint, but target-MySQL concurrent double-submit and sign-off behavior remains unproven. B09's open atomic-audit issue also applies to close-out submission. No business date, close-out, or sign-off was created outside isolated tests.
+
+**Owner disposition:** _Accepted for this loop with per-method totals and target-MySQL concurrency proof explicitly deferred. B09's atomic-audit issue remains open and applicable to close-out submission. Accepted Thursday, November 12, 2026 — 17:56:50 +08:00._
+
+**Resume Note:** _State: DECISION-ENVIRONMENT-BLOCKED. Core close-out behavior is accepted in isolated tests. Per-method totals, target-MySQL concurrency proof, and B09 audit atomicity remain open; do not represent the lock behavior as deployment-database proof._
 
 ## B11. Student masterlist import and separate ledger import — Registrar approved prototype / M12 optional
 
@@ -214,14 +240,22 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Separate approved contracts and tests per import type, correct LRN semantics, explicit approval references. Otherwise mark DECISION-BLOCKED, not complete.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 17:59:35 +08:00:** The Registrar `/students/import` page is correctly limited to the approved MockDB Phase 1 file-selection prototype: it validates only nonempty CSV/XLSX selection, does not parse content or mutate records, and shows unavailable in live mode. The live Laravel backend exposes no student-import endpoint. Ledger import remains a separate, fail-closed `/import` placeholder: all roles are denied `import.run`, and no backend route exists. Focused frontend capability coverage passed (65 tests); it does not exercise the StudentImportPage selection behavior, so that verification gap is recorded. No file was uploaded, parsed, or applied; no backend import or financial record changed.
+
+**Owner disposition:** _Accepted for this loop with live student import, ledger import, and focused prototype coverage explicitly deferred. Acceptance does not authorize parsing, apply behavior, or a backend import endpoint. Accepted Thursday, November 12, 2026 — 18:01:02 +08:00._
+
+**Resume Note:** _State: DECISION-BLOCKED. The approved MockDB-only Phase 1 boundary and ledger-import denial are accepted. Do not add parsing, apply behavior, live student import, or ledger import until separately approved contracts define the required safeguards._
 
 ## B12. Other approved optional functionality — M14, enhancements, integrations
 
 - [ ] Review explicit approval for shareable PDF receipt, advanced exports, live table sorting, maintenance functions and other `Should`/`Could` items. **Do not implement merely because mentioned**.
 - [ ] For accepted optional work, produce the usual precise plan, contract, tests and approval. For unapproved items mark `OUT_OF_SCOPE` or `DECISION-BLOCKED`; do not fabricate.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 18:02:36 +08:00:** Existing client-side Excel-compatible CSV exports and MockDB table sorting are covered by focused tests (23 tests across 6 files). Shareable receipt PDF (M14) is deliberately absent; native XLSX/PDF/streaming exports lack a contract; live-mode server sorting is only partially supported; maintenance/backup actions and external integrations remain governed by their existing B07/B09 and environment decisions. No optional implementation was added. Existing tracker entries remain the authoritative follow-up records.
+
+**Owner disposition:** _Accepted for this loop with optional PDF, native export, live sorting, maintenance, and integration work explicitly deferred. Acceptance does not authorize any of those additions. Accepted Thursday, November 12, 2026 — 18:04:12 +08:00._
+
+**Resume Note:** _State: DECISION-BLOCKED. Existing CSV/print and approved MockDB sorting are accepted. Do not add PDF receipts, native export formats, live sortable table contracts, maintenance actions, or integrations without explicit scoped approval._
 
 ## B13. Operational prerequisites and database validation — cross-cutting
 
@@ -232,7 +266,15 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Environment matrix with actual versions/commands/results, targeted schema tests, isolated restore proof or honest blockers.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 18:11:13 +08:00:** Local, read-only evidence confirms PHP 8.4.27, locked Laravel 13.35.0, and the required CLI extensions (`curl`, `fileinfo`, `mbstring`, `openssl`, `pdo_mysql`, `pdo_sqlite`, `sqlite3`, and `zip`) when loaded from the installed PHP extension directory. `backend/composer.json` requires PHP `^8.3`; `composer.lock` and `vendor/autoload.php` are present. This is local compatibility evidence only: Composer itself is not available to Laravel's `about` command, no deployment manifest/provider configuration is in the repository, and no deployment PHP/Composer inventory was supplied. The local process reports production, debug off, Asia/Manila, and URL `localhost`, while no local backend `.env` is present; that is not evidence of a correctly configured target environment.
+
+**Environment blockers — Thursday, November 12, 2026 — 18:11:13 +08:00:** No MySQL client, matching disposable MySQL service, target version/collation/index/constraint inspection, deployment host, LAN/TLS/proxy/cookie configuration, named runtime operator, or shared/prod database approval was available. The test suite remains configured for isolated SQLite `:memory:`; it cannot prove MySQL migration or locking behavior. The repository defines a MySQL connection with `utf8mb4` / `utf8mb4_unicode_ci` and strict mode, but that is configuration intent, not target-server evidence. No migration, `Reference-Schema.sql`, database connection, backup/restore, provider message, scheduler tick, queue worker, or deployment ran.
+
+**Operational evidence — Thursday, November 12, 2026 — 18:11:13 +08:00:** Source declares two Manila scheduled commands (billing-status recalculation at 00:05 and user-archive anonymization at 00:15), both with overlap prevention; it declares no backup schedule. A local `schedule:list` attempt failed before listing because its overlap lock tried the absent local SQLite `cache_locks` database, so it establishes neither runnable local scheduling nor deployed scheduler ownership. The queue defaults to the database driver and the notification job exists, but worker supervision/health is unassigned. The example environment defaults mail to `log` and disables reminder delivery; no provider/sandbox or secrets-management proof exists. `/up` is declared as Laravel's health route, but no probe, alert, log aggregation, runbook, backup executor/destination, restore drill, rollback plan, or observability evidence exists. Session/TLS/proxy/cookie deployment values remain unverified; `SESSION_SECURE_COOKIE` and `SESSION_DOMAIN` are environment-controlled.
+
+**Resume Note:** _State: ENVIRONMENT-BLOCKED. Local prerequisites are compatible, but B13 cannot be accepted as deployment-ready. The MCA deployment/database owner must provide an isolated matching MySQL environment and named runtime ownership, then authorize a non-production migration/schema/concurrency exercise, configure and prove scheduler/worker/mail-or-SMS sandbox/backup-restore/secrets/TLS-cookie-proxy/monitoring controls, and document rollback/runbooks. Obtain separate explicit approval before any shared or production database operation._
+
+**Owner disposition:** _Accepted for this loop with every deployment/MySQL/runtime prerequisite explicitly deferred. This acceptance records the B13 audit and its honest blockers; it is not deployment readiness or approval for migrations, shared/prod databases, provider delivery, scheduled jobs, backups/restores, or deployment. Accepted Thursday, November 12, 2026 — 20:26:01 +08:00._
 
 ---
 
@@ -248,42 +290,151 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 - [ ] Map every current Must requirement/module and authorized optional requirement to route, controller/service, request validation, data model, response shape, role guard, relevant frontend read-only expectation and named test. Report missing contracts, pagination/sort differences, unauthorized routes and stale documentation.
 - [ ] Check retired clearance/permit absence from active APIs and preservation of historical data. Check exact student LRN and guardian data contracts.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 20:36:35 +08:00:** Laravel reported 51 registered `/api` routes; every authenticated operational route has the expected active-user, password-change, and capability middleware, and no active clearance/permit or import endpoint was found. The 151-test isolated Laravel suite passed (1,071 assertions). Six focused live-API frontend suites exercised adapter contracts: 34 tests passed and one existing Registrar/LRN assertion failed; the run also reported invalid whitespace text-node nesting in the live billing-account table. No backend/frontend application code changed.
+
+**Trace result:** _M0–M1 are server-verified with browser/session acceptance still pending; M2 is partially delivered (current 12-digit LRN and per-link guardian relationship are verified, while multiple-guardian lifecycle/ownership conflicts remain); M3 is partial (no account-creation API); M4–M5 are locally verified but target-MySQL concurrency remains unproven; M6 is partial because delivery policy/runtime proof is deferred; M7 is partial because monthly/native export is uncontracted; M8 is partial because backup execution/recovery is absent; M9 is partial because school-year, plan, receipt, school, and email management APIs are unapproved; retired M10 is absent as required; M11 is partial/runtime-blocked; M12 and M14 are decision-blocked; M13 is partial because per-method system totals are absent. Existing B03–B13 issues remain controlling. The current API contract's stale 120-minute session statement was corrected to reflect the already verified 30-minute configuration._
+
+**Resume Note:** _State: ACCEPTED. A01 recorded the 51-route trace, live-adapter review, requirement matrix, stale documentation correction, existing Registrar test failure, new table-markup defect, uncovered endpoint-contract tests, and guardian-workflow decision gap in `2026-11-12-formal-a01.md` and the issue tracker. Do not treat focused mocks, SQLite tests, or this trace as browser acceptance, MySQL proof, deployment readiness, or authorization to implement discovered fixes._
+
+**Owner disposition:** _Accepted for the formal audit with all A01 findings retained as open follow-ups. Acceptance does not authorize the frontend table/test fixes, guardian API expansion, migration, MySQL/deployment validation, or any requirement change. Accepted Thursday, November 12, 2026 — 20:47:27 +08:00._
 
 ### A02. Financial, database and race-condition audit
 
-- [ ] Check integer centavos, balance reconciliation, payment allocation, idempotency, receipt uniqueness, void compensation, adjustment snapshots, fee revisions, school-year selection, close-out concurrency and immutable audit/financial history.
-- [ ] Compare SQLite test outcomes to matching MySQL constraints and concurrency semantics; if MySQL unavailable report NOT VERIFIED, not PASS.
+- [x] Check integer centavos, balance reconciliation, payment allocation, idempotency, receipt uniqueness, void compensation, adjustment snapshots, fee revisions, school-year selection, close-out concurrency and immutable audit/financial history.
+- [x] Compare SQLite test outcomes to matching MySQL constraints and concurrency semantics; if MySQL unavailable report NOT VERIFIED, not PASS.
 
-**Resume Note:** _Unstarted._
+**Resume Note:** _Audited and accepted Thursday, November 12, 2026 — 20:55:37 +08:00. Focused isolated SQLite coverage passed (30 tests / 371 assertions). Integer-centavo storage, payment/void/adjustment transaction paths, oldest-first allocation, idempotency replay, receipt uniqueness/counter, and status reconciliation have code and SQLite evidence. Confirmed defect retained: M9.1 requires fee edits to apply only to new accounts, but FinanceSettingsController invokes ApplyFeeItemToBillingAccountsAction to add new/revised fees, installments, and balance to matching existing accounts; its regression test explicitly asserts that behavior. Existing B09 audit-atomicity and B10 close-out-per-method gaps remain open. Matching-MySQL lock, unique-key, collation, and concurrent-write semantics are NOT VERIFIED because no owner-approved disposable MySQL environment is available. Report: 08-Logs/2026-11-12-formal-a02.md. Acceptance does not authorize a behavior, schema, MySQL, or deployment change._
+
+**Owner disposition:** _Accepted for the formal audit with the fee-snapshot defect and all referenced B06/B09/B10/M9 blockers retained as open follow-ups. Acceptance does not authorize a behavior change, migration, MySQL/deployment validation, or a production-readiness claim. Accepted Thursday, November 12, 2026 — 20:55:37 +08:00._
 
 ### A03. Security, authorization and privacy audit
 
-- [ ] Test six-role permission matrix across all active endpoints; attempt horizontal IDOR and privilege escalation; inspect CSRF/session expiration, login limiter, webhook signature validation, server error data exposure, audit redaction and imported PII.
-- [ ] Check critical concerns against Laravel security guidance; do not add production-only headers/CORS/proxy assumptions without network requirements.
+- [x] Test six-role permission matrix across all active endpoints; attempt horizontal IDOR and privilege escalation; inspect CSRF/session expiration, login limiter, webhook signature validation, server error data exposure, audit redaction and imported PII.
+- [x] Check critical concerns against Laravel security guidance; do not add production-only headers/CORS/proxy assumptions without network requirements.
 
-**Resume Note:** _Unstarted._
+**Resume Note:** _Audited and accepted Thursday, November 12, 2026 — 21:02:15 +08:00. No new confirmed authorization bypass was found in the available isolated evidence. Focused feature coverage passed (64 tests / 569 assertions), and route/capability coverage passed (57 tests / 241 assertions): every operational route has Sanctum authentication, active-user, password-change, and capability middleware; the unauthenticated Twilio callback is signature-checked. Verified coverage includes role denials, Cashier own-payment horizontal scope, protected-account restrictions, staff-role assignment controls, audit/security allowlists, failed-login password exclusion, and invalid webhook rejection. Cookie-session/CSRF middleware is configured, but an actual browser Sanctum-cookie request was not exercised. Target TLS, secure-cookie/domain/SameSite, trusted proxy/CORS, production APP_DEBUG/error rendering, deployment rate-limit backing store, and runtime webhook/provider behavior are NOT VERIFIED and remain under B13. Report: 08-Logs/2026-11-12-formal-a03.md. Acceptance does not authorize production configuration, security-header, CORS, proxy, cookie, or application behavior changes._
+
+**Owner disposition:** _Accepted for the formal audit with all referenced browser, endpoint-coverage, B13 environment, provider/runtime, and policy follow-ups retained as open. Acceptance does not authorize production configuration, security-header, CORS, proxy, cookie, application, or deployment changes. Accepted Thursday, November 12, 2026 — 21:02:15 +08:00._
 
 ### A04. Regression, integration contract, and performance audit
 
-- [ ] Run full backend tests and relevant end-to-end/test-contract scenarios; compare live API expectations to frontend adapters **without editing frontend**. Flag gaps for a later approved frontend workstream.
-- [ ] Verify filtering, pagination, sorting, indexes, query counts, transaction length, file import limits (if approved), accessible user-facing error shapes, and stable date behavior. Run reproducible performance checks only in isolated environments.
+- [x] Run full backend tests and relevant end-to-end/test-contract scenarios; compare live API expectations to frontend adapters **without editing frontend**. Flag gaps for a later approved frontend workstream.
+- [x] Verify filtering, pagination, sorting, indexes, query counts, transaction length, file import limits (if approved), accessible user-facing error shapes, and stable date behavior. Run reproducible performance checks only in isolated environments.
 
-**Resume Note:** _Unstarted._
+**Resume Note:** _Audited and accepted Thursday, November 12, 2026 — 21:09:22 +08:00. Full isolated SQLite Laravel PHPUnit passed (151 tests / 1,071 assertions). Focused live-API frontend adapter tests produced 48 passes and one existing failure: `liveStudents.test.tsx:71` still expects the approved Registrar profile to hide LRN; the run also repeats the existing invalid-whitespace table warning in LiveBillingAccounts. No frontend code was edited. Current client request/query and camel/snake pagination mappings align with reviewed backend endpoints for students, billing, payments, users, close-outs, follow-up, notifications, reports, and security events. Server-side pagination, accepted filters, stable ordering, eager loading, and relevant schema indexes were code-reviewed; no reproducible matching-MySQL dataset, query-count trace, EXPLAIN plan, request-duration baseline, or sustained-load test exists. New performance verification gap retained. File import remains decision-blocked and no import limit test ran. Report: 08-Logs/2026-11-12-formal-a04.md. Acceptance does not authorize frontend fixes, performance/index changes, imports, MySQL exercise, or deployment work._
+
+**Owner disposition:** _Accepted for the formal audit with the existing frontend assertion/table-markup defects, performance verification gap, B13 blockers, and import decisions retained as open follow-ups. Acceptance does not authorize frontend fixes, performance/index changes, imports, MySQL exercise, deployment work, or a production-readiness claim. Accepted Thursday, November 12, 2026 — 21:09:22 +08:00._
 
 ### A05. Deployment, recovery, and release readiness
 
-- [ ] Verify config by environment, PHP extensions, Composer audit when available, locked dependencies, MySQL schema/migration dry run, scheduler jobs, email/SMS sandbox, backup and restore, least-privilege accounts, TLS, secure cookies, secrets and monitoring.
-- [ ] Define rollback and recovery plan with the owner; separately gate migrations on any shared/prod DB, network configuration, and deployment. A successful SQLite suite is **not** deployment approval.
+- [x] Verify config by environment, PHP extensions, Composer audit when available, locked dependencies, MySQL schema/migration dry run, scheduler jobs, email/SMS sandbox, backup and restore, least-privilege accounts, TLS, secure cookies, secrets and monitoring.
+- [x] Define rollback and recovery plan with the owner; separately gate migrations on any shared/prod DB, network configuration, and deployment. A successful SQLite suite is **not** deployment approval.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 21:15:41 +08:00:** Local PHP 8.4.27, Laravel 13.35.0, the required PHP extensions, and the locked dependency set were inspected without accessing any target. `composer audit --locked` returned exit code 1 and reported eight advisories across locked `symfony/http-foundation` 8.1.8, `symfony/http-kernel` 8.1.8, `symfony/mime` 8.1.7, `symfony/routing` 8.1.8, and `symfony/yaml` 8.1.8. No dependency change is authorized by this audit. Existing B13 evidence still leaves matching-MySQL migration/schema rehearsal, runtime scheduler/worker proof, provider sandbox, backup/restore drill, least-privilege accounts, target TLS/proxy/cookie/secrets configuration, and monitoring/rollback runbooks unverified.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted this A05 audit record while retaining every release blocker. The dependency advisories require a separately approved, tested lockfile remediation before release consideration. An MCA deployment/database owner must also supply the target environment matrix, approve a disposable matching-MySQL migration and recovery rehearsal, and establish scheduler/worker/provider/backup/TLS-cookie/secrets/monitoring/rollback evidence. No migrations, database connections, messages, scheduled jobs, backups/restores, secret inspection, or deployments ran. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a05.md`._
+
+**Owner disposition:** _Accepted for the formal audit with the dependency advisories and all B13 deployment/recovery prerequisites retained as open release blockers. Acceptance does not approve a dependency update, migration, shared/production database operation, provider delivery, scheduler/worker execution, backup/restore, infrastructure configuration, or deployment. Accepted Thursday, November 12, 2026 — 21:20:23 +08:00._
 
 ### A06. Final reconciliation and delivery
 
-- [ ] Produce requirement/route/test coverage matrix, accepted workstreams, source conflicts, DB/schema change list, security/risk register, deployment blockers, accurate test counts and commands, documentation updates and handoff.
-- [ ] Audit the final diff for forbidden frontend changes, secrets, production data, unrelated refactors and unapproved services; no commit/push without express authorization.
+- [x] Produce requirement/route/test coverage matrix, accepted workstreams, source conflicts, DB/schema change list, security/risk register, deployment blockers, accurate test counts and commands, documentation updates and handoff.
+- [x] Audit the final diff for forbidden frontend changes, secrets, production data, unrelated refactors and unapproved services; no commit/push without express authorization.
 
-**Resume Note:** _Unstarted._
+**Audit update — Thursday, November 12, 2026 — 21:25:41 +08:00:** A06 reconciled the build and formal-audit records into the final handoff at `EducatraK-Knowledge-Base/08-Logs/2026-11-12-formal-a06.md`. A01–A05 are owner-accepted, and A01's stale waiting-for-acceptance state was corrected. B00–B01 are accepted; B06–B13 have accepted scopes with named deferrals; B02 remains waiting for explicit acceptance; B03–B05 remain blocked. Therefore this handoff is not a claim that every required module is complete, nor that release is approved. The final diff contains no frontend path and no dependency-manifest change; `git diff --check` passed. The secret-pattern scan found only a configuration-key reference in the approved reminder-delivery controller, not a value. No source, dependency, schema, configuration, data, or infrastructure change occurred in A06.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted this final handoff while retaining every unresolved finding. Release remains blocked by the eight Composer advisories, the unresolved module/contract and financial findings, target-MySQL proof, and B13 operational/recovery prerequisites. Acceptance does not accept B02, unblock B03–B05, approve remediation, or authorize migration/deployment._
+
+**Owner disposition:** _Accepted as the final reconciliation and delivery audit with all tracker items and release blockers retained as open. Acceptance does not accept B02, resolve B03–B05, close a tracker item, approve remediation, dependency updates, database activity, provider action, infrastructure configuration, commit/push, or deployment. Accepted Thursday, November 12, 2026 — 21:27:49 +08:00._
+
+### R01. Locked Symfony dependency-security remediation
+
+- [x] Apply the minimal compatible locked-package update for the A05 Composer advisories, without changing `composer.json`, running Composer scripts, migrating, or deploying.
+- [x] Validate the lockfile, rerun the locked dependency audit, and run the isolated backend regression suite.
+
+**Remediation update — Thursday, November 12, 2026 — 23:04:27 +08:00:** R01 updated only `backend/composer.lock`: `symfony/http-foundation`, `symfony/http-kernel`, `symfony/routing`, and `symfony/yaml` from 8.1.8 to 8.1.11; and `symfony/mime` from 8.1.7 to 8.1.10. Composer made no installs or removals and ran with `--minimal-changes --with-all-dependencies --no-scripts`. It also refreshed lock metadata and the Composer plugin API marker. `composer validate --no-check-publish` passed, `composer audit --locked` reported no advisories, and the full isolated PHPUnit suite passed (151 tests / 1,071 assertions). No Composer script, migration, database connection outside the test configuration, provider delivery, scheduler/worker, backup/restore, infrastructure operation, or deployment ran.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R01 and the verified advisory finding is resolved. R01 does not resolve B02, B03–B05, the confirmed financial/frontend findings, matching-MySQL evidence, or B13 operational/recovery prerequisites; release remains blocked on those items. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r01-security-dependency-remediation.md`._
+
+**Owner disposition:** _Accepted for the verified dependency-security remediation. Acceptance resolves the Composer-advisory tracker item only; it does not resolve other tracker items, approve database/provider/infrastructure work, or approve release. Accepted Thursday, November 12, 2026 — 23:26:35 +08:00._
+
+### R02. Preserve existing billing-account fee snapshots
+
+- [x] Make fee-item creation and revision affect schedules for new accounts only; preserve all existing billing-account items, installments, total due, and balance snapshots.
+- [x] Retain the existing create-response shape, update affected API/database documentation, and prove the corrected behavior with isolated feature tests.
+
+**Remediation update — Thursday, November 12, 2026 — 23:32:53 +08:00:** R02 removed the only action that propagated created/revised fee items into existing billing accounts. Fee-item create and revision now only update the configured schedule/version for future account creation; the existing `updatedAccountCount` response field is retained as `0`. The new feature assertion verifies an existing account retains its original fee-item snapshot, zero added installments, `total_due_cents`, and `balance_cents` after both creation and revision. The API contract and ERD note now state the new-accounts-only rule. Focused finance tests passed (3 tests / 55 assertions); Pint passed; full isolated PHPUnit passed (151 tests / 1,075 assertions). No migration, target-MySQL exercise, shared/production data access, provider action, or deployment ran.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R02 and the confirmed M9.1 fee-snapshot defect is resolved in isolated SQLite evidence. Target-MySQL migration/locking behavior and every unrelated A06/B13 finding remain open; this change does not establish release readiness. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r02-billing-snapshot-preservation.md`._
+
+**Owner disposition:** _Accepted for the verified fee-snapshot correction. Acceptance resolves this M9.1 tracker item only; it does not authorize a target-MySQL exercise, shared/production data operation, provider/infrastructure work, or release. Accepted Thursday, November 12, 2026 — 23:37:37 +08:00._
+
+### R03. Make auditable financial mutations atomic
+
+- [x] Enclose each affected financial mutation and its audit write in one outer transaction without changing financial rules or response contracts.
+- [x] Add isolated regression proof that an audit-recording failure rolls back the related adjustment, close-out, void-request, and void-decision mutation.
+
+**Remediation update — Thursday, November 12, 2026 — 23:53:26 +08:00:** R03 adds an outer database transaction to adjustment creation, close-out submission, void-request creation, and void-request decision. Each transaction now includes the business mutation and its required audit entry, so an audit failure rolls back the corresponding financial change. Existing nested action transactions remain intact and are encompassed by the outer boundary. `CashierOperationsTest` now makes the audit logger fail for each of the four paths and proves that no related adjustment, close-out, void request/decision, payment status change, balance change, or audit entry persists. Focused cashier operations passed (24 tests / 278 assertions); Pint completed; full isolated PHPUnit passed (155 tests / 1,100 assertions). No migration, target-MySQL exercise, shared/production data access, provider action, scheduler/worker execution, backup/restore, infrastructure operation, or deployment ran.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R03, resolving the confirmed audit-atomicity implementation gap in isolated SQLite evidence. Matching-MySQL concurrency/transaction verification and every unrelated A06/B13 finding remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-12-r03-audit-atomicity.md`._
+
+**Owner disposition:** _Accepted for the verified financial audit-atomicity remediation. Acceptance resolves this tracker item only; it does not authorize target-MySQL, shared/production database, provider, infrastructure, recovery, or deployment work, nor approve release. Accepted Friday, November 13, 2026 — 00:01:22 +08:00._
+
+### R04. Return close-out system totals by payment method
+
+- [x] Return each signed-in Cashier's valid daily totals by recorded payment method while retaining `system_cash_cents` as the cash-drawer reconciliation value.
+- [x] Persist the submitted method breakdown in the close-out snapshot and show it in the live close-out form and locked summary.
+- [x] Prove multi-method totals and cash-only variance through isolated backend and frontend regression coverage.
+
+**Remediation update — Friday, November 13, 2026 — 00:19:30 +08:00:** R04 adds a shared close-out total calculation that groups valid daily payments by their stored method. `GET /api/close-outs/today` and close-out records now expose `system_totals` as the method-to-centavos map while retaining `system_cash_cents` for the required cash-only variance calculation. Submissions snapshot both `cash_cents` and the by-method map, including non-cash payment totals, so later history cannot recalculate the day. The live Cashier close-out surface renders the API-provided breakdown before submission and after lock; it does not hard-code payment methods or change the count/variance workflow. Focused cashier PHPUnit passed (25 tests / 290 assertions); focused live close-out Vitest passed (3 tests); Pint completed; full isolated PHPUnit passed (156 tests / 1,112 assertions); frontend production build passed. The full frontend suite retains one pre-existing unrelated Registrar/LRN assertion failure and the existing LiveBillingAccounts table-whitespace warning. No migration, target-MySQL exercise, shared/production data access, provider action, scheduler/worker execution, backup/restore, infrastructure operation, or deployment ran.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R04, resolving the M13 per-method close-out totals implementation gap in isolated SQLite/frontend evidence. Matching-MySQL transaction/concurrency verification and every unrelated A06/B13 finding remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r04-closeout-method-totals.md`._
+
+**Owner disposition:** _Accepted for the verified M13 close-out total remediation. Acceptance resolves this tracker item only; it does not authorize target-MySQL, shared/production database, provider, infrastructure, recovery, or deployment work, nor approve release. Accepted Friday, November 13, 2026 — 10:45:06 +08:00._
+
+### R05. Remove invalid billing-table whitespace
+
+- [x] Remove the literal whitespace text node between adjacent billing-account table cells without changing table content, behavior, or styling.
+- [x] Add focused render coverage that fails if the live billing-account row emits React's `validateDOMNesting` warning.
+
+**Remediation update — Friday, November 13, 2026 — 10:55:15 +08:00:** R05 removes the sole literal text node between adjacent `<td>` elements in the live billing-account row and adds a focused render regression assertion for the absence of `validateDOMNesting`. Focused live-billing-account Vitest passed (5 tests). The frontend production build passed. Full frontend Vitest has 249 passes and one pre-existing unrelated Registrar/LRN assertion failure at `liveStudents.test.tsx:71`; the prior billing-table nesting warning was not emitted. No API, data, styling, migration, database, provider, infrastructure, or deployment behavior changed.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R05, resolving the invalid billing-table whitespace defect in focused frontend evidence. The unrelated Registrar/LRN assertion failure and all remaining A06/B13 and matching-MySQL blockers remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r05-billing-table-whitespace.md`._
+
+**Owner disposition:** _Accepted for the verified billing-table markup remediation. Acceptance resolves this tracker item only; it does not resolve the unrelated Registrar/LRN assertion or authorize database, provider, infrastructure, recovery, or deployment work, nor approve release. Accepted Friday, November 13, 2026 — 13:09:23 +08:00._
+
+### R06. Reconcile the Registrar profile baseline test
+
+- [x] Align the stale MockDB Registrar-profile assertions with the approved academic, personal, and guardian-content contract.
+- [x] Confirm that the approved Registrar profile excludes billing content and restore the full frontend test baseline.
+
+**Remediation update — Friday, November 13, 2026 — 13:14:25 +08:00:** R06 changes only `liveStudents.test.tsx`. The stale test now verifies the approved MockDB Registrar profile: LRN, grade level, section, enrollment status, personal information, and guardian details are present, while account-balance and billing-status content are absent. This matches the approved November 7 MockDB decision and existing operational profile coverage. Focused live-student Vitest passed (11 tests); the complete frontend suite passed (36 files / 250 tests). No UI, API, data, permission, database, provider, infrastructure, or deployment behavior changed.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R06, resolving the stale Registrar-profile test assertion in frontend evidence. All unrelated A06/B13 and matching-MySQL blockers remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r06-registrar-profile-test.md`._
+
+**Owner disposition:** _Accepted for the verified Registrar-profile test-contract correction. Acceptance resolves this tracker item only; it does not authorize database, provider, infrastructure, recovery, or deployment work, nor approve release. Accepted Friday, November 13, 2026 — 13:16:57 +08:00._
+
+### R07. Add direct regression coverage for documented API contracts
+
+- [x] Add isolated synthetic-data coverage for student-record options, current-year student statements, fee deactivation, billing adjustments, Administrator user filtering and update, and security-event pagination.
+- [x] Update the API-contract evidence ledger to identify the resulting direct tests without changing endpoint behavior.
+
+**Remediation update — Friday, November 13, 2026 — 13:31:24 +08:00:** R07 adds seven direct endpoint-contract tests across the existing Laravel feature suites. They cover active student-record options; current-account statements and their 404 case; fee deactivation and repeated-deactivation conflict; billing-adjustment response, balance, and audit; Administrator list filters; ordinary user update and audit; and security-event pagination. Focused coverage passed (62 tests / 617 assertions); Pint completed on the five touched test files; the full isolated Laravel suite passed (163 tests / 1,160 assertions). No application endpoint, migration, database, provider, infrastructure, or deployment behavior changed.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R07, resolving the documented direct API-contract coverage gap in isolated SQLite evidence. Matching-MySQL behavior and all unrelated A06/B13 blockers remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r07-api-contract-regression-coverage.md`._
+
+**Owner disposition:** _Accepted for the verified direct API-contract regression coverage. Acceptance resolves this tracker item only; it does not authorize target-MySQL, shared/production database, provider, infrastructure, recovery, or deployment work, nor approve release. Accepted Friday, November 13, 2026 — 13:33:42 +08:00._
+
+### R08. Cover the bounded StudentImportPage prototype
+
+- [x] Add focused UI coverage for accepted CSV/XLSX selection, unsupported/empty-file rejection, removal, and the disabled apply boundary.
+- [x] Verify the explicit live-mode unavailable state without adding parsing, import/apply, API, or persistence behavior.
+
+**Remediation update — Friday, November 13, 2026 — 13:41:49 +08:00:** R08 adds focused `StudentImportPage` coverage for the existing Phase 1 selection-only prototype. The tests assert valid CSV selection and removal, unsupported and empty-file rejection, disabled confirmation, and the MockDB-only unavailable notice in live mode. Focused Vitest passed (3 tests); the full frontend suite passed (37 files / 253 tests). No screen behavior changed and no parsing, import/apply, API, data, database, provider, infrastructure, or deployment operation was added.
+
+**Resume Note:** _State: ACCEPTED; RELEASE-BLOCKED. The owner accepted R08, resolving the bounded StudentImportPage coverage gap in frontend evidence. Import parsing/apply behavior remains separately unapproved, and all unrelated A06/B13 and matching-MySQL blockers remain open. Report: `EducatraK-Knowledge-Base/08-Logs/2026-11-13-r08-student-import-prototype-coverage.md`._
+
+**Owner disposition:** _Accepted for the verified selection-only prototype regression coverage. Acceptance resolves this tracker item only; it does not authorize file parsing, column matching, roster comparison, import/apply behavior, an API, persistence, database access, provider activity, infrastructure work, deployment, or release. Accepted Friday, November 13, 2026 — 13:47:15 +08:00._
 
 ---
 

@@ -52,6 +52,25 @@ class OutstandingReportTest extends TestCase
         $this->actingAs($superAdmin)->getJson('/api/reports/outstanding')->assertForbidden();
     }
 
+    public function test_outstanding_report_orders_equal_balances_by_account_id_for_stable_pagination(): void
+    {
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $year = SchoolYear::query()->forceCreate(['label' => 'SY 2027-2028', 'starts_on' => '2027-06-01', 'ends_on' => '2028-05-31', 'is_current' => true]);
+        $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 5', 'sort_order' => 5]);
+        $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Jasmine']);
+        $firstStudent = Student::query()->create(['lrn' => 'SAMPLE-9203', 'full_name' => 'Jordan Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
+        $secondStudent = Student::query()->create(['lrn' => 'SAMPLE-9204', 'full_name' => 'Casey Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
+        $firstAccount = $this->createAccount($firstStudent, $year, $admin, 15_000);
+        $secondAccount = $this->createAccount($secondStudent, $year, $admin, 15_000);
+
+        $this->actingAs($accounting)->getJson('/api/reports/outstanding?per_page=10')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('data.0.id', (string) $firstAccount->id)
+            ->assertJsonPath('data.1.id', (string) $secondAccount->id);
+    }
+
     private function createAccount(Student $student, SchoolYear $year, User $admin, int $balance): BillingAccount
     {
         return BillingAccount::query()->create([

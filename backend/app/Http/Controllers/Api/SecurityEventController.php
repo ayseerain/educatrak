@@ -24,7 +24,7 @@ class SecurityEventController extends Controller
         $events = AuditEntry::query()
             ->leftJoin('users as target_users', function ($join): void {
                 $join->on('audit_entries.entity_id', '=', 'target_users.id')
-                    ->where('audit_entries.entity_type', '=', (new User())->getMorphClass());
+                    ->where('audit_entries.entity_type', '=', (new User)->getMorphClass());
             })
             ->leftJoin('users as actor_users', 'audit_entries.user_id', '=', 'actor_users.id')
             ->select([
@@ -42,9 +42,12 @@ class SecurityEventController extends Controller
                 'user.created',
                 'user.updated',
                 'user.password_reset',
+                'user.archived',
+                'user.restored',
+                'user.super_admin_bootstrapped',
             ])
             ->when(isset($filters['user']) && trim($filters['user']) !== '', function ($query) use ($filters): void {
-                $term = '%' . trim($filters['user']) . '%';
+                $term = '%'.trim($filters['user']).'%';
                 $query->where(function ($matches) use ($term): void {
                     $matches->where('target_users.username', 'like', $term)
                         ->orWhere('target_users.full_name', 'like', $term)
@@ -53,7 +56,7 @@ class SecurityEventController extends Controller
                         ->orWhere('audit_entries.after->username', 'like', $term);
                 });
             })
-            ->when(isset($filters['action']) && trim($filters['action']) !== '', fn ($query) => $query->where('audit_entries.action', 'like', '%' . trim($filters['action']) . '%'))
+            ->when(isset($filters['action']) && trim($filters['action']) !== '', fn ($query) => $query->where('audit_entries.action', 'like', '%'.trim($filters['action']).'%'))
             ->when(isset($filters['date_from']), fn ($query) => $query->where('audit_entries.occurred_at', '>=', CarbonImmutable::parse($filters['date_from'], 'Asia/Manila')->startOfDay()->utc()))
             ->when(isset($filters['date_to']), fn ($query) => $query->where('audit_entries.occurred_at', '<', CarbonImmutable::parse($filters['date_to'], 'Asia/Manila')->addDay()->startOfDay()->utc()))
             ->latest('occurred_at')
@@ -85,7 +88,7 @@ class SecurityEventController extends Controller
     }
 
     /** @param array<string, mixed>|null $details
-     *  @return array<string, mixed>|null
+     * @return array<string, mixed>|null
      */
     private function safeDetails(?array $details): ?array
     {
