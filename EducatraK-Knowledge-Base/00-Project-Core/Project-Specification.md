@@ -4,6 +4,8 @@
 
 > **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.
 
+> **Student identifier reconciliation — November 13, 2026.** Every active operational reference to “student number” means the approved twelve-digit text LRN, represented as `lrn`. This is terminology reconciliation only: it does not represent a schema migration, installed-record conversion, or change to numerical student IDs and their relationships. Dated decision records retain their original wording as historical context.
+
 > **How this document was built.** This is a merge of two prior specifications — the *Frontend Agent Handoff* and the *Modules, Submodules, Operations, and Access Control* breakdown — plus a new Color Branding and Typography system. Where the two source documents overlapped, they were reconciled rather than concatenated, using this precedence order: (1) an explicit business/security/privacy rule, (2) an explicit technical constraint, (3) a detailed operation-level requirement, (4) a detailed access-control rule, (5) a specific screen/route behavior, (6) a general UX guideline, (7) a general visual guideline. Genuine contradictions that could not be safely resolved this way are listed in **Section 31, Open Decisions and Clarifications**, not silently decided. Section 30 documents every place the two sources were merged or where one source updated the other.
 
 ---
@@ -391,7 +393,7 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 | `audit.view` (financial/change audit) | F | | | | F | |
 | `backup.manage` | | F | | | | |
 
-\* **Registrar (`REG`)** sees only: student name, student number, grade and section, and clearance status with a reason that **hides amounts**. No payment history, no guardian contact details, no account details — see Section 6.2, rule 5, and the reconciliation in Section 30, item 2.
+\* **Registrar (`REG`)** sees only: student name, LRN, grade and section, and clearance status with a reason that **hides amounts**. No payment history, no guardian contact details, no account details — see Section 6.2, rule 5, and the reconciliation in Section 30, item 2.
 
 **Auditor is strictly read-only:** no create/edit/approve buttons anywhere.
 **Separation of duties:** the person who records a payment cannot approve its void. The UI shows the approve button only to `ACC`.
@@ -517,15 +519,15 @@ Routes: `/admin/users` (`user.manage`), `/admin/roles` (`user.manage`).
 
 ## 10. M2 — Students & Guardians (Must)
 
-Registrar (`REG`) is **limited**: name, student number, grade and section, and clearance status only.
+Registrar (`REG`) is **limited**: name, LRN, grade and section, and clearance status only.
 
 ### M2.1 Student records
 
 | Operation | What it does | Roles |
 |---|---|---|
-| List and search students | Search by name or student number; filter by grade, section, status | CSH, ACC (finance context only) |
+| List and search students | Search by name or LRN; filter by grade, section, status | CSH, ACC (finance context only) |
 | View student profile | Identity and billing context needed for cashier/accounting workflows | CSH, ACC |
-| Add student | Student number, name, grade, section, guardian(s); rejects duplicate student numbers | CSH |
+| Add student | LRN, name, grade, section, guardian(s); rejects duplicate LRNs | CSH |
 | Edit student | Change name, grade, section, guardian links | CSH |
 | Set inactive / reactivate | Marks a student as no longer enrolled; keeps all billing history | CSH |
 | Delete student | **Not allowed.** Use Set inactive | - |
@@ -981,7 +983,7 @@ Each flow must have a Playwright test against the mock adapter.
 
 **F1. Record a payment** (the most-used flow; target under 2 minutes)
 1. Cashier clicks **Record payment** (dashboard) or opens from a student profile.
-2. Search field is focused; typing a name or student number shows results; Enter selects the first match.
+2. Search field is focused; typing a name or LRN shows results; Enter selects the first match.
 3. The screen shows the student, current balance, and the next due installment with its amount.
 4. Cashier enters an amount (a "Pay next installment" shortcut fills it), picks a method, enters a reference if not cash.
 5. Live validation shows: overpayment block, duplicate warnings, missing reference.
@@ -1027,7 +1029,7 @@ interface User { id: string; username: string; fullName: string; role: Role; act
 interface Guardian { id: string; fullName: string; relationship: string; email?: string;
   emailStatus: 'ok' | 'missing' | 'bounced'; mobile?: string; }
 
-interface Student { id: string; studentNo: string; fullName: string; gradeLevel: string; section: string;
+interface Student { id: string; lrn: string; fullName: string; gradeLevel: string; section: string;
   status: 'enrolled' | 'inactive'; guardianIds: string[]; }
 
 interface SchoolYear { id: string; label: string; current: boolean; terms: Term[]; }
@@ -1103,7 +1105,7 @@ The backend is authoritative; the mock adapter (Section 28) implements the same 
 13. **Email:** a confirmed payment queues an email (amount, balance, receipt number, date). The payment is saved even if email fails. Failures appear in the notification log with a reason. Reminder emails are sent only after a cashier/accounting user confirms the batch.
 14. **Close-out:** one per cashier per day; variance = counted cash minus system cash total; a non-zero variance requires a reason; after submit, the day is locked for that cashier; only accounting can sign off.
 15. **Lockout:** after repeated failed logins the API returns a lockout response; show the wait time.
-16. **Import:** duplicate students (same student number) are errors; missing guardian email is a warning; the whole file is checked before anything is saved.
+16. **Import:** duplicate students (same LRN) are errors; missing guardian email is a warning; the whole file is checked before anything is saved.
 17. **No hard deletes of financial or audit records anywhere** — payments, receipts, accounts, adjustments, audit entries, and notification logs are never deleted or edited after saving; corrections use void or a correcting adjustment (Section 6.2, rule 1).
 18. **Every data-changing action writes an audit entry** — who, when, what, before/after values (Section 6.2, rule 2).
 19. **Separation of duties:** the user who records a payment cannot approve its void (Section 6.2, rule 3).

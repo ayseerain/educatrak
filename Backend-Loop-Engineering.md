@@ -51,7 +51,7 @@ Apply the repository's source-of-truth hierarchy: current explicit instruction; 
 
 ### Known source and implementation conflicts to recheck
 
-- **Student identity:** MockDB already uses 12-digit `lrn`, but Laravel has used `students.student_no` and `studentNo` in live API; LRN semantics and existing-real-record backfill remain separately gated. **Never convert or invent real LRNs from old Student Numbers.**
+- **Student identity:** Laravel and the live API use unique 12-digit-string `students.lrn`; `students.id` remains the stable relationship key. **Never convert, invent, or overwrite real LRNs outside an explicitly approved preservation/backfill plan.**
 - **Guardian relationship:** MCA confirmed relationship belongs on each **student–guardian link**, while the inspected SQL stores it on `guardians`; changing that persistence model requires specific schema/API approval. Guardian-data ownership and primary-contact policy remain open.
 - **Privacy/retention:** Owner left multiple backend retention periods undecided, while user-facing `frontend/src/i18n/en.ts` privacy copy asserts periods. Do not implement a purge or alter public promises until reconciled.
 - **Student profile:** Approved MockDB Registrar profile shows academic/personal/guardian context without billing; older requirements sometimes authorize read-only financial context on student pages, and live paths differ. Do not expand Registrar finance access without a clarified contract.
@@ -67,7 +67,7 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 - [ ] If uncommitted work is present, identify owner and scope; do not overwrite it. Ask before any branch operation.
 - [ ] Inspect all instructions/required decisions listed in §1. Diff active requirements/contract/decision files against current implementation; note older contradictory text without silently rewriting it.
 - [ ] Inventory **actual** Laravel version (`composer.lock`), PHP/Composer/extensions, configured app environment, test DB driver and target MySQL availability; do not disclose or copy `.env` secrets.
-- [ ] Enumerate runtime routes using `php artisan route:list --path=api --except-vendor` if runnable; source-count only if tooling is unavailable. Prior log reports **51 routes**, **14 migrations**, **29 models**, **19 API controllers**, and **146 backend tests passed** in a prior environment; these are **historical**, not current completion assertions.
+- [ ] Enumerate runtime routes using `php artisan route:list --path=api --except-vendor` if runnable; source-count only if tooling is unavailable. The current file inventory is **51 route declarations**, **12 EducaTrak domain migrations plus three Laravel support migrations**, **29 models**, and **19 API controllers**; prior test totals remain historical unless rerun.
 - [ ] Compare route handler + request validation + response + capability + audit + tests with `Backend-API-Contract.md`; log exact gaps. Compare model relations with migrations and database index/constraint rules. Mark the reference SQL descriptive only, **never execute it**.
 - [ ] Establish safe test baseline: focused and full `php artisan test --compact`, `vendor/bin/pint --test` or configured formatter, `php artisan route:list`, and suitable static checks where available. Failure of an unavailable tool is not a pass.
 - [ ] Confirm no app/test command will touch a shared, staging, or production database. Test through isolated SQLite memory or **owner-approved disposable database**; do not run `migrate:fresh`, `migrate:refresh`, `db:wipe`, `db:seed`, or `composer setup` on an unverified environment.
@@ -110,7 +110,7 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 ## B02. Student records, LRNs, guardians, school structure — M2
 
 - [ ] Verify Registrar's approved record mutation permissions, Cashier/Accounting read-only boundaries and approved student-profile visibility without leaking financial information.
-- [ ] Reconcile live `student_no` and `studentNo` against existing MockDB `lrn`, with exact request/response, search, index, uniqueness and migration/backfill design. LRN is distinct from a legacy Student Number; keep surrogate `students.id` and all linked historical records stable.
+- [x] Reconcile live LRN contract with MockDB LRN, request/response/search/index and linked-record preservation. The current migration and live API use unique 12-digit-string `students.lrn`; `students.id` and all linked historical relationships remain stable. Target-MySQL migration/concurrency evidence remains an environment gate; do not perform a real-data operation without a separately approved preservation plan.
 - [ ] If authorized, implement an **additive, staged, testable, rollback-planned** LRN transition. Never synthesize real student identifiers; retain unresolved legacy rows safely and do not claim migration complete without verification.
 - [ ] Validate grade/section relationships, active/inactive transitions, name, DOB/gender/address scope, and guardian contacts against approved policy. Guardian relationship belongs to each student–guardian link; any pivot migration requires explicit plan and approval. Do not infer the owner of guardian data.
 - [ ] Preserve billing/account/payment/receipt/notification relationships on student updates and status changes.
@@ -519,3 +519,101 @@ The backend loop is **complete** only when approved builds and the formal audit 
 ## 8. First instruction to Codex
 
 **Read this manual and applicable repository instructions, verify the post-merge `feature/backend-foundation` checkout and current files, execute Phase 0 read-only, produce the module-by-module readiness/gap report and the first proposed workstream. Ask the owner for approval and STOP. Do not immediately implement all backend modules.**
+
+## 9. Database architecture audit reconciliation
+
+**Recorded Friday, November 13, 2026 — 14:27:55 +08:00.** A documentation-only audit at `124a78637e36ee91fd0b3a126813b5a394305ab6` reconciled `ERD.md`, `Data-Dictionary.md`, `Database-Review.md`, and `Reference-Schema.sql` with the current migrations, API contracts and read-only frontend adapters. The executable student identifier is unique twelve-digit-string `students.lrn`; `students.id` remains the stable foreign-key identity. `guardian_student.relationship` is now the additive, link-specific field; legacy `guardians.relationship` is retained.
+
+The audit found a material approved-source conflict: the November 5 fee-assignment decision calls for a newly added fee to affect existing accounts on its schedule, while R02/current `FinanceSettingsController` behavior preserves existing account snapshots and reports zero updated accounts. Do not start fee/account remediation until the MCA finance owner resolves additions versus revisions and approves data preservation, rollback and matching-MySQL evidence. School-year management, guardian lifecycle, retention, import application, target-MySQL validation and backup/recovery remain separate open gates. No code, migration, database action, frontend change, provider operation, scheduler/worker run, or deployment was performed by this audit.
+
+## 10. Approved fee-assignment synchronization implementation
+
+**Recorded Friday, November 13, 2026 — 20:42:01 +08:00.** The owner explicitly authorized the previously proposed DB-04 workstream. `ApplyFeeItemToBillingAccountsAction` restores the November 5 approved behavior inside the existing finance transaction: for each existing account using an affected fee schedule, it creates the new account-item snapshot and one unpaid installment, then increments integer-centavo total due and balance. Existing account-item snapshots are not rewritten when a fee is revised. An all-grade revision synchronizes only a schedule where the prior fee was absent; schedules that already carry it keep the normal versioned-revision path.
+
+Focused isolated SQLite coverage in `FinanceSettingsMutationTest` passed 5 tests / 79 assertions, including selected-grade addition, all-grade addition, duplicate rejection, revision snapshot preservation, and all-grade missing-fee synchronization. Pint and PHP syntax checks passed. No migration, development/shared/production database access, reference SQL execution, frontend change, provider action, scheduler/worker execution, backup/restore, infrastructure change, commit, push, or deployment ran. Matching-MySQL transaction/lock/rollback evidence, school-year management, guardian lifecycle, retention, import application, and operational recovery remain open gates.
+
+## 11. Backend synchronization impact analysis
+
+**Recorded Friday, November 13, 2026 — 20:55:42 +08:00.** Documentation-only impact analysis re-checked the current migrations, models, controllers, requests, routes, tests, live frontend adapter contracts, approved decisions, and prior validation records. The complete approval matrix is `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Backend-Synchronization-Plan.md`.
+
+It identifies two independent P0 corrections: SYNC-GDN-01 makes valid new guardian payloads persist despite the legacy non-null guardian relationship column, and SYNC-FIN-01 recalculates account/installment status when fee synchronization adds a same-day charge. SYNC-LRN-01 is an independent test-data and boundary-coverage correction; production schema/API already uses `lrn`, and no backend legacy identifier reference was found. LRN database CHECK hardening, optional guardian-legacy retirement, current-school-year enforcement, imports, retention, and matching-MySQL execution remain explicitly gated by data/policy/environment approval. No application code, migration, database operation, frontend change, provider action, scheduler/worker run, backup/restore, infrastructure action, commit, push, or deployment occurred in this analysis.
+
+## 12. SYNC-GDN-01 controlled implementation
+
+**Recorded Friday, November 13, 2026 — 21:40:11 +08:00.** The owner approved **SYNC-GDN-01 only**. `StudentController` now executes each student create/update, optional guardian/link mutation, and audit record in one transaction. When the flow creates a guardian, it writes the already validated link relationship to the existing required `guardians.relationship` field as a compatibility mirror, then writes the authoritative `guardian_student.relationship` value. Existing guardian-wide legacy values are not overwritten when a later student-link relationship changes.
+
+`StudentAccessTest` passed 13 tests / 84 assertions, including valid guardian persistence, rollback after an injected audit failure, and existing-legacy preservation during a link update. PHP syntax checks and Pint passed. The complete isolated Laravel PHPUnit suite passed 167 tests / 1,192 assertions. No migration was created, changed, or run; no reference SQL, development/shared/production database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+
+**Resume Note:** _State: ACCEPTED. The owner accepted the verified guardian writer correction. It preserves request/response names, surrogate student IDs, linked history, and existing guardian-wide values. Guardian ownership, primary-contact and multi-link lifecycle policy, legacy-column retirement, matching-MySQL proof, SYNC-FIN-01, SYNC-LRN-01, school-year, import, retention, recovery, and deployment remain outside this accepted scope._
+
+**Owner disposition:** _Accepted for SYNC-GDN-01 only at Friday, November 13, 2026 — 21:59:04 +08:00. This acceptance does not accept SYNC-FIN-01, authorize a migration, database operation, lifecycle policy, matching-MySQL operation, deployment, or any next workstream._
+
+- Logged at: Friday, November 13, 2026 — 21:40:11 +08:00
+
+## 13. SYNC-FIN-01 controlled implementation
+
+**Recorded Friday, November 13, 2026 — 21:53:08 +08:00.** The owner approved **SYNC-FIN-01 only**. ApplyFeeItemToBillingAccountsAction now invokes the existing RecalculateBillingStatusAction after it creates an account-item snapshot and same-day installment, and increments integer-centavo total due/balance. The action is called inside FinanceSettingsController's pre-existing outer transaction, so the snapshot, amount, status, and audit result roll back together on failure. It does not revise previously recorded fee snapshots, payments, allocations, receipts, routes, or response fields.
+
+FinanceSettingsMutationTest passed 6 tests / 84 assertions, including a frozen-Manila-time paid-account transition to a same-day due_soon installment/account. BillingStatusSynchronizationTest passed 3 tests / 24 assertions for the existing configured/default-window status rules. PHP syntax checks and Pint passed. The complete isolated Laravel PHPUnit suite passed 168 tests / 1,197 assertions. No migration was created, changed, or run; no reference SQL, development/shared/production database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+
+**Resume Note:** _State: ACCEPTED. The owner accepted the verified fee-status correction. It retains all existing financial snapshots, payment/receipt/allocation history, authorization, routes, request/response fields, and integer-centavo storage. Matching-MySQL locks/transactions, SYNC-LRN-01, school-year, guardian lifecycle, import, retention, recovery, and deployment remain outside this accepted scope._
+
+**Owner disposition:** _Accepted for SYNC-FIN-01 only at Friday, November 13, 2026 — 22:38:29 +08:00. This acceptance does not authorize a migration, database operation, matching-MySQL operation, deployment, or any next workstream._
+
+- Logged at: Friday, November 13, 2026 — 21:53:08 +08:00
+
+## 14. SYNC-LRN-01 controlled implementation
+
+**Recorded Friday, November 13, 2026 — 22:54:48 +08:00.** The owner approved **SYNC-LRN-01 only**. The executable LRN contract was already correct: `students.lrn` is a unique twelve-character string, `UpsertStudentRequest` requires exactly twelve digits, and ordinary PATCH requests must retain the stored value. This work changes only synthetic test data and request-boundary coverage. Nine affected feature suites now use fictional twelve-digit LRN values in records, searches, and expected serialized output; receipt labels and other non-LRN test identifiers were not changed.
+
+`StudentAccessTest` passed 15 tests / 99 assertions, including 422 responses for nonnumeric, short, and long LRNs and successful preservation of a leading-zero twelve-digit LRN. The nine affected feature suites passed 67 tests / 628 assertions. Pint passed. The complete isolated Laravel PHPUnit suite passed 170 tests / 1,212 assertions. Static scans found no backend `student_no`/`studentNo` use and no invalid literal LRN test fixture. No migration was created, changed, or run; no reference SQL, development/shared/production database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+
+**Resume Note:** _State: ACCEPTED. The owner accepted the verified LRN test-data and request-boundary correction. It preserves the LRN API field, numerical surrogate student IDs, all relationships, financial history, and existing installed records. Database-level LRN hardening, any installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment remain outside this scope._
+
+**Owner disposition:** _Accepted for SYNC-LRN-01 only at Friday, November 13, 2026 — 23:05:18 +08:00. This acceptance does not authorize a migration, database operation, installed-record reconciliation, matching-MySQL operation, deployment, or any next workstream._
+
+- Logged at: Friday, November 13, 2026 — 22:54:48 +08:00
+
+## 15. SYNC-DOC-01 controlled implementation
+
+**Recorded Friday, November 13, 2026 — 23:21:49 +08:00.** The owner approved **SYNC-DOC-01 only**. Active canonical references in the master Project Specification and its source-derived Scope and Access Control view now use the approved twelve-digit text LRN and `lrn` contract name. A dated reconciliation note distinguishes this terminology correction from any schema migration, installed-record conversion, or numerical student-ID change. Historical decision records remain unchanged.
+
+Documentation review confirmed the master and derived view are consistent, active student search/add/import/interface references use LRN/`lrn`, and the historical decision records retain their original Student Number wording. No backend/frontend application source, migration, reference SQL, database, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+
+**Resume Note:** _State: ACCEPTED. The owner accepted the verified canonical terminology correction. It does not represent or authorize a schema conversion, record backfill, API rename, installed-record reconciliation, target-MySQL operation, policy change, or any further workstream._
+
+**Owner disposition:** _Accepted for SYNC-DOC-01 only at Friday, November 13, 2026 — 23:32:10 +08:00. This acceptance does not authorize a schema conversion, migration, database operation, installed-record reconciliation, matching-MySQL operation, deployment, or any next workstream._
+
+- Logged at: Friday, November 13, 2026 — 23:21:49 +08:00
+
+## 16. SYNC-MYSQL-01 controlled target-environment preflight
+
+**Recorded Friday, November 13, 2026 — 23:44:55 +08:00.** The owner approved **SYNC-MYSQL-01 only**. The required preflight verified branch `feature/backend-foundation` at `124a78637e36ee91fd0b3a126813b5a394305ab6`, the current 14-migration inventory, Laravel's strict MySQL defaults, and the isolated SQLite PHPUnit configuration. The repository has no backend `.env`, container/Compose definition, target MySQL version/collation record, MySQL client/server command, or owner-identified disposable database. PHP 8.4.27 can load PDO MySQL; that is a local driver capability, not target-server evidence.
+
+`Target-MySQL-Validation-Runbook.md` now provides the required fail-closed environment matrix, target identity checks, migration/schema comparison, synthetic upgrade/constraint/concurrency/failure tests, migration-lock check, and disposable backup/restore rehearsal. It explicitly prohibits selecting a substitute MySQL version/collation, connecting to a default database, or running migrations before the deployment/database owner supplies and authorizes the matrix and disposable boundary.
+
+**Resume Note:** _State: BLOCKED — ENVIRONMENT. No application code or migration changed; no database connection, migration, reference SQL execution, backup/restore, frontend change, provider action, scheduler/worker run, infrastructure change, commit, push, or deployment occurred. Supply the owner-approved target engine/version/collation/configuration matrix and a clean disposable instance before the documented validation can start._
+
+**Owner disposition:** _The owner accepted the completed SYNC-MYSQL-01 environment preflight at Friday, November 13, 2026 — 23:49:04 +08:00. This accepts the documented blocked disposition only; the target-MySQL migration, constraint, concurrency, lock, and backup/restore validation remains incomplete pending the supplied disposable target evidence. It does not authorize any next workstream, production deployment, or policy-gated schema change._
+
+- Logged at: Friday, November 13, 2026 — 23:44:55 +08:00
+
+## 17. SYNC-GDN-02 approved guardian-legacy retirement gate
+
+**Recorded Saturday, November 14, 2026 — 00:04:22 +08:00.** The owner approved **SYNC-GDN-02 first**. Static inspection confirms the existing migration added nullable `guardian_student.relationship` and copied the then-current `guardians.relationship` value into every link, while the current writer keeps the legacy field required as a compatibility mirror for a new guardian. The migration must not be rewritten.
+
+**Resume Note:** _State: BLOCKED — DATA AND ENVIRONMENT. The approved target requires a read-only installed-data preflight that reports only aggregate counts of null pivot values and conflicting legacy/pivot values, followed by owner review. No configured database exists in this workspace, and matching-MySQL validation remains unavailable. Therefore no nullable-column migration, backfill command, model/controller/API change, or test fixture change was made. Never derive a relationship, merge guardians, choose a primary guardian, or remove legacy values._
+
+**Owner disposition:** _Approval records SYNC-GDN-02 as the first next workstream only. It does not authorize database access, a migration, backfill, target-MySQL operation, guardian-lifecycle policy decision, frontend change, or any other workstream until the stated data and environment gates are satisfied._
+
+- Logged at: Saturday, November 14, 2026 — 00:04:22 +08:00
+
+## 18. SYNC-LRN-02 approved database-format hardening gate
+
+**Recorded Saturday, November 14, 2026 — 00:07:34 +08:00.** The owner approved **SYNC-LRN-02**. The current executable contract already has unique `students.lrn VARCHAR(12)` storage and request validation requiring exactly twelve digits. The requested database CHECK remains target-engine dependent and cannot be inferred from SQLite.
+
+**Resume Note:** _State: BLOCKED — DATA AND ENVIRONMENT. Before any migration, an owner-authorized read-only preflight must report aggregate counts of existing LRNs that are not exactly twelve characters or contain nondigits, without emitting their values. Any invalid record needs owner-supplied evidence-based reconciliation; no LRN may be generated, converted, or guessed. The exact MySQL/MariaDB version, collation, and CHECK behavior must then be proven in a matching disposable environment._
+
+**Owner disposition:** _Approval records SYNC-LRN-02 only. It does not authorize database access, a migration, installed-record change, target-MySQL operation, frontend change, or any other workstream until the stated data and environment gates are satisfied._
+
+- Logged at: Saturday, November 14, 2026 — 00:07:34 +08:00

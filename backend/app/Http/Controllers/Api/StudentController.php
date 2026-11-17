@@ -13,6 +13,7 @@ use App\Services\AuditLogger;
 use App\Support\CapabilityMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -93,9 +94,13 @@ class StudentController extends Controller
         $user = $request->user();
         $attributes = $this->validatedAttributes($request);
         $attributes['status'] = 'enrolled';
-        $student = Student::query()->create($attributes);
-        $this->syncGuardian($student, $request->validated());
-        $this->auditLogger->record($request, 'student.created', $student, null, $this->studentAuditData($student));
+        $student = DB::transaction(function () use ($attributes, $request): Student {
+            $student = Student::query()->create($attributes);
+            $this->syncGuardian($student, $request->validated());
+            $this->auditLogger->record($request, 'student.created', $student, null, $this->studentAuditData($student));
+
+            return $student;
+        });
 
         return response()->json(['data' => $this->studentData($student->load(['gradeLevel:id,name', 'section:id,name']), ! CapabilityMap::allows($user->role, 'students.financial.view'))], 201);
     }
@@ -126,11 +131,17 @@ class StudentController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $before = $this->studentAuditData($student);
-        $student->update($this->validatedAttributes($request));
-        $this->syncGuardian($student, $request->validated());
-        $student->refresh();
-        $this->auditLogger->record($request, 'student.updated', $student, $before, $this->studentAuditData($student));
+        $attributes = $this->validatedAttributes($request);
+        $student = DB::transaction(function () use ($attributes, $request, $student): Student {
+            $student = Student::query()->lockForUpdate()->findOrFail($student->id);
+            $before = $this->studentAuditData($student);
+            $student->update($attributes);
+            $this->syncGuardian($student, $request->validated());
+            $student->refresh();
+            $this->auditLogger->record($request, 'student.updated', $student, $before, $this->studentAuditData($student));
+
+            return $student;
+        });
 
         return response()->json(['data' => $this->studentData($student->load(['gradeLevel:id,name', 'section:id,name']), ! CapabilityMap::allows($user->role, 'students.financial.view'))]);
     }
@@ -165,19 +176,23 @@ class StudentController extends Controller
         }
 
         $guardian = $student->guardians()->first() ?? new Guardian;
+        $relationship = trim((string) $input['guardian_relationship']);
         $guardian->fill([
             'full_name' => trim((string) $input['guardian_name']),
             'email' => filled($input['guardian_email'] ?? null) ? trim((string) $input['guardian_email']) : null,
             'mobile' => filled($input['guardian_mobile'] ?? null) ? trim((string) $input['guardian_mobile']) : null,
             'email_status' => filled($input['guardian_email'] ?? null) ? 'unverified' : 'missing',
         ]);
+        if (! $guardian->exists) {
+            $guardian->relationship = $relationship;
+        }
         $guardian->save();
         $student->guardians()->newPivotStatement()
             ->where('student_id', $student->id)
             ->update(['is_primary' => false]);
         $student->guardians()->syncWithoutDetaching([$guardian->id => [
             'is_primary' => true,
-            'relationship' => trim((string) $input['guardian_relationship']),
+            'relationship' => $relationship,
         ]]);
     }
 

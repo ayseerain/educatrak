@@ -6,6 +6,8 @@
 
 > **Registrar student-context update — November 5, 2026.** On the shared Students list and profile only, Registrar receives the same read-only current-balance and guardian-contact context as Cashier. Registrar retains its existing student-management buttons; this narrowly scoped visibility does not grant billing-account, payment, report, or other finance-workspace access.
 
+> **Student identifier reconciliation — November 13, 2026.** Every active operational reference to “student number” means the approved twelve-digit text LRN, represented as `lrn`. This terminology reconciliation does not represent a schema migration, installed-record conversion, or change to numerical student IDs and their relationships. Dated decision records retain their original wording as historical context.
+
 > Source-derived view extracted from the canonical Project Specification. Do not edit independently of the master specification.
 
 ## 2. Scope
@@ -115,7 +117,7 @@ This is the implementation-level role list. `F` = full/write access, `R` = read-
 | `audit.view` (financial/change audit) | F | | | | F | |
 | `backup.manage` | | F | | | | |
 
-\* **Registrar (`REG`)** sees only: student name, student number, grade and section, and clearance status with a reason that **hides amounts**. No payment history, no guardian contact details, no account details — see Section 6.2, rule 5, and the reconciliation in Section 30, item 2.
+\* **Registrar (`REG`)** sees only: student name, LRN, grade and section, and clearance status with a reason that **hides amounts**. No payment history, no guardian contact details, no account details — see Section 6.2, rule 5, and the reconciliation in Section 30, item 2.
 
 **Auditor is strictly read-only:** no create/edit/approve buttons anywhere.
 **Separation of duties:** the person who records a payment cannot approve its void. The UI shows the approve button only to `ACC`.

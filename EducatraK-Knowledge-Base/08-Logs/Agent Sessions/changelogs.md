@@ -2840,3 +2840,192 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Documentation-only disposition update. Prior R08 evidence remains: focused Vitest passed (3 tests), full frontend Vitest passed (37 files / 253 tests), and `git diff --check` passed. No runtime operation ran.
 - **Commit/PR:** None.
 - **Follow-ups:** File parsing, column matching, roster comparison, import/apply behavior, API/persistence, matching-MySQL behavior, and all unrelated A06/B13 release blockers remain open; release is not approved.
+
+### Friday, November 13, 2026 — 14:28:51 +08:00 | Database architecture audit and documentation reconciliation
+
+- **Agent:** Codex
+- **Summary:** Reconciled the database architecture documentation with the executable migration chain, server contracts, read-only frontend adapters and approved decisions. The documents now distinguish current schema from approved-but-unimplemented targets and classify the material gaps without changing backend or frontend implementation.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md,Database-Review.md,Reference-Schema.sql}`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-13-database-architecture-audit.md`.
+- **Validation:** Verified branch `feature/backend-foundation`, HEAD `124a78637e36ee91fd0b3a126813b5a394305ab6`, clean pre-change worktree, matching root instruction hashes, migrations/models/routes/requests/actions/factories/test inventory and live frontend contract files. `git diff --check` passed before log creation. No test suite, migration, reference SQL, database connection, provider delivery, scheduler/worker, backup/restore, infrastructure operation, commit, push, or deployment ran. Prior PHPUnit evidence remains historical only.
+- **Commit/PR:** None.
+- **Follow-ups:** The current fee-controller behavior preserves existing account snapshots, while the newer November 5 fee-assignment decision says additions affect existing accounts. Finance-owner resolution and one separately approved preservation/rollback/matching-MySQL workstream are required before remediation. Current-school-year management, guardian lifecycle, retention, import application, target-MySQL and recovery gates remain open.
+
+### Friday, November 13, 2026 — 14:31:38 +08:00 | Database architecture audit validation addendum
+
+- **Agent:** Codex
+- **Summary:** Added the route-inventory evidence to the database-audit session record after the documentation reconciliation.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-13-database-architecture-audit.md`.
+- **Validation:** The installed PHP runtime ran `artisan route:list --path=api --except-vendor` successfully and reported 51 routes. The inventory confirmed no active clearance/exam-permit route and no live student-import route. It did not run migrations, query a database, or execute tests.
+- **Commit/PR:** None.
+- **Follow-ups:** All database-audit policy and environment gates remain unchanged.
+
+### Friday, November 13, 2026 — 14:32:14 +08:00 | Database ERD completeness addendum
+
+- **Agent:** Codex
+- **Summary:** Added the two standalone domain tables, `receipt_sequences` and `backup_records`, to the canonical Mermaid ERD so it visibly covers all 30 domain tables, including tables without foreign-key edges.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/ERD.md`.
+- **Validation:** Documentation-only correction; no database, migration, test, provider, or runtime operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** The ERD remains descriptive and unapproved; target-MySQL validation and all recorded policy gates remain open.
+
+### Friday, November 13, 2026 — 20:43:22 +08:00 | Approved fee-assignment synchronization
+
+- **Agent:** Codex
+- **Summary:** Implemented the explicitly approved November 5 fee-assignment synchronization rule. A newly added schedule fee now snapshots onto every existing billing account using each affected schedule, adds one unpaid installment, increments integer-centavo total due and balance, and returns the actual affected-account count. Revisions retain prior snapshots; an all-grade revision synchronizes only a schedule where the fee was absent.
+- **Files:** Added `backend/app/Actions/ApplyFeeItemToBillingAccountsAction.php` and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-fee-assignment-synchronization.md`; updated `backend/app/Http/Controllers/Api/FinanceSettingsController.php`, `backend/tests/Feature/FinanceSettingsMutationTest.php`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md,Database-Review.md}`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** PHP syntax checks passed. Pint passed. Focused `FinanceSettingsMutationTest` passed: 5 tests / 79 assertions. Full isolated Laravel PHPUnit passed: 164 tests / 1,177 assertions. No migration, reference SQL, development/shared/production database access, frontend change, provider delivery, scheduler/worker, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Matching-MySQL transaction/lock/rollback proof remains required in an explicitly approved disposable environment. Current-school-year management, guardian lifecycle, retention, import application, recovery and deployment gates remain open; release is not approved.
+
+### Friday, November 13, 2026 — 20:55:42 +08:00 | Backend synchronization impact analysis and approval queue
+
+- **Agent:** Codex
+- **Summary:** Re-verified the reconciled database documentation against current Laravel and read-only frontend contracts, then added a dependency-complete backend synchronization plan. It distinguishes P0 guardian writer and fee-status defects from the already implemented LRN API contract, test-fixture gap, policy-gated school-year/import/retention work, and matching-MySQL release gate.
+- **Files:** Added `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Backend-Synchronization-Plan.md` and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-backend-synchronization-impact-analysis.md`; updated `ERD.md`, `Data-Dictionary.md`, `Database-Review.md`, `Backend-API-Contract.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Re-inspected branch `feature/backend-foundation` at `124a78637e36ee91fd0b3a126813b5a394305ab6`, root/backend instruction hashes, migrations, models, requests, controllers, actions, commands, routes, feature tests, current issue/changelog evidence, decisions, and frontend live adapters. No test, migration, reference SQL, database, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment command ran in this documentation-only task. Final diff validation is recorded separately after this entry.
+- **Commit/PR:** None.
+- **Follow-ups:** Stop for explicit approval of one workstream only. Recommended first candidate: SYNC-GDN-01. Matching-MySQL, policy-gated, and operational-release blockers remain open.
+
+### Friday, November 13, 2026 — 20:57:14 +08:00 | Backend synchronization analysis validation addendum
+
+- **Agent:** Codex
+- **Summary:** Recorded the final scope validation for the backend synchronization planning task.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-13-backend-synchronization-impact-analysis.md`.
+- **Validation:** `git diff --check` passed; Git emitted only LF-to-CRLF working-copy warnings for pre-existing documentation files. `git diff --name-only -- frontend` returned no paths. No runtime test, migration, database, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await explicit approval of one planned workstream; no implementation begins from this documentation-only analysis.
+
+### Friday, November 13, 2026 — 21:40:11 +08:00 | SYNC-GDN-01 guardian write and audit atomicity
+
+- **Agent:** Codex
+- **Summary:** Implemented the owner's approved SYNC-GDN-01 correction only. Valid student guardian payloads now persist because a newly created guardian receives the validated relationship in the existing required legacy column as a compatibility mirror, while the link-specific pivot value remains authoritative. Student create/update, optional guardian/link persistence, and audit recording are atomic.
+- **Files:** Updated `backend/app/Http/Controllers/Api/StudentController.php`, `backend/tests/Feature/StudentAccessTest.php`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md,Database-Review.md,Reference-Schema.sql,Backend-Synchronization-Plan.md}`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`; added `EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-gdn-01.md`.
+- **Validation:** PHP syntax checks and Pint passed. Focused `StudentAccessTest` passed: 13 tests / 84 assertions. Full isolated Laravel PHPUnit passed: 167 tests / 1,192 assertions. No migration, reference SQL execution, development/shared/production database access, frontend source change, provider delivery, scheduler/worker, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of SYNC-GDN-01. Guardian ownership, primary-contact and multi-link lifecycle policy, optional legacy-column retirement, matching-MySQL proof, SYNC-FIN-01, SYNC-LRN-01, school-year, import, retention, recovery, and deployment work remain unapproved.
+
+### Friday, November 13, 2026 — 21:41:44 +08:00 | SYNC-GDN-01 documentation reconciliation addendum
+
+- **Agent:** Codex
+- **Summary:** Replaced the remaining pre-implementation SYNC-GDN-01 matrix text with the verified executable state and added the backend-loop timestamped acceptance ledger field.
+- **Files:** Updated `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Backend-Synchronization-Plan.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-gdn-01.md`.
+- **Validation:** Documentation-only addendum. The prior actual evidence remains: focused isolated `StudentAccessTest` passed 13 tests / 84 assertions; PHP syntax checks and Pint passed; full isolated Laravel PHPUnit passed 167 tests / 1,192 assertions. No migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of SYNC-GDN-01; no next workstream is authorized.
+
+### Friday, November 13, 2026 — 21:53:08 +08:00 | SYNC-FIN-01 immediate fee-status synchronization
+
+- **Agent:** Codex
+- **Summary:** Implemented the owner's approved SYNC-FIN-01 correction only. Fee synchronization now uses the existing status recalculation inside the finance transaction immediately after it creates the fee snapshot/installment and increments integer-centavo totals, so same-day installments and previously paid affected accounts become due_soon immediately.
+- **Files:** Updated backend/app/Actions/ApplyFeeItemToBillingAccountsAction.php, backend/tests/Feature/FinanceSettingsMutationTest.php, EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md,Database-Review.md,Reference-Schema.sql,Backend-Synchronization-Plan.md}, Backend-Loop-Engineering.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md; added EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-fin-01.md.
+- **Validation:** Focused FinanceSettingsMutationTest passed: 6 tests / 84 assertions. BillingStatusSynchronizationTest passed: 3 tests / 24 assertions. PHP syntax checks and Pint passed. Full isolated Laravel PHPUnit passed: 168 tests / 1,197 assertions. No migration, reference SQL execution, development/shared/production database access, frontend source change, provider delivery, scheduler/worker, backup/restore, infrastructure operation, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of SYNC-FIN-01. Matching-MySQL lock/transaction evidence, SYNC-LRN-01, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved.
+
+### Friday, November 13, 2026 — 21:59:04 +08:00 | SYNC-GDN-01 owner acceptance
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of SYNC-GDN-01. The verified guardian writer correction is accepted; no other workstream status changed.
+- **Files:** Updated Backend-Loop-Engineering.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Backend-Synchronization-Plan.md, EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-gdn-01.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md.
+- **Validation:** Documentation-only owner disposition. Prior actual evidence remains: StudentAccessTest passed 13 tests / 84 assertions; PHP syntax checks and Pint passed; full isolated Laravel PHPUnit passed 167 tests / 1,192 assertions. No migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** SYNC-FIN-01 remains awaiting its own acceptance. No next workstream is authorized.
+
+### Friday, November 13, 2026 — 22:00:38 +08:00 | SYNC-GDN-01 acceptance-matrix reconciliation
+
+- **Agent:** Codex
+- **Summary:** Reconciled the two remaining SYNC-GDN-01 planning-table labels to the owner's accepted disposition; SYNC-FIN-01 remains pending.
+- **Files:** Updated EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Backend-Synchronization-Plan.md and EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-gdn-01.md.
+- **Validation:** Documentation-only reconciliation. No migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** SYNC-FIN-01 remains awaiting its own acceptance. No next workstream is authorized.
+
+### Friday, November 13, 2026 — 22:38:29 +08:00 | SYNC-FIN-01 owner acceptance
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of SYNC-FIN-01 only and reconciled its approval checkpoints. No implementation behavior changed.
+- **Files:** Updated Backend-Loop-Engineering.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}, EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-fin-01.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md.
+- **Validation:** Documentation-only owner disposition. Prior actual evidence remains: FinanceSettingsMutationTest passed 6 tests / 84 assertions; BillingStatusSynchronizationTest passed 3 tests / 24 assertions; PHP syntax checks and Pint passed; full isolated Laravel PHPUnit passed 168 tests / 1,197 assertions. No migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** SYNC-LRN-01 and every other workstream remain unapproved. No next workstream is authorized.
+
+### Friday, November 13, 2026 — 22:54:48 +08:00 | SYNC-LRN-01 backend LRN test synchronization
+
+- **Agent:** Codex
+- **Summary:** Implemented the owner's approved SYNC-LRN-01 only. Normalized only fictional backend LRN test fixtures and added request-boundary coverage for invalid and leading-zero values; no executable schema or API field changed.
+- **Files:** Updated backend/tests/Feature/{BillingAccountReadTest,BillingStatusSynchronizationTest,CashierOperationsTest,DailyReportTest,DashboardTest,FollowUpTest,NotificationLogReadTest,OutstandingReportTest,StudentAccessTest}.php, EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}, Backend-Loop-Engineering.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md; added EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-lrn-01.md.
+- **Validation:** StudentAccessTest passed 15 tests / 99 assertions. The nine affected feature suites passed 67 tests / 628 assertions. Pint passed. Full isolated Laravel PHPUnit passed 170 tests / 1,212 assertions. Static scans found no backend student_no/studentNo use and no invalid literal LRN fixture. No migration, reference SQL execution, development/shared/production database access, frontend source change, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of SYNC-LRN-01. Database-level LRN hardening, installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved.
+
+### Friday, November 13, 2026 — 23:05:18 +08:00 | SYNC-LRN-01 owner acceptance
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of SYNC-LRN-01 only and reconciled its approval checkpoints. No implementation behavior changed.
+- **Files:** Updated Backend-Loop-Engineering.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}, EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-lrn-01.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md.
+- **Validation:** Documentation-only owner disposition. Prior actual evidence remains: StudentAccessTest passed 15 tests / 99 assertions; nine affected feature suites passed 67 tests / 628 assertions; Pint passed; full isolated Laravel PHPUnit passed 170 tests / 1,212 assertions. No migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Database-level LRN hardening, installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved. No next workstream is authorized.
+
+### Friday, November 13, 2026 — 23:44:55 +08:00 | SYNC-MYSQL-01 target-environment preflight
+
+- **Agent:** Codex
+- **Summary:** Began the owner's approved SYNC-MYSQL-01 only and recorded the workstream as environment-blocked. A fail-closed runbook now defines the exact target matrix, disposable-boundary checks, migration/schema, synthetic concurrency/failure, migration-lock, and backup/restore evidence required before execution.
+- **Files:** Added `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Target-MySQL-Validation-Runbook.md` and `EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-mysql-01.md`; updated `Backend-Synchronization-Plan.md`, `Database-Review.md`, `Backend-Loop-Engineering.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Re-verified `feature/backend-foundation` at `124a78637e36ee91fd0b3a126813b5a394305ab6`; read the 14-migration inventory, MySQL configuration defaults, PHPUnit SQLite configuration, and current ledgers. No backend `.env`, container definition, target version/collation matrix, MySQL client/server command, or owner-identified disposable database was available. A local read-only PHP check reported PHP 8.4.27 with PDO MySQL enabled; no credentials, connection, migration, reference SQL, database, backup/restore, infrastructure, provider, scheduler/worker, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** The deployment/database owner must provide the exact target environment matrix and authorize a clean disposable MySQL-or-MariaDB instance before any runbook execution. SYNC-MYSQL-01 remains awaiting target-environment evidence and owner acceptance; no next workstream is authorized.
+
+### Friday, November 13, 2026 — 23:46:15 +08:00 | SYNC-MYSQL-01 documentation validation addendum
+
+- **Agent:** Codex
+- **Summary:** Recorded final documentation and scope-diff validation for the environment-blocked SYNC-MYSQL-01 preflight.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-mysql-01.md` and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** `git diff --check` passed. `git diff --name-only -- frontend` returned no paths. Git emitted only LF-to-CRLF working-copy warnings for pre-existing documentation files. No MySQL or Laravel test ran because no approved target-compatible disposable environment is available; no database connection, migration, reference SQL, backup/restore, infrastructure, provider, scheduler/worker, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Obtain and authorize the target environment matrix and disposable database, then execute the runbook. SYNC-MYSQL-01 remains awaiting evidence and owner acceptance; no next workstream is authorized.
+
+### Friday, November 13, 2026 — 23:49:04 +08:00 | SYNC-MYSQL-01 preflight disposition acceptance
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of the completed SYNC-MYSQL-01 environment preflight and its documented blocked disposition. No target-MySQL validation was represented as passed.
+- **Files:** Updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}`, `EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-mysql-01.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/{Issues-and-TODOs.md,changelogs.md}`.
+- **Validation:** Documentation-only owner disposition. The recorded preflight evidence remains: no target engine/version/collation matrix or owner-identified disposable database exists in the repository/workstation; no database connection, migration, reference SQL, backup/restore, infrastructure, provider, scheduler/worker, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** B13 target-MySQL verification remains open. Supply the matrix and clean owner-authorized disposable target before executing the runbook; no next workstream is authorized.
+
+### Saturday, November 14, 2026 — 00:04:22 +08:00 | SYNC-GDN-02 approval and blocked-data preflight
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's approval of SYNC-GDN-02 as the first next workstream, then verified its mandatory data and target-environment gates. The existing additive migration has already copied legacy guardian-wide values into nullable pivot values, but no configured database is available to count null/conflicting installed records and no matching-MySQL target exists. No implementation started.
+- **Files:** Added `EducatraK-Knowledge-Base/08-Logs/2026-11-14-sync-gdn-02-preflight.md`; updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/{Issues-and-TODOs.md,changelogs.md}`.
+- **Validation:** Read current guardian migrations, models, writer, feature coverage, synchronization plan, review, loop, and tracker. No backend code, migration, backfill command, database connection, test, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Supply an owner-approved read-only aggregate preflight environment and matching-MySQL matrix; review the null/conflict counts before authorizing the forward-only migration or any deterministic backfill. Guardian ownership/lifecycle policy remains unresolved and no next workstream is authorized.
+
+### Saturday, November 14, 2026 — 00:07:34 +08:00 | SYNC-LRN-02 approval and blocked-format preflight
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's approval of SYNC-LRN-02 and verified its data and target-environment gates. The API/schema LRN contract already has twelve-character storage, uniqueness, and request validation, but target-engine CHECK enforcement and installed-record validity are unverified. No implementation started.
+- **Files:** Added `EducatraK-Knowledge-Base/08-Logs/2026-11-14-sync-lrn-02-preflight.md`; updated `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/{Issues-and-TODOs.md,changelogs.md}`.
+- **Validation:** Re-read the approved workstream matrix and current LRN contract evidence. No backend code, migration, data command, database connection, test, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Supply target engine/version/collation evidence and an owner-approved read-only/disposable environment; review aggregate invalid-format counts before authorizing any constraint migration or record reconciliation. No next workstream is authorized.
+
+### Friday, November 13, 2026 — 23:21:49 +08:00 | SYNC-DOC-01 canonical LRN terminology reconciliation
+
+- **Agent:** Codex
+- **Summary:** Implemented the owner's approved SYNC-DOC-01 only. Reconciled active canonical student-identifier terminology to LRN/lrn while explicitly retaining historical decision wording and making no schema or API claim.
+- **Files:** Updated EducatraK-Knowledge-Base/00-Project-Core/Project-Specification.md, EducatraK-Knowledge-Base/01-Requirements/Scope-and-Access-Control.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}, Backend-Loop-Engineering.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md; added EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-doc-01.md.
+- **Validation:** Documentation review confirmed active master/derived-view LRN terminology and no active canonical studentNo field. No application code, migration, reference SQL execution, development/shared/production database access, frontend source change, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Await owner acceptance of SYNC-DOC-01. Database-level LRN hardening, installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved.
+
+### Friday, November 13, 2026 — 23:32:10 +08:00 | SYNC-DOC-01 owner acceptance
+
+- **Agent:** Codex
+- **Summary:** Recorded the owner's acceptance of SYNC-DOC-01 only and reconciled its approval checkpoints. No implementation behavior changed.
+- **Files:** Updated Backend-Loop-Engineering.md, EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{Backend-Synchronization-Plan.md,Database-Review.md}, EducatraK-Knowledge-Base/08-Logs/2026-11-13-sync-doc-01.md, and EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md.
+- **Validation:** Documentation-only owner disposition. Prior actual evidence remains: active master/derived-view terminology review passed and no active canonical studentNo field remained. No application code, migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
+- **Commit/PR:** None.
+- **Follow-ups:** Database-level LRN hardening, installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved. No next workstream is authorized.

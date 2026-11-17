@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\ApplyFeeItemToBillingAccountsAction;
 use App\Actions\ReviseFeeItemAction;
 use App\Http\Controllers\Controller;
 use App\Models\FeeItem;
@@ -70,12 +71,13 @@ class FinanceSettingsController extends Controller
         return response()->json(['data' => $plans->values()]);
     }
 
-    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, AuditLogger $auditLogger): JsonResponse
+    public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, ApplyFeeItemToBillingAccountsAction $applyFeeItemToBillingAccounts, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
         $applyToAll = $request->boolean('apply_to_all');
-        $feeItem = DB::transaction(function () use ($request, $feeSchedule, $auditLogger, $validated, $applyToAll): FeeItem {
+        [$feeItem, $updatedAccountCount] = DB::transaction(function () use ($request, $feeSchedule, $applyFeeItemToBillingAccounts, $auditLogger, $validated, $applyToAll): array {
             $created = [];
+            $updatedAccountCount = 0;
 
             foreach ($this->targetSchedules($feeSchedule, $applyToAll) as $schedule) {
                 $this->ensureFeeNameAvailable($schedule, $validated['name']);
@@ -85,22 +87,24 @@ class FinanceSettingsController extends Controller
                     'version' => 1,
                 ]);
                 $created[] = $item;
+                $updatedAccountCount += count($applyFeeItemToBillingAccounts->handle($schedule, $item));
                 $auditLogger->record($request, 'finance.fee_item.created', $item, null, $this->feeItemData($item));
             }
 
-            return $created[0];
+            return [$created[0], $updatedAccountCount];
         });
 
-        return response()->json(['data' => [...$this->feeItemData($feeItem), 'updatedAccountCount' => 0]], 201);
+        return response()->json(['data' => [...$this->feeItemData($feeItem), 'updatedAccountCount' => $updatedAccountCount]], 201);
     }
 
-    public function reviseFeeItem(Request $request, FeeItem $feeItem, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
+    public function reviseFeeItem(Request $request, FeeItem $feeItem, ApplyFeeItemToBillingAccountsAction $applyFeeItemToBillingAccounts, ReviseFeeItemAction $reviseFeeItem, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $this->validatedFeeItem($request);
         $applyToAll = $request->boolean('apply_to_all');
-        $revisedFeeItem = DB::transaction(function () use ($request, $feeItem, $reviseFeeItem, $auditLogger, $validated, $applyToAll): FeeItem {
+        [$revisedFeeItem, $updatedAccountCount] = DB::transaction(function () use ($request, $feeItem, $applyFeeItemToBillingAccounts, $reviseFeeItem, $auditLogger, $validated, $applyToAll): array {
             $feeItem->loadMissing('schedule');
             $revisedForSelectedSchedule = null;
+            $updatedAccountCount = 0;
 
             foreach ($this->targetSchedules($feeItem->schedule, $applyToAll) as $schedule) {
                 $current = $schedule->id === $feeItem->fee_schedule_id
@@ -115,6 +119,7 @@ class FinanceSettingsController extends Controller
                 if ($current === null) {
                     $this->ensureFeeNameAvailable($schedule, $validated['name']);
                     $revised = $schedule->items()->create([...$validated, 'active' => true, 'version' => 1]);
+                    $updatedAccountCount += count($applyFeeItemToBillingAccounts->handle($schedule, $revised));
                     $before = null;
                 } else {
                     $this->ensureFeeNameAvailable($schedule, $validated['name'], $current->id);
@@ -128,10 +133,10 @@ class FinanceSettingsController extends Controller
                 }
             }
 
-            return $revisedForSelectedSchedule ?? $feeItem;
+            return [$revisedForSelectedSchedule ?? $feeItem, $updatedAccountCount];
         });
 
-        return response()->json(['data' => $this->feeItemData($revisedFeeItem)]);
+        return response()->json(['data' => [...$this->feeItemData($revisedFeeItem), 'updatedAccountCount' => $updatedAccountCount]]);
     }
 
     public function deactivateFeeItem(Request $request, FeeItem $feeItem, AuditLogger $auditLogger): JsonResponse

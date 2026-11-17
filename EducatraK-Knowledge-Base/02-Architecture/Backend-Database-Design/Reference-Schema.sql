@@ -1,6 +1,6 @@
 -- EducaTrak existing migration schema: descriptive draft only.
 -- Source: backend/database/migrations/*.php on feature/backend-foundation
--- at b4ee0e3f535e07810d87a3106268e3965029f7a4.
+-- at 124a78637e36ee91fd0b3a126813b5a394305ab6.
 -- NOT approved future design; NOT validated against target MySQL; DO NOT RUN.
 -- Ordered CREATE TABLE statements reflect migration definitions. Laravel migrations
 -- remain executable source of truth. This file contains no fixture or school data.
@@ -123,18 +123,19 @@ CREATE TABLE `guardians` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `students` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `student_no` VARCHAR(255) NOT NULL,
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `lrn` VARCHAR(12) NOT NULL,
   `full_name` VARCHAR(255) NOT NULL, `grade_level_id` BIGINT UNSIGNED NULL,
   `section_id` BIGINT UNSIGNED NULL, `status` VARCHAR(255) NOT NULL DEFAULT 'enrolled',
   `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL, PRIMARY KEY (`id`),
-  UNIQUE KEY `students_student_no_unique` (`student_no`), KEY `students_status_index` (`status`),
+  UNIQUE KEY `students_lrn_unique` (`lrn`), KEY `students_status_index` (`status`),
   CONSTRAINT `students_grade_level_id_foreign` FOREIGN KEY (`grade_level_id`) REFERENCES `grade_levels` (`id`) ON DELETE SET NULL,
   CONSTRAINT `students_section_id_foreign` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `guardian_student` (
   `guardian_id` BIGINT UNSIGNED NOT NULL, `student_id` BIGINT UNSIGNED NOT NULL,
-  `is_primary` TINYINT(1) NOT NULL DEFAULT 0, `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL,
+  `is_primary` TINYINT(1) NOT NULL DEFAULT 0, `relationship` VARCHAR(100) NULL,
+  `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL,
   PRIMARY KEY (`guardian_id`,`student_id`),
   CONSTRAINT `guardian_student_guardian_id_foreign` FOREIGN KEY (`guardian_id`) REFERENCES `guardians` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `guardian_student_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT
@@ -373,4 +374,13 @@ CREATE TABLE `receipt_sequences` (
 
 -- The migration seeds receipt_sequences.id=1 with MAX(receipts.sequence).
 -- This baseline omits that data-dependent INSERT. No application records included.
--- No CHECK constraints are added beyond migration declarations.
+-- guardian_student.relationship was added by the final migration and backfilled
+-- from guardians.relationship. Its down() method intentionally retains the
+-- column to avoid destroying values that later diverge per student link.
+-- Application compatibility: StudentController writes a new guardian's validated
+-- link relationship to both the required legacy column and the pivot. Later
+-- link updates do not overwrite the guardian-wide legacy value.
+-- Application behavior: fee synchronization uses the existing installment/account
+-- status fields and recalculates them in the enclosing finance transaction.
+-- No CHECK constraints are added beyond migration declarations. Do not run this
+-- descriptive file against any database; migrations remain the source of truth.

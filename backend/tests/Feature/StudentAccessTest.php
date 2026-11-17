@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Student;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class StudentAccessTest extends TestCase
@@ -16,11 +19,11 @@ class StudentAccessTest extends TestCase
     public function test_registrar_can_list_the_student_directory_with_financial_context(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        Student::factory()->create(['lrn' => 'SAMPLE-1000', 'full_name' => 'Rory Sample Student']);
+        Student::factory()->create(['lrn' => '000000001000', 'full_name' => 'Rory Sample Student']);
 
         $this->actingAs($registrar)->getJson('/api/students')
             ->assertOk()
-            ->assertJsonPath('data.0.lrn', 'SAMPLE-1000')
+            ->assertJsonPath('data.0.lrn', '000000001000')
             ->assertJsonPath('data.0.balanceCents', 0)
             ->assertJsonMissingPath('data.0.guardians');
     }
@@ -40,14 +43,14 @@ class StudentAccessTest extends TestCase
         $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 4', 'sort_order' => 4, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $sectionId = DB::table('sections')->insertGetId(['grade_level_id' => $gradeId, 'name' => 'Orchid', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $student = Student::factory()->create([
-            'lrn' => 'SAMPLE-4001',
+            'lrn' => '000000004001',
             'full_name' => 'Jordan Sample Student',
             'grade_level_id' => $gradeId,
             'section_id' => $sectionId,
             'status' => 'enrolled',
         ]);
 
-        $this->actingAs($registrar)->getJson('/api/students?query=SAMPLE-4001&grade=Grade%204&section=Orchid')
+        $this->actingAs($registrar)->getJson('/api/students?query=000000004001&grade=Grade%204&section=Orchid')
             ->assertOk()
             ->assertJsonPath('data.0.id', (string) $student->id)
             ->assertJsonPath('data.0.fullName', 'Jordan Sample Student')
@@ -80,7 +83,7 @@ class StudentAccessTest extends TestCase
     {
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $student = Student::factory()->create([
-            'lrn' => 'SAMPLE-2001',
+            'lrn' => '000000002001',
             'full_name' => 'Taylor Sample Student',
             'status' => 'enrolled',
         ]);
@@ -100,16 +103,16 @@ class StudentAccessTest extends TestCase
             ]);
         }
 
-        $this->actingAs($accounting)->getJson('/api/students?query=SAMPLE-2001')
+        $this->actingAs($accounting)->getJson('/api/students?query=000000002001')
             ->assertOk()
-            ->assertJsonPath('data.0.lrn', 'SAMPLE-2001')
+            ->assertJsonPath('data.0.lrn', '000000002001')
             ->assertJsonPath('data.0.balanceCents', 185_000);
     }
 
     public function test_student_list_financial_field_boundary_is_enforced_for_all_six_roles(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
-        $student = Student::factory()->create(['lrn' => 'SAMPLE-2002', 'full_name' => 'Morgan Sample Student']);
+        $student = Student::factory()->create(['lrn' => '000000002002', 'full_name' => 'Morgan Sample Student']);
         $schoolYearId = DB::table('school_years')->insertGetId([
             'label' => 'SY current',
             'is_current' => true,
@@ -132,22 +135,22 @@ class StudentAccessTest extends TestCase
 
         foreach ([UserRole::Cashier, UserRole::Accounting, UserRole::Registrar] as $role) {
             $user = User::factory()->create(['role' => $role]);
-            $response = $this->actingAs($user)->getJson('/api/students?query=SAMPLE-2002')->assertOk();
+            $response = $this->actingAs($user)->getJson('/api/students?query=000000002002')->assertOk();
             $response->assertJsonPath('data.0.balanceCents', 12_345);
             $response->assertJsonMissingPath('data.0.guardians');
         }
         $auditor = User::factory()->create(['role' => UserRole::Auditor]);
-        $this->actingAs($auditor)->getJson('/api/students?query=SAMPLE-2002')->assertForbidden();
+        $this->actingAs($auditor)->getJson('/api/students?query=000000002002')->assertForbidden();
 
-        $this->actingAs($admin)->getJson('/api/students?query=SAMPLE-2002')->assertForbidden();
+        $this->actingAs($admin)->getJson('/api/students?query=000000002002')->assertForbidden();
         $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin]);
-        $this->actingAs($superAdmin)->getJson('/api/students?query=SAMPLE-2002')->assertForbidden();
+        $this->actingAs($superAdmin)->getJson('/api/students?query=000000002002')->assertForbidden();
         $this->actingAs($superAdmin)->getJson('/api/students/'.$student->id)->assertForbidden();
     }
 
     public function test_approved_roles_receive_guardian_contact_details_on_student_profile(): void
     {
-        $student = Student::factory()->create(['lrn' => 'SAMPLE-3001', 'full_name' => 'Morgan Sample Student']);
+        $student = Student::factory()->create(['lrn' => '000000003001', 'full_name' => 'Morgan Sample Student']);
         $guardianId = DB::table('guardians')->insertGetId([
             'full_name' => 'Jamie Sample Guardian',
             'relationship' => 'Parent',
@@ -186,7 +189,7 @@ class StudentAccessTest extends TestCase
     public function test_registrar_can_open_student_profiles_with_guardian_and_financial_context(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        $student = Student::factory()->create(['lrn' => 'SAMPLE-3002', 'full_name' => 'Avery Sample Student']);
+        $student = Student::factory()->create(['lrn' => '000000003002', 'full_name' => 'Avery Sample Student']);
         $guardianId = DB::table('guardians')->insertGetId([
             'full_name' => 'Alex Sample Guardian',
             'relationship' => 'Parent',
@@ -243,6 +246,123 @@ class StudentAccessTest extends TestCase
             ->assertJsonPath('data.guardians.0.relationship', 'Aunt');
     }
 
+    public function test_registrar_creates_a_guardian_with_compatibility_and_link_relationships(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        [$gradeId, $sectionId] = $this->createStudentPlacement();
+        $payload = [
+            'lrn' => '000000006101',
+            'full_name' => 'Guardian Link Sample Student',
+            'grade_level_id' => $gradeId,
+            'section_id' => $sectionId,
+            'status' => 'enrolled',
+            'guardian_name' => 'Guardian Link Sample',
+            'guardian_relationship' => 'Parent',
+            'guardian_email' => 'guardian.link@example.test',
+            'guardian_mobile' => '09170000001',
+        ];
+
+        $studentId = $this->actingAs($registrar)->postJson('/api/students', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.lrn', '000000006101')
+            ->json('data.id');
+
+        $guardianId = DB::table('guardians')->where('email', 'guardian.link@example.test')->value('id');
+        $this->assertNotNull($guardianId);
+        $this->assertDatabaseHas('guardians', [
+            'id' => $guardianId,
+            'full_name' => 'Guardian Link Sample',
+            'relationship' => 'Parent',
+        ]);
+        $this->assertDatabaseHas('guardian_student', [
+            'guardian_id' => $guardianId,
+            'student_id' => $studentId,
+            'is_primary' => true,
+            'relationship' => 'Parent',
+        ]);
+        $this->assertDatabaseHas('audit_entries', [
+            'action' => 'student.created',
+            'entity_id' => (string) $studentId,
+            'user_id' => $registrar->id,
+        ]);
+    }
+
+    public function test_student_creation_is_rolled_back_when_audit_recording_fails(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        [$gradeId, $sectionId] = $this->createStudentPlacement();
+        $this->mock(AuditLogger::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit storage failed.'));
+        });
+
+        $this->actingAs($registrar)->postJson('/api/students', [
+            'lrn' => '000000006102',
+            'full_name' => 'Rollback Guardian Sample Student',
+            'grade_level_id' => $gradeId,
+            'section_id' => $sectionId,
+            'status' => 'enrolled',
+            'guardian_name' => 'Rollback Guardian Sample',
+            'guardian_relationship' => 'Parent',
+            'guardian_email' => 'rollback.guardian@example.test',
+            'guardian_mobile' => '09170000002',
+        ])->assertInternalServerError();
+
+        $this->assertDatabaseMissing('students', ['lrn' => '000000006102']);
+        $this->assertDatabaseCount('guardians', 0);
+        $this->assertDatabaseCount('guardian_student', 0);
+        $this->assertDatabaseMissing('audit_entries', ['action' => 'student.created']);
+    }
+
+    public function test_student_update_changes_the_link_relationship_without_overwriting_legacy_relationship(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        [$gradeId, $sectionId] = $this->createStudentPlacement();
+        $student = Student::factory()->create([
+            'lrn' => '000000006103',
+            'full_name' => 'Existing Guardian Sample Student',
+            'grade_level_id' => $gradeId,
+            'section_id' => $sectionId,
+            'status' => 'enrolled',
+        ]);
+        $guardianId = DB::table('guardians')->insertGetId([
+            'full_name' => 'Existing Guardian Sample',
+            'relationship' => 'Parent',
+            'email' => 'existing.guardian@example.test',
+            'email_status' => 'unverified',
+            'mobile' => '09170000003',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('guardian_student')->insert([
+            'guardian_id' => $guardianId,
+            'student_id' => $student->id,
+            'is_primary' => true,
+            'relationship' => 'Parent',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($registrar)->patchJson('/api/students/'.$student->id, [
+            'lrn' => '000000006103',
+            'full_name' => 'Existing Guardian Sample Student',
+            'grade_level_id' => $gradeId,
+            'section_id' => $sectionId,
+            'status' => 'enrolled',
+            'guardian_name' => 'Existing Guardian Sample',
+            'guardian_relationship' => 'Aunt',
+            'guardian_email' => 'existing.guardian@example.test',
+            'guardian_mobile' => '09170000003',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('guardians', ['id' => $guardianId, 'relationship' => 'Parent']);
+        $this->assertDatabaseHas('guardian_student', [
+            'guardian_id' => $guardianId,
+            'student_id' => $student->id,
+            'relationship' => 'Aunt',
+            'is_primary' => true,
+        ]);
+    }
+
     public function test_registrar_can_create_and_update_a_student_while_cashier_cannot(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
@@ -268,5 +388,66 @@ class StudentAccessTest extends TestCase
 
         $this->assertDatabaseHas('audit_entries', ['action' => 'student.created', 'entity_id' => (string) $created, 'user_id' => $registrar->id]);
         $this->assertDatabaseHas('audit_entries', ['action' => 'student.updated', 'entity_id' => (string) $created, 'user_id' => $registrar->id]);
+    }
+
+    public function test_registrar_returns_422_for_invalid_lrn_formats(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        [$gradeId, $sectionId] = $this->createStudentPlacement();
+
+        foreach (['ABCDEFGHIJKL', '00000000001', '0000000000000'] as $lrn) {
+            $this->actingAs($registrar)->postJson('/api/students', [
+                'lrn' => $lrn,
+                'full_name' => 'Invalid LRN Sample Student',
+                'grade_level_id' => $gradeId,
+                'section_id' => $sectionId,
+                'status' => 'enrolled',
+            ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('lrn')
+                ->assertJsonPath('errors.lrn.0', 'The lrn field format is invalid.');
+        }
+    }
+
+    public function test_registrar_accepts_a_twelve_digit_lrn_with_leading_zeroes(): void
+    {
+        $registrar = User::factory()->create(['role' => UserRole::Registrar]);
+        [$gradeId, $sectionId] = $this->createStudentPlacement();
+
+        $this->actingAs($registrar)->postJson('/api/students', [
+            'lrn' => '000000006104',
+            'full_name' => 'Leading Zero Sample Student',
+            'grade_level_id' => $gradeId,
+            'section_id' => $sectionId,
+            'status' => 'enrolled',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.lrn', '000000006104');
+
+        $this->assertDatabaseHas('students', [
+            'lrn' => '000000006104',
+            'full_name' => 'Leading Zero Sample Student',
+        ]);
+    }
+
+    /** @return array{int, int} */
+    private function createStudentPlacement(): array
+    {
+        $gradeId = DB::table('grade_levels')->insertGetId([
+            'name' => 'Grade 6',
+            'sort_order' => 6,
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $sectionId = DB::table('sections')->insertGetId([
+            'grade_level_id' => $gradeId,
+            'name' => 'Cedar',
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return [$gradeId, $sectionId];
     }
 }

@@ -38,7 +38,7 @@ class CashierOperationsTest extends TestCase
             $this->actingAs($reader)->getJson('/api/payments')
                 ->assertOk()
                 ->assertJsonPath('meta.total', 1)
-                ->assertJsonPath('data.0.lrn', 'S-TEST-1001')
+                ->assertJsonPath('data.0.lrn', '000000001001')
                 ->assertJsonPath('data.0.student_grade', 'Test Grade')
                 ->assertJsonPath('data.0.student_section', 'Test Section');
             $this->actingAs($reader)->getJson("/api/payments/{$payment->id}")->assertOk();
@@ -73,7 +73,7 @@ class CashierOperationsTest extends TestCase
 
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $this->actingAs($accounting)->getJson('/api/payments?'.http_build_query([
-            'query' => 'S-TEST-1001',
+            'query' => '000000001001',
             'status' => 'valid',
             'date_from' => today('Asia/Manila')->subDays(2)->toDateString(),
             'date_to' => today('Asia/Manila')->toDateString(),
@@ -106,7 +106,7 @@ class CashierOperationsTest extends TestCase
         [$cashier, $account] = $this->createBillingContext();
         $student = $account->student;
 
-        $this->actingAs($cashier)->getJson('/api/payment-students?query=S-TEST-1001')
+        $this->actingAs($cashier)->getJson('/api/payment-students?query=000000001001')
             ->assertOk()
             ->assertJsonPath('data.0.id', (string) $student->id)
             ->assertJsonPath('data.0.balance_cents', 20_000)
@@ -121,7 +121,7 @@ class CashierOperationsTest extends TestCase
 
         foreach ([UserRole::SuperAdmin, UserRole::Accounting, UserRole::Admin, UserRole::Auditor, UserRole::Registrar] as $role) {
             $user = User::factory()->create(['role' => $role]);
-            $this->actingAs($user)->getJson('/api/payment-students?query=S-TEST-1001')->assertForbidden();
+            $this->actingAs($user)->getJson('/api/payment-students?query=000000001001')->assertForbidden();
             $this->actingAs($user)->getJson("/api/payment-students/{$student->id}/context")->assertForbidden();
         }
     }
@@ -616,7 +616,7 @@ class CashierOperationsTest extends TestCase
         $gradeLevel = GradeLevel::query()->forceCreate(['name' => 'Test Grade', 'sort_order' => 99]);
         $section = Section::query()->forceCreate(['grade_level_id' => $gradeLevel->id, 'name' => 'Test Section']);
         $student = Student::query()->create([
-            'lrn' => 'S-TEST-1001',
+            'lrn' => '000000001001',
             'full_name' => 'Talia Test Student (sample)',
             'grade_level_id' => $gradeLevel->id,
             'section_id' => $section->id,

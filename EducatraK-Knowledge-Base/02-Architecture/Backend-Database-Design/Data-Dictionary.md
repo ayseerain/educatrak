@@ -1,111 +1,89 @@
-# Existing-schema data dictionary — descriptive draft
+# EducaTrak executable-schema data dictionary
 
-**Status:** Derived from 14 Laravel migration files on `feature/backend-foundation` at `b4ee0e3f535e07810d87a3106268e3965029f7a4`. Descriptive only; migrations are authoritative. No production data was inspected. SQL types below use Laravel/MySQL mappings; check exact target-engine behavior before deployment.
+**Status:** derived from the 12 EducaTrak domain migrations and Laravel support migrations at `feature/backend-foundation` / `124a78637e36ee91fd0b3a126813b5a394305ab6`. Ordered migrations are authoritative. No development, shared, or production database was inspected or migrated. This is not an approved target-schema specification.
 
-## Conventions
+## Conventions and boundaries
 
-- `id()` and `foreignId()` use unsigned big integer keys on MySQL. `timestamps()` adds nullable `created_at` and `updated_at`.
-- Laravel `string()` defaults to `varchar(255)` unless a length is given; `boolean()` maps to `tinyint(1)`; JSON columns use MySQL `JSON`.
-- `_cents` amounts are integer centavos. Unsigned types cannot represent negative values; adjustments and close-out variance use signed `bigint`.
-- “Restrict”, “null”, and “cascade” describe the declared foreign-key delete action. They do not mean all rows are immutable.
+- `id()` and `foreignId()` map to unsigned bigint keys on MySQL; `timestamps()` adds nullable `created_at`/`updated_at`.
+- `string()` is `varchar(255)` unless a length is shown. `boolean()` is `tinyint(1)`. JSON uses MySQL `JSON`.
+- `*_cents` is an integer-centavo amount. All monetary columns are integer types: unsigned for charges/payments and signed only for `adjustments.amount_cents` and `close_outs.variance_cents`.
+- Delete actions below are the declared FK actions, not an append-only or retention guarantee.
+- `?` means nullable. Models/controllers can impose validations beyond the DDL.
 
-## Framework and identity tables
+## Framework and identity
 
-| Table | Columns (type; `?` means nullable) | Keys and purpose |
+| Table | Columns | Keys and current purpose |
 |---|---|---|
-| `users` | `id` bigint unsigned; `username` varchar(255); `full_name` varchar(255); `email` varchar(255)?; `role` varchar(255); `active` boolean; `must_change_password` boolean; `last_login_at` timestamp?; `password` varchar(255); `remember_token` varchar(100)?; `is_protected` boolean; `archived_at` timestamp?; `archived_by` bigint unsigned?; `anonymize_at` timestamp?; timestamps | PK id; unique username and nullable email; role/active/archive/anonymize indexes; self-FK archived_by -> users.id (`SET NULL`). Auth identity, role, protected bootstrap, and separate 30-day archive/anonymization lifecycle. |
-| `password_reset_tokens` | `username` varchar(255); `token` varchar(255); `created_at` timestamp? | PK username. Laravel password-reset storage. |
-| `sessions` | `id` varchar(255); `user_id` bigint unsigned?; `ip_address` varchar(45)?; `user_agent` text?; `payload` longtext; `last_activity` integer | PK id; indexes user_id and last_activity. Laravel database-session storage. |
-| `cache` | `key` varchar(255); `value` mediumtext; `expiration` bigint | PK key; expiration index. |
-| `cache_locks` | `key` varchar(255); `owner` varchar(255); `expiration` bigint | PK key; expiration index. |
-| `jobs` | `id` bigint unsigned; `queue` varchar(255); `payload` longtext; `attempts` unsigned smallint; `reserved_at` unsigned integer?; `available_at` unsigned integer; `created_at` unsigned integer | PK id; queue index. |
-| `job_batches` | `id` varchar(255); `name` varchar(255); `total_jobs`, `pending_jobs`, `failed_jobs` integer; `failed_job_ids` longtext; `options` mediumtext?; `cancelled_at` integer?; `created_at` integer; `finished_at` integer? | PK id. |
-| `failed_jobs` | `id` bigint unsigned; `uuid`, `connection`, `queue` varchar(255); `payload`, `exception` longtext; `failed_at` timestamp | PK id; unique uuid; composite connection/queue/failed_at index. |
+| `users` | `id`; username, full_name, role, password; email?; active, is_protected, must_change_password; last_login_at?, archived_at?, archived_by?, anonymize_at?; remember token; timestamps | Unique username/email; role/active/archive/anonymize indexes; `archived_by -> users` set null. Six role strings are enforced in PHP enum/capabilities, not by DB enum/check. |
+| `password_reset_tokens` | username; token; created_at? | Username PK. Framework support. |
+| `sessions` | id; user_id?; IP; user agent?; payload; last_activity | Session ID PK; user/activity indexes. No FK was declared for `user_id`. |
+| `cache`, `cache_locks` | key/value/expiration; key/owner/expiration | Framework cache/lock stores. |
+| `jobs`, `job_batches`, `failed_jobs` | Standard Laravel queue fields | Queue execution records; no business-domain relationship. |
 
-## Academic, people, configuration
+## Academic, people, and configuration
 
-| Table | Columns (type; `?` means nullable) | Keys, relationships, and purpose |
+| Table | Columns | Keys, relationships, and purpose |
 |---|---|---|
-| `school_years` | `id`; `label` varchar(255); `is_current` boolean; `starts_on`, `ends_on` date; timestamps | Unique label; index is_current (not unique). Current-year cardinality policy remains open. |
-| `terms` | `id`; `school_year_id` bigint unsigned; `name` varchar(255); `sequence` unsigned smallint; `starts_on`, `ends_on` date?; timestamps | FK school_years restrict; unique school_year_id + sequence. |
-| `exam_periods` | `id`; `term_id` bigint unsigned; `name` varchar(255); `starts_on` date; `ends_on` date?; timestamps | FK terms restrict. Historical reference for retired clearance flows. |
-| `grade_levels` | `id`; `name` varchar(255); `sort_order` unsigned smallint; `active` boolean; timestamps | Unique name and sort_order. |
-| `sections` | `id`; `grade_level_id` bigint unsigned; `name` varchar(255); `active` boolean; timestamps | FK grade_levels restrict; unique grade_level_id + name. |
-| `guardians` | `id`; `full_name`, `relationship`, `email`, `email_status` varchar(255); `mobile` varchar(32)?; timestamps | Index email and email_status. Guardian-data owner and lifecycle remain undecided. |
-| `students` | `id`; `student_no`, `full_name`, `status` varchar(255); `grade_level_id`, `section_id` bigint unsigned?; timestamps | Unique student_no; index status; optional grade/section FKs set null. No LRN column. |
-| `guardian_student` | `guardian_id`, `student_id` bigint unsigned; `is_primary` boolean; timestamps | Composite PK; both FKs restrict. No uniqueness constraint limits primary guardian count. |
-| `fee_schedules` | `id`; `school_year_id`, `grade_level_id` bigint unsigned; `name` varchar(255); `active` boolean; timestamps | Both FKs restrict; unique school_year_id + grade_level_id + name. |
-| `fee_items` | `id`; `fee_schedule_id` bigint unsigned; `name`, `category` varchar(255); `amount_cents` unsigned bigint; `required`, `active` boolean; `sort_order`, `version` unsigned smallint/integer; `previous_version_id` bigint unsigned?; timestamps | Schedule FK restrict; self-FK previous_version_id restrict. No unique fee name constraint in SQL; application validation enforces within-schedule behavior. |
-| `payment_plans` | `id`; `name`, `down_payment_type` varchar(255); `down_payment_value` unsigned integer; `active` boolean; timestamps | Unique name. |
-| `payment_plan_installments` | `id`; `payment_plan_id` bigint unsigned; `label` varchar(255); `sequence`, `due_day_offset`, `percent_of_remaining_basis_points` unsigned smallint; timestamps | Plan FK restrict; unique plan + sequence. |
-| `system_settings` | `id`; `key` varchar(255); `value` JSON; `updated_by` bigint unsigned?; timestamps | Unique key; optional users FK set null. JSON value supports non-numeric settings; `billing.due_soon_days` is an existing setting key. |
+| `school_years` | id; label; is_current; starts_on; ends_on; timestamps | Unique label; non-unique index on `is_current`. The dashboard currently rejects zero or multiple current rows, but DDL permits both. |
+| `terms` | id; school_year_id; name; sequence; starts_on?; ends_on?; timestamps | School year restrict; unique `(school_year_id, sequence)`. |
+| `exam_periods` | id; term_id; name; starts_on; ends_on?; timestamps | Term restrict. Retained only for historical clearance entities. |
+| `grade_levels` | id; name; sort_order; active; timestamps | Name and sort order unique. |
+| `sections` | id; grade_level_id; name; active; timestamps | Grade restrict; unique `(grade_level_id, name)`. |
+| `students` | id; `lrn varchar(12)`; full_name; grade_level_id?; section_id?; status; timestamps | Unique LRN; status index; grade/section set null. Live validation requires exactly twelve digits, preserves LRN on PATCH, and checks section belongs to grade. |
+| `guardians` | id; full_name; legacy relationship; email?; email_status; mobile?; timestamps | Email/email-status indexes. Guardian-wide relationship remains retained legacy data. Student creation writes its validated link relationship here only as a required-column compatibility mirror; later link updates preserve it. Ownership/lifecycle is not resolved. |
+| `guardian_student` | guardian_id; student_id; is_primary; relationship? varchar(100); timestamps | Composite PK; both FKs restrict. Pivot relationship is the approved link-specific field and was additively backfilled; DDL does not enforce one primary guardian per student. |
+| `fee_schedules` | id; school_year_id; grade_level_id; name; active; timestamps | Year/grade restrict; unique `(school_year_id, grade_level_id, name)`. |
+| `fee_items` | id; fee_schedule_id; name; category; amount_cents; required; sort_order; active; version; previous_version_id?; timestamps | Schedule/self FK restrict. Version chain supports revision; case-insensitive name uniqueness is application validation, not a DB key. |
+| `payment_plans` | id; name; down_payment_type; down_payment_value; active; timestamps | Unique name. |
+| `payment_plan_installments` | id; payment_plan_id; label; sequence; due_day_offset; percent_of_remaining_basis_points; timestamps | Plan restrict; unique `(payment_plan_id, sequence)`. |
+| `system_settings` | id; key; JSON value; updated_by?; timestamps | Unique key; updater set null. `billing.due_soon_days` is a known current key; no settings-management data contract exists for many required M9 items. |
 
-## Billing and financial evidence
+## Billing, payment, and receipt evidence
 
-| Table | Columns (type; `?` means nullable) | Keys, relationships, and purpose |
+| Table | Columns | Keys, relationships, and purpose |
 |---|---|---|
-| `billing_accounts` | `id`; `student_id`, `school_year_id` bigint unsigned; `fee_schedule_id`, `payment_plan_id` bigint unsigned?; `status` varchar(255); `total_due_cents`, `total_paid_cents`, `balance_cents` unsigned bigint; `created_by` bigint unsigned; timestamps | Unique student + school_year; required student/year/creator FKs restrict; optional schedule/plan FKs set null. |
-| `billing_account_items` | `id`; `billing_account_id` bigint unsigned; `fee_item_id` bigint unsigned?; `name`, `category` varchar(255); `amount_cents` unsigned bigint; timestamps | Account FK restrict; source fee item FK set null. Captures item snapshot fields for account history. |
-| `adjustments` | `id`; `billing_account_id` bigint unsigned; `type`, `reason` varchar(255); `amount_cents` signed bigint; `created_by` bigint unsigned; `effective_at` timestamp; timestamps | Account/creator FKs restrict; index account + effective_at. Approval threshold remains undecided. |
-| `installments` | `id`; `billing_account_id` bigint unsigned; `label`, `status` varchar(255); `sequence` unsigned smallint; `due_date` date; `amount_cents`, `paid_cents` unsigned bigint; timestamps | Account FK restrict; unique account + sequence; index status. |
-| `payments` | `id`; `billing_account_id`, `student_id`, `recorded_by` bigint unsigned; `amount_cents`, `balance_after_cents` unsigned bigint?; `method`, `status` varchar(255); `paid_on` date; `backdate_reason`, `duplicate_override_reason`, `notes` varchar(255)?; `recorded_at` timestamp; `reprint_count` unsigned integer; timestamps | Account/student/recorder FKs restrict; indexes student+amount+recorded_at and account+status. Status and recorded evidence support correction workflow. |
-| `receipts` | `id`; `payment_id` bigint unsigned; `sequence` unsigned integer; `receipt_no` varchar(255); `receipt_year` unsigned smallint; `issued_at`, `first_printed_at` timestamp?; timestamps | Unique payment_id, sequence, receipt_no. One receipt per payment. |
-| `receipt_sequences` | `id` unsigned tinyint; `last_sequence` unsigned bigint; timestamps | PK id; migration seeds id=1 from existing receipt maximum. No singleton DB constraint. |
-| `payment_allocations` | `id`; `payment_id`, `installment_id` bigint unsigned; `amount_cents` unsigned bigint; timestamps | Both FKs restrict; unique payment + installment. |
-| `void_requests` | `id`; `payment_id`, `requested_by` bigint unsigned; `reason`, `status` varchar(255); `requested_at` timestamp; `decided_by` bigint unsigned?; `decided_at` timestamp?; `decision_note` varchar(255)?; timestamps | Unique payment_id; request FK restrict, decider FK set null. |
-| `payment_idempotency_keys` | `id`; `user_id` bigint unsigned; `key` varchar(100); `request_hash` char(64); `response_body` JSON?; `response_status` unsigned smallint?; `completed_at` timestamp?; timestamps | User FK cascade; unique user + key. |
+| `billing_accounts` | id; student_id; school_year_id; fee_schedule_id?; payment_plan_id?; status; total_due_cents; total_paid_cents; balance_cents; created_by; timestamps | Unique `(student_id, school_year_id)`; student/year/creator restrict, source schedule/plan set null. Account provisioning route is absent. |
+| `billing_account_items` | id; billing_account_id; fee_item_id?; name; category; amount_cents; timestamps | Account restrict, fee item set null. Stores charge snapshots independent of later source-item changes. |
+| `installments` | id; billing_account_id; label; sequence; due_date; amount_cents; paid_cents; status; timestamps | Account restrict; unique `(billing_account_id, sequence)`; status index. |
+| `adjustments` | id; billing_account_id; type; signed amount_cents; reason; created_by; effective_at; timestamps | Account/creator restrict; account/effective index. Action prevents zero and invalid discount/scholarship signs, but no DB check enforces business semantics. |
+| `payments` | id; billing_account_id; student_id; amount_cents; balance_after_cents?; method; paid_on; backdate_reason?; duplicate_override_reason?; notes?; status; recorded_by; recorded_at; reprint_count; timestamps | Account/student/recorder restrict; student/amount/recorded and account/status indexes. Payment's student ID is retained alongside its account relation. |
+| `receipts` | id; payment_id; sequence; receipt_no; receipt_year; issued_at; first_printed_at?; timestamps | One receipt per payment; sequence and number globally unique. |
+| `receipt_sequences` | id unsigned tinyint; last_sequence; timestamps | PK-only singleton convention; migration seeds id `1` from prior max receipt sequence. No DB check restricts alternate IDs. |
+| `payment_allocations` | id; payment_id; installment_id; amount_cents; timestamps | Both restrict; unique `(payment_id, installment_id)`. |
+| `void_requests` | id; payment_id; reason; requested_by; requested_at; status; decided_by?; decided_at?; decision_note?; timestamps | One per payment; requester restrict; decider set null. Application enforces status/role/separation rules. |
+| `payment_idempotency_keys` | id; user_id; key varchar(100); request_hash char(64); response_body? JSON; response_status?; completed_at?; timestamps | User cascade; unique `(user_id, key)`. Supports replay of a completed payment response. |
 
-## Operations, audit, and import evidence
+## Operations, audit, notifications, and historical entities
 
-| Table | Columns (type; `?` means nullable) | Keys, relationships, and purpose |
+| Table | Columns | Keys, relationships, and purpose |
 |---|---|---|
-| `clearance_rules` | `id`; `kind` varchar(255); `exam_period_id` bigint unsigned?; `rule` JSON; `active` boolean; timestamps | Optional exam_period FK set null. Historical; active workflow retired. |
-| `clearance_records` | `id`; `student_id`, `school_year_id` bigint unsigned; `exam_period_id` bigint unsigned?; `kind`, `reason` varchar(255); `cleared` boolean; `calculated_at` timestamp; timestamps | Student/year restrict; optional exam FK set null; composite unique includes nullable exam_period_id. Historical; not an active workflow. |
-| `notification_logs` | `id`; `student_id` bigint unsigned; `payment_id`, `installment_id` bigint unsigned?; `guardian_email` varchar(255)?; `guardian_mobile` varchar(32)?; `kind`, `status`, `failure_reason`, `provider_message_sid` varchar(255)?; `attempts` unsigned integer; `delivery_key` varchar(64)?; `channel` varchar(255); `load_fee_cents` unsigned integer?; `sent_at` timestamp?; timestamps | Student restrict; payment/installment set null; indexes status, student+created_at, channel, provider SID; unique nullable delivery_key. |
-| `close_outs` | `id`; `business_date` date; `cashier_id` bigint unsigned; `system_totals` JSON; `counted_cash_cents` unsigned bigint; `variance_cents` signed bigint; `variance_reason` varchar(255)?; `submitted_at` timestamp; `signed_off_by` bigint unsigned?; `signed_off_at` timestamp?; timestamps | Cashier FK restrict; signer set null; unique business_date + cashier. |
-| `audit_entries` | `id`; `user_id` bigint unsigned?; `action`, `entity_type` varchar(255); `entity_id` varchar(255); `before`, `after` JSON?; `ip_address` varchar(45)?; `user_agent` varchar(1024)?; `occurred_at` timestamp; timestamps | User FK set null; index occurred_at and entity_type+entity_id. Polymorphic target has no FK; no DB append-only constraint. Snapshot minimization and retention unresolved. |
-| `backup_records` | `id`; `result` varchar(255); `size_bytes` unsigned bigint?; `error` varchar(255)?; `completed_at` timestamp; timestamps | Index result. Records backup outcome metadata, not backup payload. |
-| `import_batches` | `id`; `created_by` bigint unsigned; `filename`, `status` varchar(255); `summary`, `rows` JSON; `committed_at` timestamp?; timestamps | Creator FK restrict. Existence does not mean the LRN masterlist import pipeline is implemented. |
+| `notification_logs` | id; student_id; payment_id?; installment_id?; guardian email/mobile snapshots?; channel; load_fee_cents?; kind; status; failure_reason?; attempts; delivery_key?; provider_message_sid?; sent_at?; timestamps | Student restrict; payment/installment set null; indexes status, student/date, channel, provider SID; nullable unique delivery key. Records, not proof of, provider delivery. |
+| `close_outs` | id; business_date; cashier_id; JSON system_totals; counted_cash_cents; signed variance_cents; variance_reason?; submitted_at; signed_off_by?; signed_off_at?; timestamps | Cashier restrict; signer set null; unique `(business_date, cashier_id)`. System-total JSON is an immutable-at-creation snapshot by application behavior, not DB trigger. |
+| `audit_entries` | id; user_id?; action; entity_type; string entity_id; before?/after? JSON; IP?; user agent?; occurred_at; timestamps | User set null; occurred and entity identity indexes. Entity reference is polymorphic and has no FK; DDL does not prevent mutation/deletion. |
+| `backup_records` | id; result; size_bytes?; error?; completed_at; timestamps | Result index. Metadata only; no actual backup payload, execution, or restore proof. |
+| `import_batches` | id; created_by; filename; status; JSON summary; JSON rows; committed_at?; timestamps | Creator restrict. Generic persisted shape only; no live import route writes it. |
+| `clearance_rules` | id; kind; exam_period_id?; JSON rule; active; timestamps | Exam period set null. Historical-only. |
+| `clearance_records` | id; student_id; school_year_id; exam_period_id?; kind; cleared; reason; calculated_at; timestamps | Student/year restrict, exam period set null; unique student/year/kind/exam-period. Historical-only; nullable unique behavior is engine-dependent and unverified on target MySQL. |
 
-## Traceability and unresolved design questions
+## Frontend-to-database contract trace
 
-The frontend MockDB has 17 array collections: `staffUsers`, `schoolYears`, `feeSchedules`, `paymentPlans`, `students`, `guardians`, `studentGuardianLinks`, `billingAccounts`, `installments`, `payments`, `paymentAllocations`, `voidRequests`, `notificationAttempts`, `followUpActions`, `closeouts`, `backupRuns`, `auditLog`. These are not one-to-one with SQL tables. The separate `config` and `frontendOnly` objects are not persisted domain collections.
+| Domain | Submitted and validated | Persisted / serialized | Reconciliation |
+|---|---|---|---|
+| Student | Live frontend sends LRN, name, grade, section, status, and one guardian payload. Laravel requires 12-digit LRN, grade/section IDs and compatible section; guardian fields are optional but name/relationship are paired. | `students`; when guardian name+relationship are present, one transaction creates/reuses the first link, clears other primary flags, writes the pivot relationship, writes the required legacy compatibility mirror for a newly created guardian only, and records the audit event. Lists/profile expose LRN and academic data; balance/guardian data require capabilities. | SYNC-GDN-01 is implemented and verified in isolated SQLite. General multi-guardian creation/edit, guardian ownership, and primary-contact policy are still unresolved and are not exposed by this form/action. |
+| Account/fee | Account list/detail and adjustments are live. Accounting fee form sends item fields plus `apply_to_all`. | On fee addition, the controller snapshots the new item onto each existing account using the schedule, creates one unpaid installment, increments total due/balance, and immediately recalculates installment/account status; `updatedAccountCount` reports the affected account count. Existing account-item snapshots remain unchanged on revision. An all-grade revision synchronizes a schedule only when that fee was absent there. | Account creation is absent. Isolated SQLite feature tests cover fee synchronization, including the same-day due-soon status transition; target-MySQL transaction/lock behavior remains unverified. |
+| Payment/void | Payment has header idempotency key, account, positive centavos, date/reasons/notes/channels. Void has reason then decision/note. | Transactional payment, allocation, receipt, idempotency, audit and notification records; void corrects status/balances rather than deleting history. | Isolated SQLite tests exist; matching-MySQL contention evidence does not. |
+| Notification | Follow-up selects eligible installments/channels; failed attempts may be retried. | Notification rows retain recipient snapshots, delivery key/SID, status, attempts and optional SMS fee. | Queue/provider operation and delivery confirmation remain environment/policy limited. |
+| Staff | User creation/update, archive/restore/reset are separate API actions. | User lifecycle fields plus account/security audit records. | Privileged assignment/recovery policy is still partial. |
+| Import | Live UI has no parser/apply and backend exposes no route. | `import_batches` is unused by live controller flow. | Approved future target difference; not a schema defect by itself. |
 
-| MockDB collection | Current persisted mapping/evidence | Boundary or gap |
-|---|---|---|
-| `staffUsers` | `users` | Mock role IDs differ from DB numeric IDs; password fields are not MockDB records. |
-| `schoolYears` | `school_years` | No unique-current constraint; dashboard no-current-year behavior open. |
-| `feeSchedules` | `fee_schedules`, `fee_items` | Nested mock items are normalized; fee-add synchronization is application behavior and approved. |
-| `paymentPlans` | `payment_plans`, `payment_plan_installments` | Mock counts/due-interval shape differs from persisted installment terms. |
-| `students` | `students`, `grade_levels`, `sections` | Current unique field is Student Number; LRN change is future separately authorized. |
-| `guardians` | `guardians` | Ownership/lifecycle policy open. |
-| `studentGuardianLinks` | `guardian_student` | Composite guardian/student key; `is_primary` is persisted separately. Mock relationship is per link, while schema stores `relationship` on the guardian row; confirm per-link semantics before reconciling. |
-| `billingAccounts` | `billing_accounts`, `billing_account_items`, `adjustments` | Account items keep value snapshots; account row stores derived totals. |
-| `installments` | `installments` | Amount/paid/status rows; unique account sequence. |
-| `payments` | `payments`, `receipts`, `receipt_sequences` | Payment references current account/student, immutable retention policy not fully signed off. |
-| `paymentAllocations` | `payment_allocations` | Unique per payment/installment; FK restricts deletion. |
-| `voidRequests` | `void_requests` | Separate request/decision actor fields preserve separation. |
-| `notificationAttempts` | `notification_logs` | Provider/channel/delivery metadata; retention open. |
-| `followUpActions` | No exact table; some communication attempts map to `notification_logs` | Task/reminder state semantics differ; no new table proposed. |
-| `closeouts` | `close_outs` | System totals snapshot; unique cashier/business date. |
-| `backupRuns` | `backup_records` | Metadata only; actual files/backups belong to deployment storage. |
-| `auditLog` | `audit_entries` | Entity key stored as type+string ID; retention and snapshot allowlist unresolved. |
+## Current schema versus approved target
 
-### Important non-1:1 tables
+| Classification | Finding |
+|---|---|
+| Current executable schema | This dictionary describes migration declarations through `2026_11_12_023223_add_relationship_to_guardian_student_table.php`. |
+| Approved target difference | Clearance/exam-permit entities are retained historical-only. Student import, account provisioning, and broad M9 management APIs are intentionally not implemented. |
+| Implemented approved behavior | The November 5 fee-add decision is implemented by `ApplyFeeItemToBillingAccountsAction`: it records a new account-item snapshot, unpaid installment, total/balance increment, and immediate status recalculation for each eligible existing account. Revisions retain prior snapshots; all-grade revisions synchronize only previously missing schedule fees. |
+| Unresolved policy | Guardian ownership/lifecycle; retention/purge; exact school-year management; adjustment threshold; privileged-account recovery/assignment; deployment MySQL/version/topology. |
+| Verification limit | This audit did not run migrations, reference SQL, target MySQL, production data, backups/restores, schedulers/workers, or external delivery. |
 
-`terms`, `exam_periods`, `grade_levels`, `sections`, `payment_plan_installments`, `system_settings`, `clearance_rules`, `clearance_records`, and `import_batches` have no direct collection equivalent or are partly represented in nested/config structures. The final two import/clearance tables do not establish active front-end flows. Framework queue, cache, session, and password-reset tables have no MockDB collection.
-
-### Approval checklist
-
-- [ ] Student Number/LRN semantics and migration/backfill plan; future LRN change is separately approved but not designed.
-- [ ] Guardian ownership, primary-contact rule, and linked-record lifecycle.
-- [ ] Exactly-one-current-year requirement and dashboard behavior when none exists.
-- [ ] Fee synchronization, item snapshots, adjustment approval threshold.
-- [ ] Payment allocation, receipt numbering, idempotency, void separation and correction evidence.
-- [ ] Audit snapshot allowlist, append-only enforcement, privacy, retention and disposal.
-- [ ] Financial, notification, security, backup and other record retention; reconcile current Privacy Policy text.
-- [ ] Global no-hard-delete client sign-off, separate from 30-day staff archive lifecycle.
-- [ ] Target MySQL version/collation, backup/restore owner and deployment topology.
-- [ ] Index/performance review with safe synthetic volume; current indexes remain as implemented.
-
-This is a descriptive, unapproved reference. Do not treat it as authorization for migrations or production changes.
+Do not use this dictionary as authorization to change a database.

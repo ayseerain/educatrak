@@ -15,7 +15,7 @@ class NotificationLogReadTest extends TestCase
 
     public function test_approved_roles_can_filter_persisted_notification_attempts_and_registrar_cannot(): void
     {
-        $student = Student::query()->create(['lrn' => 'SAMPLE-8001', 'full_name' => 'Casey Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => '000000008001', 'full_name' => 'Casey Sample Student', 'status' => 'enrolled']);
         $log = NotificationLog::query()->create([
             'student_id' => $student->id,
             'guardian_email' => 'guardian@example.test',
@@ -27,7 +27,7 @@ class NotificationLogReadTest extends TestCase
 
         foreach ([UserRole::Cashier, UserRole::Accounting] as $role) {
             $reader = User::factory()->create(['role' => $role]);
-            $this->actingAs($reader)->getJson('/api/notifications?status=queued&student=SAMPLE-8001')
+            $this->actingAs($reader)->getJson('/api/notifications?status=queued&student=000000008001')
                 ->assertOk()
                 ->assertJsonPath('data.0.id', (string) $log->id)
                 ->assertJsonPath('data.0.studentName', 'Casey Sample Student')

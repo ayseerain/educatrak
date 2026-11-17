@@ -39,7 +39,7 @@ class DailyReportTest extends TestCase
             $cashier = User::factory()->create(['role' => UserRole::Cashier]);
             $otherCashier = User::factory()->create(['role' => UserRole::Cashier]);
             $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-            $student = Student::query()->create(['lrn' => 'SAMPLE-9101', 'full_name' => 'Riley Sample Student', 'status' => 'enrolled']);
+            $student = Student::query()->create(['lrn' => '000000009101', 'full_name' => 'Riley Sample Student', 'status' => 'enrolled']);
             $account = BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $year->id, 'status' => 'current', 'total_due_cents' => 20_000, 'total_paid_cents' => 15_000, 'balance_cents' => 5_000, 'created_by' => $cashier->id]);
             BillingAccountItem::query()->forceCreate(['billing_account_id' => $account->id, 'name' => 'Sample tuition', 'category' => 'tuition', 'amount_cents' => 20_000]);
             Installment::query()->create(['billing_account_id' => $account->id, 'label' => 'First installment', 'sequence' => 1, 'due_date' => '2026-10-01', 'amount_cents' => 20_000, 'paid_cents' => 15_000, 'status' => 'current']);
@@ -70,7 +70,7 @@ class DailyReportTest extends TestCase
             $this->actingAs($auditor)->getJson("/api/reports/students/{$student->id}/statement")->assertForbidden();
             $this->actingAs($accounting)->getJson("/api/reports/students/{$student->id}/statement")
                 ->assertOk()
-                ->assertJsonPath('data.lrn', 'SAMPLE-9101')
+                ->assertJsonPath('data.lrn', '000000009101')
                 ->assertJsonPath('data.balanceCents', 5_000)
                 ->assertJsonPath('data.items.0.name', 'Sample tuition')
                 ->assertJsonPath('data.installments.0.label', 'First installment')
@@ -85,17 +85,17 @@ class DailyReportTest extends TestCase
     public function test_accounting_student_statement_returns_only_the_current_account_contract(): void
     {
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
-        $student = Student::query()->create(['lrn' => 'SAMPLE-9201', 'full_name' => 'Statement Sample Student', 'status' => 'enrolled']);
+        $student = Student::query()->create(['lrn' => '000000009201', 'full_name' => 'Statement Sample Student', 'status' => 'enrolled']);
         $currentYear = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
         $priorYear = SchoolYear::query()->forceCreate(['label' => 'SY 2025-2026', 'starts_on' => '2025-06-01', 'ends_on' => '2026-05-31', 'is_current' => false]);
         BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $priorYear->id, 'status' => 'paid', 'total_due_cents' => 1_000, 'total_paid_cents' => 1_000, 'balance_cents' => 0, 'created_by' => $accounting->id]);
         BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $currentYear->id, 'status' => 'current', 'total_due_cents' => 20_000, 'total_paid_cents' => 5_000, 'balance_cents' => 15_000, 'created_by' => $accounting->id]);
-        $withoutCurrentAccount = Student::query()->create(['lrn' => 'SAMPLE-9202', 'full_name' => 'No Current Account (sample)', 'status' => 'enrolled']);
+        $withoutCurrentAccount = Student::query()->create(['lrn' => '000000009202', 'full_name' => 'No Current Account (sample)', 'status' => 'enrolled']);
 
         $this->actingAs($accounting)->getJson("/api/reports/students/{$student->id}/statement")
             ->assertOk()
             ->assertJsonPath('data.studentId', (string) $student->id)
-            ->assertJsonPath('data.lrn', 'SAMPLE-9201')
+            ->assertJsonPath('data.lrn', '000000009201')
             ->assertJsonPath('data.schoolYear', 'SY 2026-2027')
             ->assertJsonPath('data.totalDueCents', 20_000)
             ->assertJsonPath('data.totalPaidCents', 5_000)
