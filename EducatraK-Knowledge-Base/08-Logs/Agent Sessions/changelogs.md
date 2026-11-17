@@ -2296,12 +2296,14 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Summary:** Completed the test-data Student Number to LRN transition. The Laravel schema, model, validation, API responses, searches, billing/payment/report/follow-up/notification paths, live frontend adapters and labels now use `lrn`. LRN is unique, stored as text, and validated as exactly 12 digits. Existing student IDs and all financial relationships remain unchanged.
 - **Files:** Updated live frontend and backend identifier consumers, backend feature fixtures, `backend/database/migrations/2026_10_09_062757_create_educatrak_reference_and_people_tables.php`, `backend/database/seeders/DemoDataSeeder.php`, and active requirement/database-design documentation.
 - **Validation:** `php artisan test` passed: 145 tests, 1,028 assertions. `npm.cmd run build` passed. `git diff --check` passed.
+
 - **Commit/PR:** None.
 - **Follow-ups:** Full LRN masking is intentionally not implemented. The dedicated controlled LRN-correction workflow remains a future approval item; ordinary student updates must retain the saved LRN and the edit form renders it read-only.
 
 - **Timestamp:** Thursday, November 12, 2026 — 01:11:18 Asia/Manila
 - **Update:** Enforced immutable LRN values on ordinary student updates and made the live edit-form LRN input read-only. A future dedicated correction workflow is required to change an LRN.
 - **Validation:** `php artisan test` passed: 145 tests, 1,028 assertions. `npm.cmd run build` passed. `git diff --check` passed.
+
 ### Thursday, November 12, 2026 — 02:14:59 Asia/Manila | B00 API contract reconciliation
 
 - **Agent:** Codex
@@ -3029,3 +3031,21 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Documentation-only owner disposition. Prior actual evidence remains: active master/derived-view terminology review passed and no active canonical studentNo field remained. No application code, migration, database, frontend source, provider, scheduler/worker, backup/restore, infrastructure, commit, push, or deployment operation ran.
 - **Commit/PR:** None.
 - **Follow-ups:** Database-level LRN hardening, installed-record reconciliation, matching-MySQL proof, school-year, guardian lifecycle, import, retention, recovery, and deployment work remain unapproved. No next workstream is authorized.
+
+### Sunday, November 15, 2026 — 22:28:44 +08:00 | Create reconciled diagram-reference library
+
+- **Agent:** Codex
+- **Summary:** Created the source-grounded Figure 1–9 diagram-reference library, including three coordinated physical ERD domain views, reproducible Mermaid/PlantUML sources where appropriate, a cross-diagram consistency matrix, and generation guidance. Reconciled current decisions against older materials: active clearance/exam-permit flows are retired; LRN is the unique text identifier; deployment is a single locally hosted office computer; the Registrar masterlist feature is file-selection-only; ledger import is not authorized/implemented; backup history is not an executable backup mechanism; and notification provider delivery remains unverified/fail-closed. Recorded a confirmed live payment-screen LRN-label presentation drift without changing application code.
+- **Files:** Added `EducatraK-Knowledge-Base/02-Architecture/Diagrams/README.md`, figures `01` through `09`, and `Diagrams/ERD/01` through `03`; updated `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` and this changelog.
+- **Validation:** Inspected current `main` at `4640adb`, current route/capability/action/controller sources, all project-domain migrations plus follow-on schema migrations, approved November role/masterlist decisions, architecture/requirements/testing/design references, logs, and audit references. Confirmed required 13 Markdown files exist; local Markdown links resolve; headings and code fences were scanned; `git diff --check` passed. Mermaid source underwent static structure review only; no repository Mermaid CLI/tool was available. No runtime database, browser, external provider, printer, or backup execution was run.
+- **Commit/PR:** Not created.
+- **Follow-ups:** Resolve the LRN presentation drift; decide/implement ledger import authority; verify executable backup/restore; confirm deployment ownership/connectivity and provider operation; assign Scrum accountabilities if desired.
+
+### Tuesday, November 17, 2026 — 21:39:54 +08:00 | Resolve main → feature/backend-foundation merge conflict
+
+- **Agent:** Claude Code
+- **Summary:** Resolved the merge conflict in this changelog while merging `main` (`4c29fda`) into `feature/backend-foundation`. Both sides had appended distinct entries; kept all of them, branch entries (November 12–13) first, then the `main` diagram-library entry (November 15), and removed conflict markers. No entry content was altered.
+- **Files:** `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** Conflict-marker scan returned no matches in the changelog and in `Issues-and-TODOs.md` (auto-merged). `git diff --cached --check` passed.
+- **Commit/PR:** Merge commit not yet created.
+- **Follow-ups:** None.
