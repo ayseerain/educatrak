@@ -273,7 +273,7 @@ export function LoginPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="min-h-control px-1 text-xs font-semibold text-brand-green-dark hover:bg-transparent hover:text-brand-green hover:underline hover:decoration-brand-green-dark/40 underline-offset-2"
+              className="min-h-control px-1 text-xs font-semibold text-brand-green-dark hover:bg-transparent hover:text-brand-green"
               aria-haspopup="dialog"
               aria-expanded={isPrivacyPolicyOpen}
               onClick={() => setIsPrivacyPolicyOpen(true)}

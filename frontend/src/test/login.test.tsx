@@ -96,8 +96,8 @@ describe("LoginPage", () => {
     expect(screen.getByText("Edukados")).toBeInTheDocument();
     const privacyPolicy = screen.getByRole("button", { name: "Privacy Policy" });
     expect(privacyPolicy).toHaveAttribute("aria-expanded", "false");
-    expect(privacyPolicy).not.toHaveClass("underline");
-    expect(privacyPolicy).toHaveClass("hover:bg-transparent", "hover:underline");
+    expect(privacyPolicy).not.toHaveClass("underline", "hover:underline");
+    expect(privacyPolicy).toHaveClass("hover:bg-transparent", "hover:text-brand-green");
   });
 
   it("opens the complete read-only privacy policy and closes it with Escape", async () => {
