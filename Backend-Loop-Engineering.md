@@ -697,3 +697,24 @@ Documentation review confirmed the master and derived view are consistent, activ
 - Resume Note: W1c is complete and validated. Next: W2 `POST /api/billing-accounts`.
 - Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W2 once this gate passes.
 - Logged at: Friday, November 20, 2026 — 01:01:37 +08:00
+
+## 22. W2 billing-account creation
+
+### Resume — W2: POST /api/billing-accounts (M3.1)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1c commit `d00c22d`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M3.1 (load the grade-level fee schedule, remove optional fees only, choose a plan, preview, create, duplicate guard). W2 instruction (2026-11-19). Owner answers recorded in this session: current school year only; exactly one active fee schedule per (year, grade).
+- Existing code and already-verified behavior: account reads, adjustments, snapshots, payments, allocations, receipts and status recalculation already existed and are reused unchanged.
+- Exact accepted scope / files: new `backend/app/Actions/CreateBillingAccountAction.php` and `backend/tests/Feature/BillingAccountCreationTest.php`; edited `BillingAccountController.php` (store, preview) and `routes/api.php` (2 routes).
+- Data/API/role invariants:
+  - POST `/api/billing-accounts` and POST `/api/billing-accounts/preview` need `accounts.manage` (Cashier).
+  - One account per student and school year: a pre-check plus the existing unique constraint, mapped to 422.
+  - Required fees cannot be removed. Fee items and the plan are snapshotted. Amounts are integer centavos and the schedule sum equals the total.
+  - Status is recalculated. Create and audit run in one transaction.
+- Commands and tests actually run: focused 8 tests / 92 assertions passed; full suite 198 tests / 1,651 assertions passed. `route:list` shows 72 API routes. Pint passed on changed files. `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none. Pint normalized pre-existing formatting drift inside the touched `BillingAccountController.php`; behavior is unchanged.
+- Open decisions/risks: matching-MySQL concurrency evidence is unverified. Zero-amount row omission awaits owner veto (from W1b).
+- Resume Note: W2 is complete and validated. Next: W3 documentation reconciliation.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W3 once this gate passes.
+- Logged at: Friday, November 20, 2026 — 01:04:19 +08:00

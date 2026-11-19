@@ -3076,3 +3076,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused run passed 4 tests / 45 assertions. Full suite passed 190 tests / 1,551 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
 - **Commit/PR:** Local commit on `feature/backend-completion`; no push.
 - **Follow-ups:** W2 account creation next. Test email and payment methods remain blocked.
+
+### Friday, November 20, 2026 — 01:04:19 +08:00 | Backend W2 billing-account creation
+
+- **Agent:** Claude Code
+- **Summary:** Added Cashier `POST /api/billing-accounts` and `POST /api/billing-accounts/preview` (M3.1). The server loads the single active grade-level fee schedule, allows only optional fee removals, snapshots fees and plan, computes integer-centavo installments, enforces one account per student and current school year, recalculates status, and audits in one transaction.
+- **Files:** Added `backend/app/Actions/CreateBillingAccountAction.php`, `backend/tests/Feature/BillingAccountCreationTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w2.md`. Updated `backend/app/Http/Controllers/Api/BillingAccountController.php`, `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 8 tests / 92 assertions. Full suite passed 198 tests / 1,651 assertions on isolated SQLite `:memory:`. 72 API routes. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W3 documentation. Matching-MySQL concurrency evidence.

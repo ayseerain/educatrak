@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\ApplyBillingAdjustmentAction;
+use App\Actions\CreateBillingAccountAction;
 use App\Http\Controllers\Controller;
 use App\Models\Adjustment;
 use App\Models\AuditEntry;
@@ -11,6 +12,7 @@ use App\Models\Payment;
 use App\Models\SchoolYear;
 use App\Models\User;
 use App\Services\AuditLogger;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,10 +47,10 @@ class BillingAccountController extends Controller
                 $search = trim($filters['query']);
                 $query->whereHas('student', fn ($students) => $students->where('full_name', 'like', "%{$search}%")->orWhere('lrn', 'like', "%{$search}%"));
             })
-            ->when(isset($filters['school_year']) && trim($filters['school_year']) !== '', fn ($query) => $query->whereHas('schoolYear', fn ($years) => $years->where('label', 'like', '%' . trim($filters['school_year']) . '%')))
+            ->when(isset($filters['school_year']) && trim($filters['school_year']) !== '', fn ($query) => $query->whereHas('schoolYear', fn ($years) => $years->where('label', 'like', '%'.trim($filters['school_year']).'%')))
             ->when(isset($filters['school_year_id']), fn ($query) => $query->where('school_year_id', $filters['school_year_id']))
             ->when(($filters['school_year_scope'] ?? null) === 'current' && $currentSchoolYearId !== null, fn ($query) => $query->where('school_year_id', $currentSchoolYearId))
-            ->when(isset($filters['grade']) && trim($filters['grade']) !== '', fn ($query) => $query->whereHas('student.gradeLevel', fn ($grades) => $grades->where('name', 'like', '%' . trim($filters['grade']) . '%')))
+            ->when(isset($filters['grade']) && trim($filters['grade']) !== '', fn ($query) => $query->whereHas('student.gradeLevel', fn ($grades) => $grades->where('name', 'like', '%'.trim($filters['grade']).'%')))
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(isset($filters['minimum_balance_cents']), fn ($query) => $query->where('balance_cents', '>=', $minimumBalance))
             ->when($maximumBalance !== null, fn ($query) => $query->where('balance_cents', '<=', (int) $maximumBalance))
@@ -57,11 +59,82 @@ class BillingAccountController extends Controller
 
         return response()->json([
             'data' => $accounts->getCollection()->map(fn (BillingAccount $account): array => $this->accountSummary($account)),
-                'meta' => [
-                    'currentPage' => $accounts->currentPage(), 'lastPage' => $accounts->lastPage(), 'total' => $accounts->total(), 'perPage' => $accounts->perPage(),
-                    'currentSchoolYearId' => $currentSchoolYearId === null ? null : (string) $currentSchoolYearId,
-                    'schoolYears' => SchoolYear::query()->orderByDesc('is_current')->orderByDesc('starts_on')->get(['id', 'label'])->map(fn (SchoolYear $year): array => ['id' => (string) $year->id, 'label' => $year->label])->all(),
-                ],
+            'meta' => [
+                'currentPage' => $accounts->currentPage(), 'lastPage' => $accounts->lastPage(), 'total' => $accounts->total(), 'perPage' => $accounts->perPage(),
+                'currentSchoolYearId' => $currentSchoolYearId === null ? null : (string) $currentSchoolYearId,
+                'schoolYears' => SchoolYear::query()->orderByDesc('is_current')->orderByDesc('starts_on')->get(['id', 'label'])->map(fn (SchoolYear $year): array => ['id' => (string) $year->id, 'label' => $year->label])->all(),
+            ],
+        ]);
+    }
+
+    public function store(Request $request, CreateBillingAccountAction $createBillingAccount, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $this->validatedAccountCreation($request);
+        /** @var User $user */
+        $user = $request->user();
+
+        try {
+            $account = DB::transaction(function () use ($request, $createBillingAccount, $auditLogger, $validated, $user): BillingAccount {
+                $draft = $createBillingAccount->draft($validated, true);
+                $account = $createBillingAccount->create($draft, $user);
+                $auditLogger->record($request, 'billing_account.created', $account, null, [
+                    'student_id' => (int) $account->student_id,
+                    'school_year_id' => (int) $account->school_year_id,
+                    'fee_schedule_id' => (int) $account->fee_schedule_id,
+                    'payment_plan_id' => (int) $account->payment_plan_id,
+                    'payment_plan_version' => (int) $draft['plan']->version,
+                    'total_due_cents' => (int) $account->total_due_cents,
+                    'excluded_fee_item_ids' => $draft['excludedFeeItemIds'],
+                    'items' => $draft['items']->map(fn ($item): array => ['fee_item_id' => $item->id, 'name' => $item->name, 'amount_cents' => (int) $item->amount_cents])->all(),
+                    'installment_count' => count($draft['installments']),
+                    'status' => $account->status,
+                ]);
+
+                return $account;
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['student_id' => 'This student already has a billing account for this school year.']);
+        }
+
+        return $this->show($account)->setStatusCode(201);
+    }
+
+    public function preview(Request $request, CreateBillingAccountAction $createBillingAccount): JsonResponse
+    {
+        $draft = $createBillingAccount->draft($this->validatedAccountCreation($request), false);
+
+        return response()->json(['data' => [
+            'studentId' => (string) $draft['student']->id,
+            'schoolYearId' => (string) $draft['schoolYear']->id,
+            'feeScheduleId' => (string) $draft['feeSchedule']->id,
+            'paymentPlanId' => (string) $draft['plan']->id,
+            'paymentPlanVersion' => (int) $draft['plan']->version,
+            'items' => $draft['items']->map(fn ($item): array => [
+                'feeItemId' => (string) $item->id,
+                'name' => $item->name,
+                'category' => $item->category,
+                'amountCents' => (int) $item->amount_cents,
+                'required' => (bool) $item->required,
+            ])->all(),
+            'totalDueCents' => $draft['totalDueCents'],
+            'installments' => array_map(fn (array $row): array => [
+                'label' => $row['label'],
+                'sequence' => $row['sequence'],
+                'dueDate' => $row['due_date'],
+                'amountCents' => $row['amount_cents'],
+            ], $draft['installments']),
+        ]]);
+    }
+
+    /** @return array{student_id: int, school_year_id: int, payment_plan_id: int, excluded_fee_item_ids?: list<int>} */
+    private function validatedAccountCreation(Request $request): array
+    {
+        return $request->validate([
+            'student_id' => ['required', 'integer', Rule::exists('students', 'id')],
+            'school_year_id' => ['required', 'integer', Rule::exists('school_years', 'id')],
+            'payment_plan_id' => ['required', 'integer', Rule::exists('payment_plans', 'id')],
+            'excluded_fee_item_ids' => ['sometimes', 'array'],
+            'excluded_fee_item_ids.*' => ['integer', 'distinct'],
         ]);
     }
 
@@ -156,7 +229,7 @@ class BillingAccountController extends Controller
 
         if ($account->created_at !== null) {
             $activity[] = [
-                'id' => 'account-' . $account->id,
+                'id' => 'account-'.$account->id,
                 'action' => 'account.created',
                 'occurredAt' => $account->created_at->toISOString(),
                 'actor' => $account->createdBy?->full_name,
@@ -170,7 +243,7 @@ class BillingAccountController extends Controller
             }
 
             $activity[] = [
-                'id' => 'payment-' . $payment->id,
+                'id' => 'payment-'.$payment->id,
                 'action' => 'payment.recorded',
                 'occurredAt' => $payment->recorded_at->toISOString(),
                 'actor' => $payment->recordedBy?->full_name,
@@ -188,7 +261,7 @@ class BillingAccountController extends Controller
             }
 
             $activity[] = [
-                'id' => 'adjustment-' . $adjustment->id,
+                'id' => 'adjustment-'.$adjustment->id,
                 'action' => 'adjustment.created',
                 'occurredAt' => $adjustment->created_at->toISOString(),
                 'actor' => $adjustment->createdBy?->full_name,
@@ -202,7 +275,7 @@ class BillingAccountController extends Controller
 
         $paymentIds = $account->payments->modelKeys();
         if ($paymentIds !== []) {
-            $paymentType = (new Payment())->getMorphClass();
+            $paymentType = (new Payment)->getMorphClass();
             $auditEntries = AuditEntry::query()
                 ->leftJoin('users as actors', 'audit_entries.user_id', '=', 'actors.id')
                 ->where('audit_entries.entity_type', $paymentType)
@@ -214,7 +287,7 @@ class BillingAccountController extends Controller
 
             foreach ($auditEntries as $entry) {
                 $activity[] = [
-                    'id' => 'audit-' . $entry->id,
+                    'id' => 'audit-'.$entry->id,
                     'action' => $entry->action,
                     'occurredAt' => $entry->occurred_at->toISOString(),
                     'actor' => $entry->actor_name,
@@ -225,6 +298,7 @@ class BillingAccountController extends Controller
 
         usort($activity, static function (array $left, array $right): int {
             $timeOrder = strcmp($right['occurredAt'], $left['occurredAt']);
+
             return $timeOrder !== 0 ? $timeOrder : strcmp($right['id'], $left['id']);
         });
 
@@ -232,7 +306,7 @@ class BillingAccountController extends Controller
     }
 
     /** @param array<string, mixed>|null $after
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function activityDetails(?array $after): array
     {
