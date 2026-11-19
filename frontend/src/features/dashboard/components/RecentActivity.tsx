@@ -91,7 +91,7 @@ export function RecentActivity({
             cell: ({ row }) => (
               <Link
                 to={`/receipts/${encodeURIComponent(row.original.id)}/print`}
-                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green"
+                className="inline-flex min-h-control items-center px-1 text-sm font-medium text-brand-green-dark transition-colors hover:text-brand-green"
               >
                 {en.table.viewReceipt}
               </Link>

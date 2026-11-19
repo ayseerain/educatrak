@@ -36,7 +36,7 @@ export function AuditActivityPreview({
           <CardLabel id={headingId} className="text-base font-semibold text-text-primary">{title}</CardLabel>
           <p className="mt-1 text-sm text-text-secondary">{description}</p>
         </div>
-        {to && actionLabel && <Link to={to} className="inline-flex min-h-11 items-center text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark">
+        {to && actionLabel && <Link to={to} className="inline-flex min-h-11 items-center text-sm font-medium text-brand-green-dark transition-colors hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark">
           {actionLabel}
         </Link>}
       </div>

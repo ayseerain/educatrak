@@ -30,7 +30,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardStatCard label={statLabels.collections} value={format(range === "today" ? summary.todayCollectionsTotal : summary.rangeCollectionsTotal)} icon={Banknote} action={{ to: "/payments", label: en.dashboard.viewPayments }} />
         <DashboardStatCard label={statLabels.payments} value={String(range === "today" ? summary.paymentsTodayCount : summary.paymentsInRangeCount)} icon={ReceiptText} />
-        <DashboardStatCard label={en.dashboard.dueSoon} value={String(summary.accountStatusOverview.dueSoon)} helperText={en.dashboard.dueSoonAccounts} icon={Users} action={{ to: "/followup?status=due_soon", label: en.dashboard.reviewFollowups }} />
+        <DashboardStatCard label={en.dashboard.dueSoon} value={String(summary.accountStatusOverview.dueSoon)} icon={Users} action={{ to: "/followup?status=due_soon", label: en.dashboard.reviewFollowups }} />
         <DashboardStatCard label={en.dashboard.failedEmails} value={String(summary.failedEmailCount)} icon={MailSearch} action={{ to: "/followup?view=notifications&status=failed", label: en.dashboard.viewFailedEmails }} />
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">

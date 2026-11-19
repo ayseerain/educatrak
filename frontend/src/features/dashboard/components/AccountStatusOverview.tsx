@@ -40,7 +40,7 @@ export function AccountStatusOverview({
         actions={
           <Link
             to="/followup"
-            className="text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green"
+            className="text-sm font-semibold text-brand-green-dark transition-colors hover:text-brand-green"
           >
             {en.dashboard.viewAll}
           </Link>
@@ -66,7 +66,7 @@ function AttentionAccountRow({ account }: { account: CashierAttentionAccount }) 
     <li className="flex items-center justify-between gap-3 px-5 py-3">
       <Link
         to={`/followup?status=${isOverdue ? "overdue" : "due_soon"}`}
-        className="inline-flex min-w-0 items-center gap-1 text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green motion-reduce:transition-none"
+        className="inline-flex min-w-0 items-center gap-1 text-sm font-semibold text-brand-green-dark transition-colors hover:text-brand-green motion-reduce:transition-none"
       >
         <span className="min-w-0 truncate">{account.studentName}</span>
         <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />

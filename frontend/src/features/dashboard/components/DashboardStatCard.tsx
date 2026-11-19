@@ -34,7 +34,7 @@ export function DashboardStatCard({
       {action && (
         <Link
           to={action.to}
-          className="mt-auto inline-flex min-h-control items-center gap-1 self-start text-sm font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green motion-reduce:transition-none"
+          className="mt-auto inline-flex min-h-control items-center gap-1 self-start text-sm font-semibold text-brand-green-dark transition-colors hover:text-brand-green motion-reduce:transition-none"
         >
           {action.label}
           <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
