@@ -165,7 +165,7 @@ export function StudentSearchField({
           <div className="flex justify-end border-t border-border px-3 py-2">
             <button
               type="button"
-              className="text-sm font-medium text-brand-green-dark underline underline-offset-2 hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
+              className="text-sm font-medium text-brand-green-dark hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 setSuggestionsDismissed(true);

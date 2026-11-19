@@ -100,7 +100,7 @@ export function StudentImportPage() {
             <Upload aria-hidden="true" className="size-7 text-brand-green-dark" />
             <span className="mt-3 text-sm font-semibold text-text-primary">Drag and drop your masterlist here</span>
             <span className="mt-1 text-xs text-text-secondary">or</span>
-            <span className="mt-1 text-sm font-semibold text-brand-green-dark underline-offset-2 hover:underline">Browse files</span>
+            <span className="mt-1 text-sm font-semibold text-brand-green-dark">Browse files</span>
             <span className="mt-4 text-xs text-text-secondary">Supported formats: CSV and XLSX</span>
           </label>
 
