@@ -171,7 +171,7 @@ describe("DashboardPage", () => {
     renderWithProviders(cashier);
 
     expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
-    expect(screen.getByText(/accounts due soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/accounts due soon/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
