@@ -3094,3 +3094,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Documentation only. `git diff --check` was clean; no `frontend/` diff. The final full suite rerun is recorded in the verification entry.
 - **Commit/PR:** Local commit on `feature/backend-completion`; no push.
 - **Follow-ups:** Owner acceptance of W1a–W3. Matching-MySQL validation and the remaining blocked decisions.
+
+### Friday, November 20, 2026 — 01:07:16 +08:00 | Backend W1a–W3 final verification
+
+- **Agent:** Claude Code
+- **Summary:** Final gate on `feature/backend-completion` after five local commits (`de5d424`, `253b8b1`, `d00c22d`, `22c0703`, `385442c`).
+- **Files:** `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md` only.
+- **Validation:** `php artisan test --compact` passed 198 tests / 1,651 assertions on isolated SQLite `:memory:` with a process-only `APP_KEY` (baseline 170 / 1,212). `php artisan route:list --path=api --except-vendor` showed 72 routes (baseline 51). `vendor/bin/pint --test` passed on all PHP files changed since `0b600db`. Working tree was clean. No `frontend/` diff since `0b600db`.
+- **Commit/PR:** Local commit; no push, no PR.
+- **Follow-ups:** Owner acceptance of W1a–W3. Not production-ready: matching-MySQL validation, backup policy and the blocked decisions remain.
