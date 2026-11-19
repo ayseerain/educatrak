@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\SchoolStructureSettingsController;
 use App\Http\Controllers\Api\SecurityEventController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentStatementController;
+use App\Http\Controllers\Api\SystemSettingsController;
 use App\Http\Controllers\Api\UserAdministrationController;
 use App\Http\Controllers\Api\VoidRequestController;
 use Illuminate\Support\Facades\Route;
@@ -78,6 +79,10 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:settings.finance.manage');
             Route::post('/settings/finance/fee-items/{feeItem}/deactivate', [FinanceSettingsController::class, 'deactivateFeeItem'])
                 ->middleware('capability:settings.finance.manage');
+            Route::get('/settings/system', [SystemSettingsController::class, 'show'])
+                ->middleware('capability:settings.system.view');
+            Route::patch('/settings/system', [SystemSettingsController::class, 'update'])
+                ->middleware('capability:settings.system.manage');
             Route::get('/settings/school-years', [SchoolStructureSettingsController::class, 'schoolYears'])
                 ->middleware('capability:settings.system.view');
             Route::post('/settings/school-years', [SchoolStructureSettingsController::class, 'storeSchoolYear'])

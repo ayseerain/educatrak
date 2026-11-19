@@ -3067,3 +3067,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused run passed 7 tests / 97 assertions, including upgrade/rollback on populated fictional rows. Full suite passed 186 tests / 1,498 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
 - **Commit/PR:** Local commit on `feature/backend-completion`; no push.
 - **Follow-ups:** Matching-MySQL migration run. Review the historical fee-item migration SQLite rebuild. W1c next.
+
+### Friday, November 20, 2026 — 01:01:37 +08:00 | Backend W1c school, receipt and email settings
+
+- **Agent:** Claude Code
+- **Summary:** Added Administrator-managed school name/address, receipt title, paper size, and email sender name/address and daily limit settings, stored as `system_settings` keys. Accounting has read access. The next receipt number is read-only. Changes are audited per changed key in one transaction. Send-test-email and payment-method management are not implemented (BLOCKED).
+- **Files:** Added `backend/app/Http/Controllers/Api/SystemSettingsController.php`, `backend/tests/Feature/SystemSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1c.md`. Updated `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 4 tests / 45 assertions. Full suite passed 190 tests / 1,551 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W2 account creation next. Test email and payment methods remain blocked.

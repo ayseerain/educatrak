@@ -676,3 +676,24 @@ Documentation review confirmed the master and derived view are consistent, activ
 - Resume Note: W1b is complete and validated. Next: W1c system settings.
 - Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W1c once this gate passes.
 - Logged at: Friday, November 20, 2026 — 00:59:12 +08:00
+
+## 21. W1c school, receipt and email settings
+
+### Resume — W1c: System settings (M9.5, M9.6)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1b commit `253b8b1`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.5 and M9.6. Owner decision 1 (2026-11-19): Administrator manages school/receipt/email settings; Accounting reads them.
+- Existing code and already-verified behavior: the `system_settings` table and `SystemSetting` JSON cast existed. Only `billing.due_soon_days` was read (by `RecalculateBillingStatusAction`). `receipt_sequences` existed.
+- Exact accepted scope / files: new `backend/app/Http/Controllers/Api/SystemSettingsController.php` and `backend/tests/Feature/SystemSettingsTest.php`; edited `backend/routes/api.php` (2 routes).
+- Data/API/role invariants:
+  - GET `/api/settings/system` needs `settings.system.view`; PATCH needs `settings.system.manage`.
+  - Enum and email validation applies. Next receipt number and sequence are read-only (sending either returns 422).
+  - The changed-keys audit runs in the same transaction as the writes.
+  - Values are not wired into mail transport.
+- Commands and tests actually run: focused 4 tests / 45 assertions passed; full suite 190 tests / 1,551 assertions passed. Pint passed on changed files. `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks: send-test-email and payment-method management are BLOCKED (not implemented). Email delivery semantics remain undecided.
+- Resume Note: W1c is complete and validated. Next: W2 `POST /api/billing-accounts`.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W2 once this gate passes.
+- Logged at: Friday, November 20, 2026 — 01:01:37 +08:00
