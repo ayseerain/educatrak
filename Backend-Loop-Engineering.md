@@ -617,3 +617,28 @@ Documentation review confirmed the master and derived view are consistent, activ
 **Owner disposition:** _Approval records SYNC-LRN-02 only. It does not authorize database access, a migration, installed-record change, target-MySQL operation, frontend change, or any other workstream until the stated data and environment gates are satisfied._
 
 - Logged at: Saturday, November 14, 2026 — 00:07:34 +08:00
+
+## 19. W1a school year, terms, exam periods, grade levels and sections
+
+### Resume — W1a: School structure settings (M9.4)
+- State: VALIDATING; committed locally under the owner's 2026-11-19 gated approval for W1a–W3.
+- Branch / verified HEAD / working tree: `feature/backend-completion` created from `main` at `0b600db`; clean before work.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.4; owner decisions 1, 2 and 4 approved 2026-11-19. Administrator manages school structure (`settings.system.manage`); Accounting reads it (`settings.system.view`). School years are never deleted. Label corrections are audited. School-year and term dates lock once any billing account exists for the year. The current year may change mid-year with a 10–1000 character reason. Exactly one year is current.
+- Existing code and already-verified behavior: tables `school_years`, `terms`, `exam_periods`, `grade_levels` and `sections` already existed. The dashboard 409 when not exactly one current year is unchanged. No management routes existed.
+- Exact accepted scope / files: new `backend/app/Http/Controllers/Api/SchoolStructureSettingsController.php` and `backend/tests/Feature/SchoolStructureSettingsTest.php`. Edited `backend/routes/api.php` (13 routes) and added boolean casts and relations on `SchoolYear`, `Term`, `ExamPeriod`, `GradeLevel` and `Section`. Date columns are intentionally not cast, so stored values stay `Y-m-d`.
+- Data/API/role invariants:
+  - Reads: GET `/api/settings/school-years` and `/api/settings/grade-levels` (`settings.system.view`).
+  - Writes (`settings.system.manage`): POST/PATCH school years, POST make-current, and POST/PATCH terms, exam periods, grade levels and sections. No delete routes.
+  - The first year ever created becomes current; later years start non-current. make-current locks all year rows and switches in one transaction. Every mutation and its audit entry share one transaction.
+  - Term and exam dates are not forced inside the school-year range; no source specifies this. Adding a dated term to a locked year is rejected.
+- Commands and tests actually run:
+  - `php artisan test --compact tests/Feature/SchoolStructureSettingsTest.php`: 9 tests / 121 assertions passed.
+  - Full `php artisan test --compact`: 179 tests / 1,385 assertions passed.
+  - `vendor/bin/pint --dirty --format agent` and `vendor/bin/pint --test --dirty` passed. `git diff --check` was clean; `git diff -- frontend/` was empty.
+  - Tests ran on isolated SQLite `:memory:` with a throwaway `APP_KEY` set only for the process, because this checkout has no `.env`.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks: repository-wide `pint --test` still reports pre-existing drift in 15 untouched files. Term/exam containment inside the school year is unspecified. Matching-MySQL lock behavior is unverified.
+- Resume Note: W1a routes, validation, lock rules and audits are implemented and validated. Next: W1b payment-plan versioning.
+- Owner acceptance and authorization for next workstream: the owner's 2026-11-19 instruction authorizes W1b once this gate passes.
+- Logged at: Friday, November 20, 2026 — 00:53:27 +08:00

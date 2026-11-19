@@ -3049,3 +3049,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Conflict-marker scan returned no matches in the changelog and in `Issues-and-TODOs.md` (auto-merged). `git diff --cached --check` passed.
 - **Commit/PR:** Merge commit not yet created.
 - **Follow-ups:** None.
+
+### Friday, November 20, 2026 — 00:53:27 +08:00 | Backend W1a school structure settings
+
+- **Agent:** Claude Code
+- **Summary:** Added Administrator APIs for school years, terms, exam periods, grade levels and sections. They enforce date locks, a reasoned exactly-one current-year switch, and transactional audit entries. Accounting has read access only.
+- **Files:** Added `backend/app/Http/Controllers/Api/SchoolStructureSettingsController.php`, `backend/tests/Feature/SchoolStructureSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1a.md`. Updated `backend/routes/api.php`, `backend/app/Models/{SchoolYear,Term,ExamPeriod,GradeLevel,Section}.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 9 tests / 121 assertions. Full suite passed 179 tests / 1,385 assertions on isolated SQLite `:memory:` with a throwaway `APP_KEY` set only for the process. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W1b payment plans next. Term/exam date containment is unspecified. Matching-MySQL evidence is still blocked.

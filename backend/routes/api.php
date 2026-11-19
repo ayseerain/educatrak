@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NotificationLogController;
 use App\Http\Controllers\Api\OutstandingReportController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReminderDeliveryController;
+use App\Http\Controllers\Api\SchoolStructureSettingsController;
 use App\Http\Controllers\Api\SecurityEventController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentStatementController;
@@ -69,6 +70,32 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:settings.finance.manage');
             Route::post('/settings/finance/fee-items/{feeItem}/deactivate', [FinanceSettingsController::class, 'deactivateFeeItem'])
                 ->middleware('capability:settings.finance.manage');
+            Route::get('/settings/school-years', [SchoolStructureSettingsController::class, 'schoolYears'])
+                ->middleware('capability:settings.system.view');
+            Route::post('/settings/school-years', [SchoolStructureSettingsController::class, 'storeSchoolYear'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/school-years/{schoolYear}', [SchoolStructureSettingsController::class, 'updateSchoolYear'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/make-current', [SchoolStructureSettingsController::class, 'makeCurrent'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/terms', [SchoolStructureSettingsController::class, 'storeTerm'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/terms/{term}', [SchoolStructureSettingsController::class, 'updateTerm'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/terms/{term}/exam-periods', [SchoolStructureSettingsController::class, 'storeExamPeriod'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/exam-periods/{examPeriod}', [SchoolStructureSettingsController::class, 'updateExamPeriod'])
+                ->middleware('capability:settings.system.manage');
+            Route::get('/settings/grade-levels', [SchoolStructureSettingsController::class, 'gradeLevels'])
+                ->middleware('capability:settings.system.view');
+            Route::post('/settings/grade-levels', [SchoolStructureSettingsController::class, 'storeGradeLevel'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/grade-levels/{gradeLevel}', [SchoolStructureSettingsController::class, 'updateGradeLevel'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/grade-levels/{gradeLevel}/sections', [SchoolStructureSettingsController::class, 'storeSection'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/sections/{section}', [SchoolStructureSettingsController::class, 'updateSection'])
+                ->middleware('capability:settings.system.manage');
             Route::get('/reports/daily', [DailyReportController::class, 'show'])
                 ->middleware('capability:reports.view');
             Route::get('/reports/outstanding', [OutstandingReportController::class, 'index'])
