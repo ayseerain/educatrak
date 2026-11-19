@@ -3049,3 +3049,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Conflict-marker scan returned no matches in the changelog and in `Issues-and-TODOs.md` (auto-merged). `git diff --cached --check` passed.
 - **Commit/PR:** Merge commit not yet created.
 - **Follow-ups:** None.
+
+### Friday, November 20, 2026 — 00:07:23 +08:00 | Frontend filter, link, and Cashier dashboard refinement
+
+- **Agent:** Codex
+- **Summary:** Replaced the shared table Filter funnel icon with the requested sliders icon, removed frontend link underlines while preserving green color and focus feedback, and removed the redundant `Accounts due soon` caption from the Cashier Due soon widget. Updated the reusable table-filter and interactive-state skills accordingly (funnel → sliders; underline-or-color-shift → color shift only).
+- **Files:** Updated `.agents/skills/educatrak-{table-filters-patterns,interactive-states}/SKILL.md`, frontend link styles and focused UI tests; added `EducatraK-Knowledge-Base/08-Logs/2026-11-20-frontend-filter-links-cashier-dashboard.md`; updated this changelog.
+- **Validation:** `npm test -- --run src/test/tableFilters.test.tsx src/test/dashboard.test.tsx src/test/login.test.tsx` passed (3 files, 53 tests). `npm run build` passed. `git diff --check` passed. A frontend source scan found no remaining underline or green-decoration utilities outside the negative login-test assertion.
+- **Commit/PR:** None.
+- **Follow-ups:** None.
