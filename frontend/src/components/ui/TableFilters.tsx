@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Filter, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DropdownSelect } from "@/components/ui/DropdownSelect";
@@ -135,7 +135,7 @@ export function TableFilters<Values extends TableFilterValues>({
       </div>)}
       <div className="relative">
         <Button ref={triggerRef} type="button" variant="secondary" aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
-          <Filter aria-hidden="true" className="h-4 w-4" />Filter{activeCount ? ` (${activeCount})` : ""}
+          <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />Filter{activeCount ? ` (${activeCount})` : ""}
         </Button>
         {open && <div ref={menuRef} id={panelId} role="dialog" aria-label={`${scope} filters`} className={cn("absolute left-0 z-50 mt-2 max-h-[min(70vh,36rem)] overflow-y-auto rounded-md border border-border bg-white p-4 shadow-raised sm:left-auto sm:right-0", fields.length > 1 ? "w-[min(90vw,26rem)]" : "w-[min(90vw,19.5rem)]")}>
           {activeCount > 0 && <div aria-label="Active filters" className="mb-4 flex flex-wrap gap-2 border-b border-border pb-4">
