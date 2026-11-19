@@ -145,7 +145,7 @@ function getSectionOptions(grade: string) {
 const primaryLinkClass = buttonVariants({ variant: "primary" });
 const secondaryLinkClass = buttonVariants({ variant: "secondary" });
 const inlineLinkClass =
-  "inline-flex min-h-control items-center gap-1 text-sm font-medium text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2 transition-colors hover:text-brand-green hover:decoration-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
+  "inline-flex min-h-control items-center gap-1 text-sm font-medium text-brand-green-dark transition-colors hover:text-brand-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green-dark";
 const inputClass = "form-control mt-1";
 const textareaClass = "form-control mt-3 p-3";
 
