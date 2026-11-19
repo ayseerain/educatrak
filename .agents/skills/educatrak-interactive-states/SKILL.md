@@ -17,13 +17,13 @@ EducatraK follows CLINIQ's design system for look and feel (see `EducatraK-Knowl
 - Destructive buttons (`status-error` fill) darken (`hover:brightness-90`).
 - Icon-only actions change the icon's own color on hover. A red sign-out icon darkens (`hover:brightness-75`).
 - Rows and cards that navigate get a subtle `surface` tint on hover, and the identifying text is a visible link at rest (touch users have no hover).
-- Links get an underline or color shift.
+- Links get a color shift; do not underline them.
 
 Use the shared `Button` (`frontend/src/components/ui/Button.tsx`) for buttons, and `buttonVariants({ variant })` from the same file for a router `<Link>` that must look like a button. Do not hand-write button class strings or raw hex hover colors on a page.
 
 ## Links, list rows, and widgets
 
-- A link reads as a link at rest: `font-semibold text-brand-green-dark underline decoration-brand-green-dark/40 underline-offset-2`, turning `brand-green` on hover. Don't rely on hover alone (touch users have none).
+- A link reads as a link at rest: `font-semibold text-brand-green-dark`, turning `brand-green` on hover. Don't rely on hover alone (touch users have none).
 - In a list card, link only the identifying text (the student name) and add a small `ChevronRight`; amounts and dates stay static. Amounts are plain `text-sm font-semibold tabular-nums` text, never a tinted pill.
 - Status inside a row or card is a `StatusBadge` / `Badge` (soft tint, colored icon, `text-primary` label), never a tinted icon tile.
 - Dashboard widgets use the shared pieces: `DashboardStatCard` (semibold label, 32px tinted icon chip, 32px bold figure), `CardHeader` from `Card.tsx` (icon + 16px semibold title), and divided rows `px-5 py-3`. No accent stripes (`border-l-4`, `border-t-2`), no tinted panel backgrounds, no hover shadows.

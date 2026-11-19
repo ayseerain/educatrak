@@ -10,6 +10,7 @@ Use with `educatrak-input-patterns`, `educatrak-dropdown-patterns`, and `educatr
 ## Shared control
 
 - Use `TableFilters` in `frontend/src/components/ui/TableFilters.tsx`; do not build page-local filter panels.
+- Its Filter trigger uses the `SlidersHorizontal` icon, not the older funnel icon.
 - The Filter button opens a compact panel over the table. It contains only the page's permitted fields, active-filter chips, **Apply filters**, and **Clear all**.
 - **Apply filters** commits the draft values and closes the panel. **Clear all** restores every field to its page default, removes applied filters, and returns the list to page one. There is no Reset action.
 - Escape and outside click dismiss the panel without applying draft values. Removing an active-filter chip clears that filter and returns the list to page one.
