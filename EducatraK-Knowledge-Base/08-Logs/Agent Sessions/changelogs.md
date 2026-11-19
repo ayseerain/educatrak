@@ -3085,3 +3085,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused run passed 8 tests / 92 assertions. Full suite passed 198 tests / 1,651 assertions on isolated SQLite `:memory:`. 72 API routes. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
 - **Commit/PR:** Local commit on `feature/backend-completion`; no push.
 - **Follow-ups:** W3 documentation. Matching-MySQL concurrency evidence.
+
+### Friday, November 20, 2026 — 01:05:12 +08:00 | Backend W3 documentation reconciliation
+
+- **Agent:** Claude Code
+- **Summary:** Reconciled documentation with W1a–W2. Updated the loop manual target branch and B03/B04 notes. Added API contract routes 52–72 with test citations. Recorded owner decisions 1–4 and the planning-session answers in Open-Decisions 31.10, with 31.7 resolved. Updated the ERD and data dictionary for payment-plan versioning, the billing plan FK and the system-settings keys. Added a ledger entry.
+- **Files:** `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Backend-Foundation-Development-Ledger.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md}`, `EducatraK-Knowledge-Base/06-Decisions/Open-Decisions.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w3.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation only. `git diff --check` was clean; no `frontend/` diff. The final full suite rerun is recorded in the verification entry.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** Owner acceptance of W1a–W3. Matching-MySQL validation and the remaining blocked decisions.

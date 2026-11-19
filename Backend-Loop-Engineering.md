@@ -2,7 +2,7 @@
 
 > **Project:** EducaTrak, Mendez Christian Academy (MCA) student billing and payment-monitoring system.
 >
-> **Execution target:** `feature/backend-foundation` **after** the owner merges `main` into it; verify the agent's actual checkout and merge ancestry before work. The previously observed merge commit is `ecfaba034e80895ec008449b77d99bc3e358ae34` (November 11, 2026 UTC). This is a reference point, not a substitute for checking the live checkout.
+> **Execution target:** `feature/backend-completion`, created from `main` at `0b600db` on November 20, 2026 (+08:00) for the owner-approved W1a–W3 completion loop. The earlier `feature/backend-foundation` work is already merged into `main`. Historical target text: `feature/backend-foundation` **after** the owner merges `main` into it; verify the agent's actual checkout and merge ancestry before work. The previously observed merge commit is `ecfaba034e80895ec008449b77d99bc3e358ae34` (November 11, 2026 UTC). This is a reference point, not a substitute for checking the live checkout.
 >
 > **Purpose:** A persistent, resumable build-and-audit ledger for finishing the **approved backend work** in the existing Laravel application. It is not a license to rebuild working features, invent school policy, operate on live data, or deploy.
 >
@@ -130,7 +130,9 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Config and school-year tests, historical-snapshot tests, explicit settings API/response contracts.
 
-**Resume Note:** _State: BLOCKED. Owner approved exactly one current school year and a clear configuration error when none exists. Dashboard school-year requests now return 409 unless exactly one current year exists; focused/full isolated tests pass. Live school-year, term, payment-plan, receipt-setting, and school-setting management routes remain absent and need role/API contracts before full M9 implementation. Updated Thursday, November 12, 2026 — 02:34:37 Asia/Manila._
+**Resume Note:** _State: WAITING_FOR_ACCEPTANCE. Owner decisions 1–4 (2026-11-19) unblocked M9. Implemented and validated in W1a (school structure, §19), W1b (payment-plan versioning, §20) and W1c (school/receipt/email settings, §21) on `feature/backend-completion`. The full isolated suite passed 198 tests / 1,651 assertions after W2. Still blocked: payment-method management, send-test-email, and matching-MySQL validation. Updated Friday, November 20, 2026 — 01:05:12 +08:00._
+
+**Previous Resume Note:** _State: BLOCKED. Owner approved exactly one current school year and a clear configuration error when none exists. Dashboard school-year requests now return 409 unless exactly one current year exists; focused/full isolated tests pass. Live school-year, term, payment-plan, receipt-setting, and school-setting management routes remain absent and need role/API contracts before full M9 implementation. Updated Thursday, November 12, 2026 — 02:34:37 Asia/Manila._
 
 ## B04. Billing accounts, installments and adjustments — M3, M11.1
 
@@ -141,7 +143,9 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Calculation tests, mutation/authorization tests, integrity and concurrency checks, edge cases for rounding and duplicate operations.
 
-**Resume Note:** _State: BLOCKED. Billing-account reads, adjustment validation/transactions, snapshots, and status recalculation passed focused tests (7 tests, 67 assertions). The route inventory has no `POST /billing-accounts`; current tests construct accounts directly. Approved M3 account creation needs configured school year, fee schedule, payment plan, installment calculation, snapshot, and account-provisioning contract. B03 has no live management APIs for those settings. Blocked Thursday, November 12, 2026 — 02:39:49 Asia/Manila._
+**Resume Note:** _State: WAITING_FOR_ACCEPTANCE. W2 (§22) added `POST /api/billing-accounts` and `POST /api/billing-accounts/preview` on top of the B03 settings work (`BillingAccountCreationTest`, 8 tests / 92 assertions). The adjustment approval threshold remains open (31.1); no escalation was invented. Matching-MySQL concurrency evidence is still blocked. Updated Friday, November 20, 2026 — 01:05:12 +08:00._
+
+**Previous Resume Note:** _State: BLOCKED. Billing-account reads, adjustment validation/transactions, snapshots, and status recalculation passed focused tests (7 tests, 67 assertions). The route inventory has no `POST /billing-accounts`; current tests construct accounts directly. Approved M3 account creation needs configured school year, fee schedule, payment plan, installment calculation, snapshot, and account-provisioning contract. B03 has no live management APIs for those settings. Blocked Thursday, November 12, 2026 — 02:39:49 Asia/Manila._
 
 ## B05. Payment recording, allocations, receipts — M4
 
@@ -718,3 +722,15 @@ Documentation review confirmed the master and derived view are consistent, activ
 - Resume Note: W2 is complete and validated. Next: W3 documentation reconciliation.
 - Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W3 once this gate passes.
 - Logged at: Friday, November 20, 2026 — 01:04:19 +08:00
+
+## 23. W3 documentation reconciliation
+
+### Resume — W3: Documentation (docs only)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W2 commit `22c0703`.
+- Exact accepted scope / files: this manual (header, B03/B04 notes), `07-AI-Agents/Backend-Foundation-Development-Ledger.md`, `02-Architecture/Backend-API-Contract.md` (routes 52–72), `06-Decisions/Open-Decisions.md` (31.7 resolved, new 31.10), `ERD.md`, `Data-Dictionary.md`, `Issues-and-TODOs.md`, `changelogs.md`, `08-Logs/2026-11-20-backend-w3.md`.
+- Migrations/data operations: none. No code changes.
+- Commands: `git diff --check` was clean; `git diff -- frontend/` was empty. The full suite was rerun in final verification.
+- Resume Note: W1a–W3 are implemented, validated and committed locally on `feature/backend-completion`. They await owner acceptance. Formal Cross-Check/Audit is not claimed.
+- Owner acceptance and authorization for next workstream: pending.
+- Logged at: Friday, November 20, 2026 — 01:05:12 +08:00
