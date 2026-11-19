@@ -3058,3 +3058,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Focused run passed 9 tests / 121 assertions. Full suite passed 179 tests / 1,385 assertions on isolated SQLite `:memory:` with a throwaway `APP_KEY` set only for the process. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
 - **Commit/PR:** Local commit on `feature/backend-completion`; no push.
 - **Follow-ups:** W1b payment plans next. Term/exam date containment is unspecified. Matching-MySQL evidence is still blocked.
+
+### Friday, November 20, 2026 — 00:59:12 +08:00 | Backend W1b payment-plan versioning
+
+- **Agent:** Claude Code
+- **Summary:** Added the approved additive payment-plan versioning migration and an integer-centavo schedule calculator. Accounting can now create, revise (N+1), deactivate and preview plans. Existing accounts keep their original plan and installments. Plans cannot be deleted once used.
+- **Files:** Added `backend/database/migrations/2026_11_20_010000_add_versioning_to_payment_plans.php`, `backend/app/Actions/ComputeInstallmentScheduleAction.php`, `backend/tests/Feature/PaymentPlanSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1b.md`. Updated `backend/app/Http/Controllers/Api/FinanceSettingsController.php`, `backend/app/Models/PaymentPlan.php`, `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 7 tests / 97 assertions, including upgrade/rollback on populated fictional rows. Full suite passed 186 tests / 1,498 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** Matching-MySQL migration run. Review the historical fee-item migration SQLite rebuild. W1c next.

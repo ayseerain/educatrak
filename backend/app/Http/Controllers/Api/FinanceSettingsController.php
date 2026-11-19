@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\ApplyFeeItemToBillingAccountsAction;
+use App\Actions\ComputeInstallmentScheduleAction;
 use App\Actions\ReviseFeeItemAction;
 use App\Http\Controllers\Controller;
 use App\Models\FeeItem;
 use App\Models\FeeSchedule;
 use App\Models\PaymentPlan;
 use App\Services\AuditLogger;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class FinanceSettingsController extends Controller
 {
@@ -53,22 +56,169 @@ class FinanceSettingsController extends Controller
         $plans = PaymentPlan::query()
             ->with('installments:id,payment_plan_id,label,sequence,due_day_offset,percent_of_remaining_basis_points')
             ->orderBy('name')
+            ->orderBy('version')
             ->get()
-            ->map(fn (PaymentPlan $plan): array => [
-                'id' => (string) $plan->id,
-                'name' => $plan->name,
-                'downPaymentType' => $plan->down_payment_type,
-                'downPaymentValue' => (int) $plan->down_payment_value,
-                'active' => (bool) $plan->active,
-                'installments' => $plan->installments->map(fn ($installment): array => [
-                    'label' => $installment->label,
-                    'sequence' => (int) $installment->sequence,
-                    'dueDayOffset' => (int) $installment->due_day_offset,
-                    'percentOfRemainingBasisPoints' => (int) $installment->percent_of_remaining_basis_points,
-                ])->values(),
-            ]);
+            ->map(fn (PaymentPlan $plan): array => $this->paymentPlanData($plan));
 
         return response()->json(['data' => $plans->values()]);
+    }
+
+    public function storePaymentPlan(Request $request, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $this->validatedPaymentPlan($request);
+
+        $plan = DB::transaction(function () use ($request, $auditLogger, $validated): PaymentPlan {
+            $this->ensurePlanNameAvailable($validated['name']);
+            $plan = $this->createPlanVersion($validated, 1, null);
+            $auditLogger->record($request, 'finance.payment_plan.created', $plan, null, $this->paymentPlanData($plan));
+
+            return $plan;
+        });
+
+        return response()->json(['data' => $this->paymentPlanData($plan)], 201);
+    }
+
+    public function revisePaymentPlan(Request $request, PaymentPlan $paymentPlan, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $this->validatedPaymentPlan($request);
+
+        $revised = DB::transaction(function () use ($request, $paymentPlan, $auditLogger, $validated): PaymentPlan {
+            $current = PaymentPlan::query()->whereKey($paymentPlan->id)->lockForUpdate()->firstOrFail();
+            if (! $current->active) {
+                abort(409, 'Only an active payment plan can be revised.');
+            }
+            if (PaymentPlan::query()->where('previous_version_id', $current->id)->exists()) {
+                abort(409, 'Only the latest version of a payment plan can be revised.');
+            }
+            if (mb_strtolower($validated['name']) !== mb_strtolower($current->name)) {
+                $this->ensurePlanNameAvailable($validated['name']);
+            }
+
+            $before = $this->paymentPlanData($current->load('installments'));
+            $current->forceFill(['active' => false])->save();
+            $revised = $this->createPlanVersion($validated, (int) $current->version + 1, $current->id);
+            $auditLogger->record($request, 'finance.payment_plan.revised', $revised, $before, $this->paymentPlanData($revised));
+
+            return $revised;
+        });
+
+        return response()->json(['data' => $this->paymentPlanData($revised)]);
+    }
+
+    public function deactivatePaymentPlan(Request $request, PaymentPlan $paymentPlan, AuditLogger $auditLogger): JsonResponse
+    {
+        $plan = DB::transaction(function () use ($request, $paymentPlan, $auditLogger): PaymentPlan {
+            $plan = PaymentPlan::query()->whereKey($paymentPlan->id)->lockForUpdate()->firstOrFail();
+            if (! $plan->active) {
+                abort(409, 'This payment plan is already inactive.');
+            }
+
+            $before = $this->paymentPlanData($plan->load('installments'));
+            $plan->forceFill(['active' => false])->save();
+            $auditLogger->record($request, 'finance.payment_plan.deactivated', $plan, $before, $this->paymentPlanData($plan));
+
+            return $plan;
+        });
+
+        return response()->json(['data' => $this->paymentPlanData($plan)]);
+    }
+
+    public function previewPaymentPlan(Request $request, PaymentPlan $paymentPlan, ComputeInstallmentScheduleAction $computeSchedule): JsonResponse
+    {
+        $validated = $request->validate([
+            'total_cents' => ['required', 'integer', 'min:1'],
+        ]);
+        $schedule = $computeSchedule->handle($paymentPlan, (int) $validated['total_cents'], CarbonImmutable::now('Asia/Manila')->startOfDay(), 'total_cents');
+
+        return response()->json(['data' => [
+            'planId' => (string) $paymentPlan->id,
+            'version' => (int) $paymentPlan->version,
+            'totalCents' => (int) $validated['total_cents'],
+            'installments' => array_map(fn (array $row): array => [
+                'label' => $row['label'],
+                'sequence' => $row['sequence'],
+                'dueDayOffset' => $row['due_day_offset'],
+                'dueDate' => $row['due_date'],
+                'amountCents' => $row['amount_cents'],
+            ], $schedule),
+        ]]);
+    }
+
+    /** @return array{name: string, down_payment_type: string, down_payment_value: int, installments: list<array{label: string, due_day_offset: int, percent_of_remaining_basis_points: int}>} */
+    private function validatedPaymentPlan(Request $request): array
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'down_payment_type' => ['required', 'string', 'in:amount,percent'],
+            'down_payment_value' => ['required', 'integer', 'min:0'],
+            'installments' => ['required', 'array', 'min:1'],
+            'installments.*.label' => ['required', 'string', 'max:120'],
+            'installments.*.due_day_offset' => ['required', 'integer', 'min:0', 'max:65535'],
+            'installments.*.percent_of_remaining_basis_points' => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        if ($validated['down_payment_type'] === 'percent' && (int) $validated['down_payment_value'] > 10_000) {
+            throw ValidationException::withMessages(['down_payment_value' => 'A percent down payment is in basis points and cannot exceed 10000 (100%).']);
+        }
+        if (array_sum(array_map(fn (array $row): int => (int) $row['percent_of_remaining_basis_points'], $validated['installments'])) !== 10_000) {
+            throw ValidationException::withMessages(['installments' => 'Installment percentages must add up to exactly 10000 basis points (100%).']);
+        }
+
+        $validated['name'] = trim($validated['name']);
+
+        return $validated;
+    }
+
+    /** @param array{name: string, down_payment_type: string, down_payment_value: int, installments: list<array<string, mixed>>} $validated */
+    private function createPlanVersion(array $validated, int $version, ?int $previousVersionId): PaymentPlan
+    {
+        $plan = new PaymentPlan;
+        $plan->forceFill([
+            'name' => $validated['name'],
+            'down_payment_type' => $validated['down_payment_type'],
+            'down_payment_value' => (int) $validated['down_payment_value'],
+            'active' => true,
+            'version' => $version,
+            'previous_version_id' => $previousVersionId,
+        ])->save();
+
+        foreach (array_values($validated['installments']) as $index => $installment) {
+            $plan->installments()->forceCreate([
+                'label' => trim($installment['label']),
+                'sequence' => $index + 1,
+                'due_day_offset' => (int) $installment['due_day_offset'],
+                'percent_of_remaining_basis_points' => (int) $installment['percent_of_remaining_basis_points'],
+            ]);
+        }
+
+        return $plan->load('installments');
+    }
+
+    private function ensurePlanNameAvailable(string $name): void
+    {
+        if (PaymentPlan::query()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists()) {
+            throw ValidationException::withMessages(['name' => 'A payment plan with that name already exists.']);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function paymentPlanData(PaymentPlan $plan): array
+    {
+        return [
+            'id' => (string) $plan->id,
+            'name' => $plan->name,
+            'downPaymentType' => $plan->down_payment_type,
+            'downPaymentValue' => (int) $plan->down_payment_value,
+            'active' => (bool) $plan->active,
+            'version' => (int) $plan->version,
+            'previousVersionId' => $plan->previous_version_id === null ? null : (string) $plan->previous_version_id,
+            'installments' => $plan->installments->map(fn ($installment): array => [
+                'label' => $installment->label,
+                'sequence' => (int) $installment->sequence,
+                'dueDayOffset' => (int) $installment->due_day_offset,
+                'percentOfRemainingBasisPoints' => (int) $installment->percent_of_remaining_basis_points,
+            ])->values()->all(),
+        ];
     }
 
     public function storeFeeItem(Request $request, FeeSchedule $feeSchedule, ApplyFeeItemToBillingAccountsAction $applyFeeItemToBillingAccounts, AuditLogger $auditLogger): JsonResponse

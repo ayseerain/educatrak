@@ -64,6 +64,14 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:settings.finance.view');
             Route::get('/settings/finance/plans', [FinanceSettingsController::class, 'paymentPlans'])
                 ->middleware('capability:settings.finance.view');
+            Route::post('/settings/finance/plans', [FinanceSettingsController::class, 'storePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::patch('/settings/finance/plans/{paymentPlan}', [FinanceSettingsController::class, 'revisePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::post('/settings/finance/plans/{paymentPlan}/deactivate', [FinanceSettingsController::class, 'deactivatePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::post('/settings/finance/plans/{paymentPlan}/preview', [FinanceSettingsController::class, 'previewPaymentPlan'])
+                ->middleware('capability:settings.finance.view');
             Route::post('/settings/finance/fees/{feeSchedule}/items', [FinanceSettingsController::class, 'storeFeeItem'])
                 ->middleware('capability:settings.finance.manage');
             Route::patch('/settings/finance/fee-items/{feeItem}', [FinanceSettingsController::class, 'reviseFeeItem'])

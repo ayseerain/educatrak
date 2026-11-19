@@ -642,3 +642,37 @@ Documentation review confirmed the master and derived view are consistent, activ
 - Resume Note: W1a routes, validation, lock rules and audits are implemented and validated. Next: W1b payment-plan versioning.
 - Owner acceptance and authorization for next workstream: the owner's 2026-11-19 instruction authorizes W1b once this gate passes.
 - Logged at: Friday, November 20, 2026 — 00:53:27 +08:00
+
+## 20. W1b payment-plan versioning
+
+### Resume — W1b: Payment plans (M9.2)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1a commit `de5d424`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.2 (edit applies to new accounts only; preview from a sample total; no delete once used). Owner decision 3 (2026-11-19): new-accounts-only with versioning, no delete once used. Approved additive migration: add `version` and `previous_version_id`, relax `unique(name)` to `unique(name, version)`, change `billing_accounts.payment_plan_id` to RESTRICT. Owner answers recorded in this session:
+  - due dates count from the account creation business date (Asia/Manila);
+  - a percent down payment is in basis points, rounded down;
+  - installments take floor(remaining × bp / 10000), with the remainder on the last.
+- Existing code and already-verified behavior: `GET /api/settings/finance/plans` existed (read-only). `payment_plan_installments` already stored `due_day_offset` and `percent_of_remaining_basis_points`.
+- Exact accepted scope / files:
+  - New: `backend/database/migrations/2026_11_20_010000_add_versioning_to_payment_plans.php`, `backend/app/Actions/ComputeInstallmentScheduleAction.php`, `backend/tests/Feature/PaymentPlanSettingsTest.php`.
+  - Edited: `FinanceSettingsController.php` (create, revise, deactivate, preview; GET adds `version` and `previousVersionId`), `PaymentPlan.php` (active cast, `previousVersion`), `routes/api.php` (4 routes).
+- Data/API/role invariants:
+  - POST `/api/settings/finance/plans`, PATCH `/api/settings/finance/plans/{paymentPlan}` (revise to N+1), and POST `.../deactivate` need `settings.finance.manage`. POST `.../preview` needs `settings.finance.view`.
+  - Revision creates a new row, deactivates the old row, and keeps the old row and its installments for existing accounts. Revising an inactive or superseded version returns 409.
+  - There is no delete route. Database RESTRICT blocks deleting a plan that is used by an account or that a newer version references.
+  - Basis points must sum to 10000. Zero-amount schedule rows are omitted.
+- Commands and tests actually run:
+  - Focused `PaymentPlanSettingsTest`: 7 tests / 97 assertions passed. Full suite: 186 tests / 1,498 assertions passed.
+  - Pint passed on changed files (it auto-fixed only route argument spacing). `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations:
+  - One approved additive migration, exercised only on isolated SQLite `:memory:`. The upgrade test runs `down()`, inserts fictional plans, an account and installments, then runs `up()`, `down()`, `up()`. It asserts version 1, unchanged values including `updated_at`, preserved account plan links, an empty `PRAGMA foreign_key_check`, and a restricted delete.
+  - `down()` refuses while any `version > 1` row exists.
+  - SQLite finding fixed before commit: rebuilding `payment_plans` fired the old ON DELETE SET NULL and erased `billing_accounts.payment_plan_id`. The migration now adds the plan columns natively on SQLite and defers FK checks. MySQL behavior is unverified (environment-blocked).
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks:
+  - Matching-MySQL execution, including the `billing_accounts_payment_plan_id_foreign` key name, is unverified.
+  - The historical fee-item migration used the same SQLite rebuild pattern. This is recorded as an issue, not changed.
+  - Omitting zero-amount rows awaits owner veto.
+- Resume Note: W1b is complete and validated. Next: W1c system settings.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W1c once this gate passes.
+- Logged at: Friday, November 20, 2026 — 00:59:12 +08:00
