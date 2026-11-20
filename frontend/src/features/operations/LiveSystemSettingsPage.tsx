@@ -177,6 +177,15 @@ function SystemSettingsDialog({ section, settings, onOpenChange }: { section: Se
   </Dialog.Root>;
 }
 
+/** School / Receipt / Email tab strip shared by the live system-settings pages. */
+export function SystemSettingsTabs({ active }: { active: "school" | Section }) {
+  return <ViewTabs label="System settings views" className="mb-4" items={[
+    { key: "/settings/school", label: "School", selected: active === "school", to: "/settings/school" },
+    { key: "/settings/receipt", label: "Receipt", selected: active === "receipt", to: "/settings/receipt" },
+    { key: "/settings/email", label: "Email", selected: active === "email", to: "/settings/email" },
+  ]} />;
+}
+
 export function LiveSystemSettingsPage({ section, editable }: { section: Section; editable: boolean }) {
   const [editing, setEditing] = useState(false);
   const settings = useQuery({ queryKey: ["system-settings"], queryFn: getSystemSettings });
@@ -188,11 +197,7 @@ export function LiveSystemSettingsPage({ section, editable }: { section: Section
       description={copy.description}
       action={editable && settings.data ? <Button type="button" onClick={() => setEditing(true)}>{copy.action}</Button> : undefined}
     />
-    <ViewTabs label="System settings views" className="mb-4" items={[
-      { key: "/settings/school", label: "School", selected: false, to: "/settings/school" },
-      { key: "/settings/receipt", label: "Receipt", selected: section === "receipt", to: "/settings/receipt" },
-      { key: "/settings/email", label: "Email", selected: section === "email", to: "/settings/email" },
-    ]} />
+    <SystemSettingsTabs active={section} />
     {settings.isPending && <LoadingState message="Loading settings…" layout="table" columns={2} />}
     {settings.isError && <ErrorState message={settings.error.message} onRetry={() => void settings.refetch()} />}
     {settings.data && <Card className="overflow-x-auto">

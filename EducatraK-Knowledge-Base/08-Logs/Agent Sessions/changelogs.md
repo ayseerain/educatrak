@@ -3170,3 +3170,23 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - The browser check was not performed (no browser tool).
 - **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
 - **Follow-ups:** Owner acceptance of F1. Browser check. Pre-existing billing pagination test. F2 next.
+
+### Friday, November 20, 2026 — 15:49:17 +08:00 | Frontend live settings F2 — School tab; F1 accepted
+
+- **Agent:** Claude Code
+- **Summary:** The owner accepted F1. F2 connects the live School tab to API contract rows 52–64.
+  - School years: add, edit, and make current with a required reason. Dates show as locked once billing accounts exist.
+  - Terms and exam periods: add and edit.
+  - Grade levels and sections: add, rename, activate and deactivate.
+  - Edits send only changed fields. 422s show inline; 409s show in the dialog. There is no delete control. Mock mode is unchanged.
+- **Files:**
+  - Added: `frontend/src/api/schoolStructureApi.ts`, `frontend/src/features/operations/LiveSchoolStructurePage.tsx`, `frontend/src/test/liveSchoolStructure.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-frontend-live-settings-f2.md`.
+  - Updated: `frontend/src/features/operations/LiveSystemSettingsPage.tsx` (shared `SystemSettingsTabs`), `frontend/src/features/operations/OperationalPages.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` (B34 note; F1 acceptance on B35/B36), `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, this changelog.
+- **Validation:**
+  - Focused 15/15 passed.
+  - Full suite 267/268; the 1 failure is the pre-existing `liveBillingAccounts.test.tsx:68`.
+  - `tsc -b` was clean and `npm run build` passed.
+  - Live GET shapes were confirmed against the local backend.
+  - The browser check was not performed.
+- **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
+- **Follow-ups:** Owner acceptance of F2. Browser check of F1 and F2. F3 next.

@@ -105,6 +105,7 @@ import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
 import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
 import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettingsPage";
 import { LiveSystemSettingsPage } from "@/features/operations/LiveSystemSettingsPage";
+import { LiveSchoolStructurePage } from "@/features/operations/LiveSchoolStructurePage";
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
 import { StudentFormPage as LiveStudentFormPage } from "@/features/students/StudentFormPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
@@ -2531,24 +2532,13 @@ export function SettingsPage({
   actorId?: string;
 }) {
   if (isLiveCashierApiEnabled()) {
-    const titles = {
-      fees: "Fees",
-      plans: "Plans",
-      school: "School settings",
-      receipt: "Receipts",
-      email: "Notifications",
-    } satisfies Record<typeof section, string>;
-
     if (section === "fees" || section === "plans") {
       return <LiveFinanceSettingsPage section={section} editable={editable} />;
     }
     if (section === "receipt" || section === "email") {
       return <LiveSystemSettingsPage section={section} editable={editable} />;
     }
-    return <UnavailableFeaturePage
-      title={titles[section]}
-      feature="System configuration"
-    />;
+    return <LiveSchoolStructurePage editable={editable} />;
   }
   const [addFeeOpen, setAddFeeOpen] = useState(false);
   const [addListItemOpen, setAddListItemOpen] = useState(false);
