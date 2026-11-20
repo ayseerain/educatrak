@@ -19,6 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Test-only key. It encrypts nothing real and must never be used outside the test suite. -->
+        <env name="APP_KEY" value="base64:x/ODBORfYijVeD1/Qqnm9IfxAHCPZVBJzPcoijQNGBI="/>
         <env name="BUSINESS_DATE_SIMULATOR_ENABLED" value="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
