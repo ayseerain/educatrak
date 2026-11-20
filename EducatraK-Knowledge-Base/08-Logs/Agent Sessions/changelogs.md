@@ -3139,6 +3139,6 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - SQLite with no process key: 200 tests / 198 passed / 2 skipped / 1,652 assertions.
   - MySQL 8.4.13: 200 / 199 passed / 1 skipped / 1,650 assertions. All 16 migrations ran.
   - Backup/restore checks were identical (46 FKs, 0 orphans).
-  - Pint passed on the changed PHP files. `git diff --check` passed; no `frontend/` diff.
+  - Pint passed on the changed PHP files. `git diff --check` flagged only the runbook status line's intentional trailing two-space Markdown line break (kept from the original line). No `frontend/` diff.
 - **Commit/PR:** `4c3dcd0`, `fcba0b5` and a docs commit on `feature/mysql-validation`; no push.
 - **Follow-ups:** Owner acceptance. Parallel HTTP race tests and a line-by-line reference-schema comparison were not done. B13 deployment items remain open.
