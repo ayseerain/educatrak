@@ -104,6 +104,7 @@ import { LiveDailyReport } from "@/features/reports/LiveDailyReport";
 import { LiveStudentStatement } from "@/features/reports/LiveStudentStatement";
 import { LiveOutstandingReport } from "@/features/reports/LiveOutstandingReport";
 import { LiveFinanceSettingsPage } from "@/features/operations/LiveFinanceSettingsPage";
+import { LiveSystemSettingsPage } from "@/features/operations/LiveSystemSettingsPage";
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
 import { StudentFormPage as LiveStudentFormPage } from "@/features/students/StudentFormPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
@@ -2540,6 +2541,9 @@ export function SettingsPage({
 
     if (section === "fees" || section === "plans") {
       return <LiveFinanceSettingsPage section={section} editable={editable} />;
+    }
+    if (section === "receipt" || section === "email") {
+      return <LiveSystemSettingsPage section={section} editable={editable} />;
     }
     return <UnavailableFeaturePage
       title={titles[section]}

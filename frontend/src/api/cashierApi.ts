@@ -26,6 +26,8 @@ export class CashierApiError extends Error {
     message: string,
     public readonly status: number,
     public readonly retryAfterSeconds?: number,
+    /** Laravel 422 messages keyed by request field (snake_case). */
+    public readonly fieldErrors?: Record<string, string[]>,
   ) {
     super(message);
   }
@@ -482,6 +484,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       validationMessage ?? body.message ?? "The request could not be completed. Please try again.",
       response.status,
       retryAfterSeconds,
+      body.errors,
     );
   }
 

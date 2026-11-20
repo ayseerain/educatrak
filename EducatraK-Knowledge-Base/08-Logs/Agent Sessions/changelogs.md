@@ -3151,3 +3151,22 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Documentation only. `git diff --check` result is reported in session output. No code changed.
 - **Commit/PR:** Local commit on `feature/mysql-validation`; no push.
 - **Follow-ups:** Run the prompt after `feature/mysql-validation` is accepted and merged.
+
+### Friday, November 20, 2026 — 15:17:20 +08:00 | Frontend live settings F1 — Receipt and Email
+
+- **Agent:** Claude Code
+- **Summary:** Connected the live Receipt and Email settings tabs to `GET/PATCH /api/settings/system`.
+  - Administrators edit through a dialog that sends only changed fields. 422s show inline.
+  - Accounting reads only.
+  - Mock mode is unchanged.
+  - `CashierApiError` now carries optional field errors.
+- **Files:**
+  - Added: `frontend/src/api/systemSettingsApi.ts`, `frontend/src/features/operations/LiveSystemSettingsPage.tsx`, `frontend/src/test/liveSystemSettings.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-frontend-live-settings-f1.md`.
+  - Updated: `frontend/src/api/cashierApi.ts`, `frontend/src/features/operations/OperationalPages.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` (B35/B36 notes), `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, this changelog.
+- **Validation:**
+  - Focused 7/7 passed.
+  - Full suite 259/260; the 1 failure is the pre-existing `liveBillingAccounts.test.tsx:68`, failing on `main` too.
+  - `npm run build` passed.
+  - The browser check was not performed (no browser tool).
+- **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
+- **Follow-ups:** Owner acceptance of F1. Browser check. Pre-existing billing pagination test. F2 next.

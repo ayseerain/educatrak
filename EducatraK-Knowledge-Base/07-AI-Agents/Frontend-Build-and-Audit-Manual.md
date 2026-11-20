@@ -342,6 +342,7 @@ For each screen below:
 - **Build scope:** School identity, receipt title, paper size and next receipt number behavior.
 - **Build status:** [x] Built
 - **Resume Note:** The development mock retains receipt-format examples. Production now shows an unavailable state because receipt settings are not connected to a verified API. M9 routes separate system read (`ACC`/`AUD`) from manage (`ADM`) capability; role matrix coverage is in `operations.test.tsx` and `CapabilityMapTest.php`. Formal Phase 2 audit remains pending.
+- **Live update (Friday, November 20, 2026 — 15:16:51 +08:00):** F1 connected production to `GET/PATCH /api/settings/system` (`LiveSystemSettingsPage.tsx`). Administrators edit school name/address, receipt title and paper size; only changed fields are sent; 422 messages show under the field. Accounting and Auditor read only. The next receipt number is display-only. Tests: `liveSystemSettings.test.tsx`. Browser check not performed (no browser tool in that session). Owner acceptance pending.
 
 ### B36. Email Settings — M9
 
@@ -350,6 +351,7 @@ For each screen below:
 - **Build scope:** Sender settings, daily send limit and test email.
 - **Build status:** [x] Built
 - **Resume Note:** The development mock retains sender, daily-limit, and test-email examples. Production now shows an unavailable state because email-provider configuration and delivery are not connected. M9 routes separate system read (`ACC`/`AUD`) from manage (`ADM`) capability; role matrix coverage is in `operations.test.tsx` and `CapabilityMapTest.php`. Formal Phase 2 audit remains pending.
+- **Live update (Friday, November 20, 2026 — 15:16:51 +08:00):** F1 connected production to the same endpoint for sender name/address and daily send limit. Test email and SMS rows are not shown in live mode because they are BLOCKED/not in the API. Tests: `liveSystemSettings.test.tsx`. Owner acceptance pending.
 
 ### B37. User Administration — M1
 
