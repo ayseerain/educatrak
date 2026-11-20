@@ -318,6 +318,7 @@ For each screen below:
 - **Build scope:** Plan configuration, schedule preview and lifecycle; edits affect new accounts only.
 - **Build status:** [x] Built
 - **Resume Note:** Production `/settings/plans` reads persisted plans and installment structures through `/api/settings/finance/plans` for ACC only. The view clearly reports that plan edits are unavailable until an approved versioned, audited mutation workflow is implemented; formal Phase 2 audit remains pending.
+- **Live update (Friday, November 20, 2026 — 15:57:11 +08:00):** F3 connected production to API contract rows 65–68 (`LivePaymentPlans.tsx`). Accounting creates plans (peso and percent inputs converted to centavos and basis points; shares must total 100%), revises the active latest version as N+1 (existing accounts keep their version), deactivates with a confirmation dialog, and every finance viewer can preview a schedule. Version lineage is shown. Nothing can be deleted. Tests: `liveFinancePlans.test.tsx`. Browser check not performed. Owner acceptance pending.
 
 ### B33. Clearance Rules — M9
 
@@ -335,6 +336,7 @@ For each screen below:
 - **Build status:** [x] Built
 - **Resume Note:** The development mock retains school-year, term, grade, section, and cash-only payment-method examples. Production now shows an unavailable state because no verified academic-settings API exists. M9 routes separate system read (`ACC`/`AUD`) from manage (`ADM`) capability; role matrix coverage is in `operations.test.tsx` and `CapabilityMapTest.php`. Formal Phase 2 audit remains pending.
 - **Live update (Friday, November 20, 2026 — 15:48:51 +08:00):** F2 connected production to API contract rows 52–64 (`LiveSchoolStructurePage.tsx`). Administrators add and edit school years, terms, exam periods, grade levels and sections; make a year current with a required 10–1000 character reason; dates show locked when billing accounts exist. Nothing can be deleted. Accounting and Auditor read only. The mock's cash-only payment-method row is not shown live (payment-method management is BLOCKED). Tests: `liveSchoolStructure.test.tsx`. Browser check not performed. Owner acceptance pending.
+- **Owner acceptance (Friday, November 20, 2026 — 15:57:11 +08:00):** The owner accepted F2.
 
 ### B35. Receipt Settings — M9
 

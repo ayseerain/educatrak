@@ -96,7 +96,7 @@ describe("live finance settings", () => {
     })));
   });
 
-  it("shows persisted plan structure and accurately reports unavailable edits", async () => {
+  it("shows persisted plan structure with the versioning rule for managers", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -114,7 +114,7 @@ describe("live finance settings", () => {
     expect(screen.getByRole("heading", { name: "Plans" })).toBeInTheDocument();
     expect(await screen.findByText("Two-part sample plan")).toBeInTheDocument();
     expect(screen.getByText("First installment")).toBeInTheDocument();
-    expect(screen.getByText("Your role may manage finance settings, but payment plan changes are not available yet.")).toBeInTheDocument();
+    expect(screen.getByText("Revising a plan creates a new version for new accounts only. Existing accounts keep their version.")).toBeInTheDocument();
   });
 
   it("uses a general API error when finance settings cannot be loaded", async () => {

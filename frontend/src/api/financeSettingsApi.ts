@@ -21,8 +21,11 @@ export interface FinancePaymentPlan {
   id: string;
   name: string;
   downPaymentType: string;
+  /** Centavos when type is "amount"; basis points (10000 = 100%) when "percent". */
   downPaymentValue: number;
   active: boolean;
+  version: number;
+  previousVersionId: string | null;
   installments: {
     label: string;
     sequence: number;
@@ -38,6 +41,42 @@ export async function listFinanceFeeSchedules(): Promise<FinanceFeeSchedule[]> {
 
 export async function listFinancePaymentPlans(): Promise<FinancePaymentPlan[]> {
   const result = await request<{ data: FinancePaymentPlan[] }>("/settings/finance/plans");
+  return result.data;
+}
+
+/** Plan create/revise body (API contract rows 65–66). Installment percents are basis points summing to 10000. */
+export interface PaymentPlanInput {
+  name: string;
+  down_payment_type: "amount" | "percent";
+  down_payment_value: number;
+  installments: { label: string; due_day_offset: number; percent_of_remaining_basis_points: number }[];
+}
+
+export interface PaymentPlanPreview {
+  planId: string;
+  version: number;
+  totalCents: number;
+  installments: { label: string; sequence: number; dueDayOffset: number; dueDate: string; amountCents: number }[];
+}
+
+export async function createFinancePaymentPlan(input: PaymentPlanInput): Promise<void> {
+  await request("/settings/finance/plans", { method: "POST", body: JSON.stringify(input) });
+}
+
+/** Creates version N+1 for new accounts only; existing accounts keep the old version. */
+export async function reviseFinancePaymentPlan(planId: string, input: PaymentPlanInput): Promise<void> {
+  await request(`/settings/finance/plans/${encodeURIComponent(planId)}`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export async function deactivateFinancePaymentPlan(planId: string): Promise<void> {
+  await request(`/settings/finance/plans/${encodeURIComponent(planId)}/deactivate`, { method: "POST" });
+}
+
+export async function previewFinancePaymentPlan(planId: string, totalCents: number): Promise<PaymentPlanPreview> {
+  const result = await request<{ data: PaymentPlanPreview }>(`/settings/finance/plans/${encodeURIComponent(planId)}/preview`, {
+    method: "POST",
+    body: JSON.stringify({ total_cents: totalCents }),
+  });
   return result.data;
 }
 

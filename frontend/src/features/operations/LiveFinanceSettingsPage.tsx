@@ -9,7 +9,6 @@ import {
   reviseFinanceFeeItem,
   type FeeItemInput,
   type FinanceFeeSchedule,
-  type FinancePaymentPlan,
 } from "@/api/financeSettingsApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -19,6 +18,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useClientPagination } from "@/components/ui/useClientPagination";
+import { LivePaymentPlans } from "@/features/operations/LivePaymentPlans";
 import { centavos, format, parse } from "@/lib/money";
 
 function FinanceSettingsHeader({ title, editable, section }: { title: string; editable: boolean; section: "fees" | "plans" }) {
@@ -32,7 +32,7 @@ function FinanceSettingsHeader({ title, editable, section }: { title: string; ed
         {section === "fees" && editable
           ? "New fee items update existing accounts in the selected grade. Revisions create a new version for future accounts."
           : section === "plans" && editable
-            ? "Your role may manage finance settings, but payment plan changes are not available yet."
+            ? "Revising a plan creates a new version for new accounts only. Existing accounts keep their version."
             : "These finance settings are read-only for your role."}
       </p>
     </Card>
@@ -198,48 +198,6 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
   </Card>;
 }
 
-function PaymentPlanCards({ plans }: { plans: FinancePaymentPlan[] }) {
-  if (plans.length === 0) return <EmptyState message="No payment plans are configured." />;
-
-  return <div className="grid gap-4">
-    {plans.map((plan) => <PaymentPlanCard key={plan.id} plan={plan} />)}
-  </div>;
-}
-
-function PaymentPlanCard({ plan }: { plan: FinancePaymentPlan }) {
-  const pagination = useClientPagination(plan.installments, "installments");
-  return <Card>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-text-primary">{plan.name}</h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            Down payment rule: {plan.downPaymentType} · configured value {plan.downPaymentValue}
-          </p>
-        </div>
-        <StatusBadge status={plan.active ? "active" : "inactive"} />
-      </div>
-      {plan.installments.length === 0
-        ? <p className="mt-4 text-sm text-text-secondary">No installment steps are configured.</p>
-        : <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse text-left text-sm">
-              <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
-                <th scope="col" className="py-2 pr-4">Sequence</th>
-                <th scope="col" className="py-2 pr-4">Installment</th>
-                <th scope="col" className="py-2 pr-4">Due day offset</th>
-                <th scope="col" className="py-2">Share of remaining balance</th>
-              </tr></thead>
-              <tbody>{pagination.items.map((installment) => <tr key={`${plan.id}-${installment.sequence}`} className="border-b last:border-0">
-                <td className="py-2 pr-4 font-mono">{installment.sequence}</td>
-                <td className="py-2 pr-4">{installment.label}</td>
-                <td className="py-2 pr-4">{installment.dueDayOffset}</td>
-                <td className="py-2">{installment.percentOfRemainingBasisPoints} bp</td>
-              </tr>)}</tbody>
-            </table>
-            {pagination.controls}
-          </div>}
-  </Card>;
-}
-
 export function LiveFinanceSettingsPage({
   section,
   editable,
@@ -307,7 +265,7 @@ export function LiveFinanceSettingsPage({
     {section === "plans" && <>
       {plans.isPending && <LoadingState message="Loading payment plans…" layout="table" columns={4} />}
       {plans.isError && <ErrorState message={plans.error.message} onRetry={() => void plans.refetch()} />}
-      {plans.data && <PaymentPlanCards plans={plans.data} />}
+      {plans.data && <LivePaymentPlans plans={plans.data} editable={editable} />}
     </>}
   </>;
 }

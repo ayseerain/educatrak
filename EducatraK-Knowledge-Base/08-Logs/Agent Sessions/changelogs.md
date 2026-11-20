@@ -3190,3 +3190,22 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - The browser check was not performed.
 - **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
 - **Follow-ups:** Owner acceptance of F2. Browser check of F1 and F2. F3 next.
+
+### Friday, November 20, 2026 — 15:57:31 +08:00 | Frontend live settings F3 — Plans tab; F2 accepted
+
+- **Agent:** Claude Code
+- **Summary:** The owner accepted F2. F3 connects the live Plans tab to API contract rows 65–68.
+  - Create plans; revise the latest active version as N+1 (existing accounts keep their version); deactivate with a confirmation.
+  - Every finance viewer can preview a schedule. Version lineage is shown.
+  - Inputs in pesos and percents are converted to centavos and basis points. A 100% share check runs on the client. Server 422s show per field.
+- **Files:**
+  - Added: `frontend/src/features/operations/LivePaymentPlans.tsx`, `frontend/src/test/liveFinancePlans.test.tsx`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-frontend-live-settings-f3.md`.
+  - Updated: `frontend/src/api/financeSettingsApi.ts`, `frontend/src/features/operations/LiveFinanceSettingsPage.tsx`, `frontend/src/test/liveFinanceSettings.test.tsx`, `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` (B32 note; F2 acceptance on B34), `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, this changelog.
+- **Validation:**
+  - Focused 14/14 passed.
+  - Full suite 276/277; the 1 failure is the pre-existing `liveBillingAccounts.test.tsx:68`.
+  - `tsc -b` was clean and `npm run build` passed.
+  - The live plan list and preview error were checked with `curl`.
+  - The browser check was not performed.
+- **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
+- **Follow-ups:** Owner acceptance of F3. Browser check. The demo plan has no installment steps (tracked as [DATA]). F4 next.
