@@ -1,6 +1,6 @@
 # SYNC-MYSQL-01 — Target-Compatible MySQL Validation Runbook
 
-**Status:** Approved workstream; environment-blocked at Friday, November 13, 2026 — 23:44:55 +08:00  
+**Status:** Executed on an owner-authorized local MySQL 8.4 substitute at Friday, November 20, 2026 — 13:51:07 +08:00; engine-compatible, not deployment-ready. Originally environment-blocked at Friday, November 13, 2026 — 23:44:55 +08:00  
 **Branch / verified HEAD:** `feature/backend-foundation` / `124a78637e36ee91fd0b3a126813b5a394305ab6`  
 **Purpose:** Establish reproducible evidence for the current Laravel migration set and concurrency-sensitive financial paths on a clean, owner-approved, disposable database that matches the intended deployment engine. This is a verification runbook, not a deployment, schema-change, or production-readiness authorization.
 
@@ -40,3 +40,24 @@ Record every actual command, database identity (without credentials), engine/ver
 ## Acceptance criteria
 
 SYNC-MYSQL-01 can move from environment-blocked to validation-complete only when the supplied matrix is recorded, every required activity above has reproducible success/failure evidence from the approved disposable target, no project data was used, and the owner accepts the results. It does not authorize SYNC-GDN-02, SYNC-LRN-02, school-year, import, retention, deployment, or any schema redesign.
+
+## Execution record — Friday, November 20, 2026 — 13:51:07 +08:00
+
+**Owner matrix (2026-11-20 planning session):** MySQL 8.4 LTS. A throwaway local Docker container (`mysql:8.4`, utf8mb4 / utf8mb4_unicode_ci) is authorized as the disposable target, with fictional data only, never using `backend/.env`. This authorization overrides the "Do not create a local substitute image" precondition above for this run only. The school's deployment server must still be confirmed against this matrix before release.
+
+Reproduce the run (credentials are random and set in process environment only):
+
+```sh
+docker run -d --name et-mysql-val -p 127.0.0.1:33061:3306 -e MYSQL_ROOT_PASSWORD=$PW -e MYSQL_DATABASE=et_val -e MYSQL_USER=et_val -e MYSQL_PASSWORD=$PW mysql:8.4 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+docker run -d --name et-mysql-restore -p 127.0.0.1:33062:3306 ... (same, db et_restore)
+export DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=33061 DB_DATABASE=et_val DB_USERNAME=et_val DB_PASSWORD=$PW
+php artisan migrate:fresh --force            # steps 1-2
+php artisan test --compact                   # full suite incl. tests/Feature/MySqlRowLockTest.php (step 5)
+CACHE_STORE=file php artisan migrate --isolated --force   # run twice concurrently after db:wipe (step 6)
+docker exec et-mysql-val mysqldump --single-transaction ... | docker exec -i et-mysql-restore mysql ...   # step 7
+docker rm -f -v et-mysql-val et-mysql-restore   # step 8
+```
+
+Results: one defect was found and fixed (a 72-character index name). All 16 migrations ran. The populated W1b upgrade/rollback preserved plan links. The full suite passed (199 passed, 1 SQLite-only skip). InnoDB row locks and unique keys were proven. The migration lock allowed one winner. The backup/restore was identical, with 46 FKs and 0 orphans. Full evidence: `08-Logs/2026-11-20-sync-mysql-01-execution.md`.
+
+Still open: a line-by-line `Reference-Schema.sql` comparison, parallel HTTP-level race tests, the real server's configuration identity, and every B13 operational item.

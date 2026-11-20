@@ -734,3 +734,20 @@ Documentation review confirmed the master and derived view are consistent, activ
 - Resume Note: W1a–W3 are implemented, validated and committed locally on `feature/backend-completion`. They await owner acceptance. Formal Cross-Check/Audit is not claimed.
 - Owner acceptance and authorization for next workstream: pending.
 - Logged at: Friday, November 20, 2026 — 01:05:12 +08:00
+
+## 24. SYNC-MYSQL-01 execution on MySQL 8.4
+
+### Resume — SYNC-MYSQL-01: Target-MySQL validation
+- State: VALIDATING; committed locally. Awaiting owner acceptance.
+- Branch / verified HEAD / working tree: `feature/mysql-validation` from `main` `d4dddf1`; commits `4c3dcd0`, `fcba0b5`.
+- Source requirements and owner approval (exact reference): `Target-MySQL-Validation-Runbook.md`. Owner matrix (2026-11-20): MySQL 8.4 LTS, throwaway local Docker target, test-only `APP_KEY` in `phpunit.xml`.
+- Exact accepted scope / files: `backend/phpunit.xml`, `backend/database/migrations/2026_10_09_062801_create_educatrak_operations_tables.php` (explicit index name only), `backend/tests/Feature/{CashierOperationsTest,PaymentPlanSettingsTest,MySqlRowLockTest}.php`.
+- Commands and tests actually run:
+  - SQLite: 200 tests / 198 passed / 2 skipped / 1,652 assertions.
+  - MySQL 8.4.13: 200 tests / 199 passed / 1 skipped / 1,650 assertions.
+  - Populated W1b up/down/up passed. Migration isolation allowed one winner. Backup/restore was identical. Pint passed on the changed files.
+- Migrations/data operations: disposable Docker databases only. Both containers and their volumes were removed.
+- Open decisions/risks: parallel HTTP race tests and the line-by-line reference-schema comparison were not done. B13 (the real server, backup operator, scheduler/workers, TLS, secrets, monitoring) is unchanged.
+- Resume Note: MySQL 8.4 engine compatibility is proven locally. Next: owner acceptance; then B13 deployment items or the open owner decisions.
+- Owner acceptance and authorization for next workstream: pending.
+- Logged at: Friday, November 20, 2026 — 13:51:07 +08:00

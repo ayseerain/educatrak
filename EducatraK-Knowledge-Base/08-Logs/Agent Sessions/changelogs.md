@@ -3113,7 +3113,7 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Commit/PR:** Local commit; no push, no PR.
 - **Follow-ups:** Owner acceptance of W1a–W3. Not production-ready: matching-MySQL validation, backup policy and the blocked decisions remain.
 
-### Friday, November 20, 2026 - 12:49:57 +08:00 | Resolve feature/backend-completion → main merge conflict
+### Friday, November 20, 2026 — 12:49:57 +08:00 | Resolve feature/backend-completion → main merge conflict
 
 - **Agent:** Claude Code
 - **Summary:** Resolved the merge conflict in this changelog while merging `feature/backend-completion` into `main` (`889d132`). Both sides had appended distinct entries; kept all of them in chronological order (the `main` frontend refinement entry at 00:07:23, then the branch backend W1a–W3 entries from 00:53:27) and removed conflict markers. No entry content was altered.
@@ -3121,3 +3121,24 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** Conflict-marker scan returned no matches. `git diff --cached --check` result recorded in session output.
 - **Commit/PR:** Merge commit not yet created.
 - **Follow-ups:** None.
+
+### Friday, November 20, 2026 — 13:51:20 +08:00 | SYNC-MYSQL-01 MySQL 8.4 validation and test-key fix
+
+- **Agent:** Claude Code
+- **Summary:** Added a test-only `APP_KEY` to `phpunit.xml` and ran the target-MySQL runbook on an owner-authorized disposable MySQL 8.4.13 Docker container.
+  - Found and fixed a 72-character index name that MySQL rejects (error 1059).
+  - Made one close-out assertion independent of JSON key order.
+  - Skipped the SQLite-only migration test off SQLite.
+  - Added `MySqlRowLockTest` for InnoDB row-lock and unique-key proof.
+  - Proved the populated W1b upgrade/rollback, the migration lock and the backup/restore.
+- **Files:**
+  - Code and tests: `backend/phpunit.xml`, `backend/database/migrations/2026_10_09_062801_create_educatrak_operations_tables.php`, `backend/tests/Feature/{CashierOperationsTest,PaymentPlanSettingsTest,MySqlRowLockTest}.php`.
+  - Docs: `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/Target-MySQL-Validation-Runbook.md`, `Backend-Loop-Engineering.md` (§24), `EducatraK-Knowledge-Base/08-Logs/2026-11-20-sync-mysql-01-execution.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, this changelog.
+  - Also normalized the dash in the earlier merge-resolution heading timestamp.
+- **Validation:**
+  - SQLite with no process key: 200 tests / 198 passed / 2 skipped / 1,652 assertions.
+  - MySQL 8.4.13: 200 / 199 passed / 1 skipped / 1,650 assertions. All 16 migrations ran.
+  - Backup/restore checks were identical (46 FKs, 0 orphans).
+  - Pint passed on the changed PHP files. `git diff --check` passed; no `frontend/` diff.
+- **Commit/PR:** `4c3dcd0`, `fcba0b5` and a docs commit on `feature/mysql-validation`; no push.
+- **Follow-ups:** Owner acceptance. Parallel HTTP race tests and a line-by-line reference-schema comparison were not done. B13 deployment items remain open.
