@@ -3142,3 +3142,12 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - Pint passed on the changed PHP files. `git diff --check` flagged only the runbook status line's intentional trailing two-space Markdown line break (kept from the original line). No `frontend/` diff.
 - **Commit/PR:** `4c3dcd0`, `fcba0b5` and a docs commit on `feature/mysql-validation`; no push.
 - **Follow-ups:** Owner acceptance. Parallel HTTP race tests and a line-by-line reference-schema comparison were not done. B13 deployment items remain open.
+
+### Friday, November 20, 2026 — 14:12:23 +08:00 | Frontend live-settings wiring prompt
+
+- **Agent:** Claude Code
+- **Summary:** Saved a prepared, not-yet-run agent prompt for connecting the live frontend to the W1a–W2 routes (API contract rows 52–72). It is phased into F1 system settings, F2 school structure, F3 plans and F4 the Cashier account wizard, with an owner gate after each. Mock mode stays unchanged, and new interactions reuse existing components and `educatrak-*` skills.
+- **Files:** Added `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Live-Settings-Wiring-Prompt.md`; updated this changelog.
+- **Validation:** Documentation only. `git diff --check` result is reported in session output. No code changed.
+- **Commit/PR:** Local commit on `feature/mysql-validation`; no push.
+- **Follow-ups:** Run the prompt after `feature/mysql-validation` is accepted and merged.
