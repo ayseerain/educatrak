@@ -158,6 +158,7 @@ For each screen below:
 - **Build scope:** Four-step account wizard: student, fees, plan/schedule, review/create.
 - **Build status:** [x] Built
 - **Resume Note:** Development retains the sample `AccountWizardPage`. Production creation is disabled until server-backed plan/schedule creation and its confirmed configuration are available; the route cannot claim a mock account save. Formal Phase 2 audit remains pending.
+- **Live update (Friday, November 20, 2026 — 22:41:32 +08:00):** F4 connected `/accounts/new` in production (`LiveAccountWizardPage.tsx`). It reads the current school year and active plans from the new `GET /api/billing-accounts/creation-options` (owner-approved; contract row 73), searches students with `/api/payment-students`, previews with `POST /api/billing-accounts/preview` (required fees locked, optional fees removable), and creates with `POST /api/billing-accounts` after a confirmation checkbox, then opens `/accounts/:id`. Server 422s (duplicate account, missing fee schedule) are shown. Renewal mode (`?mode=renew`) and `?student=` prefill stay mock-only. Tests: `liveAccountWizard.test.tsx`. Browser check not performed. Owner acceptance pending.
 
 ### B13. Account Detail — M3
 
@@ -319,6 +320,7 @@ For each screen below:
 - **Build status:** [x] Built
 - **Resume Note:** Production `/settings/plans` reads persisted plans and installment structures through `/api/settings/finance/plans` for ACC only. The view clearly reports that plan edits are unavailable until an approved versioned, audited mutation workflow is implemented; formal Phase 2 audit remains pending.
 - **Live update (Friday, November 20, 2026 — 15:57:11 +08:00):** F3 connected production to API contract rows 65–68 (`LivePaymentPlans.tsx`). Accounting creates plans (peso and percent inputs converted to centavos and basis points; shares must total 100%), revises the active latest version as N+1 (existing accounts keep their version), deactivates with a confirmation dialog, and every finance viewer can preview a schedule. Version lineage is shown. Nothing can be deleted. Tests: `liveFinancePlans.test.tsx`. Browser check not performed. Owner acceptance pending.
+- **Owner acceptance (Friday, November 20, 2026 — 22:41:32 +08:00):** The owner accepted F3.
 
 ### B33. Clearance Rules — M9
 

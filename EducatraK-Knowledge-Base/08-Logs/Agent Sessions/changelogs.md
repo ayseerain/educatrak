@@ -3209,3 +3209,23 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - The browser check was not performed.
 - **Commit/PR:** Local commit on `feature/frontend-live-settings`; no push.
 - **Follow-ups:** Owner acceptance of F3. Browser check. The demo plan has no installment steps (tracked as [DATA]). F4 next.
+
+### Friday, November 20, 2026 — 22:41:58 +08:00 | Frontend live settings F4 — Cashier account wizard; F3 accepted
+
+- **Agent:** Claude Code
+- **Summary:** The owner accepted F3.
+  - **Backend (owner decision):** added read-only `GET /api/billing-accounts/creation-options` (`accounts.manage`), because the Cashier could not read plans or the current school year.
+  - **Frontend:** `/accounts/new` in live mode searches the student, picks an active plan, previews fees and schedule (optional fees removable), confirms and creates, then opens the account.
+  - Mock wizard unchanged.
+- **Files:**
+  - Backend (commit `79b1ffb`): `backend/app/Http/Controllers/Api/BillingAccountController.php`, `backend/routes/api.php`, `backend/tests/Feature/BillingAccountCreationTest.php`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md` (row 73).
+  - Frontend added: `frontend/src/api/accountCreationApi.ts`, `frontend/src/features/billing/LiveAccountWizardPage.tsx`, `frontend/src/test/liveAccountWizard.test.tsx`.
+  - Frontend updated: `frontend/src/features/operations/OperationalPages.tsx`.
+  - Records: `EducatraK-Knowledge-Base/07-AI-Agents/Frontend-Build-and-Audit-Manual.md` (B12 note; F3 acceptance on B32), `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-frontend-live-settings-f4.md`, this changelog.
+- **Validation:**
+  - Backend 199 passed / 2 skipped; Pint passed.
+  - Frontend focused 6/6. Full 282/283; the 1 failure is the pre-existing `liveBillingAccounts.test.tsx:68`.
+  - `npm run build` passed.
+  - The live Cashier flow was checked with `curl`, without creating anything. The browser check was not performed.
+- **Commit/PR:** Backend `79b1ffb` and a frontend commit on `feature/frontend-live-settings`; no push.
+- **Follow-ups:** Owner acceptance of F4. Browser check. Live renewal mode [QUESTION]. Live student search combobox [UX].

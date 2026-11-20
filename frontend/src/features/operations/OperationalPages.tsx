@@ -109,6 +109,7 @@ import { LiveSchoolStructurePage } from "@/features/operations/LiveSchoolStructu
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
 import { StudentFormPage as LiveStudentFormPage } from "@/features/students/StudentFormPage";
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
+import { LiveAccountWizardPage } from "@/features/billing/LiveAccountWizardPage";
 import type { AuthenticatedUser, Capability, Role, StudentGender } from "@/lib/types";
 
 const firstStudent = students[0]!;
@@ -928,6 +929,11 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
   );
 }
 export function AccountWizardPage({ user }: { user?: AuthenticatedUser }) {
+  if (isLiveCashierApiEnabled()) return <LiveAccountWizardPage />;
+  return <MockAccountWizardPage user={user} />;
+}
+
+function MockAccountWizardPage({ user }: { user?: AuthenticatedUser }) {
   const [searchParams] = useSearchParams();
   const renewalMode = searchParams.get("mode") === "renew";
   const queryStudent = getStudentById(searchParams.get("student") ?? undefined);
