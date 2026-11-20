@@ -160,6 +160,10 @@ class PaymentPlanSettingsTest extends TestCase
 
     public function test_versioning_migration_upgrades_populated_rows_and_refuses_unsafe_rollback(): void
     {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('MySQL DDL implicitly commits the test transaction; the MySQL upgrade/rollback proof is in Target-MySQL-Validation-Runbook.md.');
+        }
+
         $migration = require database_path('migrations/2026_11_20_010000_add_versioning_to_payment_plans.php');
         $migration->down();
 

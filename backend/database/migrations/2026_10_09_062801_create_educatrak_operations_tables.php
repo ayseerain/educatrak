@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('reason');
             $table->timestamp('calculated_at');
             $table->timestamps();
-            $table->unique(['student_id', 'school_year_id', 'kind', 'exam_period_id']);
+            $table->unique(['student_id', 'school_year_id', 'kind', 'exam_period_id'], 'clearance_records_student_year_kind_exam_unique');
         });
 
         Schema::create('notification_logs', function (Blueprint $table) {

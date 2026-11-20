@@ -460,10 +460,9 @@ class CashierOperationsTest extends TestCase
             ->assertJsonPath('data.variance_cents', 0);
 
         $closeOut = CloseOut::query()->findOrFail($submitted->json('data.id'));
-        $this->assertSame([
-            'cash_cents' => 10_000,
-            'by_method' => ['cash' => 10_000, 'check' => 5_000],
-        ], $closeOut->system_totals);
+        // MySQL JSON columns normalize key order, so compare per key.
+        $this->assertSame(10_000, $closeOut->system_totals['cash_cents']);
+        $this->assertSame(['cash' => 10_000, 'check' => 5_000], $closeOut->system_totals['by_method']);
     }
 
     public function test_close_out_submission_is_rolled_back_when_audit_recording_fails(): void
