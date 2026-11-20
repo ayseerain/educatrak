@@ -14,9 +14,11 @@ use App\Http\Controllers\Api\NotificationLogController;
 use App\Http\Controllers\Api\OutstandingReportController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReminderDeliveryController;
+use App\Http\Controllers\Api\SchoolStructureSettingsController;
 use App\Http\Controllers\Api\SecurityEventController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentStatementController;
+use App\Http\Controllers\Api\SystemSettingsController;
 use App\Http\Controllers\Api\UserAdministrationController;
 use App\Http\Controllers\Api\VoidRequestController;
 use Illuminate\Support\Facades\Route;
@@ -63,12 +65,50 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:settings.finance.view');
             Route::get('/settings/finance/plans', [FinanceSettingsController::class, 'paymentPlans'])
                 ->middleware('capability:settings.finance.view');
+            Route::post('/settings/finance/plans', [FinanceSettingsController::class, 'storePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::patch('/settings/finance/plans/{paymentPlan}', [FinanceSettingsController::class, 'revisePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::post('/settings/finance/plans/{paymentPlan}/deactivate', [FinanceSettingsController::class, 'deactivatePaymentPlan'])
+                ->middleware('capability:settings.finance.manage');
+            Route::post('/settings/finance/plans/{paymentPlan}/preview', [FinanceSettingsController::class, 'previewPaymentPlan'])
+                ->middleware('capability:settings.finance.view');
             Route::post('/settings/finance/fees/{feeSchedule}/items', [FinanceSettingsController::class, 'storeFeeItem'])
                 ->middleware('capability:settings.finance.manage');
             Route::patch('/settings/finance/fee-items/{feeItem}', [FinanceSettingsController::class, 'reviseFeeItem'])
                 ->middleware('capability:settings.finance.manage');
             Route::post('/settings/finance/fee-items/{feeItem}/deactivate', [FinanceSettingsController::class, 'deactivateFeeItem'])
                 ->middleware('capability:settings.finance.manage');
+            Route::get('/settings/system', [SystemSettingsController::class, 'show'])
+                ->middleware('capability:settings.system.view');
+            Route::patch('/settings/system', [SystemSettingsController::class, 'update'])
+                ->middleware('capability:settings.system.manage');
+            Route::get('/settings/school-years', [SchoolStructureSettingsController::class, 'schoolYears'])
+                ->middleware('capability:settings.system.view');
+            Route::post('/settings/school-years', [SchoolStructureSettingsController::class, 'storeSchoolYear'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/school-years/{schoolYear}', [SchoolStructureSettingsController::class, 'updateSchoolYear'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/make-current', [SchoolStructureSettingsController::class, 'makeCurrent'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/terms', [SchoolStructureSettingsController::class, 'storeTerm'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/terms/{term}', [SchoolStructureSettingsController::class, 'updateTerm'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/terms/{term}/exam-periods', [SchoolStructureSettingsController::class, 'storeExamPeriod'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/exam-periods/{examPeriod}', [SchoolStructureSettingsController::class, 'updateExamPeriod'])
+                ->middleware('capability:settings.system.manage');
+            Route::get('/settings/grade-levels', [SchoolStructureSettingsController::class, 'gradeLevels'])
+                ->middleware('capability:settings.system.view');
+            Route::post('/settings/grade-levels', [SchoolStructureSettingsController::class, 'storeGradeLevel'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/grade-levels/{gradeLevel}', [SchoolStructureSettingsController::class, 'updateGradeLevel'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/grade-levels/{gradeLevel}/sections', [SchoolStructureSettingsController::class, 'storeSection'])
+                ->middleware('capability:settings.system.manage');
+            Route::patch('/settings/sections/{section}', [SchoolStructureSettingsController::class, 'updateSection'])
+                ->middleware('capability:settings.system.manage');
             Route::get('/reports/daily', [DailyReportController::class, 'show'])
                 ->middleware('capability:reports.view');
             Route::get('/reports/outstanding', [OutstandingReportController::class, 'index'])
@@ -88,6 +128,10 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:students.manage');
             Route::get('/billing-accounts', [BillingAccountController::class, 'index'])
                 ->middleware('capability:accounts.view');
+            Route::post('/billing-accounts', [BillingAccountController::class, 'store'])
+                ->middleware('capability:accounts.manage');
+            Route::post('/billing-accounts/preview', [BillingAccountController::class, 'preview'])
+                ->middleware('capability:accounts.manage');
             Route::get('/billing-accounts/{billingAccount}', [BillingAccountController::class, 'show'])
                 ->middleware('capability:accounts.view');
             Route::post('/billing-accounts/{billingAccount}/adjustments', [BillingAccountController::class, 'storeAdjustment'])

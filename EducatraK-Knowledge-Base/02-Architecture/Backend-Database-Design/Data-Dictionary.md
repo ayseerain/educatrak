@@ -34,15 +34,15 @@
 | `guardian_student` | guardian_id; student_id; is_primary; relationship? varchar(100); timestamps | Composite PK; both FKs restrict. Pivot relationship is the approved link-specific field and was additively backfilled; DDL does not enforce one primary guardian per student. |
 | `fee_schedules` | id; school_year_id; grade_level_id; name; active; timestamps | Year/grade restrict; unique `(school_year_id, grade_level_id, name)`. |
 | `fee_items` | id; fee_schedule_id; name; category; amount_cents; required; sort_order; active; version; previous_version_id?; timestamps | Schedule/self FK restrict. Version chain supports revision; case-insensitive name uniqueness is application validation, not a DB key. |
-| `payment_plans` | id; name; down_payment_type; down_payment_value; active; timestamps | Unique name. |
+| `payment_plans` | id; name; down_payment_type (amount\|percent); down_payment_value (centavos, or basis points for percent); active; version (default 1); previous_version_id?; timestamps | Unique `(name, version)` (was unique name before `2026_11_20_010000_add_versioning_to_payment_plans`). Self FK `previous_version_id` RESTRICT. A revision adds version N+1 and deactivates the old row; existing accounts keep the old row. |
 | `payment_plan_installments` | id; payment_plan_id; label; sequence; due_day_offset; percent_of_remaining_basis_points; timestamps | Plan restrict; unique `(payment_plan_id, sequence)`. |
-| `system_settings` | id; key; JSON value; updated_by?; timestamps | Unique key; updater set null. `billing.due_soon_days` is a known current key; no settings-management data contract exists for many required M9 items. |
+| `system_settings` | id; key; JSON value; updated_by?; timestamps | Unique key; updater set null. Known keys: `billing.due_soon_days`; W1c Administrator keys `school.name`, `school.address`, `receipt.title`, `receipt.paper_size`, `email.sender_name`, `email.sender_address`, `email.daily_send_limit` (managed through `PATCH /api/settings/system`). |
 
 ## Billing, payment, and receipt evidence
 
 | Table | Columns | Keys, relationships, and purpose |
 |---|---|---|
-| `billing_accounts` | id; student_id; school_year_id; fee_schedule_id?; payment_plan_id?; status; total_due_cents; total_paid_cents; balance_cents; created_by; timestamps | Unique `(student_id, school_year_id)`; student/year/creator restrict, source schedule/plan set null. Account provisioning route is absent. |
+| `billing_accounts` | id; student_id; school_year_id; fee_schedule_id?; payment_plan_id?; status; total_due_cents; total_paid_cents; balance_cents; created_by; timestamps | Unique `(student_id, school_year_id)`; student/year/creator restrict, source schedule set null; source plan RESTRICT since `2026_11_20_010000_add_versioning_to_payment_plans` (was set null). Account provisioning route is absent. |
 | `billing_account_items` | id; billing_account_id; fee_item_id?; name; category; amount_cents; timestamps | Account restrict, fee item set null. Stores charge snapshots independent of later source-item changes. |
 | `installments` | id; billing_account_id; label; sequence; due_date; amount_cents; paid_cents; status; timestamps | Account restrict; unique `(billing_account_id, sequence)`; status index. |
 | `adjustments` | id; billing_account_id; type; signed amount_cents; reason; created_by; effective_at; timestamps | Account/creator restrict; account/effective index. Action prevents zero and invalid discount/scholarship signs, but no DB check enforces business semantics. |

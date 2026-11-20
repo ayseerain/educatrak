@@ -3058,3 +3058,66 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Validation:** `npm test -- --run src/test/tableFilters.test.tsx src/test/dashboard.test.tsx src/test/login.test.tsx` passed (3 files, 53 tests). `npm run build` passed. `git diff --check` passed. A frontend source scan found no remaining underline or green-decoration utilities outside the negative login-test assertion.
 - **Commit/PR:** None.
 - **Follow-ups:** None.
+
+### Friday, November 20, 2026 — 00:53:27 +08:00 | Backend W1a school structure settings
+
+- **Agent:** Claude Code
+- **Summary:** Added Administrator APIs for school years, terms, exam periods, grade levels and sections. They enforce date locks, a reasoned exactly-one current-year switch, and transactional audit entries. Accounting has read access only.
+- **Files:** Added `backend/app/Http/Controllers/Api/SchoolStructureSettingsController.php`, `backend/tests/Feature/SchoolStructureSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1a.md`. Updated `backend/routes/api.php`, `backend/app/Models/{SchoolYear,Term,ExamPeriod,GradeLevel,Section}.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 9 tests / 121 assertions. Full suite passed 179 tests / 1,385 assertions on isolated SQLite `:memory:` with a throwaway `APP_KEY` set only for the process. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W1b payment plans next. Term/exam date containment is unspecified. Matching-MySQL evidence is still blocked.
+
+### Friday, November 20, 2026 — 00:59:12 +08:00 | Backend W1b payment-plan versioning
+
+- **Agent:** Claude Code
+- **Summary:** Added the approved additive payment-plan versioning migration and an integer-centavo schedule calculator. Accounting can now create, revise (N+1), deactivate and preview plans. Existing accounts keep their original plan and installments. Plans cannot be deleted once used.
+- **Files:** Added `backend/database/migrations/2026_11_20_010000_add_versioning_to_payment_plans.php`, `backend/app/Actions/ComputeInstallmentScheduleAction.php`, `backend/tests/Feature/PaymentPlanSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1b.md`. Updated `backend/app/Http/Controllers/Api/FinanceSettingsController.php`, `backend/app/Models/PaymentPlan.php`, `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 7 tests / 97 assertions, including upgrade/rollback on populated fictional rows. Full suite passed 186 tests / 1,498 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** Matching-MySQL migration run. Review the historical fee-item migration SQLite rebuild. W1c next.
+
+### Friday, November 20, 2026 — 01:01:37 +08:00 | Backend W1c school, receipt and email settings
+
+- **Agent:** Claude Code
+- **Summary:** Added Administrator-managed school name/address, receipt title, paper size, and email sender name/address and daily limit settings, stored as `system_settings` keys. Accounting has read access. The next receipt number is read-only. Changes are audited per changed key in one transaction. Send-test-email and payment-method management are not implemented (BLOCKED).
+- **Files:** Added `backend/app/Http/Controllers/Api/SystemSettingsController.php`, `backend/tests/Feature/SystemSettingsTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w1c.md`. Updated `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 4 tests / 45 assertions. Full suite passed 190 tests / 1,551 assertions on isolated SQLite `:memory:`. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W2 account creation next. Test email and payment methods remain blocked.
+
+### Friday, November 20, 2026 — 01:04:19 +08:00 | Backend W2 billing-account creation
+
+- **Agent:** Claude Code
+- **Summary:** Added Cashier `POST /api/billing-accounts` and `POST /api/billing-accounts/preview` (M3.1). The server loads the single active grade-level fee schedule, allows only optional fee removals, snapshots fees and plan, computes integer-centavo installments, enforces one account per student and current school year, recalculates status, and audits in one transaction.
+- **Files:** Added `backend/app/Actions/CreateBillingAccountAction.php`, `backend/tests/Feature/BillingAccountCreationTest.php`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w2.md`. Updated `backend/app/Http/Controllers/Api/BillingAccountController.php`, `backend/routes/api.php`, `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Focused run passed 8 tests / 92 assertions. Full suite passed 198 tests / 1,651 assertions on isolated SQLite `:memory:`. 72 API routes. Pint passed on changed files. `git diff --check` was clean. No `frontend/` diff.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** W3 documentation. Matching-MySQL concurrency evidence.
+
+### Friday, November 20, 2026 — 01:05:12 +08:00 | Backend W3 documentation reconciliation
+
+- **Agent:** Claude Code
+- **Summary:** Reconciled documentation with W1a–W2. Updated the loop manual target branch and B03/B04 notes. Added API contract routes 52–72 with test citations. Recorded owner decisions 1–4 and the planning-session answers in Open-Decisions 31.10, with 31.7 resolved. Updated the ERD and data dictionary for payment-plan versioning, the billing plan FK and the system-settings keys. Added a ledger entry.
+- **Files:** `Backend-Loop-Engineering.md`, `EducatraK-Knowledge-Base/07-AI-Agents/Backend-Foundation-Development-Ledger.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-API-Contract.md`, `EducatraK-Knowledge-Base/02-Architecture/Backend-Database-Design/{ERD.md,Data-Dictionary.md}`, `EducatraK-Knowledge-Base/06-Decisions/Open-Decisions.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-20-backend-w3.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
+- **Validation:** Documentation only. `git diff --check` was clean; no `frontend/` diff. The final full suite rerun is recorded in the verification entry.
+- **Commit/PR:** Local commit on `feature/backend-completion`; no push.
+- **Follow-ups:** Owner acceptance of W1a–W3. Matching-MySQL validation and the remaining blocked decisions.
+
+### Friday, November 20, 2026 — 01:07:16 +08:00 | Backend W1a–W3 final verification
+
+- **Agent:** Claude Code
+- **Summary:** Final gate on `feature/backend-completion` after five local commits (`de5d424`, `253b8b1`, `d00c22d`, `22c0703`, `385442c`).
+- **Files:** `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md` only.
+- **Validation:** `php artisan test --compact` passed 198 tests / 1,651 assertions on isolated SQLite `:memory:` with a process-only `APP_KEY` (baseline 170 / 1,212). `php artisan route:list --path=api --except-vendor` showed 72 routes (baseline 51). `vendor/bin/pint --test` passed on all PHP files changed since `0b600db`. Working tree was clean. No `frontend/` diff since `0b600db`.
+- **Commit/PR:** Local commit; no push, no PR.
+- **Follow-ups:** Owner acceptance of W1a–W3. Not production-ready: matching-MySQL validation, backup policy and the blocked decisions remain.
+
+### Friday, November 20, 2026 - 12:49:57 +08:00 | Resolve feature/backend-completion → main merge conflict
+
+- **Agent:** Claude Code
+- **Summary:** Resolved the merge conflict in this changelog while merging `feature/backend-completion` into `main` (`889d132`). Both sides had appended distinct entries; kept all of them in chronological order (the `main` frontend refinement entry at 00:07:23, then the branch backend W1a–W3 entries from 00:53:27) and removed conflict markers. No entry content was altered.
+- **Files:** `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/changelogs.md`.
+- **Validation:** Conflict-marker scan returned no matches. `git diff --cached --check` result recorded in session output.
+- **Commit/PR:** Merge commit not yet created.
+- **Follow-ups:** None.

@@ -2,7 +2,7 @@
 
 > **Project:** EducaTrak, Mendez Christian Academy (MCA) student billing and payment-monitoring system.
 >
-> **Execution target:** `feature/backend-foundation` **after** the owner merges `main` into it; verify the agent's actual checkout and merge ancestry before work. The previously observed merge commit is `ecfaba034e80895ec008449b77d99bc3e358ae34` (November 11, 2026 UTC). This is a reference point, not a substitute for checking the live checkout.
+> **Execution target:** `feature/backend-completion`, created from `main` at `0b600db` on November 20, 2026 (+08:00) for the owner-approved W1a–W3 completion loop. The earlier `feature/backend-foundation` work is already merged into `main`. Historical target text: `feature/backend-foundation` **after** the owner merges `main` into it; verify the agent's actual checkout and merge ancestry before work. The previously observed merge commit is `ecfaba034e80895ec008449b77d99bc3e358ae34` (November 11, 2026 UTC). This is a reference point, not a substitute for checking the live checkout.
 >
 > **Purpose:** A persistent, resumable build-and-audit ledger for finishing the **approved backend work** in the existing Laravel application. It is not a license to rebuild working features, invent school policy, operate on live data, or deploy.
 >
@@ -130,7 +130,9 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Config and school-year tests, historical-snapshot tests, explicit settings API/response contracts.
 
-**Resume Note:** _State: BLOCKED. Owner approved exactly one current school year and a clear configuration error when none exists. Dashboard school-year requests now return 409 unless exactly one current year exists; focused/full isolated tests pass. Live school-year, term, payment-plan, receipt-setting, and school-setting management routes remain absent and need role/API contracts before full M9 implementation. Updated Thursday, November 12, 2026 — 02:34:37 Asia/Manila._
+**Resume Note:** _State: WAITING_FOR_ACCEPTANCE. Owner decisions 1–4 (2026-11-19) unblocked M9. Implemented and validated in W1a (school structure, §19), W1b (payment-plan versioning, §20) and W1c (school/receipt/email settings, §21) on `feature/backend-completion`. The full isolated suite passed 198 tests / 1,651 assertions after W2. Still blocked: payment-method management, send-test-email, and matching-MySQL validation. Updated Friday, November 20, 2026 — 01:05:12 +08:00._
+
+**Previous Resume Note:** _State: BLOCKED. Owner approved exactly one current school year and a clear configuration error when none exists. Dashboard school-year requests now return 409 unless exactly one current year exists; focused/full isolated tests pass. Live school-year, term, payment-plan, receipt-setting, and school-setting management routes remain absent and need role/API contracts before full M9 implementation. Updated Thursday, November 12, 2026 — 02:34:37 Asia/Manila._
 
 ## B04. Billing accounts, installments and adjustments — M3, M11.1
 
@@ -141,7 +143,9 @@ Execute Phase 0 **read-only** on the merged checkout. Record commands and actual
 
 **Acceptance evidence:** Calculation tests, mutation/authorization tests, integrity and concurrency checks, edge cases for rounding and duplicate operations.
 
-**Resume Note:** _State: BLOCKED. Billing-account reads, adjustment validation/transactions, snapshots, and status recalculation passed focused tests (7 tests, 67 assertions). The route inventory has no `POST /billing-accounts`; current tests construct accounts directly. Approved M3 account creation needs configured school year, fee schedule, payment plan, installment calculation, snapshot, and account-provisioning contract. B03 has no live management APIs for those settings. Blocked Thursday, November 12, 2026 — 02:39:49 Asia/Manila._
+**Resume Note:** _State: WAITING_FOR_ACCEPTANCE. W2 (§22) added `POST /api/billing-accounts` and `POST /api/billing-accounts/preview` on top of the B03 settings work (`BillingAccountCreationTest`, 8 tests / 92 assertions). The adjustment approval threshold remains open (31.1); no escalation was invented. Matching-MySQL concurrency evidence is still blocked. Updated Friday, November 20, 2026 — 01:05:12 +08:00._
+
+**Previous Resume Note:** _State: BLOCKED. Billing-account reads, adjustment validation/transactions, snapshots, and status recalculation passed focused tests (7 tests, 67 assertions). The route inventory has no `POST /billing-accounts`; current tests construct accounts directly. Approved M3 account creation needs configured school year, fee schedule, payment plan, installment calculation, snapshot, and account-provisioning contract. B03 has no live management APIs for those settings. Blocked Thursday, November 12, 2026 — 02:39:49 Asia/Manila._
 
 ## B05. Payment recording, allocations, receipts — M4
 
@@ -617,3 +621,116 @@ Documentation review confirmed the master and derived view are consistent, activ
 **Owner disposition:** _Approval records SYNC-LRN-02 only. It does not authorize database access, a migration, installed-record change, target-MySQL operation, frontend change, or any other workstream until the stated data and environment gates are satisfied._
 
 - Logged at: Saturday, November 14, 2026 — 00:07:34 +08:00
+
+## 19. W1a school year, terms, exam periods, grade levels and sections
+
+### Resume — W1a: School structure settings (M9.4)
+- State: VALIDATING; committed locally under the owner's 2026-11-19 gated approval for W1a–W3.
+- Branch / verified HEAD / working tree: `feature/backend-completion` created from `main` at `0b600db`; clean before work.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.4; owner decisions 1, 2 and 4 approved 2026-11-19. Administrator manages school structure (`settings.system.manage`); Accounting reads it (`settings.system.view`). School years are never deleted. Label corrections are audited. School-year and term dates lock once any billing account exists for the year. The current year may change mid-year with a 10–1000 character reason. Exactly one year is current.
+- Existing code and already-verified behavior: tables `school_years`, `terms`, `exam_periods`, `grade_levels` and `sections` already existed. The dashboard 409 when not exactly one current year is unchanged. No management routes existed.
+- Exact accepted scope / files: new `backend/app/Http/Controllers/Api/SchoolStructureSettingsController.php` and `backend/tests/Feature/SchoolStructureSettingsTest.php`. Edited `backend/routes/api.php` (13 routes) and added boolean casts and relations on `SchoolYear`, `Term`, `ExamPeriod`, `GradeLevel` and `Section`. Date columns are intentionally not cast, so stored values stay `Y-m-d`.
+- Data/API/role invariants:
+  - Reads: GET `/api/settings/school-years` and `/api/settings/grade-levels` (`settings.system.view`).
+  - Writes (`settings.system.manage`): POST/PATCH school years, POST make-current, and POST/PATCH terms, exam periods, grade levels and sections. No delete routes.
+  - The first year ever created becomes current; later years start non-current. make-current locks all year rows and switches in one transaction. Every mutation and its audit entry share one transaction.
+  - Term and exam dates are not forced inside the school-year range; no source specifies this. Adding a dated term to a locked year is rejected.
+- Commands and tests actually run:
+  - `php artisan test --compact tests/Feature/SchoolStructureSettingsTest.php`: 9 tests / 121 assertions passed.
+  - Full `php artisan test --compact`: 179 tests / 1,385 assertions passed.
+  - `vendor/bin/pint --dirty --format agent` and `vendor/bin/pint --test --dirty` passed. `git diff --check` was clean; `git diff -- frontend/` was empty.
+  - Tests ran on isolated SQLite `:memory:` with a throwaway `APP_KEY` set only for the process, because this checkout has no `.env`.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks: repository-wide `pint --test` still reports pre-existing drift in 15 untouched files. Term/exam containment inside the school year is unspecified. Matching-MySQL lock behavior is unverified.
+- Resume Note: W1a routes, validation, lock rules and audits are implemented and validated. Next: W1b payment-plan versioning.
+- Owner acceptance and authorization for next workstream: the owner's 2026-11-19 instruction authorizes W1b once this gate passes.
+- Logged at: Friday, November 20, 2026 — 00:53:27 +08:00
+
+## 20. W1b payment-plan versioning
+
+### Resume — W1b: Payment plans (M9.2)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1a commit `de5d424`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.2 (edit applies to new accounts only; preview from a sample total; no delete once used). Owner decision 3 (2026-11-19): new-accounts-only with versioning, no delete once used. Approved additive migration: add `version` and `previous_version_id`, relax `unique(name)` to `unique(name, version)`, change `billing_accounts.payment_plan_id` to RESTRICT. Owner answers recorded in this session:
+  - due dates count from the account creation business date (Asia/Manila);
+  - a percent down payment is in basis points, rounded down;
+  - installments take floor(remaining × bp / 10000), with the remainder on the last.
+- Existing code and already-verified behavior: `GET /api/settings/finance/plans` existed (read-only). `payment_plan_installments` already stored `due_day_offset` and `percent_of_remaining_basis_points`.
+- Exact accepted scope / files:
+  - New: `backend/database/migrations/2026_11_20_010000_add_versioning_to_payment_plans.php`, `backend/app/Actions/ComputeInstallmentScheduleAction.php`, `backend/tests/Feature/PaymentPlanSettingsTest.php`.
+  - Edited: `FinanceSettingsController.php` (create, revise, deactivate, preview; GET adds `version` and `previousVersionId`), `PaymentPlan.php` (active cast, `previousVersion`), `routes/api.php` (4 routes).
+- Data/API/role invariants:
+  - POST `/api/settings/finance/plans`, PATCH `/api/settings/finance/plans/{paymentPlan}` (revise to N+1), and POST `.../deactivate` need `settings.finance.manage`. POST `.../preview` needs `settings.finance.view`.
+  - Revision creates a new row, deactivates the old row, and keeps the old row and its installments for existing accounts. Revising an inactive or superseded version returns 409.
+  - There is no delete route. Database RESTRICT blocks deleting a plan that is used by an account or that a newer version references.
+  - Basis points must sum to 10000. Zero-amount schedule rows are omitted.
+- Commands and tests actually run:
+  - Focused `PaymentPlanSettingsTest`: 7 tests / 97 assertions passed. Full suite: 186 tests / 1,498 assertions passed.
+  - Pint passed on changed files (it auto-fixed only route argument spacing). `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations:
+  - One approved additive migration, exercised only on isolated SQLite `:memory:`. The upgrade test runs `down()`, inserts fictional plans, an account and installments, then runs `up()`, `down()`, `up()`. It asserts version 1, unchanged values including `updated_at`, preserved account plan links, an empty `PRAGMA foreign_key_check`, and a restricted delete.
+  - `down()` refuses while any `version > 1` row exists.
+  - SQLite finding fixed before commit: rebuilding `payment_plans` fired the old ON DELETE SET NULL and erased `billing_accounts.payment_plan_id`. The migration now adds the plan columns natively on SQLite and defers FK checks. MySQL behavior is unverified (environment-blocked).
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks:
+  - Matching-MySQL execution, including the `billing_accounts_payment_plan_id_foreign` key name, is unverified.
+  - The historical fee-item migration used the same SQLite rebuild pattern. This is recorded as an issue, not changed.
+  - Omitting zero-amount rows awaits owner veto.
+- Resume Note: W1b is complete and validated. Next: W1c system settings.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W1c once this gate passes.
+- Logged at: Friday, November 20, 2026 — 00:59:12 +08:00
+
+## 21. W1c school, receipt and email settings
+
+### Resume — W1c: System settings (M9.5, M9.6)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1b commit `253b8b1`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M9.5 and M9.6. Owner decision 1 (2026-11-19): Administrator manages school/receipt/email settings; Accounting reads them.
+- Existing code and already-verified behavior: the `system_settings` table and `SystemSetting` JSON cast existed. Only `billing.due_soon_days` was read (by `RecalculateBillingStatusAction`). `receipt_sequences` existed.
+- Exact accepted scope / files: new `backend/app/Http/Controllers/Api/SystemSettingsController.php` and `backend/tests/Feature/SystemSettingsTest.php`; edited `backend/routes/api.php` (2 routes).
+- Data/API/role invariants:
+  - GET `/api/settings/system` needs `settings.system.view`; PATCH needs `settings.system.manage`.
+  - Enum and email validation applies. Next receipt number and sequence are read-only (sending either returns 422).
+  - The changed-keys audit runs in the same transaction as the writes.
+  - Values are not wired into mail transport.
+- Commands and tests actually run: focused 4 tests / 45 assertions passed; full suite 190 tests / 1,551 assertions passed. Pint passed on changed files. `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none.
+- Open decisions/risks: send-test-email and payment-method management are BLOCKED (not implemented). Email delivery semantics remain undecided.
+- Resume Note: W1c is complete and validated. Next: W2 `POST /api/billing-accounts`.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W2 once this gate passes.
+- Logged at: Friday, November 20, 2026 — 01:01:37 +08:00
+
+## 22. W2 billing-account creation
+
+### Resume — W2: POST /api/billing-accounts (M3.1)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W1c commit `d00c22d`.
+- Source requirements and owner approval (exact reference): `Modules-and-Features.md` M3.1 (load the grade-level fee schedule, remove optional fees only, choose a plan, preview, create, duplicate guard). W2 instruction (2026-11-19). Owner answers recorded in this session: current school year only; exactly one active fee schedule per (year, grade).
+- Existing code and already-verified behavior: account reads, adjustments, snapshots, payments, allocations, receipts and status recalculation already existed and are reused unchanged.
+- Exact accepted scope / files: new `backend/app/Actions/CreateBillingAccountAction.php` and `backend/tests/Feature/BillingAccountCreationTest.php`; edited `BillingAccountController.php` (store, preview) and `routes/api.php` (2 routes).
+- Data/API/role invariants:
+  - POST `/api/billing-accounts` and POST `/api/billing-accounts/preview` need `accounts.manage` (Cashier).
+  - One account per student and school year: a pre-check plus the existing unique constraint, mapped to 422.
+  - Required fees cannot be removed. Fee items and the plan are snapshotted. Amounts are integer centavos and the schedule sum equals the total.
+  - Status is recalculated. Create and audit run in one transaction.
+- Commands and tests actually run: focused 8 tests / 92 assertions passed; full suite 198 tests / 1,651 assertions passed. `route:list` shows 72 API routes. Pint passed on changed files. `git diff --check` was clean. `frontend/` diff was empty.
+- Migrations/data operations: none.
+- Diff inspection; unauthorized frontend changes: none. Pint normalized pre-existing formatting drift inside the touched `BillingAccountController.php`; behavior is unchanged.
+- Open decisions/risks: matching-MySQL concurrency evidence is unverified. Zero-amount row omission awaits owner veto (from W1b).
+- Resume Note: W2 is complete and validated. Next: W3 documentation reconciliation.
+- Owner acceptance and authorization for next workstream: the 2026-11-19 owner instruction authorizes W3 once this gate passes.
+- Logged at: Friday, November 20, 2026 — 01:04:19 +08:00
+
+## 23. W3 documentation reconciliation
+
+### Resume — W3: Documentation (docs only)
+- State: VALIDATING; committed locally under the 2026-11-19 gated owner approval.
+- Branch / verified HEAD / working tree: `feature/backend-completion` after W2 commit `22c0703`.
+- Exact accepted scope / files: this manual (header, B03/B04 notes), `07-AI-Agents/Backend-Foundation-Development-Ledger.md`, `02-Architecture/Backend-API-Contract.md` (routes 52–72), `06-Decisions/Open-Decisions.md` (31.7 resolved, new 31.10), `ERD.md`, `Data-Dictionary.md`, `Issues-and-TODOs.md`, `changelogs.md`, `08-Logs/2026-11-20-backend-w3.md`.
+- Migrations/data operations: none. No code changes.
+- Commands: `git diff --check` was clean; `git diff -- frontend/` was empty. The full suite was rerun in final verification.
+- Resume Note: W1a–W3 are implemented, validated and committed locally on `feature/backend-completion`. They await owner acceptance. Formal Cross-Check/Audit is not claimed.
+- Owner acceptance and authorization for next workstream: pending.
+- Logged at: Friday, November 20, 2026 — 01:05:12 +08:00

@@ -51,3 +51,15 @@ remain authoritative.
   login throttling, and request audit recording.
 - Added feature coverage for successful session login/profile responses and
   rejection of inactive fictional users. The focused test suite passed.
+
+## Entry — Friday, November 20, 2026 — 01:05:12 +08:00
+
+- Branch `feature/backend-completion` (from `main` at `0b600db`). The owner approved W1a–W3 on 2026-11-19.
+- Phase 4 (settings and academic/billing configuration) is now implemented for the approved scope:
+  - school years, terms, exam periods, grade levels and sections (W1a);
+  - payment-plan versioning and schedule preview, with one additive migration (W1b);
+  - school, receipt and email settings (W1c).
+- Phase 5 account creation is implemented (W2: `POST /api/billing-accounts`, `/preview`).
+- Still blocked: payment-method management, test email, and matching-MySQL validation.
+- Validation: the full isolated SQLite suite passed 198 tests / 1,651 assertions. 72 API routes.
+- Earlier phase-table rows are historical and were not rewritten. See `Backend-Loop-Engineering.md` §19–§22 for per-workstream evidence.

@@ -45,6 +45,7 @@ These were flagged in the original handoff as assumptions to be treated as confi
 - **Current implementation:** `DashboardController::schoolYearStart` uses the current date as the range start when no current school year exists, making the range cover only today. This fallback is not approved as school policy.
 - **Current interpretation:** No policy interpretation is approved; leave the behavior tracked and do not treat the one-day fallback as settled.
 - **What needs confirmation:** The MCA finance/system-settings owner must specify whether to reject the range, return an empty result, select another configured period, or require a current school year. Then align API, UI messaging, and focused coverage.
+- **Resolved 2026-11-19 (owner decision 4):** Exactly one school year is always current, and the dashboard keeps its existing 409 when none exists. The current year may change mid-year with a required 10–1000 character reason, audited before/after. Implemented in W1a.
 - **Reviewed:** Sunday, October 25, 2026 — 10:51:18 +08:00.
 
 ### 2026-11-09 backend Part 1b status note
@@ -60,3 +61,21 @@ At Monday, November 09, 2026 — 12:40:29 Asia/Manila, Project owner left guardi
 - **Answer:** Project owner confirmed Tuesday, November 10, 2026 — 14:50:29 Asia/Manila: relationship describes each student–guardian link.
 - **Status:** Semantic question resolved. Current SQL stores `relationship` on `guardians`, so schema/API reconciliation remains open and requires separate authorization. Guardian-data ownership/lifecycle and primary-contact rules remain distinct open questions.
 - **Recorded:** Tuesday, November 10, 2026 — 14:50:29 Asia/Manila.
+
+### 31.10 Owner decisions approved 2026-11-19 (settings and account creation)
+
+Recorded Friday, November 20, 2026 — 01:05:12 +08:00. Approved by the project owner on 2026-11-19 for `feature/backend-completion`:
+
+1. **Settings ownership.** Administrator manages school year, terms, exam periods, grade levels/sections and school/receipt/email settings (`settings.system.manage`). Accounting manages fees and payment plans (`settings.finance.manage`) and reads system settings (`settings.system.view`). No new capabilities.
+2. **School-year lifecycle.** School years are never deleted. Label corrections are always allowed and audited. School-year and term start/end dates lock once any billing account exists for that year. Descriptive fields stay editable.
+3. **Payment plans.** Edits apply to new accounts only through versioning. A revision creates version N+1 and deactivates the old version, which existing accounts keep. No delete once used.
+4. **Current school year.** The current year may change mid-year with a required 10–1000 character reason, audited before/after. Exactly one year is always current. The dashboard keeps its 409 when none exists.
+
+Follow-up answers given by the owner during the W1b/W2 planning session (November 19–20, 2026):
+
+- Installment due dates (`due_day_offset`) count from the account creation business date (Asia/Manila); the down payment is due that day.
+- A percent down payment `down_payment_value` is in basis points (10000 = 100%), rounded down. Each installment takes floor(remaining × bp / 10000); the last installment absorbs the remainder.
+- Billing accounts can be created only for the current school year.
+- Account creation requires exactly one active fee schedule per (school year, grade level); otherwise 422.
+
+Still open: adjustment threshold (31.1), global no-hard-delete sign-off (31.2), payment-method list and management, test email and email delivery semantics, Super Admin lifecycle (31.6), Accounting assignment (31.5), retention (31.8), guardian lifecycle, and whether term/exam dates must fall inside the school year.

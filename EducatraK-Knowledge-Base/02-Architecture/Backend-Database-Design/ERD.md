@@ -33,6 +33,7 @@ erDiagram
     FEE_SCHEDULES ||--o{ FEE_ITEMS : defines
     FEE_ITEMS o|--o{ FEE_ITEMS : previous_version
     PAYMENT_PLANS ||--o{ PAYMENT_PLAN_INSTALLMENTS : defines
+    PAYMENT_PLANS o|--o{ PAYMENT_PLANS : previous_version
 
     STUDENTS ||--o{ BILLING_ACCOUNTS : owns
     SCHOOL_YEARS ||--o{ BILLING_ACCOUNTS : scopes
@@ -148,3 +149,5 @@ Declared restrictive foreign keys preserve important relationships, but they are
 | Imports | `import_batches` persists a generic batch shape. | No live student-import route, parser, apply path, or retention contract. |
 
 Do not use this ERD as DDL or as approval to alter a database.
+
+> **W1b schema note — Friday, November 20, 2026 — 01:05:12 +08:00:** `2026_11_20_010000_add_versioning_to_payment_plans` added `payment_plans.version` and the self-referencing `previous_version_id` (RESTRICT). It replaced `unique(name)` with `unique(name, version)` and changed `billing_accounts.payment_plan_id` from SET NULL to RESTRICT. This is verified on isolated SQLite only; matching-MySQL validation is pending.
