@@ -9,6 +9,7 @@ use App\Models\Adjustment;
 use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\Payment;
+use App\Models\PaymentPlan;
 use App\Models\SchoolYear;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -97,6 +98,39 @@ class BillingAccountController extends Controller
         }
 
         return $this->show($account)->setStatusCode(201);
+    }
+
+    /**
+     * Read-only choices for the Cashier account wizard (owner decision 2026-11-20): the current school year and the
+     * active payment plans, so account creators do not need the broader settings.* read capabilities.
+     */
+    public function creationOptions(): JsonResponse
+    {
+        $currentYears = SchoolYear::query()->where('is_current', true)->get(['id', 'label']);
+        $plans = PaymentPlan::query()
+            ->with('installments:id,payment_plan_id,label,sequence,due_day_offset,percent_of_remaining_basis_points')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => [
+            'currentSchoolYear' => $currentYears->count() === 1
+                ? ['id' => (string) $currentYears->sole()->id, 'label' => $currentYears->sole()->label]
+                : null,
+            'paymentPlans' => $plans->map(fn (PaymentPlan $plan): array => [
+                'id' => (string) $plan->id,
+                'name' => $plan->name,
+                'version' => (int) $plan->version,
+                'downPaymentType' => $plan->down_payment_type,
+                'downPaymentValue' => (int) $plan->down_payment_value,
+                'installments' => $plan->installments->sortBy('sequence')->map(fn ($installment): array => [
+                    'label' => $installment->label,
+                    'sequence' => (int) $installment->sequence,
+                    'dueDayOffset' => (int) $installment->due_day_offset,
+                    'percentOfRemainingBasisPoints' => (int) $installment->percent_of_remaining_basis_points,
+                ])->values()->all(),
+            ])->values()->all(),
+        ]]);
     }
 
     public function preview(Request $request, CreateBillingAccountAction $createBillingAccount): JsonResponse

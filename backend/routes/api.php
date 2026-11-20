@@ -132,6 +132,8 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:accounts.manage');
             Route::post('/billing-accounts/preview', [BillingAccountController::class, 'preview'])
                 ->middleware('capability:accounts.manage');
+            Route::get('/billing-accounts/creation-options', [BillingAccountController::class, 'creationOptions'])
+                ->middleware('capability:accounts.manage');
             Route::get('/billing-accounts/{billingAccount}', [BillingAccountController::class, 'show'])
                 ->middleware('capability:accounts.view');
             Route::post('/billing-accounts/{billingAccount}/adjustments', [BillingAccountController::class, 'storeAdjustment'])

@@ -177,9 +177,36 @@ class BillingAccountCreationTest extends TestCase
             $user = User::factory()->create(['role' => $role]);
             $this->actingAs($user)->postJson('/api/billing-accounts', $this->payload())->assertForbidden();
             $this->actingAs($user)->postJson('/api/billing-accounts/preview', $this->payload())->assertForbidden();
+            $this->actingAs($user)->getJson('/api/billing-accounts/creation-options')->assertForbidden();
         }
 
         $this->assertDatabaseCount('billing_accounts', 0);
+    }
+
+    public function test_creation_options_list_the_current_year_and_only_active_plans(): void
+    {
+        $this->seedConfiguration();
+        $now = now();
+        DB::table('school_years')->insert(['label' => 'SY 2025-2026 (sample)', 'is_current' => false, 'starts_on' => '2025-06-01', 'ends_on' => '2026-05-31', 'created_at' => $now, 'updated_at' => $now]);
+        DB::table('payment_plans')->insert(['name' => 'Retired (sample)', 'down_payment_type' => 'amount', 'down_payment_value' => 0, 'active' => false, 'version' => 1, 'created_at' => $now, 'updated_at' => $now]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+
+        $this->actingAs($cashier)->getJson('/api/billing-accounts/creation-options')
+            ->assertOk()
+            ->assertJsonPath('data.currentSchoolYear.id', (string) $this->ids['year'])
+            ->assertJsonPath('data.currentSchoolYear.label', 'SY 2026-2027 (sample)')
+            ->assertJsonCount(1, 'data.paymentPlans')
+            ->assertJsonPath('data.paymentPlans.0.id', (string) $this->ids['plan'])
+            ->assertJsonPath('data.paymentPlans.0.version', 1)
+            ->assertJsonPath('data.paymentPlans.0.downPaymentType', 'percent')
+            ->assertJsonPath('data.paymentPlans.0.downPaymentValue', 1_500)
+            ->assertJsonCount(3, 'data.paymentPlans.0.installments')
+            ->assertJsonPath('data.paymentPlans.0.installments.2.percentOfRemainingBasisPoints', 3_334);
+
+        DB::table('school_years')->update(['is_current' => false]);
+        $this->actingAs($cashier)->getJson('/api/billing-accounts/creation-options')
+            ->assertOk()
+            ->assertJsonPath('data.currentSchoolYear', null);
     }
 
     public function test_a_payment_can_be_recorded_against_a_new_account(): void
