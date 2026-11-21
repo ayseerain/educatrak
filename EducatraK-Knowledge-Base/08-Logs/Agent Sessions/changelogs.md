@@ -25,6 +25,16 @@
 
 ## Entries
 
+### Saturday, November 21, 2026 — 16:21:53 +08:00 | Live settings browser-QA environment check and pagination diagnosis
+
+- **Agent:** Codex
+- **Summary:** Created `feature/live-settings-browser-qa` from `feature/frontend-live-settings` and began the requested live F1-F4 QA. Chrome 158 reached the frontend's unavailable-backend error state at desktop and 375px; the 375px document had no horizontal page scroll. The required authenticated flows could not start because this environment has no PHP or Composer executable and no `backend/vendor/autoload.php`, so Laravel could not be installed, migrated, seeded, or served. No backend, frontend, or mock behavior changed.
+- **Confirmed defect:** `LiveBillingAccounts` passes `accounts.data.currentPage` to `PaginationControls` as `lastPage`, disabling Next despite an API `lastPage` greater than `currentPage`. The existing `liveBillingAccounts` test is correct; per the task gate, the defect is recorded but not fixed pending owner direction.
+- **Files:** Added `EducatraK-Knowledge-Base/08-Logs/2026-11-21-live-settings-browser-qa.md`; updated `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` and this changelog.
+- **Validation:** Focused frontend suite passed: 5 files / 35 tests. Browser evidence is described in the session log. `git diff --check` passed and there is no `frontend/src/api/mock/` diff. Full frontend suite, production build, and backend suite were not run because the page-defect gate requires stop-and-ask.
+- **Commit/PR:** Not committed; awaiting direction. No push, no PR.
+- **Follow-ups:** Supply/authorize a PHP + Composer environment for the authenticated browser matrix, and authorize a scoped pagination fix.
+
 ### Saturday, November 07, 2026 — 11:48:15 Asia/Manila | Add Phase 1 student masterlist import interface
 
 - **Agent:** Codex

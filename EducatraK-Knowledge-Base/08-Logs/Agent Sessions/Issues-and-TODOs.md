@@ -4,6 +4,11 @@
 
 ## Current Part 1b documentation follow-ups
 
+### F1-F4 live-settings browser-QA follow-up
+
+- [ ] **[TEST] `liveBillingAccounts` pagination regression is a confirmed page defect.** Updated: Saturday, November 21, 2026 — 16:20:45 +08:00. The existing test at `frontend/src/test/liveBillingAccounts.test.tsx:68` is correct. `frontend/src/features/billing/LiveBillingAccounts.tsx` passes `accounts.data.currentPage` as `PaginationControls.lastPage` instead of `accounts.data.lastPage`; with API meta `currentPage: 1, lastPage: 3`, Next is disabled and the request remains `page=1`. Do not change the page or test without owner direction; the live-settings QA gate requires record-and-ask for this outcome.
+- [ ] **[VERIFY] F1-F4 authenticated browser matrix remains incomplete.** Updated: Saturday, November 21, 2026 — 16:20:45 +08:00. Chrome 158 rendered the live frontend's no-backend error state at desktop and 375px, with `scrollWidth === clientWidth === 375` on the phone viewport. The required authenticated checks could not run because this environment has no `php` or `composer` executable and `backend/vendor/autoload.php` is absent, preventing Laravel install, migration, seeding, and serving. See `08-Logs/2026-11-21-live-settings-browser-qa.md`. Existing F1-F4 tracker entries below remain the authoritative implementation history.
+
 - [ ] **[DOC] Complete exact API contract evidence mapping.** Updated: Tuesday, November 10, 2026 — 15:06:48 Asia/Manila. `02-Architecture/Backend-API-Contract.md` enumerates 51 routes and 65 MockDB function exports. Handler validation, named tests, and known no-test cases are now documented route by route. Remaining work: field-enumerate some serialized response objects and audit payloads, and add direct regression coverage for documented gaps if separately authorized. No API behavior change is authorized by this tracker item.
 - [ ] **[AUDIT] Reconcile model relations with schema FKs.** Added: Tuesday, November 10, 2026 — 14:54:51 Asia/Manila. `Database-Review.md` DB-02 count is corrected to 39 public methods excluding casts across 16 model files; method count does not establish coverage. Compare relation methods, migration FK declarations, and query/controller use, then record concrete gaps. No model/schema edits authorized.
 
