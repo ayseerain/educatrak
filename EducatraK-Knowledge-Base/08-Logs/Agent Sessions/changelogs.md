@@ -25,6 +25,14 @@
 
 ## Entries
 
+### Saturday, November 21, 2026 — 16:51:29 +08:00 | Restore first-party Sanctum session configuration
+
+- **Agent:** Codex
+- **Summary:** Added the standard Sanctum configuration with local Vite origins, documented those origins in `backend/.env.example`, and removed duplicate global stateful middleware because API routes already use the `web` session middleware. Added a focused config regression test.
+- **Files:** `backend/config/sanctum.php`, `backend/.env.example`, `backend/bootstrap/app.php`, `backend/phpunit.xml`, `backend/tests/Feature/AuthenticationTest.php`; QA logs and this changelog.
+- **Validation:** Chrome verified a 200 response from `/api/auth/me` after sign-in before the middleware consolidation. The focused authentication suite passed 11 tests / 38 assertions after consolidation. PHP emits a Windows policy warning for optional Fileinfo; SQLite, cURL, OpenSSL, and Composer are available.
+- **Follow-ups:** Resume the authenticated F1-F4 browser QA and address the separately tracked pagination defect.
+
 ### Saturday, November 21, 2026 — 16:43:12 +08:00 | Diagnose live-browser Sanctum session block
 
 - **Agent:** Codex

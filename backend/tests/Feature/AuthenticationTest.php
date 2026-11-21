@@ -18,6 +18,12 @@ class AuthenticationTest extends TestCase
         $this->assertSame(30, (int) config('session.lifetime'));
     }
 
+    public function test_sanctum_treats_the_local_vite_origins_as_stateful(): void
+    {
+        $this->assertContains('localhost:5173', config('sanctum.stateful'));
+        $this->assertContains('127.0.0.1:5173', config('sanctum.stateful'));
+    }
+
     public function test_user_can_log_in_and_read_their_profile(): void
     {
         $user = User::factory()->create([
