@@ -32,3 +32,7 @@
 ## Follow-up
 
 Provide a PHP/Composer-enabled local environment or authorize installation of that tooling, then rerun the complete authenticated F1-F4 browser matrix. Separately authorize the smallest fix for `LiveBillingAccounts` pagination before changing the page or its test.
+
+## Updated blocker
+
+**Saturday, November 21, 2026 — 16:43:12 +08:00.** PHP, Composer, dependencies, migrations, and the fictional demo seed are now available. A real Chrome sign-in as `sample.admin` sets the local session and CSRF cookies, but `/api/auth/me` still returns 401. The cause is confirmed: `bootstrap/app.php` enables Sanctum's `statefulApi()` middleware, while there is no `config/sanctum.php`; Sanctum's stateful-domain list is consequently empty and it does not activate session authentication for `localhost:5173`. The required fix is a backend configuration change, which is outside the task's existing backend-change authorization. No application code was changed.

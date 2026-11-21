@@ -25,6 +25,16 @@
 
 ## Entries
 
+### Saturday, November 21, 2026 — 16:43:12 +08:00 | Diagnose live-browser Sanctum session block
+
+- **Agent:** Codex
+- **Summary:** Installed authorized local PHP 8.4 and Composer, restored ignored backend dependencies, and created an isolated SQLite database from the demo seed. Real Chrome login set the expected local session and CSRF cookies, but every protected live API request returned 401.
+- **Finding:** `backend/bootstrap/app.php` enables Sanctum stateful API middleware but the repository has no `config/sanctum.php`. Sanctum therefore has no configured first-party domains and does not use the browser session. This is a backend configuration defect that blocks F1-F4 browser QA.
+- **Files:** Updated the QA session log, issue tracker, and this changelog only. Runtime `.env`, SQLite database, vendor files, and PHP/Composer installation are ignored/local.
+- **Validation:** Laravel boots (`Laravel Framework 13.35.0`); 16 SQLite migrations and `DemoDataSeeder` passed; Chrome cookie presence and 401 `/api/auth/me` were observed. No code test, full suite, or build was run after this diagnostic.
+- **Commit/PR:** Pending; no push, no PR.
+- **Follow-ups:** Await explicit approval for the narrow Sanctum configuration fix before changing backend configuration.
+
 ### Saturday, November 21, 2026 — 16:21:53 +08:00 | Live settings browser-QA environment check and pagination diagnosis
 
 - **Agent:** Codex
