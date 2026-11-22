@@ -19,7 +19,7 @@ class DemoDataSeederTest extends TestCase
         $this->assertDatabaseCount('installments', 12);
         $this->assertDatabaseHas('users', [
             'username' => 'sample.cashier',
-            'full_name' => 'Casey Cashier (sample)',
+            'full_name' => 'Casey Cashier',
             'role' => 'cashier',
         ]);
         $this->assertDatabaseHas('students', [

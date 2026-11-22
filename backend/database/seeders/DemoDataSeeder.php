@@ -29,11 +29,11 @@ class DemoDataSeeder extends Seeder
     public function run(): void
     {
         Model::unguarded(function (): void {
-            $cashier = $this->staff('sample.cashier', 'Casey Cashier (sample)', UserRole::Cashier);
-            $this->staff('sample.accounting', 'Avery Accounting (sample)', UserRole::Accounting);
-            $this->staff('sample.admin', 'Alex Administrator (sample)', UserRole::Admin);
-            $this->staff('sample.auditor', 'Arden Auditor (sample)', UserRole::Auditor);
-            $this->staff('sample.registrar', 'Riley Registrar (sample)', UserRole::Registrar);
+            $cashier = $this->staff('sample.cashier', 'Cashier', UserRole::Cashier);
+            $this->staff('sample.accounting', 'Accounting', UserRole::Accounting);
+            $this->staff('sample.admin', 'Administrator', UserRole::Admin);
+            $this->staff('sample.auditor', 'Auditor', UserRole::Auditor);
+            $this->staff('sample.registrar', 'Registrar', UserRole::Registrar);
 
             $schoolYear = SchoolYear::query()->updateOrCreate(
                 ['label' => 'SY 2026-2027'],
