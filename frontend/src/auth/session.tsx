@@ -25,7 +25,7 @@ interface SessionContextValue {
   login: (username: string, password: string, rememberMe?: boolean) => LoginResult | Promise<LoginResult>;
   logout: () => void;
   renewSession: () => void;
-  switchRole: (role: Role) => void;
+  switchRole: (role: Role) => Promise<boolean>;
   retrySessionRestore: () => void;
   changeOwnPassword: (currentPassword: string, password: string) => Promise<void>;
 }
@@ -182,14 +182,34 @@ export function SessionProvider({
   );
 
   const switchRole = useCallback(
-    (role: Role) => {
-      if (isLiveCashierApiEnabled()) return;
-      void import("./mockSession").then(({ MOCK_USERS_BY_ROLE }) => {
-        setUser(MOCK_USERS_BY_ROLE[role]);
-        renewSession();
-      });
+    async (role: Role): Promise<boolean> => {
+      if (isLiveCashierApiEnabled()) {
+        // A live-data account switch is only a local development aid. It uses
+        // the regular Laravel sign-in route, so the backend continues to
+        // establish the session and enforce each account's permissions.
+        if (!import.meta.env.DEV) return false;
+
+        const { LIVE_DEMO_CREDENTIALS } = await import("./liveDemoAccounts");
+        const credentials = LIVE_DEMO_CREDENTIALS[role];
+        try {
+          const liveUser = await signInWithLiveApi(credentials.username, credentials.password);
+          const now = Date.now();
+          setUser(liveUser);
+          lastActivityRenewalAt.current = now;
+          setExpiresAt(now + sessionDurationMs);
+          setExpirationWarningOpen(false);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      const { MOCK_USERS_BY_ROLE } = await import("./mockSession");
+      setUser(MOCK_USERS_BY_ROLE[role]);
+      renewSession();
+      return true;
     },
-    [renewSession],
+    [renewSession, sessionDurationMs],
   );
 
   const changeOwnPassword = useCallback(async (currentPassword: string, password: string) => {

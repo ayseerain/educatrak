@@ -23,7 +23,7 @@ function GuardReport({ user, report, children }: { user: AuthenticatedUser; repo
   return canViewReport(user, report) ? <>{children}</> : <DeniedPage />;
 }
 
-function AuthenticatedApp({ onLogout, onRoleChange, user }: { onLogout: () => void; onRoleChange: (role: Role) => void; user: AuthenticatedUser }) {
+function AuthenticatedApp({ onLogout, onRoleChange, user }: { onLogout: () => void; onRoleChange: (role: Role) => void | Promise<boolean | void>; user: AuthenticatedUser }) {
   const location = useLocation();
   const auditorPageAllowed = ["/", "/profile", "/admin/audit-log", "/403", "/404"].includes(location.pathname);
   const notificationParams = new URLSearchParams(location.search);

@@ -298,6 +298,43 @@ describe("LoginPage", () => {
     expect(screen.queryByText(/collections/i)).not.toBeInTheDocument();
   });
 
+  it("switches seeded accounts through the live sign-in workflow in development", async () => {
+    vi.stubEnv("DEV", true);
+    vi.stubEnv("VITE_DATA_SOURCE", "live");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/auth/me") return { ok: false, status: 401, headers: new Headers(), json: async () => ({}) } as Response;
+      if (url === "/sanctum/csrf-cookie") return { ok: true, status: 204, headers: new Headers(), json: async () => ({}) } as Response;
+      if (url === "/api/auth/login") {
+        const credentials = JSON.parse(String(init?.body)) as { username: string };
+        const accounts = {
+          "sample.cashier": { id: "1", fullName: "Casey Cashier", role: "cashier" },
+          "sample.accounting": { id: "2", fullName: "Accounting", role: "accounting" },
+        } as const;
+        const account = accounts[credentials.username as keyof typeof accounts];
+        if (!account) throw new Error(`Unexpected sample account: ${credentials.username}`);
+        return { ok: true, status: 200, headers: new Headers(), json: async () => ({ data: account }) } as Response;
+      }
+      if (url === "/api/dashboard") return { ok: true, status: 200, headers: new Headers(), json: async () => ({ data: {} }) } as Response;
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    renderApp();
+
+    await screen.findByLabelText(/username/i);
+    await fillLogin("sample.cashier", "SamplePass123!", user);
+    const accountSwitcher = await screen.findByRole("button", { name: /switch sample account: cashier/i });
+    await user.click(accountSwitcher);
+    await user.click(screen.getByRole("menuitemradio", { name: "Accounting" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /switch sample account: accounting/i })).toBeInTheDocument());
+    const loginCalls = fetchMock.mock.calls.filter(([url]) => url === "/api/auth/login");
+    expect(loginCalls).toHaveLength(2);
+    expect(JSON.parse(String(loginCalls[1]?.[1]?.body))).toEqual({ username: "sample.accounting", password: "SamplePass123!", remember: false });
+    expect(screen.getByLabelText("Current path")).toHaveTextContent("/");
+  });
+
   it("signs out and returns to the login page", async () => {
     const user = userEvent.setup();
     renderApp();

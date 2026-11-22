@@ -35,6 +35,10 @@ export default defineConfig(() => ({
   },
   test: {
     environment: "jsdom",
+    env: {
+      VITE_DATA_SOURCE: "mock",
+      VITE_USE_LIVE_API: "",
+    },
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
   },

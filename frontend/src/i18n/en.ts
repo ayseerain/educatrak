@@ -152,6 +152,8 @@ export const en = {
     searchPlaceholder: "Search students, receipts...",
     profileMenu: "Account menu",
     previewRole: "Preview role",
+    switchSampleAccount: "Switch sample account",
+    sampleAccountUnavailable: "The selected sample account could not be opened. Confirm the local demo data is seeded and try again.",
     signOut: "Sign out",
   },
   nav: {
