@@ -1,0 +1,8 @@
+# Compact table action controls
+
+- **Timestamp:** Sunday, November 22, 2026 — 01:58:50 Asia/Manila
+- **Scope:** User-account tables in both the live API and MockDB workflows.
+- **Change:** Added the shared `TableActionButton` and `TableActionGroup` components. User row actions begin as Lucide vector icons and expand only the hovered or keyboard-focused action into its established text label. The group remains left-anchored and single-line during expansion, preventing pointer-target movement and hover flicker. It now occupies the fixed action-cell width instead of exposing a changing intrinsic width to the horizontal table scroller; the live action column was widened to fit its longest label. Existing role checks, disabled states, destructive styling, and confirmation dialogs are unchanged.
+- **Pattern record:** Added `.agents/skills/educatrak-table-action-patterns/SKILL.md` so future table-row actions follow the same compact, accessible behavior. Its grouping rule changed from centered/wrapping controls to the shared anchored single-line group after the observed hover glitch, then from intrinsic-width sizing to action-cell sizing to eliminate scrollbar flicker. `educatrak-table-patterns` documents that compact-action exception.
+- **Validation:** `tableActionButton.test.tsx` and `liveUsersFilters.test.tsx` pass (7 tests). `npm.cmd run build`, Impeccable's detector (no findings), and `git diff --check` passed. The full Vitest run was initiated earlier; its worker output did not include a final aggregate result through the terminal bridge, so it is not recorded as passed.
+- **Follow-up:** A browser-rendered hover check was not available in this environment; the transition is covered by component contracts and the production TypeScript/Vite build.
