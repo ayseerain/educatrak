@@ -17,6 +17,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/Button";
+import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 import { ViewTabs } from "@/components/ui/ViewTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TableFilters, dateRangeError, moneyRangeError, useTableFilters } from "@/components/ui/TableFilters";
@@ -111,6 +112,7 @@ import { StudentFormPage as LiveStudentFormPage } from "@/features/students/Stud
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
 import { LiveAccountWizardPage } from "@/features/billing/LiveAccountWizardPage";
 import type { AuthenticatedUser, Capability, Role, StudentGender } from "@/lib/types";
+import { KeyRound, Pencil, RotateCcw, UserCheck, UserX } from "lucide-react";
 
 const firstStudent = students[0]!;
 function asDropdownOptions(values: string[]) {
@@ -909,6 +911,7 @@ export function AccountsPage({ user }: { user: AuthenticatedUser }) {
         }
       />
       <ListCard
+        className="account-list"
         toolbar={<TableFilters embedded scope="Sample billing accounts" defaults={mockAccountFilters} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search billing accounts", placeholder: "Name or LRN" }} fields={[
         { key: "schoolYear", label: "School year" }, { key: "grade", label: "Grade" },
         { key: "status", label: "Billing status", type: "select", options: [{ value: "", label: "All statuses" }, { value: "Current", label: "Current" }, { value: "Due soon", label: "Due soon" }, { value: "Overdue", label: "Overdue" }] },
@@ -3110,7 +3113,7 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
       ]} />
         <ListCard
           key={archivedView ? "archived" : "current"}
-          className="animate-screen-in motion-reduce:animate-none"
+          className="user-accounts-list animate-screen-in motion-reduce:animate-none"
           toolbar={<TableFilters embedded scope="Sample users" defaults={{ query: "", role: "", status: "" }} draft={filters.draft} applied={filters.applied} search={{ key: "query", label: "Search users", placeholder: "Name or username" }} fields={[
         { key: "role", label: "Role", type: "select", options: [{ value: "", label: "All roles" }, { value: "Administrator", label: "Administrator" }, { value: "Cashier", label: "Cashier" }, { value: "Accounting Officer", label: "Accounting Officer" }, { value: "Auditor", label: "Auditor" }, { value: "Registrar", label: "Registrar" }, ...(user?.role === "super_admin" ? [{ value: "Super Admin", label: "Super Admin" }] : [])] },
         ...(archivedView ? [] : [{ key: "status" as const, label: "Status", type: "select" as const, options: [{ value: "", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]),
@@ -3118,9 +3121,9 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
           paginate={{ label: "users" }}
           empty={<p role="status" className="text-sm text-text-secondary">{archivedView ? "No archived users match that search." : "No users match that name or username."}</p>}
           headers={archivedView ? ["Name", "Username", "Role", "Archived", "Scheduled anonymization", "Action"] : ["Name", "Username", "Role", "State", "Actions"]}
-          tableClassName="min-w-[1000px]"
-          columnClassNames={archivedView ? ["w-[22%]", "w-[16%]", "w-[18%]", "w-[15%]", "w-[19%]", "w-[10%]"] : ["w-[21%]", "w-[16%]", "w-[19%]", "w-[12%]", "w-[32%]"]}
-          centeredColumns={archivedView ? [3, 4, 5] : [3, 4]}
+          tableClassName={archivedView ? undefined : "min-w-[1000px]"}
+          columnClassNames={archivedView ? ["w-[22%]", "w-[16%]", "w-[18%]", "w-[15%]", "w-[17%]", "w-[12%]"] : ["w-[22%]", "w-[16%]", "w-[20%]", "w-[12%]", "w-[30%]"]}
+          centeredColumns={archivedView ? [3, 4] : [3]}
           rows={visibleUsers.map((user) => [
             user.name,
             user.username,
@@ -3128,10 +3131,10 @@ export function UsersPage({ user }: { user?: AuthenticatedUser }) {
             ...(archivedView ? [
               user.archivedAt?.slice(0, 10) ?? "Unavailable",
               user.anonymizeAt?.slice(0, 10) ?? "Unavailable",
-              <Button key={`${user.id}-restore`} type="button" variant="secondary" size="sm" className="min-h-control" onClick={() => setRestoreTarget(user)}>Restore</Button>,
+              <TableActionButton key={`${user.id}-restore`} icon={RotateCcw} label="Restore" variant="secondary" onClick={() => setRestoreTarget(user)} />,
             ] : [
               <StatusBadge key={`${user.id}-state`} status={user.active ? "Active" : "Inactive"} />,
-              <div key={`${user.id}-actions`} className="flex flex-nowrap justify-center gap-2 whitespace-nowrap"><Button type="button" variant="secondary" size="sm" className="min-h-control shrink-0" onClick={() => openEdit(user)}>Edit</Button><Button type="button" variant="secondary" size="sm" className="min-h-control shrink-0" onClick={() => resetPassword(user)}>Reset password</Button><Button type="button" variant={user.active ? "destructive" : "secondary"} size="sm" className="min-h-control shrink-0" disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)}>{user.active ? "Deactivate account" : "Reactivate account"}</Button></div>,
+              <TableActionGroup key={`${user.id}-actions`}><TableActionButton icon={Pencil} label="Edit" variant="secondary" onClick={() => openEdit(user)} /><TableActionButton icon={KeyRound} label="Reset password" variant="secondary" onClick={() => resetPassword(user)} /><TableActionButton icon={user.active ? UserX : UserCheck} label={user.active ? "Deactivate account" : "Reactivate account"} variant={user.active ? "destructive" : "secondary"} disabled={user.isCurrentAdministrator} onClick={() => setStatusTarget(user)} /></TableActionGroup>,
             ]),
           ])}
         />

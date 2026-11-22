@@ -593,6 +593,7 @@ describe("operational page navigation", () => {
     expect(screen.queryByRole("row", { name: /Casey Cashier \(sample\)/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Archived users" }));
+    expect(screen.getByRole("table")).not.toHaveClass("min-w-[1000px]");
     await user.click(within(screen.getByRole("row", { name: /Casey Cashier \(sample\)/ })).getByRole("button", { name: "Restore" }));
     await user.click(within(screen.getByRole("dialog", { name: "Restore account?" })).getByRole("button", { name: "Restore account" }));
     await user.click(screen.getByRole("tab", { name: "Current users" }));
