@@ -25,7 +25,7 @@ Use with `educatrak-interactive-states` and `educatrak-pagination-patterns`.
 - Give every table an accessible name (`caption`, visually hidden when the card already titles it).
 - Use `th scope="col"` for headers and `th scope="row"` for the identifying cell when there is one.
 - Give a table whose rows change with filters a `min-w-[…]` so columns don't jump; size short, known-length columns (dates, amounts, statuses, action buttons) to their content and let the name/description column take the rest.
-- Status badges never break inside; an Actions cell with several buttons may wrap (`flex flex-wrap gap-2`).
+- Status badges never break inside. Ordinary Actions cells with several buttons may wrap (`flex flex-wrap gap-2`); `TableActionGroup` is the deliberate compact-action exception and stays on one line inside an action column sized for its longest expanded label.
 
 ## Empty, loading, error
 
