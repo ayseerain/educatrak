@@ -11,7 +11,7 @@
   <img alt="Vite" src="https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white">
   <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-planned-06B6D4?logo=tailwindcss&logoColor=white">
   <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white">
-  <img alt="PHP 8.5" src="https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white">
+  <img alt="PHP 8.4.1" src="https://img.shields.io/badge/PHP-8.4.1-777BB4?logo=php&logoColor=white">
   <img alt="MySQL 8.4 LTS" src="https://img.shields.io/badge/MySQL-8.4_LTS-4479A1?logo=mysql&logoColor=white">
 </p>
 
@@ -47,7 +47,7 @@ When the frontend is scaffolded, use the latest stable compatible releases withi
 The initial backend target is:
 
 - **Laravel 13.x**
-- **PHP 8.5.x**
+- **PHP 8.4.1+ (8.4.x only)**
 - **MySQL 8.4 LTS**
 
 MySQL 8.4 is intentionally selected as the LTS line for this school system. Exact patch versions should be resolved from supported stable releases when the backend is scaffolded.
