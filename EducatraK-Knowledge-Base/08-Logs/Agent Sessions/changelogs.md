@@ -3257,3 +3257,139 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
   - The live Cashier flow was checked with `curl`, without creating anything. The browser check was not performed.
 - **Commit/PR:** Backend `79b1ffb` and a frontend commit on `feature/frontend-live-settings`; no push.
 - **Follow-ups:** Owner acceptance of F4. Browser check. Live renewal mode [QUESTION]. Live student search combobox [UX].
+
+### Saturday, November 21, 2026 — 17:42:39 +08:00 | Complete local setup guide
+
+- **Agent:** Codex
+- **Summary:** Added a Windows-focused `setup-step.md` so teammates can test the application either with the built-in MockDB or against the local Laravel/MySQL demo environment. It covers prerequisites, cloning and branch selection, environment configuration, fictional account credentials, start/reset commands, validation, and troubleshooting.
+- **Files:** Added `setup-step.md` and `EducatraK-Knowledge-Base/08-Logs/2026-11-21-local-setup-guide.md`; updated this changelog.
+- **Validation:** Reviewed every documented command and setting against the current frontend `package.json`/Vite proxy, backend `composer.json`/`.env.example`, `DemoDataSeeder`, bootstrap command, and PHPUnit configuration. No runtime commands were run because this task changed documentation only.
+- **Reference:** The user-provided CLINIQ setup guide informed the guide's two-part structure only; EducatraK-specific commands and behavior were verified locally.
+- **Follow-ups:** The root `README.md` remains a stale pre-scaffold snapshot and was intentionally left outside this documentation task.
+
+### Saturday, November 21, 2026 — 18:41:27 +08:00 | Use `educatrak` for the local database
+
+- **Agent:** Codex
+- **Summary:** Revised `setup-step.md` after owner clarification: the local MySQL database and local account are now both named `educatrak`, replacing `educatrak_demo`. Reset, configuration, and test-isolation wording now names the same database. Seeded records remain explicitly fictional.
+- **Files:** Updated `setup-step.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-21-local-setup-guide.md`, and this changelog.
+- **Validation:** Searched the setup guide to confirm that no `educatrak_demo` reference remains. No runtime command was run; this was a documentation correction.
+
+### Saturday, November 21, 2026 — 18:43:57 +08:00 | Clarify database and system users in setup guide
+
+- **Agent:** Codex
+- **Summary:** Added a clearly labeled setup-guide section distinguishing the MySQL administrator, Laravel's `educatrak` database account, and EducatraK web-app sign-in accounts. It now explicitly shows how a teammate creates a personal fictional Super Administrator after seeding, then creates further test staff through User & access management.
+- **Files:** Updated `setup-step.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-21-local-setup-guide.md`, and this changelog.
+- **Validation:** Reviewed the setup command against `BootstrapSuperAdministrator`. No runtime command was run; this was a documentation clarification.
+
+### Saturday, November 21, 2026 — 19:30:15 +08:00 | Raise PHP runtime requirement to 8.4.1
+
+- **Agent:** Codex
+- **Summary:** Raised the backend Composer platform requirement from PHP `^8.3` to `~8.4.1`, which permits PHP 8.4.1 and later 8.4 patch releases but excludes PHP 8.5. Updated the active repository setup and runtime references to match.
+- **Files:** Updated `backend/composer.json`, `backend/composer.lock`, `backend/AGENTS.md`, `backend/CLAUDE.md`, `README.md`, `setup-step.md`, and this changelog.
+- **Validation:** Composer 2.11.2 validated `backend/composer.json` successfully; `git diff --check` passed; the backend instruction files are byte-identical. Composer refreshed the lock file but its post-update Laravel asset-publish hook could not run because the active `C:\xampp\php\php.exe` remains PHP 8.3.37 and now correctly fails the PHP 8.4.1 platform check. No backend test was run for that same reason.
+- **Follow-up:** Install or point PATH to PHP 8.4.1+ (within 8.4.x), then run `composer install` and `php artisan test --compact` from `backend/`.
+
+### Saturday, November 21, 2026 — 19:35:38 +08:00 | Activate local PHP 8.4 runtime
+
+- **Agent:** Codex
+- **Summary:** Promoted the existing user-scoped PHP 8.4.28 installation ahead of XAMPP PHP on the user PATH. PHP 8.4.28 is a later patch release within the required 8.4 line. Enabled its available `pdo_mysql` extension so the Laravel backend can connect to MySQL.
+- **Files/configuration:** Updated the user `Path` environment variable and `C:\Users\ibasc\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.4_Microsoft.Winget.Source_8wekyb3d8bbwe\php.ini`; updated this changelog.
+- **Validation:** Active shell resolves `php` to PHP 8.4.28. Composer dependency-platform verification and install completed successfully. `php artisan test --compact` passed: 200 tests / 1,675 assertions, 2 skipped.
+- **Follow-up:** Open a new terminal for the persisted user PATH to take effect. The XAMPP PHP 8.3 installation remains available but is no longer first on the user PATH.
+
+### Saturday, November 21, 2026 — 19:56:22 +08:00 | Document Composer installation recovery
+
+- **Agent:** Codex
+- **Summary:** Added an explicit Windows recovery path for a missing `composer` command: verify the PHP 8.4.1+ runtime, use the official Composer installer, select the working PHP executable, refresh `PATH`, and confirm `composer --version` before continuing.
+- **Files:** Updated `setup-step.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-21-local-setup-guide.md`, and this changelog.
+- **Validation:** Checked the installer guidance against the official Composer download page. No local installation or runtime command was run by this documentation update.
+
+### Saturday, November 21, 2026 — 20:20:13 +08:00 | Clarify creation of non-Super-Admin accounts
+
+- **Agent:** Codex
+- **Summary:** Documented that the bootstrap command creates only one protected Super Administrator. Added the in-app workflow for creating ordinary staff accounts, the issued temporary-password behavior, and current Super Administrator/Administrator role-creation limits. The guide now notes that Accounting creation is closed and points test users to the fictional seeded Accounting account.
+- **Files:** Updated `setup-step.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-21-local-setup-guide.md`, and this changelog.
+- **Validation:** Verified the behavior against `BootstrapSuperAdministrator`, `StoreStaffUserRequest`, and `UserAdministrationController`. No runtime command was run by this documentation clarification.
+
+### Saturday, November 21, 2026 — 20:52:39 +08:00 | Restore frontend test isolation and account-list pagination
+
+- **Agent:** Codex
+- **Summary:** Configured Vitest to start in MockDB mode regardless of a developer's local `VITE_DATA_SOURCE=live` setting, preserving explicit per-file live-mode opt-ins. Corrected the live billing-account list to pass the API's `lastPage` to its shared pager, so the Next control remains enabled when subsequent pages exist.
+- **Files:** Updated `frontend/vite.config.ts`, `frontend/src/features/billing/LiveBillingAccounts.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** Focused frontend regression suite passed (4 files / 48 tests); full frontend suite passed from the unchanged local live `.env` (41 files / 283 tests); `npm.cmd run build` passed. The pre-existing Vite chunk-size warning remains informational.
+- **Follow-ups:** No new issue. Existing live-browser QA and backend configuration tracker entries remain unchanged.
+
+### Saturday, November 21, 2026 — 20:55:45 +08:00 | Align the demo-seeder fixture assertion
+
+- **Agent:** Codex
+- **Summary:** Updated the demo-data seeder regression assertion to match the existing fictional Cashier display name, `Casey Cashier`. The assertion had retained the removed `(sample)` suffix while the seeder already created the `sample.cashier` fixture without it.
+- **Files:** Updated `backend/tests/Feature/DemoDataSeederTest.php` and this changelog.
+- **Validation:** Focused `DemoDataSeederTest` passed (1 test / 6 assertions); `vendor/bin/pint --dirty --format agent` passed; full `php artisan test --compact` run through PHP 8.4.28 passed (200 tests / 1,675 assertions, 2 skipped); `git diff --check` passed.
+- **Follow-ups:** None. The pre-existing uncommitted `DemoDataSeeder.php` display-name edit was preserved.
+
+### Sunday, November 22, 2026 — 00:51:26 +08:00 | Enable development sample-account switching in live-data workflow
+
+- **Agent:** Codex
+- **Summary:** Extended the development-only sidebar account shortcut to `VITE_DATA_SOURCE=live`. Selecting a role now signs in as that role's fictional seeded sample account through the normal Laravel `/api/auth/login` flow, then returns to its dashboard. It is not a client-side permission switch. The selector stays absent from production builds; the shared fixture password is in a DEV-only dynamically imported module and is absent from the built JavaScript assets.
+- **Files:** Added `frontend/src/auth/liveDemoAccounts.ts`; updated `frontend/src/auth/session.tsx`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/components/layout/Shell.tsx`, `frontend/src/App.tsx`, `frontend/src/i18n/en.ts`, and `frontend/src/test/login.test.tsx`; updated this changelog.
+- **Validation:** Focused `npm.cmd test -- --run src/test/login.test.tsx src/test/layout.test.tsx` passed (28 tests). `npm.cmd run build` passed. `rg` confirmed `SamplePass123!` is absent from `frontend/dist/assets/*.js`; `git diff --check` passed. `npm.cmd run verify:production-assets` still reports the known MockDB fixture markers because this checkout builds MockDB by default (tracked accepted scope); it did not report the shared live-demo password.
+- **Follow-ups:** None. The shortcut requires the local fictional demo seed; if it is absent or a sample account has changed, the sidebar reports that it could not open the selected account.
+
+### Sunday, November 22, 2026 — 01:41:45 Asia/Manila | Compact user-table actions
+
+- **Agent:** Codex
+- **Summary:** Added a shared `TableActionButton` so user-account table actions start as vector icons and expand their existing labels only on hover or keyboard focus. Applied it consistently to the live API and MockDB user tables without changing permissions, disabled-state rules, destructive confirmation flows, or action outcomes.
+- **Pattern:** Added `educatrak-table-action-patterns` (new) to define the reusable table-row rule: Lucide icon, 36px starting control, accessible label at all times, hover/focus expansion, and wrapping action groups. This is the new shared behavior; previously these actions were permanently text-labelled buttons.
+- **Files:** Added `frontend/src/components/ui/TableActionButton.tsx`, `frontend/src/test/tableActionButton.test.tsx`, `.agents/skills/educatrak-table-action-patterns/SKILL.md`, and `EducatraK-Knowledge-Base/08-Logs/2026-11-22-table-action-icons.md`; updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, and this changelog.
+- **Validation:** Focused component and live-user regression tests passed. `npm.cmd run build` passed. Impeccable detector returned no findings; `git diff --check` passed. A full Vitest run was initiated but its terminal output did not include a final aggregate result, so it is not claimed as passing.
+- **Follow-ups:** Browser-rendered hover verification was unavailable in this environment; the interaction is verified by its DOM/class contract and production build.
+
+### Sunday, November 22, 2026 — 01:36:21 +08:00 | Restore the live Administrator dashboard response contract
+
+- **Agent:** Codex
+- **Summary:** Corrected the Administrator dashboard API response role from `administrator` to the documented backend identifier `admin`. The frontend mapper now accepts the successful live response and displays the dashboard instead of its retry state.
+- **Files:** Updated `backend/app/Http/Controllers/Api/DashboardController.php`, `backend/tests/Feature/DashboardTest.php`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** PHP 8.4.28 `vendor/bin/pint --dirty --format agent` passed. Focused `DashboardTest` passed (7 tests / 61 assertions). A real Chromium login through the Vite live-data proxy returned two 200 dashboard requests and rendered the Administrator dashboard with no visible alert, loading state, page error, or horizontal overflow at 1536px.
+- **Follow-ups:** None.
+
+### Sunday, November 22, 2026 — 01:53:51 Asia/Manila | Stabilize compact user-table action expansion
+
+- **Agent:** Codex
+- **Summary:** Fixed hover flicker in the compact user-table actions. `TableActionGroup` now anchors row actions at the start of a single line, preventing an expanding label from wrapping or recentering the hovered button.
+- **Pattern:** Updated `educatrak-table-action-patterns`: centered/wrapping action groups → the shared left-anchored, non-wrapping `TableActionGroup`. This directly implements the user-reported stability requirement while retaining icon-first actions and keyboard-focus expansion.
+- **Files:** Updated `frontend/src/components/ui/TableActionButton.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/tableActionButton.test.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, `.agents/skills/educatrak-table-action-patterns/SKILL.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-22-table-action-icons.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/tableActionButton.test.tsx src/test/liveUsersFilters.test.tsx` passed (7 tests). `npm.cmd run build` passed; Impeccable detector returned no findings; `git diff --check` passed.
+- **Follow-ups:** Browser-rendered hover verification remains unavailable in this environment.
+
+### Sunday, November 22, 2026 — 01:59:12 Asia/Manila | Prevent table-scrollbar flicker from compact actions
+
+- **Agent:** Codex
+- **Summary:** Prevented expanding user-table actions from changing the horizontal scroller's content width. `TableActionGroup` now fills the fixed action cell rather than using its changing max-content width, and the live action column reserves space for the longest expanded label.
+- **Pattern:** Updated `educatrak-table-action-patterns`: intrinsic-width group → action-cell-width group. Updated `educatrak-table-patterns` to name compact action groups as the one non-wrapping Actions-cell exception. This preserves focus-ring visibility without clipping the group.
+- **Files:** Updated `frontend/src/components/ui/TableActionButton.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/test/tableActionButton.test.tsx`, `.agents/skills/educatrak-table-action-patterns/SKILL.md`, `.agents/skills/educatrak-table-patterns/SKILL.md`, `EducatraK-Knowledge-Base/08-Logs/2026-11-22-table-action-icons.md`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/tableActionButton.test.tsx src/test/liveUsersFilters.test.tsx` passed (7 tests). `npm.cmd run build` passed; Impeccable detector returned no findings; `git diff --check` passed.
+- **Follow-ups:** Browser-rendered verification remains unavailable in this environment.
+
+### Sunday, November 22, 2026 — 02:02:48 Asia/Manila | Simplify user-role editor and fit archived-user tables
+
+- **Agent:** Codex
+- **Summary:** Removed the redundant “Role and access” heading above the existing Role field in the live user editor. Archived-user tables now use the card width instead of a fixed desktop minimum; the live archive view also has a complete eight-column width budget, including State and Actions.
+- **Files:** Updated `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `frontend/src/test/liveUsersFilters.test.tsx`, `frontend/src/test/operations.test.tsx`, and this changelog.
+- **Validation:** `npm.cmd test -- --run src/test/liveUsersFilters.test.tsx` passed (5 tests). `npm.cmd run build` passed. Impeccable detector returned `[]`; `git diff --check` passed. `operations.test.tsx` ran 65 tests with 64 passing; its one failure is the already-recorded unrelated Mock Accounts Actions-header alignment expectation.
+- **Follow-ups:** Browser-rendered visual verification remains unavailable in this environment.
+
+### Sunday, November 22, 2026 — 01:57:28 +08:00 | Normalize Accounts and Users typography
+
+- **Agent:** Codex
+- **Summary:** Applied the documented offline brand stack (`"Segoe UI", system-ui, sans-serif`) to Accounts and User Administration tables, including previously monospaced account identifiers, currency values, and usernames. Financial values retain tabular numerals and use semibold weight for scanability; account summary values now use the documented 22px semibold metric role. No brand colors, permissions, or table behavior changed.
+- **Files:** Updated `frontend/src/index.css`, `frontend/src/features/billing/LiveBillingAccounts.tsx`, `frontend/src/features/operations/LiveUsersPage.tsx`, `frontend/src/features/operations/OperationalPages.tsx`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog.
+- **Validation:** `npm.cmd exec -- vitest run src/test/tableStyles.test.tsx src/test/liveBillingAccounts.test.tsx src/test/liveUsersFilters.test.tsx` passed (11 tests). `npm.cmd run build` passed. The Impeccable typography detector returned `[]`; `git diff --check` passed. A narrow MockDB Users test found an unrelated existing Actions-header alignment assertion failure, recorded in the issue tracker; no source change was made for it.
+- **Follow-ups:** Browser-rendered visual verification was unavailable in this environment.
+
+### Sunday, November 22, 2026 — 02:14:56 +08:00 | Audit role-wide typography and branding consistency
+
+- **Agent:** Codex
+- **Summary:** Performed a read-only audit of the full frontend route inventory and all six role workspaces (Super Admin, Cashier, Accounting, Administrator, Auditor, and Registrar) against the approved offline font stack, type scale, color tokens, shared header/table patterns, and role navigation/capability map. The shared typography system is coherent, but 16 operational components still use `font-mono` for ordinary UI content, creating a confirmed cross-role brand inconsistency.
+- **Files:** Updated `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md` and this changelog only.
+- **Validation:** Impeccable type detector returned `[]` for `frontend/src`; its general scan produced one print-only report-border warning that does not apply to interactive screens. Focused six-role navigation/capability/workspace coverage passed (6 selected tests across 3 files). Static scan confirmed standard 28px/700 page headers and the documented `Segoe UI` body token. `git diff --check` passed.
+- **Follow-ups:** Browser DevTools launch was blocked by the local execution policy, so a real-pixel desktop/phone inspection of authenticated pages remains unverified. The temporary Vite audit server was stopped. The cross-role monospace issue is tracked in `Issues-and-TODOs.md`.
