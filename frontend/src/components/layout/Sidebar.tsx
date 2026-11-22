@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   BadgeCheck,
@@ -128,7 +129,7 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggleSidebar?: () => void;
   onLogout: () => void;
-  onRoleChange: (role: Role) => void;
+  onRoleChange: (role: Role) => void | Promise<boolean | void>;
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
@@ -151,15 +152,30 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
 
 export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undefined, onLogout, onRoleChange }: SidebarProps) {
   const navigate = useNavigate();
+  const [accountSwitchError, setAccountSwitchError] = useState<string | null>(null);
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const visibleGroups = ROLE_NAV_GROUPS[user.role].map((group) => ({
     ...group,
     items: group.items.filter((item) => can(user, item.capability)),
   })).filter((group) => group.items.length > 0);
-  const showRolePreview = import.meta.env.DEV && !isLiveCashierApiEnabled();
+  const showAccountSwitcher = import.meta.env.DEV;
+  const accountSwitcherLabel = isLiveCashierApiEnabled() ? en.header.switchSampleAccount : en.header.previewRole;
 
-  function handleRoleChange(role: Role) {
-    onRoleChange(role);
-    navigate("/");
+  async function handleRoleChange(role: Role) {
+    if (role === user.role) return;
+
+    setAccountSwitchError(null);
+    setIsSwitchingAccount(true);
+    try {
+      const switched = await onRoleChange(role);
+      if (switched === false) {
+        setAccountSwitchError(en.header.sampleAccountUnavailable);
+        return;
+      }
+      navigate("/");
+    } finally {
+      setIsSwitchingAccount(false);
+    }
   }
 
   return (
@@ -230,14 +246,18 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
         ))}
       </ul>
       <div className={cn("mt-auto flex w-full flex-col gap-3 border-t border-border pt-3", collapsed && "md:items-center")}>
-        {showRolePreview && (
-          <DropdownSelect
-            aria-label={`${en.header.previewRole}: ${ROLE_LABEL[user.role]}`}
-            value={user.role}
-            options={ROLE_OPTIONS}
-            onChange={handleRoleChange}
-            className={cn("w-full border-dashed bg-surface", collapsed && "hidden")}
-          />
+        {showAccountSwitcher && (
+          <div className={cn("w-full", collapsed && "hidden")}>
+            <DropdownSelect
+              aria-label={`${accountSwitcherLabel}: ${ROLE_LABEL[user.role]}`}
+              value={user.role}
+              options={ROLE_OPTIONS}
+              onChange={handleRoleChange}
+              disabled={isSwitchingAccount}
+              className="w-full border-dashed bg-surface"
+            />
+            {accountSwitchError && <p role="alert" className="mt-2 text-sm text-status-error">{accountSwitchError}</p>}
+          </div>
         )}
         <div className={cn("flex items-center gap-1.5", collapsed && "md:flex-col md:gap-1")}>
           <button

@@ -7,7 +7,7 @@ import { en } from "@/i18n/en";
 interface ShellProps extends PropsWithChildren {
   user: AuthenticatedUser;
   onLogout: () => void;
-  onRoleChange: (role: Role) => void;
+  onRoleChange: (role: Role) => void | Promise<boolean | void>;
 }
 
 /** The workstation's date and time, on its own so only this text re-renders every second. */
