@@ -134,7 +134,7 @@ class DashboardController extends Controller
 
     private function administratorSummary(): array
     {
-        return $this->systemSummary('administrator');
+        return $this->systemSummary('admin');
     }
 
     private function superAdministratorSummary(): array

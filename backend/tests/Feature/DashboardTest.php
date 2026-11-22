@@ -94,7 +94,7 @@ class DashboardTest extends TestCase
 
         $this->actingAs($admin)->getJson('/api/dashboard')
             ->assertOk()
-            ->assertJsonPath('data.role', 'administrator')
+            ->assertJsonPath('data.role', 'admin')
             ->assertJsonPath('data.lastBackupSucceeded', true)
             ->assertJsonPath('data.activeUserCount', 4)
             ->assertJsonMissingPath('data.failedEmailCount')
