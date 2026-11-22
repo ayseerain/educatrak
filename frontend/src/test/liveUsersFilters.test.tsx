@@ -56,6 +56,8 @@ describe("role scoped user filters", () => {
     await user.click(await screen.findByRole("button", { name: "Edit" }));
     const editDialog = screen.getByRole("dialog", { name: "Manage user account" });
     expect(editDialog).toHaveClass("max-h-[90dvh]", "overflow-y-auto");
+    expect(within(editDialog).queryByRole("heading", { name: "Role and access" })).not.toBeInTheDocument();
+    expect(within(editDialog).getByRole("combobox", { name: "Role" })).toBeInTheDocument();
     expect(within(editDialog).queryByRole("button", { name: "Reset password" })).not.toBeInTheDocument();
     expect(within(editDialog).queryByRole("button", { name: "Deactivate account" })).not.toBeInTheDocument();
     expect(within(editDialog).queryByRole("button", { name: "Reactivate account" })).not.toBeInTheDocument();
@@ -85,7 +87,7 @@ describe("role scoped user filters", () => {
     renderUsers({ id: "admin-1", name: "Alex Sample Administrator", role: "administrator" });
 
     await screen.findByRole("button", { name: "Edit" });
-    expect(screen.getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-center");
+    expect(screen.getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-start", "flex-nowrap");
     expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Reset password" }));
     const resetDialog = await screen.findByRole("dialog", { name: "Password reset" });
