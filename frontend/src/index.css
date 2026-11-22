@@ -32,6 +32,32 @@
 }
 
 @layer components {
+  /* Accounts and user administration use the documented offline brand stack even where
+     older rows still carry a technical utility. Identifiers remain readable metadata,
+     while financial alignment is handled by tabular figures rather than a second face. */
+  .account-list,
+  .user-accounts-list {
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+
+  .account-list .font-mono,
+  .user-accounts-list .font-mono {
+    font-family: inherit;
+  }
+
+  .account-list tbody td.font-mono {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .account-list tbody td:first-child > a {
+    font-weight: 600;
+  }
+
+  .user-accounts-list tbody td.font-mono {
+    font-weight: 500;
+  }
+
   /* Text inputs match the standard dropdown trigger (CLINIQ input pattern): same border,
      soft card shadow, semibold value, brand-green hover, one focus ring. */
   .form-control {
