@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Pencil } from "lucide-react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 
 describe("TableActionButton", () => {
@@ -20,5 +20,16 @@ describe("TableActionButton", () => {
 
     expect(container.firstElementChild).toHaveClass("w-full", "min-w-0", "flex-nowrap", "justify-start", "whitespace-nowrap");
     expect(container.firstElementChild).not.toHaveClass("min-w-max");
+  });
+
+  it("preserves disabled behavior while retaining the accessible action name", () => {
+    const onClick = vi.fn();
+    render(<TableActionButton icon={Pencil} label="Deactivate account" variant="destructive" disabled onClick={onClick} />);
+
+    const action = screen.getByRole("button", { name: "Deactivate account" });
+    expect(action).toBeDisabled();
+    expect(action).toHaveClass("disabled:cursor-not-allowed", "disabled:opacity-50");
+    fireEvent.click(action);
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Eye, RotateCw } from "lucide-react";
 import { listNotificationLogs, retryNotification, type NotificationLogEntry } from "@/api/notificationApi";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { PaginationControls } from "@/components/ui/PaginationControls";
+import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 import { TableFilters, activeTableFilters, dateRangeError, useTableFilters } from "@/components/ui/TableFilters";
 import { can } from "@/lib/permissions";
 import type { AuthenticatedUser } from "@/lib/types";
@@ -85,7 +87,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
       {logs.isError && <ErrorState message={logs.error.message} onRetry={() => void logs.refetch()} />}
       {logs.data && (logs.data.data.length === 0 ? <EmptyState message="No notification entries match these filters." /> : <div className="overflow-x-auto">
       <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
-        <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["Created", "Student", "Type", "Channel", "Recipient", "Status", "Attempts", "Details", "Actions"].map((heading) => <th key={heading} scope="col" className="px-3 py-2">{heading}</th>)}</tr></thead>
+        <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["Created", "Student", "Type", "Channel", "Recipient", "Status", "Attempts", "Details", "Actions"].map((heading) => <th key={heading} scope="col" className={heading === "Actions" ? "w-[18%] px-3 py-2" : "px-3 py-2"}>{heading}</th>)}</tr></thead>
         <tbody>{logs.data.data.map((entry) => <tr key={entry.id} className="border-b align-top last:border-0">
           <td className="whitespace-nowrap px-3 py-2">{formatTimestamp(entry.createdAt)}</td>
           <td className="px-3 py-2">{entry.studentName ?? entry.lrn ?? "Unavailable"}</td>
@@ -95,7 +97,7 @@ export function LiveNotificationLog({ user, workspaceSwitch }: { user: Authentic
           <td className="px-3 py-2">{entry.status.replace(/_/g, " ")}</td>
           <td className="px-3 py-2">{entry.attempts}</td>
           <td className="max-w-sm whitespace-normal px-3 py-2">{entry.failureReason ?? (entry.sentAt ? `Sent ${formatTimestamp(entry.sentAt)}` : entry.status === "queued" ? "Awaiting provider delivery confirmation" : "—")}</td>
-          <td className="px-3 py-2"><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" size="sm" onClick={() => setSelectedEntry(entry)}>View entry</Button>{canRetry && entry.type === "reminder" && entry.status === "failed" && <Button type="button" variant="secondary" size="sm" disabled={retryMutation.isPending} onClick={() => { if (window.confirm("Retry this failed reminder?")) retryMutation.mutate(entry.id); }}>{retryMutation.isPending ? "Retrying…" : "Retry"}</Button>}</div></td>
+          <td className="px-3 py-2"><TableActionGroup><TableActionButton icon={Eye} label="View entry" variant="secondary" onClick={() => setSelectedEntry(entry)} />{canRetry && entry.type === "reminder" && entry.status === "failed" && <TableActionButton icon={RotateCw} label={retryMutation.isPending ? "Retrying…" : "Retry"} variant="secondary" disabled={retryMutation.isPending} onClick={() => { if (window.confirm("Retry this failed reminder?")) retryMutation.mutate(entry.id); }} />}</TableActionGroup></td>
         </tr>)}</tbody>
       </table>
       {retryMutation.isError && <p className="px-4 py-3 text-sm text-status-error" role="alert">{retryMutation.error.message}</p>}

@@ -2,6 +2,7 @@ import { ViewTabs } from "@/components/ui/ViewTabs";
 import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BadgeCheck } from "lucide-react";
 import { getTodayCloseOut, listCloseOuts, signOffCloseOut, submitCloseOut } from "@/api/cashierApi";
 import type { CloseOutRecord } from "@/api/cashierApi";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { TableActionButton } from "@/components/ui/TableActionButton";
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { can } from "@/lib/permissions";
 import { centavos, format } from "@/lib/money";
@@ -85,7 +87,7 @@ export function LiveCloseOutHistory({ user }: { user: AuthenticatedUser }) {
     {historyQuery.isPending && <LoadingState message="Loading close-out history…" layout="table" columns={7} />}
     {historyQuery.isError && <ErrorState message={historyQuery.error.message} onRetry={() => void historyQuery.refetch()} />}
     {signOff.isError && <p role="alert" className="mb-3 text-sm text-status-error">{signOff.error.message}</p>}
-    {historyQuery.data && (historyQuery.data.length === 0 ? <Card><EmptyState message="No close-outs have been submitted." /></Card> : <Card className="overflow-x-auto p-0"><table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["Date", "Cashier", "System cash", "Counted cash", "Variance", "Status", "Action"].map((title) => <th key={title} scope="col" className="px-3 py-2">{title}</th>)}</tr></thead><tbody>{history.items.map((record: CloseOutRecord) => <tr key={record.id} className="border-b align-top last:border-0"><td className="px-3 py-2">{record.businessDate}</td><td className="px-3 py-2">{record.cashier ?? "Unavailable"}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.systemCashCents))}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.countedCashCents))}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.varianceCents))}</td><td className="px-3 py-2">{record.signedOffAt ? <><p>Signed off {formatTimestamp(record.signedOffAt)}</p><p className="text-xs text-text-secondary">By {record.signedOffBy ?? "Unavailable"}</p></> : "Unsigned"}{record.varianceReason && <p className="mt-1 max-w-xs whitespace-normal text-xs text-text-secondary">Reason: {record.varianceReason}</p>}</td><td className="px-3 py-2">{!record.signedOffAt && can(user, "closeout.signoff") ? <Button disabled={signOff.isPending} onClick={() => signOff.mutate(record.id)}>Sign off</Button> : "View"}</td></tr>)}</tbody></table>{history.controls}</Card>)}
+    {historyQuery.data && (historyQuery.data.length === 0 ? <Card><EmptyState message="No close-outs have been submitted." /></Card> : <Card className="overflow-x-auto p-0"><table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">{["Date", "Cashier", "System cash", "Counted cash", "Variance", "Status", "Action"].map((title) => <th key={title} scope="col" className={title === "Action" ? "w-[14%] px-3 py-2" : "px-3 py-2"}>{title}</th>)}</tr></thead><tbody>{history.items.map((record: CloseOutRecord) => <tr key={record.id} className="border-b align-top last:border-0"><td className="px-3 py-2">{record.businessDate}</td><td className="px-3 py-2">{record.cashier ?? "Unavailable"}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.systemCashCents))}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.countedCashCents))}</td><td className="px-3 py-2 text-right font-mono">{format(centavos(record.varianceCents))}</td><td className="px-3 py-2">{record.signedOffAt ? <><p>Signed off {formatTimestamp(record.signedOffAt)}</p><p className="text-xs text-text-secondary">By {record.signedOffBy ?? "Unavailable"}</p></> : "Unsigned"}{record.varianceReason && <p className="mt-1 max-w-xs whitespace-normal text-xs text-text-secondary">Reason: {record.varianceReason}</p>}</td><td className="px-3 py-2">{!record.signedOffAt && can(user, "closeout.signoff") ? <TableActionButton icon={BadgeCheck} label="Sign off" disabled={signOff.isPending} onClick={() => signOff.mutate(record.id)} /> : "View"}</td></tr>)}</tbody></table>{history.controls}</Card>)}
   </>;
 }
 

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, X } from "lucide-react";
 import { decidePaymentVoid, listVoidRequests, type PaymentVoidRequest } from "@/api/cashierApi";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { can } from "@/lib/permissions";
 import { centavos, format } from "@/lib/money";
@@ -46,7 +48,7 @@ export function LiveVoidsPage({ user }: { user: AuthenticatedUser }) {
         <Card className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-              <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary"><th scope="col" className="px-3 py-2">Receipt</th><th scope="col" className="px-3 py-2">Requester</th><th scope="col" className="px-3 py-2">Reason</th><th scope="col" className="px-3 py-2 text-right">Amount</th><th scope="col" className="px-3 py-2">Requested</th><th scope="col" className="px-3 py-2">Status / decision</th></tr></thead>
+              <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary"><th scope="col" className="px-3 py-2">Receipt</th><th scope="col" className="px-3 py-2">Requester</th><th scope="col" className="px-3 py-2">Reason</th><th scope="col" className="px-3 py-2 text-right">Amount</th><th scope="col" className="px-3 py-2">Requested</th><th scope="col" className="w-[22%] px-3 py-2">Status / decision</th></tr></thead>
               <tbody>{requests.items.map((item) => (
                 <tr key={item.id} className="border-b align-top last:border-0">
                   <td className="px-3 py-2 font-mono">{item.receiptNo ?? `Payment ${item.paymentId}`}</td>
@@ -62,7 +64,7 @@ export function LiveVoidsPage({ user }: { user: AuthenticatedUser }) {
                           <label className="block text-xs font-medium">Decision note<textarea required minLength={1} maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-border p-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark" /></label>
                           <div className="flex gap-2"><Button type="submit" disabled={decisionMutation.isPending || !note.trim()}>{decisionMutation.isPending ? "Saving…" : "Confirm"}</Button><Button type="button" variant="secondary" onClick={() => { setDecisionFor(null); setNote(""); }}>Cancel</Button></div>
                         </form>
-                      ) : <div className="flex flex-wrap gap-2"><Button type="button" onClick={() => setDecisionFor({ item, decision: "approved" })}>Approve</Button><Button type="button" variant="destructive" onClick={() => setDecisionFor({ item, decision: "rejected" })}>Reject</Button></div>
+                      ) : <TableActionGroup><TableActionButton icon={Check} label="Approve" onClick={() => setDecisionFor({ item, decision: "approved" })} /><TableActionButton icon={X} label="Reject" variant="destructive" onClick={() => setDecisionFor({ item, decision: "rejected" })} /></TableActionGroup>
                     ) : <span>Pending review</span>}
                   </td>
                 </tr>

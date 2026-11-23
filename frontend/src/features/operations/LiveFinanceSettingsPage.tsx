@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleOff, Pencil } from "lucide-react";
 import {
   createFinanceFeeItem,
   deactivateFinanceFeeItem,
@@ -17,6 +18,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { LivePaymentPlans } from "@/features/operations/LivePaymentPlans";
 import { centavos, format, parse } from "@/lib/money";
@@ -179,7 +181,7 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
               <th scope="col" className="px-3 py-2">Required</th>
               <th scope="col" className="px-3 py-2">Version</th>
               <th scope="col" className="px-3 py-2">Status</th>
-              {editable && <th scope="col" className="px-3 py-2">Actions</th>}
+              {editable && <th scope="col" className="w-[25%] px-3 py-2">Actions</th>}
             </tr></thead>
             <tbody>{pagination.items.map((item) => <tr key={item.id} className="border-b last:border-0">
               <td className="px-3 py-2">{item.name}</td>
@@ -188,10 +190,10 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
               <td className="px-3 py-2">{item.required ? "Yes" : "No"}</td>
               <td className="px-3 py-2 font-mono">{item.version}</td>
               <td className="px-3 py-2"><StatusBadge status={schedule.active && item.active ? "active" : "inactive"} /></td>
-              {editable && <td className="px-3 py-2"><div className="flex gap-2">
-                <Button type="button" size="sm" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onEdit(schedule, item)}>Edit</Button>
-                <Button type="button" size="sm" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onDeactivate(item)}>Deactivate</Button>
-              </div></td>}
+              {editable && <td className="px-3 py-2"><TableActionGroup>
+                <TableActionButton icon={Pencil} label="Edit" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onEdit(schedule, item)} />
+                <TableActionButton icon={CircleOff} label="Deactivate" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onDeactivate(item)} />
+              </TableActionGroup></td>}
             </tr>)}</tbody>
           </table>}
       {schedule.items.length > 0 && pagination.controls}
