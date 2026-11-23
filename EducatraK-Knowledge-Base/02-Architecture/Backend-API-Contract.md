@@ -220,6 +220,40 @@ only part of a route contract; rows identify known gaps. This is not generated
 OpenAPI, and some controller response objects remain summarized rather than
 field-enumerated. Do not use it for client code generation.
 
+## 2026-11-23 SRS v3.0 owner-answer reconciliation
+
+Source: `06-Decisions/2026-11-22-srs-v3-policy-confirmations.md` (November 23 owner answers). Error shapes are unchanged except one new structured 409 for shared guardians.
+
+### Changed or added routes
+
+| Route | Capability | Contract |
+|---|---|---|
+| `GET /api/backups` | `backup.view` (Administrator, Super Admin) | 200 `{data:[{id,trigger,result,sizeBytes,checksumSha256,error,startedAt,completedAt}], meta:{manualBackupAvailable,unavailableReason,dailyAt,timezone,rotationEnabled,destinationFreeBytes,restoreTestRecorded}}` newest first. `trigger` is `scheduled`, `manual`, or `null` for older rows. No paths or file names are returned. `manualBackupAvailable` is a configuration check (destination, MySQL connection, existing `mysqldump` path), not proof of a good backup. |
+| `POST /api/backups` | `backup.manage` (Administrator) | Runs one `mysqldump` backup through `DatabaseBackupService`. 503 `{message}` without running when the executor is not configured. 201 `{data}` on success; 500 `{data}` with sanitized `error` on failure; 409 `{message}` while another backup holds the shared lock. Audits `backup.requested` plus `backup.succeeded`/`backup.failed`. |
+| `PATCH /api/students/{student}/guardians/{guardian}` | `guardians.manage` (Registrar) | New optional `confirm_shared_contact_update` (boolean). Changing `full_name`, `email` or `mobile` of a guardian linked to more than one student without it returns 409 `{message, code:"shared_guardian_confirmation_required", affectedStudents:[{id,lrn,fullName}]}` and writes nothing. `email_status` resets to `unverified`/`missing` only when the email value changes. |
+| `PATCH /api/students/{student}` | `students.manage` (Registrar) | Same `confirm_shared_contact_update` flag and 409 for the nested guardian fields. Editing an existing guardian no longer changes primary flags; a first guardian created through the form is primary. Guardian changes are audited as `guardian.created`/`guardian.updated`. |
+| `DELETE /api/students/{student}/guardians/{guardian}` | `guardians.manage` | Unlinking the primary guardian requires `replacement_primary_guardian_id` (another guardian linked to the same student); the replacement becomes primary in the same transaction. Otherwise 422 on that field. The guardian record and other links are kept. |
+| `POST /api/billing-accounts/{billingAccount}/adjustments` | `accounts.manage` (Cashier) | Unchanged request. Audit `before`/`after` now include `installments:[{id,label,amount_cents,paid_cents}]`. Redistribution: proportional over unpaid remainders; rounding centavos to the oldest unpaid installment; paid installments unchanged; positive correction on a fully paid account adds a `Correction` installment due today (Manila). |
+| `GET /api/ledger-imports` | `ledger.import.view` (Cashier, Accounting) | Cashier sees own batches; Accounting sees submitted, confirmed and rejected batches. Newest 100. Every ledger response carries `meta:{cutoverDate,cutoverPending,postingMode:"storage_only",columns}`. |
+| `POST /api/ledger-imports` | `ledger.import.prepare` (Cashier) | Multipart `file` (CSV, ≤ 1 MB, ≤ 2,000 rows) and optional `mapping[<column>]=<file header>` for each of `source_row_id, student_lrn, school_year, as_of_date, total_due_cents, total_paid_cents, balance_cents, source_reference, notes` (default: same-named header; `notes` may be unmapped). 201 `{data:{id,filename,fileSha256,status:"previewed",summary:{rowCount,eligibleCount,invalidCount,duplicateCount,conflictCount,recordedCount,excludedCount},rows:[{line,status,outcome,values,errors}],...},meta}`. Row `status` is `eligible`, `invalid`, `duplicate` or `conflict` (existing billing account for that student and year). Unmappable header or empty file: 422. |
+| `GET /api/ledger-imports/{importBatch}` | `ledger.import.view` | Record-level: Cashier only own batches; Accounting not drafts or cancelled batches. Otherwise 404. Draft and submitted batches are revalidated on every read. |
+| `GET /api/ledger-imports/{importBatch}/error-report` | `ledger.import.view` | Same record-level rule. `text/csv` of every non-eligible row (`line,status,source_row_id,student_lrn,school_year,errors`); cells starting with `= + - @` are prefixed with `'`. |
+| `POST /api/ledger-imports/{importBatch}/submit` | `ledger.import.prepare` | `previewed` → `submitted`. 422 when no row is eligible. Allowed while the cutover is pending. |
+| `POST /api/ledger-imports/{importBatch}/cancel` | `ledger.import.prepare` | `previewed` → `cancelled`. |
+| `POST /api/ledger-imports/{importBatch}/reject` | `ledger.import.review` (Accounting) | Body `review_note` (10–1000 chars). `submitted` → `rejected`. Preparer gets 403. |
+| `POST /api/ledger-imports/{importBatch}/confirm` | `ledger.import.review` | 409 while the cutover date is unset. Body `file_sha256` (must equal the batch hash) and `eligible_lines` (the eligible line numbers the reviewer saw). Rows are revalidated; if the eligible set differs, 409 and nothing is written. Creates one `opening_balance_conversions` row per eligible row in one transaction; others are marked `excluded`; `submitted` → `confirmed` with `recordedCount`/`excludedCount`. Preparer gets 403; repeat confirmation gets 409. No payments, receipts, adjustments, billing accounts, students or notifications are created. |
+
+Row validation: all columns except `notes` required; `student_lrn` 12 digits and an existing student; `school_year` equals an existing school-year label; `as_of_date` valid `YYYY-MM-DD` and, once `LEDGER_CUTOVER_DATE` is set, not after it (an unset cutover is a batch-level pending state, not a row error); amounts non-negative whole centavos; `total_due_cents - total_paid_cents = balance_cents`; unique `source_row_id`; one row per student and school year in the file and none already confirmed (DB unique key).
+
+### Schema (additive migrations)
+
+- `2026_11_23_214732_add_opening_balance_ledger_import`: `import_batches` gains `file_sha256`, `submitted_at`, `reviewed_by`, `reviewed_at`, `review_note`; new `opening_balance_conversions` (unique `student_id, school_year_id`; restrict-on-delete FKs).
+- `2026_11_23_214959_add_attempt_details_to_backup_records_table`: `backup_records` gains `trigger`, `requested_by`, `started_at`, `file_name`, `checksum_sha256`. Existing rows keep nulls.
+
+### Still open
+
+Confirmed opening balances are stored only. They do not yet change billing accounts, dashboards, follow-up or reports; the proposed posting mapping awaits approval (decision file, "PROPOSED" section). Frontend: `/import` and `/import/:id` (live API only) for Cashier and Accounting; `/admin/backup` for Administrator (run control) and Super Admin (read only).
+
 ## MockDB exported function inventory (65 functions)
 
 Every row names a function export, its source line, operational class, and

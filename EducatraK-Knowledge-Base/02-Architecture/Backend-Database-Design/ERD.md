@@ -146,7 +146,8 @@ Declared restrictive foreign keys preserve important relationships, but they are
 | Current school year | `is_current` is indexed, not unique; dashboard rejects zero or multiple current rows with HTTP 409. | Exactly-one policy is accepted in behavior but needs management API and database-enforcement design. |
 | Fee changes | Fee versions and account-item snapshots exist. A new fee is copied to every existing account using its schedule, increments total due/balance, creates one unpaid installment, and immediately recalculates the installment/account status; the response reports the number of accounts updated. Versions retain previously assigned snapshots. An all-grade revision synchronizes only schedules where the fee did not already exist. | Isolated SQLite feature evidence covers the behavior, including a formerly paid account becoming due soon after a same-day fee. Matching-MySQL transaction/lock and rollback evidence remains required before release. |
 | Clearance / permits | Historical tables only. | Retired as active workflows. |
-| Imports | `import_batches` persists a generic batch shape. | No live student-import route, parser, apply path, or retention contract. |
+| Imports | `import_batches` stores opening-balance ledger batches; confirmed rows go to `opening_balance_conversions` (student and school year, unique pair). | Student masterlist import still has no live route. Opening balances do not yet feed billing accounts; that posting mapping awaits approval. |
+| Backups | `backup_records` stores each attempt with trigger, requester, timing, size, checksum and sanitized error. | Real MySQL dump, scheduler host and restore test not yet verified. |
 
 Do not use this ERD as DDL or as approval to alter a database.
 

@@ -342,20 +342,45 @@ CREATE TABLE `audit_entries` (
   CONSTRAINT `audit_entries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Columns trigger, requested_by, started_at, file_name and checksum_sha256 added by
+-- 2026_11_23_214959_add_attempt_details_to_backup_records_table.
 CREATE TABLE `backup_records` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `result` VARCHAR(255) NOT NULL,
-  `size_bytes` BIGINT UNSIGNED NULL, `error` VARCHAR(255) NULL,
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `trigger` VARCHAR(20) NULL,
+  `requested_by` BIGINT UNSIGNED NULL, `started_at` TIMESTAMP NULL, `result` VARCHAR(255) NOT NULL,
+  `size_bytes` BIGINT UNSIGNED NULL, `file_name` VARCHAR(255) NULL, `checksum_sha256` CHAR(64) NULL,
+  `error` VARCHAR(255) NULL,
   `completed_at` TIMESTAMP NOT NULL, `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL,
-  PRIMARY KEY (`id`), KEY `backup_records_result_index` (`result`)
+  PRIMARY KEY (`id`), KEY `backup_records_result_index` (`result`),
+  CONSTRAINT `backup_records_requested_by_foreign` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Columns file_sha256, submitted_at, reviewed_by, reviewed_at and review_note added by
+-- 2026_11_23_214732_add_opening_balance_ledger_import.
 CREATE TABLE `import_batches` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `created_by` BIGINT UNSIGNED NOT NULL,
-  `filename` VARCHAR(255) NOT NULL, `status` VARCHAR(255) NOT NULL DEFAULT 'previewed',
-  `summary` JSON NOT NULL, `rows` JSON NOT NULL, `committed_at` TIMESTAMP NULL,
+  `filename` VARCHAR(255) NOT NULL, `file_sha256` CHAR(64) NULL, `status` VARCHAR(255) NOT NULL DEFAULT 'previewed',
+  `summary` JSON NOT NULL, `rows` JSON NOT NULL, `submitted_at` TIMESTAMP NULL,
+  `reviewed_by` BIGINT UNSIGNED NULL, `reviewed_at` TIMESTAMP NULL, `review_note` VARCHAR(1000) NULL,
+  `committed_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL, PRIMARY KEY (`id`),
   KEY `import_batches_status_index` (`status`),
-  CONSTRAINT `import_batches_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `import_batches_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `import_batches_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `opening_balance_conversions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `import_batch_id` BIGINT UNSIGNED NOT NULL,
+  `student_id` BIGINT UNSIGNED NOT NULL, `school_year_id` BIGINT UNSIGNED NOT NULL,
+  `source_row_id` VARCHAR(64) NOT NULL, `as_of_date` DATE NOT NULL,
+  `total_due_cents` BIGINT UNSIGNED NOT NULL, `total_paid_cents` BIGINT UNSIGNED NOT NULL,
+  `balance_cents` BIGINT UNSIGNED NOT NULL, `source_reference` VARCHAR(255) NOT NULL, `notes` TEXT NULL,
+  `confirmed_by` BIGINT UNSIGNED NOT NULL, `created_at` TIMESTAMP NULL, `updated_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `opening_balance_conversions_student_id_school_year_id_unique` (`student_id`, `school_year_id`),
+  CONSTRAINT `opening_balance_conversions_import_batch_id_foreign` FOREIGN KEY (`import_batch_id`) REFERENCES `import_batches` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `opening_balance_conversions_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `opening_balance_conversions_school_year_id_foreign` FOREIGN KEY (`school_year_id`) REFERENCES `school_years` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `opening_balance_conversions_confirmed_by_foreign` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `payment_idempotency_keys` (
