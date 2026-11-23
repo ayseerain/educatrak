@@ -53,3 +53,14 @@ Owner answers on cutover, billing-account integration, partial batches, rotation
 - Vitest: 292/295 passed; the same 3 `operations.test.tsx` failures exist at HEAD. Build passed. `verify:production-assets` fails at HEAD too.
 - Browser (Playwright, disposable SQLite backend at port 8010, Vite live mode): Cashier mapping, upload, classification, error report and submit. Accounting: blocked while cutover pending (UI and API 409); with a disposable test cutover of 2026-06-30, 1 row recorded and 2 excluded; billing accounts unchanged. Administrator: backup status with API 503 when unconfigured. Super Admin: read-only page, API 403 on run.
 - The disposable database, servers and Playwright artifacts were removed or stopped after the check; the disposable SQLite file lives only in the session scratchpad.
+
+## Third round — Monday, November 23, 2026 — 23:51:40 +08:00
+
+| Item | Implemented now | Requires approval or environment |
+| --- | --- | --- |
+| Historical opening balances | Decision recorded: past-year balances stay with their year. | The account exception design (schema, API, reporting, authorization), the cutover date, and whether past-year balances can be collected. |
+| Conflict reconciliation | Cutover comparison (3 classifications), audited final Accounting resolution, report columns, Resolve dialog. | A correction procedure for discrepancies. |
+| Privacy Policy | Retention text corrected to "under review". | Academy privacy authority review before publication. |
+| Backup and restore | Full cycle verified on disposable MySQL 9.7.0; two defects fixed. | Office-computer run, production grants, Task Scheduler, restore operator. |
+
+Validation: Laravel 220 passed and 2 skipped (222). Vitest 293 of 296, with the 3 known failures. Build passed. MySQL evidence is in `04-Development/Backend-Readiness.md`.
