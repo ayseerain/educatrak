@@ -14,6 +14,7 @@ use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\CanonicalGradeLevels;
 use App\UserRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
@@ -34,6 +35,7 @@ class DemoDataSeeder extends Seeder
             $this->staff('sample.admin', 'Administrator', UserRole::Admin);
             $this->staff('sample.auditor', 'Auditor', UserRole::Auditor);
             $this->staff('sample.registrar', 'Registrar', UserRole::Registrar);
+            CanonicalGradeLevels::ensure();
 
             $schoolYear = SchoolYear::query()->updateOrCreate(
                 ['label' => 'SY 2026-2027'],
@@ -45,14 +47,11 @@ class DemoDataSeeder extends Seeder
             );
 
             foreach ([
-                ['lrn' => '000000000001', 'name' => 'Amara Villanueva (sample)', 'grade' => 'Grade 7', 'section' => 'Olive', 'balance' => 125_000, 'total' => 1_250_000, 'paid' => 1_125_000, 'status' => 'due_soon', 'email' => 'amara.guardian@example.test'],
-                ['lrn' => '000000000002', 'name' => 'Basil Mercado (sample)', 'grade' => 'Grade 8', 'section' => 'Maple', 'balance' => 420_000, 'total' => 1_000_000, 'paid' => 580_000, 'status' => 'due_soon', 'email' => 'basil.guardian@example.test'],
-                ['lrn' => '000000000003', 'name' => 'Cora Navarro (sample)', 'grade' => 'Grade 9', 'section' => 'Pine', 'balance' => 850_000, 'total' => 1_500_000, 'paid' => 650_000, 'status' => 'overdue', 'email' => null],
+                ['lrn' => '910000000001', 'name' => 'Amara Villanueva (sample)', 'grade' => 'Grade 7', 'section' => 'Olive', 'balance' => 125_000, 'total' => 1_250_000, 'paid' => 1_125_000, 'status' => 'due_soon', 'email' => 'amara.guardian@example.test'],
+                ['lrn' => '910000000002', 'name' => 'Basil Mercado (sample)', 'grade' => 'Grade 8', 'section' => 'Maple', 'balance' => 420_000, 'total' => 1_000_000, 'paid' => 580_000, 'status' => 'due_soon', 'email' => 'basil.guardian@example.test'],
+                ['lrn' => '910000000003', 'name' => 'Cora Navarro (sample)', 'grade' => 'Grade 9', 'section' => 'Pine', 'balance' => 850_000, 'total' => 1_500_000, 'paid' => 650_000, 'status' => 'overdue', 'email' => null],
             ] as $demoStudent) {
-                $grade = GradeLevel::query()->updateOrCreate(
-                    ['name' => $demoStudent['grade']],
-                    ['sort_order' => (int) substr($demoStudent['grade'], -1), 'active' => true],
-                );
+                $grade = GradeLevel::query()->where('name', $demoStudent['grade'])->firstOrFail();
                 $section = Section::query()->updateOrCreate(
                     ['grade_level_id' => $grade->id, 'name' => $demoStudent['section']],
                     ['active' => true],

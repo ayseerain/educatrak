@@ -19,11 +19,11 @@ class DemoDataSeederTest extends TestCase
         $this->assertDatabaseCount('installments', 12);
         $this->assertDatabaseHas('users', [
             'username' => 'sample.cashier',
-            'full_name' => 'Casey Cashier',
+            'full_name' => 'Cashier',
             'role' => 'cashier',
         ]);
         $this->assertDatabaseHas('students', [
-            'lrn' => '000000000001',
+            'lrn' => '910000000001',
             'full_name' => 'Amara Villanueva (sample)',
         ]);
     }
