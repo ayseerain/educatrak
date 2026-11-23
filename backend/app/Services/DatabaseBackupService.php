@@ -89,11 +89,18 @@ class DatabaseBackupService
                 '--triggers',
                 '--hex-blob',
                 '--no-tablespaces',
+                // MySQL only (MariaDB's mysqldump rejects it): leave GTID/binlog statements out so a
+                // database-level account can restore the file into a separate database.
+                ...($connection['driver'] === 'mysql' ? ['--set-gtid-purged=OFF'] : []),
                 '--result-file='.$temporaryPath,
                 (string) $connection['database'],
             ]);
             if ($result->failed()) {
-                throw new RuntimeException('The backup tool exited with code '.($result->exitCode() ?? 'unknown').'.');
+                // Raw tool output is never stored; only a fixed hint for the common privilege failure.
+                $hint = str_contains($result->errorOutput(), 'Access denied')
+                    ? ' The database account lacks a privilege the backup tool needs (see the backup guide).'
+                    : '';
+                throw new RuntimeException('The backup tool exited with code '.($result->exitCode() ?? 'unknown').'.'.$hint);
             }
             $size = is_file($temporaryPath) ? (int) filesize($temporaryPath) : 0;
             if ($size === 0 || ! $this->dumpCompleted($temporaryPath)) {

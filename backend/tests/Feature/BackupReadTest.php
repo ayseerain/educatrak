@@ -81,7 +81,8 @@ class BackupReadTest extends TestCase
         $this->assertSame(hash_file('sha256', $files[0]->getPathname()), $response->json('data.checksumSha256'));
         $this->assertStringNotContainsString($this->destination, $response->getContent());
         Process::assertRan(fn (PendingProcess $process): bool => ! str_contains(implode(' ', (array) $process->command), 'fictional-secret')
-            && in_array('--single-transaction', (array) $process->command, true));
+            && in_array('--single-transaction', (array) $process->command, true)
+            && in_array('--set-gtid-purged=OFF', (array) $process->command, true));
         $this->assertDatabaseHas('backup_records', ['trigger' => 'manual', 'requested_by' => $administrator->id, 'result' => 'succeeded']);
         $this->assertDatabaseHas('audit_entries', ['action' => 'backup.requested', 'user_id' => $administrator->id]);
         $this->assertDatabaseHas('audit_entries', ['action' => 'backup.succeeded', 'user_id' => $administrator->id]);
@@ -129,6 +130,17 @@ class BackupReadTest extends TestCase
         config(['educatrak.backup.destination' => base_path('storage')]);
         $this->artisan('educatrak:backup-database')->assertFailed();
         $this->assertDatabaseHas('backup_records', ['result' => 'failed', 'error' => 'The backup destination must be outside the application folder.']);
+    }
+
+    public function test_privilege_failure_gets_a_fixed_hint_without_raw_tool_output(): void
+    {
+        Process::fake(fn () => Process::result('', "mysqldump: Couldn't execute 'FLUSH TABLES': Access denied; you need the RELOAD or FLUSH_TABLES privilege for user 'edtk_app'@'127.0.0.1' (1227)", 2));
+
+        $this->artisan('educatrak:backup-database')->assertFailed();
+
+        $record = DB::table('backup_records')->sole();
+        $this->assertSame('The backup tool exited with code 2. The database account lacks a privilege the backup tool needs (see the backup guide).', $record->error);
+        $this->assertStringNotContainsString('edtk_app', (string) DB::table('audit_entries')->value('after'));
     }
 
     public function test_overlapping_backup_is_rejected_by_shared_lock(): void
