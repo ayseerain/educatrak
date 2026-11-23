@@ -66,6 +66,7 @@ const SUCCESS_STATUSES = new Set([
   "sent",
   "succeeded",
   "valid",
+  "eligible",
 ]);
 
 const WARNING_STATUSES = new Set([
@@ -79,6 +80,8 @@ const WARNING_STATUSES = new Set([
   "unsigned",
   "void pending",
   "warning",
+  "duplicate",
+  "conflict",
 ]);
 
 const ERROR_STATUSES = new Set([
@@ -87,6 +90,8 @@ const ERROR_STATUSES = new Set([
   "failed",
   "not cleared",
   "overdue",
+  "invalid",
+  "rejected",
 ]);
 
 const NEUTRAL_STATUSES = new Set([
@@ -95,6 +100,8 @@ const NEUTRAL_STATUSES = new Set([
   "unavailable",
   "view only",
   "voided",
+  "draft",
+  "cancelled",
 ]);
 
 export function getStatusPresentation(status: string): StatusPresentation | null {

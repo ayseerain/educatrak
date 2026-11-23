@@ -1203,7 +1203,7 @@ describe("operational page navigation", () => {
 
   it("shows only permitted primary pages for each of the six account roles", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
-      [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security"]],
+      [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security", "Backups"]],
       [cashier, ["Dashboard", "Students", "Accounts", "Payments", "Follow-up", "Close-out"]],
       [accounting, ["Dashboard", "Accounts", "Payment review", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
       [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],

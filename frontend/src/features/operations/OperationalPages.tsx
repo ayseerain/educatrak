@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Navigate,
@@ -86,8 +86,9 @@ import { format, centavos, parse as parseMoney } from "@/lib/money";
 import { roleLabel, useSession } from "@/auth/session";
 import { cn } from "@/lib/cn";
 import { getStatusPresentation } from "@/lib/status";
-import { isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type PaymentRecord, type SavedCashPayment } from "@/api/cashierApi";
-import { listBackupRecords as listLiveBackupRecords } from "@/api/backupApi";
+import { CashierApiError, isLiveCashierApiEnabled, recordCashPaymentForStudent, type NotificationChannel, type PaymentRecord, type SavedCashPayment } from "@/api/cashierApi";
+import { getBackupOverview, runManualBackup } from "@/api/backupApi";
+import { LedgerImportDetailPage, LedgerImportListPage } from "@/features/ledgerImport/LedgerImportPages";
 import { listBackupRecords as listMockBackupRecords } from "@/api/mockAdapter";
 import { LiveUsersPage } from "@/features/operations/LiveUsersPage";
 import { LivePaymentEntryPage } from "@/features/operations/LivePaymentEntryPage";
@@ -2602,8 +2603,10 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
     </>
   );
 }
-export function ImportPage() {
-  return <UnavailableFeaturePage title="Import" feature="Ledger import" />;
+/** Opening-balance ledger import. It talks to the live API only; the MockDB has no ledger-import model. */
+export function ImportPage({ user, detail = false }: { user: AuthenticatedUser; detail?: boolean }) {
+  if (!isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Opening-balance import" feature="Opening-balance import" />;
+  return detail ? <LedgerImportDetailPage user={user} /> : <LedgerImportListPage user={user} />;
 }
 
 export function SettingsPage({
@@ -3488,21 +3491,43 @@ export function RolesPage() {
     </>
   );
 }
-export function BackupPage() {
+export function BackupPage({ user }: { user?: AuthenticatedUser }) {
+  const queryClient = useQueryClient();
   const backups = useQuery({
     queryKey: ["backups"],
-    queryFn: () => isLiveCashierApiEnabled() ? listLiveBackupRecords() : listMockBackupRecords(),
+    queryFn: () => isLiveCashierApiEnabled() ? getBackupOverview() : listMockBackupRecords().then((records) => ({ records, status: null })),
   });
+  const runBackup = useMutation({
+    mutationFn: runManualBackup,
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ["backups"] }),
+  });
+  const status = backups.data?.status ?? null;
+  // Only the Administrator (backup.manage) may run backups, and only once the server executor is configured.
+  const canRun = Boolean(user && can(user, "backup.manage") && status?.manualBackupAvailable);
   return (
     <>
       <PageHeader
         title="Backups"
         description="Review the latest recorded backups and their results."
+        action={canRun ? <Button type="button" disabled={runBackup.isPending} onClick={() => runBackup.mutate()}>{runBackup.isPending ? "Running backup…" : "Run backup now"}</Button> : undefined}
       />
+      {runBackup.isSuccess && <p role="status" className="mb-4 text-sm text-text-primary">Backup completed. It is listed below with its checksum.</p>}
+      {runBackup.isError && <p role="alert" className="mb-4 text-sm text-status-error">The backup did not complete. {runBackup.error instanceof CashierApiError && runBackup.error.status === 409 ? "Another backup is already running." : "Check the latest entry below for the reason."}</p>}
       {backups.isPending && <LoadingState message="Loading backup history…" layout="table" columns={4} />}
       {backups.isError && <ErrorState message={backups.error.message} onRetry={() => void backups.refetch()} />}
       {backups.data && (
         <div className="space-y-5">
+          {status && (
+            <Card>
+              <h2 className="text-base font-semibold text-text-primary">Backup operation</h2>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <div><dt className="font-medium text-text-secondary">Daily schedule</dt><dd className="mt-1 text-text-primary">{status.dailyAt} ({status.timezone})</dd></div>
+                <div><dt className="font-medium text-text-secondary">Manual backup</dt><dd className="mt-1 text-text-primary">{status.manualBackupAvailable ? "Configured" : `Unavailable: ${status.unavailableReason ?? "not configured."}`}</dd></div>
+                <div><dt className="font-medium text-text-secondary">Free space at destination</dt><dd className="mt-1 text-text-primary">{status.destinationFreeBytes === null ? "Unknown" : formatBackupSize(status.destinationFreeBytes)}</dd></div>
+                <div><dt className="font-medium text-text-secondary">Automatic deletion of old backups</dt><dd className="mt-1 text-text-primary">{status.rotationEnabled ? "On" : "Off. Old backups are kept; watch the free space."}</dd></div>
+              </dl>
+            </Card>
+          )}
           <Card>
             <h2 className="text-base font-semibold text-text-primary">Recovery readiness</h2>
             <p className="mt-2 text-sm text-text-secondary">
@@ -3512,12 +3537,13 @@ export function BackupPage() {
           <ListCard
             title="Recent backups"
             empty={<p className="text-sm text-text-secondary">No backup has been recorded.</p>}
-            headers={["Completed", "Result", "Size", "Details"]}
-            rows={backups.data.map((backup) => [
+            headers={["Completed", "Trigger", "Result", "Size", "Details"]}
+            rows={backups.data.records.map((backup) => [
               formatDateTime(backup.completedAt),
+              backup.trigger === "manual" ? "Manual" : backup.trigger === "scheduled" ? "Scheduled" : "Not recorded",
               <span key={`${backup.id}-result`} className="capitalize">{backup.result}</span>,
               backup.sizeBytes === null ? "Not recorded" : formatBackupSize(backup.sizeBytes),
-              backup.error ?? "—",
+              backup.error ?? (backup.checksumSha256 ? `SHA-256 ${backup.checksumSha256.slice(0, 12)}…` : "—"),
             ])}
           />
         </div>
@@ -3529,7 +3555,8 @@ export function BackupPage() {
 function formatBackupSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 }
 
 function Metric({ label, value }: { label: string; value: ReactNode }) {
