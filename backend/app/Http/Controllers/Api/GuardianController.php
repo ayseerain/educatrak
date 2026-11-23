@@ -79,18 +79,14 @@ class GuardianController extends Controller
                 abort(404);
             }
 
-            $contactFields = array_intersect(array_keys($validated), ['full_name', 'email', 'mobile']);
-            if ($contactFields !== [] && $lockedGuardian->students()->count() > 1) {
-                throw ValidationException::withMessages([
-                    'guardian' => 'A shared guardian contact cannot be changed until the Academy defines shared-contact editing policy.',
-                ]);
-            }
-
             $before = $this->auditLinkData($lockedStudent, $lockedGuardian, $pivot->relationship);
+            $lockedGuardian->fill(array_diff_key($this->guardianAttributes($validated), ['email_status' => true]));
+            $contactFields = array_keys($lockedGuardian->getDirty());
+            $affectedStudentIds = [];
             if ($contactFields !== []) {
-                $lockedGuardian->fill($this->guardianAttributes($validated));
-                if (array_key_exists('email', $validated)) {
-                    $lockedGuardian->email_status = filled($validated['email']) ? 'unverified' : 'missing';
+                $affectedStudentIds = $lockedGuardian->assertSharedContactChangeConfirmed($request->boolean('confirm_shared_contact_update'));
+                if ($lockedGuardian->isDirty('email')) {
+                    $lockedGuardian->email_status = filled($lockedGuardian->email) ? 'unverified' : 'missing';
                 }
                 $lockedGuardian->save();
             }
@@ -104,7 +100,11 @@ class GuardianController extends Controller
                 throw ValidationException::withMessages(['is_primary' => 'Choose another linked guardian as primary before removing this status.']);
             }
             $afterRelationship = $validated['relationship'] ?? $pivot->relationship;
-            $auditLogger->record($request, 'guardian.updated', $lockedGuardian, $before, $this->auditLinkData($lockedStudent, $lockedGuardian, $afterRelationship, $contactFields));
+            $after = $this->auditLinkData($lockedStudent, $lockedGuardian, $afterRelationship, $contactFields);
+            if (count($affectedStudentIds) > 1) {
+                $after['affected_student_ids'] = $affectedStudentIds;
+            }
+            $auditLogger->record($request, 'guardian.updated', $lockedGuardian, $before, $after);
 
             return $lockedGuardian->refresh();
         });
@@ -133,22 +133,36 @@ class GuardianController extends Controller
 
     public function destroy(Request $request, Student $student, Guardian $guardian, AuditLogger $auditLogger): JsonResponse
     {
-        DB::transaction(function () use ($request, $student, $guardian, $auditLogger): void {
+        $validated = $request->validate([
+            'replacement_primary_guardian_id' => ['sometimes', 'integer'],
+        ]);
+
+        DB::transaction(function () use ($request, $student, $guardian, $validated, $auditLogger): void {
             $lockedStudent = Student::query()->lockForUpdate()->findOrFail($student->id);
             $lockedGuardian = Guardian::query()->lockForUpdate()->findOrFail($guardian->id);
             $pivot = $lockedStudent->guardians()->whereKey($lockedGuardian->id)->first()?->pivot;
             if ($pivot === null) {
                 abort(404);
             }
-            if ($pivot->is_primary) {
-                throw ValidationException::withMessages([
-                    'guardian' => 'A primary guardian cannot be unlinked until the Academy defines the required replacement or primary-contact workflow.',
-                ]);
-            }
 
             $before = $this->auditLinkData($lockedStudent, $lockedGuardian, $pivot->relationship);
+            $after = null;
+            if ($pivot->is_primary) {
+                $replacementId = $validated['replacement_primary_guardian_id'] ?? null;
+                $replacement = $replacementId === null || (int) $replacementId === (int) $lockedGuardian->id
+                    ? null
+                    : $lockedStudent->guardians()->whereKey($replacementId)->first();
+                if ($replacement === null) {
+                    throw ValidationException::withMessages([
+                        'replacement_primary_guardian_id' => 'Select another guardian linked to this student as the new primary guardian before unlinking the primary guardian.',
+                    ]);
+                }
+                $this->setPrimary($lockedStudent, $replacement, true);
+                $after = ['replacement_primary_guardian_id' => (string) $replacement->id];
+            }
+
             $lockedStudent->guardians()->detach($lockedGuardian->id);
-            $auditLogger->record($request, 'guardian.unlinked', $lockedGuardian, $before, null);
+            $auditLogger->record($request, 'guardian.unlinked', $lockedGuardian, $before, $after);
         });
 
         return response()->json(null, 204);

@@ -96,7 +96,7 @@ class StudentController extends Controller
         $attributes['status'] = 'enrolled';
         $student = DB::transaction(function () use ($attributes, $request): Student {
             $student = Student::query()->create($attributes);
-            $this->syncGuardian($student, $request->validated());
+            $this->syncGuardian($request, $student, $request->validated());
             $this->auditLogger->record($request, 'student.created', $student, null, $this->studentAuditData($student));
 
             return $student;
@@ -136,7 +136,7 @@ class StudentController extends Controller
             $student = Student::query()->lockForUpdate()->findOrFail($student->id);
             $before = $this->studentAuditData($student);
             $student->update($attributes);
-            $this->syncGuardian($student, $request->validated());
+            $this->syncGuardian($request, $student, $request->validated());
             $student->refresh();
             $this->auditLogger->record($request, 'student.updated', $student, $before, $this->studentAuditData($student));
 
@@ -169,7 +169,7 @@ class StudentController extends Controller
     }
 
     /** @param array<string, mixed> $input */
-    private function syncGuardian(Student $student, array $input): void
+    private function syncGuardian(Request $request, Student $student, array $input): void
     {
         if (blank($input['guardian_name'] ?? null) || blank($input['guardian_relationship'] ?? null)) {
             return;
@@ -191,24 +191,55 @@ class StudentController extends Controller
         }
 
         $guardian ??= new Guardian;
+        $isNewGuardian = ! $guardian->exists;
         $relationship = trim((string) $input['guardian_relationship']);
         $guardian->fill([
             'full_name' => trim((string) $input['guardian_name']),
             'email' => filled($input['guardian_email'] ?? null) ? trim((string) $input['guardian_email']) : null,
             'mobile' => filled($input['guardian_mobile'] ?? null) ? trim((string) $input['guardian_mobile']) : null,
-            'email_status' => filled($input['guardian_email'] ?? null) ? 'unverified' : 'missing',
         ]);
-        if (! $guardian->exists) {
+        $changedContactFields = $isNewGuardian ? [] : array_keys($guardian->getDirty());
+        $affectedStudentIds = $changedContactFields === []
+            ? []
+            : $guardian->assertSharedContactChangeConfirmed((bool) ($input['confirm_shared_contact_update'] ?? false));
+        if ($isNewGuardian || $guardian->isDirty('email')) {
+            $guardian->email_status = filled($guardian->email) ? 'unverified' : 'missing';
+        }
+        if ($isNewGuardian) {
             $guardian->relationship = $relationship;
         }
         $guardian->save();
-        $student->guardians()->newPivotStatement()
-            ->where('student_id', $student->id)
-            ->update(['is_primary' => false]);
-        $student->guardians()->syncWithoutDetaching([$guardian->id => [
-            'is_primary' => true,
-            'relationship' => $relationship,
-        ]]);
+
+        if ($isNewGuardian) {
+            // The student has no other guardian here, so the new link must be the primary one.
+            $student->guardians()->attach($guardian->id, ['is_primary' => true, 'relationship' => $relationship]);
+            $this->auditLogger->record($request, 'guardian.created', $guardian, null, [
+                'student_id' => (string) $student->id,
+                'guardian_id' => (string) $guardian->id,
+                'relationship' => $relationship,
+            ]);
+
+            return;
+        }
+
+        $previousRelationship = $student->guardians()->whereKey($guardian->id)->first()?->pivot->relationship;
+        $student->guardians()->updateExistingPivot($guardian->id, ['relationship' => $relationship]);
+        if ($changedContactFields !== [] || $previousRelationship !== $relationship) {
+            $after = [
+                'student_id' => (string) $student->id,
+                'guardian_id' => (string) $guardian->id,
+                'relationship' => $relationship,
+                'changed_contact_fields' => $changedContactFields,
+            ];
+            if (count($affectedStudentIds) > 1) {
+                $after['affected_student_ids'] = $affectedStudentIds;
+            }
+            $this->auditLogger->record($request, 'guardian.updated', $guardian, [
+                'student_id' => (string) $student->id,
+                'guardian_id' => (string) $guardian->id,
+                'relationship' => $previousRelationship,
+            ], $after);
+        }
     }
 
     /** @return array<string, mixed> */

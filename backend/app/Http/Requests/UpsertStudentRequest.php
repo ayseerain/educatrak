@@ -33,6 +33,7 @@ class UpsertStudentRequest extends FormRequest
             'guardian_relationship' => ['nullable', 'string', 'max:100', 'required_with:guardian_name,guardian_email,guardian_mobile'],
             'guardian_email' => ['nullable', 'email', 'max:255'],
             'guardian_mobile' => ['nullable', 'string', 'max:32'],
+            'confirm_shared_contact_update' => ['sometimes', 'boolean'],
         ];
     }
 }
