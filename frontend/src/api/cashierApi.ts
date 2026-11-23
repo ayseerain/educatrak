@@ -334,7 +334,7 @@ export interface StudentListItem {
   section: string | null;
   status: string;
   balanceCents?: number;
-  guardians?: { fullName: string; relationship: string; email: string | null; mobile: string | null; emailStatus: string }[];
+  guardians?: { id: string; fullName: string; relationship: string; isPrimary: boolean; email: string | null; mobile: string | null; emailStatus: string }[];
 }
 
 export interface StudentRecordOptions {
@@ -348,6 +348,7 @@ export interface StudentRecordInput {
   gradeLevelId: string;
   sectionId: string;
   status: string;
+  guardianId?: string;
   guardianName: string;
   guardianRelationship: string;
   guardianEmail: string;
@@ -391,6 +392,7 @@ function toStudentPayload(input: StudentRecordInput) {
     grade_level_id: Number(input.gradeLevelId),
     section_id: Number(input.sectionId),
     status: input.status,
+    guardian_id: input.guardianId ? Number(input.guardianId) : undefined,
     guardian_name: input.guardianName,
     guardian_relationship: input.guardianRelationship,
     guardian_email: input.guardianEmail,

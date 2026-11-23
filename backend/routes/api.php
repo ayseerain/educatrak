@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DailyReportController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceSettingsController;
 use App\Http\Controllers\Api\FollowUpController;
+use App\Http\Controllers\Api\GuardianController;
 use App\Http\Controllers\Api\NotificationLogController;
 use App\Http\Controllers\Api\OutstandingReportController;
 use App\Http\Controllers\Api\PaymentController;
@@ -126,6 +127,16 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:students.view');
             Route::patch('/students/{student}', [StudentController::class, 'update'])
                 ->middleware('capability:students.manage');
+            Route::post('/students/{student}/guardians', [GuardianController::class, 'store'])
+                ->middleware('capability:guardians.manage');
+            Route::post('/students/{student}/guardians/link', [GuardianController::class, 'link'])
+                ->middleware('capability:guardians.manage');
+            Route::patch('/students/{student}/guardians/{guardian}', [GuardianController::class, 'update'])
+                ->middleware('capability:guardians.manage');
+            Route::post('/students/{student}/guardians/{guardian}/make-primary', [GuardianController::class, 'makePrimary'])
+                ->middleware('capability:guardians.manage');
+            Route::delete('/students/{student}/guardians/{guardian}', [GuardianController::class, 'destroy'])
+                ->middleware('capability:guardians.manage');
             Route::get('/billing-accounts', [BillingAccountController::class, 'index'])
                 ->middleware('capability:accounts.view');
             Route::post('/billing-accounts', [BillingAccountController::class, 'store'])

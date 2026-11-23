@@ -20,6 +20,7 @@ export function StudentFormPage({ edit = false }: { edit?: boolean }) {
   const [gradeLevelId, setGradeLevelId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [status, setStatus] = useState("enrolled");
+  const [guardianId, setGuardianId] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianRelationship, setGuardianRelationship] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
@@ -31,6 +32,7 @@ export function StudentFormPage({ edit = false }: { edit?: boolean }) {
     if (!current.data || !options.data) return;
     const grade = options.data.grades.find((item) => item.name === current.data.gradeLevel);
     const guardian = current.data.guardians?.[0];
+    setGuardianId(guardian?.id ?? "");
     setStudentNo(current.data.lrn);
     setFullName(current.data.fullName);
     setGradeLevelId(grade?.id ?? "");
@@ -55,7 +57,7 @@ export function StudentFormPage({ edit = false }: { edit?: boolean }) {
     setError("");
     setSaving(true);
     try {
-      const input = { lrn, fullName, gradeLevelId, sectionId, status, guardianName, guardianRelationship, guardianEmail, guardianMobile };
+      const input = { lrn, fullName, gradeLevelId, sectionId, status, guardianId: edit ? guardianId : undefined, guardianName, guardianRelationship, guardianEmail, guardianMobile };
       const saved = edit ? await updateStudent(id, input) : await createStudent(input);
       navigate(`/students/${saved.id}`);
     } catch (cause) {

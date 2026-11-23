@@ -14,7 +14,7 @@ class CapabilityMap
         'cashier' => ['dashboard.view', 'students.view', 'students.financial.view', 'guardianContact.view', 'accounts.view', 'accounts.manage', 'payments.record', 'payments.view', 'receipts.reprint', 'void.request', 'void.view', 'notification.view', 'notification.retry', 'followup.view', 'followup.manage', 'closeout.submit', 'closeout.view'],
         'accounting' => ['dashboard.view', 'settings.finance.view', 'settings.finance.manage', 'settings.system.view', 'guardianContact.view', 'notification.view', 'students.view', 'students.financial.view', 'accounts.view', 'payments.view', 'receipts.reprint', 'void.view', 'void.approve', 'followup.view', 'followup.manage', 'closeout.signoff', 'closeout.view', 'reports.view'],
         'auditor' => ['dashboard.view', 'audit.view'],
-        'registrar' => ['dashboard.view', 'students.view', 'students.manage', 'students.financial.view', 'guardianContact.view'],
+        'registrar' => ['dashboard.view', 'students.view', 'students.manage', 'students.financial.view', 'guardianContact.view', 'guardians.manage'],
     ];
 
     public static function allows(UserRole $role, string $capability): bool

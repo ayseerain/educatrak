@@ -62,6 +62,7 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
   const [gradeLevelId, setGradeLevelId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [status, setStatus] = useState("enrolled");
+  const [guardianId, setGuardianId] = useState("");
   const [guardianName, setGuardianName] = useState("");
   const [guardianRelationship, setGuardianRelationship] = useState("");
   const [guardianEmail, setGuardianEmail] = useState("");
@@ -79,6 +80,7 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
     setGradeLevelId(matchedGrade?.id ?? "");
     setSectionId(matchedGrade?.sections.find((item) => item.name === current.data.section)?.id ?? "");
     const guardian = current.data.guardians?.[0];
+    setGuardianId(guardian?.id ?? "");
     setGuardianName(guardian?.fullName ?? "");
     setGuardianRelationship(guardian?.relationship ?? "");
     setGuardianEmail(guardian?.email ?? "");
@@ -94,7 +96,7 @@ export function LiveStudentFormPage({ edit = false }: { edit?: boolean }) {
     setError("");
     setSaving(true);
     try {
-      const input = { lrn, fullName, gradeLevelId, sectionId, status: edit ? status : "enrolled", guardianName, guardianRelationship, guardianEmail, guardianMobile };
+      const input = { lrn, fullName, gradeLevelId, sectionId, status: edit ? status : "enrolled", guardianId: edit ? guardianId : undefined, guardianName, guardianRelationship, guardianEmail, guardianMobile };
       const saved = edit ? await updateStudent(id, input) : await createStudent(input);
       navigate(`/students/${saved.id}`);
     } catch (cause) {

@@ -175,7 +175,22 @@ class StudentController extends Controller
             return;
         }
 
-        $guardian = $student->guardians()->first() ?? new Guardian;
+        $guardianId = $input['guardian_id'] ?? null;
+        $guardian = $guardianId === null
+            ? null
+            : $student->guardians()->whereKey($guardianId)->first();
+
+        if ($guardianId !== null && $guardian === null) {
+            throw ValidationException::withMessages(['guardian_id' => 'The selected guardian is not linked to this student.']);
+        }
+
+        if ($guardian === null && $student->guardians()->exists()) {
+            throw ValidationException::withMessages([
+                'guardian_id' => 'Select the guardian association to update; existing guardians are never chosen automatically.',
+            ]);
+        }
+
+        $guardian ??= new Guardian;
         $relationship = trim((string) $input['guardian_relationship']);
         $guardian->fill([
             'full_name' => trim((string) $input['guardian_name']),
@@ -212,8 +227,10 @@ class StudentController extends Controller
         }
         if ($includeGuardians) {
             $data['guardians'] = $student->guardians->map(fn ($guardian): array => [
+                'id' => (string) $guardian->id,
                 'fullName' => $guardian->full_name,
                 'relationship' => $guardian->pivot->relationship ?? $guardian->relationship,
+                'isPrimary' => (bool) $guardian->pivot->is_primary,
                 'email' => $guardian->email,
                 'mobile' => $guardian->mobile,
                 'emailStatus' => $guardian->email_status,

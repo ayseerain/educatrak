@@ -348,6 +348,7 @@ class StudentAccessTest extends TestCase
             'grade_level_id' => $gradeId,
             'section_id' => $sectionId,
             'status' => 'enrolled',
+            'guardian_id' => $guardianId,
             'guardian_name' => 'Existing Guardian Sample',
             'guardian_relationship' => 'Aunt',
             'guardian_email' => 'existing.guardian@example.test',

@@ -28,6 +28,7 @@ class UpsertStudentRequest extends FormRequest
             'grade_level_id' => ['required', 'integer', Rule::exists('grade_levels', 'id')],
             'section_id' => ['required', 'integer', Rule::exists('sections', 'id')],
             'status' => ['required', Rule::in(['enrolled', 'inactive'])],
+            'guardian_id' => ['nullable', 'integer', Rule::exists('guardians', 'id')],
             'guardian_name' => ['nullable', 'string', 'max:255', 'required_with:guardian_relationship,guardian_email,guardian_mobile'],
             'guardian_relationship' => ['nullable', 'string', 'max:100', 'required_with:guardian_name,guardian_email,guardian_mobile'],
             'guardian_email' => ['nullable', 'email', 'max:255'],
