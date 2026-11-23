@@ -141,3 +141,50 @@ Part 2 was authorized on `feature/backend-foundation` at `ca37699ded2df8f9ea26aa
 ### Remaining gates
 
 Audit/log retention and the published Privacy Policy conflict remain open. Deployment PHP/Composer/MySQL topology, HTTPS/TLS, CORS origins, scheduler, backup destination/restore, and least-privilege database account remain unverified. API-wide throttling and `/api/health` were declined. Security headers, audit field-allowlisting changes, strict-model enforcement, new middleware, CI, and all schema work were not approved and were not implemented. Part 3 has not started.
+
+
+## 2026-11-23 Local backup operation (SRS v3.0)
+
+Source: `06-Decisions/2026-11-22-srs-v3-policy-confirmations.md`, owner answer 4. Status: implemented and tested with a faked `mysqldump` process only. No real MySQL dump, Task Scheduler setup, or restore has been performed yet.
+
+### Configuration (`backend/.env`)
+
+| Key | Meaning |
+|---|---|
+| `BACKUP_DESTINATION` | Existing, writable folder outside the application folder, e.g. `D:\EducatraKBackups\database`. Restrict NTFS permissions to the Windows account that runs the scheduler and to IT administrators. |
+| `BACKUP_DAILY_AT` | Daily time in Asia/Manila, default `21:00`. |
+| `BACKUP_MYSQLDUMP_PATH` | Full path to the `mysqldump.exe` that matches the installed MySQL server version. |
+| `BACKUP_TIMEOUT_SECONDS` | Process timeout, default `900`. |
+| `BACKUP_ROTATION_ENABLED` | Default `false`. When `true`, keeps the 30 newest backups plus the newest backup of each of the 12 most recent months, and deletes other `educatrak-YYYYMMDD-HHMMSS-xxxxxxxx.sql` files in the destination. Turn on only after deletion of old recovery copies is approved. |
+
+The database credentials come from the existing `DB_*` settings. They are passed to `mysqldump` through a temporary option file that is deleted after each run, never on the command line, in the API, or in the browser.
+
+### Run the scheduler on the office computer
+
+1. Open Task Scheduler and create a task that runs whether the user is signed in or not.
+2. Trigger: daily, repeat every 1 minute for 1 day.
+3. Action: program `C:\path\to\php.exe`, arguments `artisan schedule:run`, start in `C:\path\to\educatrak\backend`.
+4. Confirm with `php artisan schedule:list` that `educatrak:backup-database` appears at the configured time.
+5. Run `php artisan educatrak:backup-database` once by hand. Then check the new file and the Backups history.
+
+### Isolated restore test (quarterly)
+
+1. Copy one backup file to the test machine. Recompute `certutil -hashfile <file> SHA256` and compare it with the history checksum.
+2. Create a disposable database, e.g. `educatrak_restore_test`. Never restore into the live database.
+3. Load it: `mysql -u <user> -p educatrak_restore_test < <file>`.
+4. Point a separate test copy of the app at that database (`DB_DATABASE=educatrak_restore_test`) and run `php artisan migrate --pretend`. It should report nothing to run.
+5. Compare row counts with the live system at the backup time: `students`, `billing_accounts`, `payments`, `receipts`, `receipt_sequences`, `adjustments`, `opening_balance_conversions`, `audit_entries`.
+6. Smoke test: log in as each fictional or test role, open a student, a billing account and a receipt reprint.
+7. Record date, file, checksum, counts, result and the person who ran it. Then drop the disposable database.
+
+There is no restore endpoint, and none should be added.
+
+### Disk capacity while rotation is off
+
+Automatic deletion of old backups is off and stays off until the conditions in the decision record are approved. Every backup is kept, so the destination grows by about one database dump per day.
+
+- The Backups page shows free space at the destination. Check it weekly, and before school-year start or other large data loads.
+- Estimate days left as free space ÷ size of the latest backup. If that is under 60 days, tell the deployment owner.
+- When the drive is full, backups fail and the history shows "The backup file was empty or incomplete" or a tool error. The live database is not affected, but no new recovery copy exists.
+- Do not delete backup files by hand without the backup operator's approval, and record any manual removal.
+- Keep at least one recent copy on separate media, for example an external drive stored securely, as decided by the deployment owner. This is not automated.
