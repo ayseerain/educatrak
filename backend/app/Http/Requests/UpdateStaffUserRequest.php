@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\UserRole;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\UserRole;
 use Illuminate\Validation\Rule;
 
 class UpdateStaffUserRequest extends FormRequest
@@ -28,17 +28,18 @@ class UpdateStaffUserRequest extends FormRequest
         $roleRules = ['sometimes', Rule::enum(UserRole::class)];
 
         $actor = $this->user();
-        $forbiddenRoles = [UserRole::Accounting->value, UserRole::SuperAdmin->value];
+        $forbiddenRoles = [UserRole::SuperAdmin->value];
         if ($actor?->role !== UserRole::SuperAdmin) {
+            $forbiddenRoles[] = UserRole::Accounting->value;
             $forbiddenRoles[] = UserRole::Admin->value;
             // Allow a regular Administrator to retain an existing Admin role,
             // but never to promote an operational account to that role.
             if ($staffUser?->role === UserRole::Admin) {
                 $forbiddenRoles = array_values(array_diff($forbiddenRoles, [UserRole::Admin->value]));
             }
-        }
-        if ($staffUser?->role === UserRole::Accounting) {
-            $forbiddenRoles = array_values(array_diff($forbiddenRoles, [UserRole::Accounting->value]));
+            if ($staffUser?->role === UserRole::Accounting) {
+                $forbiddenRoles = array_values(array_diff($forbiddenRoles, [UserRole::Accounting->value]));
+            }
         }
         $roleRules[] = Rule::notIn($forbiddenRoles);
 

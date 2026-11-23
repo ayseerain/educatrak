@@ -59,9 +59,10 @@ class UserAdministrationTest extends TestCase
         $this->assertDatabaseHas('audit_entries', ['action' => 'user.password_reset', 'entity_id' => (string) $staffUser->id]);
     }
 
-    public function test_administrator_cannot_create_or_promote_an_accounting_officer_without_approved_assignment_policy(): void
+    public function test_only_super_admin_can_create_or_promote_an_accounting_officer(): void
     {
         $administrator = User::factory()->create(['role' => UserRole::Admin]);
+        $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
 
         $this->actingAs($administrator)
@@ -78,6 +79,33 @@ class UserAdministrationTest extends TestCase
             ->patchJson("/api/admin/users/{$cashier->id}", ['role' => UserRole::Accounting->value])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('role');
+
+        $created = $this->actingAs($superAdmin)
+            ->postJson('/api/admin/users', [
+                'username' => 'fictional.super-admin-accounting',
+                'full_name' => 'Arden Accounting (sample)',
+                'email' => 'arden.accounting@example.test',
+                'role' => UserRole::Accounting->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.role', UserRole::Accounting->value);
+
+        $this->assertDatabaseHas('audit_entries', [
+            'action' => 'user.created',
+            'user_id' => $superAdmin->id,
+            'entity_id' => (string) $created->json('data.id'),
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->patchJson("/api/admin/users/{$cashier->id}", ['role' => UserRole::Accounting->value])
+            ->assertOk()
+            ->assertJsonPath('data.role', UserRole::Accounting->value);
+
+        $this->assertDatabaseHas('audit_entries', [
+            'action' => 'user.updated',
+            'user_id' => $superAdmin->id,
+            'entity_id' => (string) $cashier->id,
+        ]);
     }
 
     public function test_super_admin_can_create_administrators_but_cannot_enter_payment_workflows(): void
