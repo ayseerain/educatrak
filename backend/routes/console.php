@@ -17,3 +17,8 @@ Schedule::command('educatrak:anonymize-expired-user-archives')
     ->dailyAt('00:15')
     ->timezone('Asia/Manila')
     ->withoutOverlapping();
+
+Schedule::command('educatrak:backup-database')
+    ->dailyAt((string) config('educatrak.backup.daily_at'))
+    ->timezone('Asia/Manila')
+    ->withoutOverlapping();
