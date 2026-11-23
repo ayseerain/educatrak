@@ -90,8 +90,8 @@ class ApplyBillingAdjustmentAction
             if ($remaining === 0) {
                 break;
             }
-            $unpaid = max(0, (int) $installment->amount_cents - (int) $installment->paid_cents);
-            if ($amountCents < 0 && $unpaid === 0) {
+            // Rounding centavos go to the oldest unpaid installment first; paid installments never change.
+            if (max(0, (int) $installment->amount_cents - (int) $installment->paid_cents) === 0) {
                 continue;
             }
             $installment->increment('amount_cents', $amountCents < 0 ? -1 : 1);

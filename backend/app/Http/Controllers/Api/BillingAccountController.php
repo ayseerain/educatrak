@@ -183,7 +183,11 @@ class BillingAccountController extends Controller
         $user = $request->user();
         $adjustment = DB::transaction(function () use ($request, $billingAccount, $applyAdjustment, $auditLogger, $validated, $user): Adjustment {
             $account = BillingAccount::query()->lockForUpdate()->findOrFail($billingAccount->id);
-            $before = ['total_due_cents' => (int) $account->total_due_cents, 'balance_cents' => (int) $account->balance_cents];
+            $before = [
+                'total_due_cents' => (int) $account->total_due_cents,
+                'balance_cents' => (int) $account->balance_cents,
+                'installments' => $this->installmentAmountsForAudit($account),
+            ];
             $adjustment = $applyAdjustment->handle($account, $validated['type'], $validated['amount_cents'], $validated['reason'], $user);
             $account = BillingAccount::query()->lockForUpdate()->findOrFail($account->id);
             $auditLogger->record($request, 'adjustment.created', $adjustment, $before, [
@@ -193,12 +197,28 @@ class BillingAccountController extends Controller
                 'reason' => $adjustment->reason,
                 'total_due_cents' => (int) $account->total_due_cents,
                 'balance_cents' => (int) $account->balance_cents,
+                'installments' => $this->installmentAmountsForAudit($account),
             ]);
 
             return $adjustment;
         });
 
         return response()->json(['data' => $this->adjustmentData($adjustment)], 201);
+    }
+
+    /** @return list<array{id: int, label: string, amount_cents: int, paid_cents: int}> */
+    private function installmentAmountsForAudit(BillingAccount $account): array
+    {
+        return $account->installments()
+            ->orderBy('sequence')
+            ->get(['id', 'label', 'amount_cents', 'paid_cents'])
+            ->map(fn ($installment): array => [
+                'id' => (int) $installment->id,
+                'label' => (string) $installment->label,
+                'amount_cents' => (int) $installment->amount_cents,
+                'paid_cents' => (int) $installment->paid_cents,
+            ])
+            ->all();
     }
 
     public function show(BillingAccount $billingAccount): JsonResponse

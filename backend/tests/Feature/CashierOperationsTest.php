@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\DeliverNotification;
+use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\CloseOut;
 use App\Models\GradeLevel;
@@ -522,6 +523,60 @@ class CashierOperationsTest extends TestCase
         $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 1, 'amount_cents' => 13_875, 'paid_cents' => 0]);
         $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 2, 'amount_cents' => 4_625, 'paid_cents' => 0]);
         $this->assertDatabaseHas('audit_entries', ['action' => 'adjustment.created', 'user_id' => $cashier->id]);
+    }
+
+    public function test_adjustment_rounding_goes_to_oldest_unpaid_installment_and_never_changes_paid_installments(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        Installment::query()->create([
+            'billing_account_id' => $account->id,
+            'label' => 'Third fictional installment',
+            'sequence' => 3,
+            'due_date' => today('Asia/Manila')->addMonths(2)->toDateString(),
+            'amount_cents' => 5_000,
+            'paid_cents' => 0,
+            'status' => 'current',
+        ]);
+        $account->update(['total_due_cents' => 25_000, 'balance_cents' => 25_000]);
+        $this->recordPayment($cashier, $account, 15_000);
+
+        $this->actingAs($cashier)->postJson("/api/billing-accounts/{$account->id}/adjustments", [
+            'type' => 'correction',
+            'amount_cents' => 1_001,
+            'reason' => 'Fictional correction that leaves one rounding centavo.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 1, 'amount_cents' => 15_000, 'paid_cents' => 15_000]);
+        $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 2, 'amount_cents' => 5_501]);
+        $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 3, 'amount_cents' => 5_500]);
+        $this->assertSame(11_001, $account->fresh()->balance_cents);
+
+        $audit = AuditEntry::query()->where('action', 'adjustment.created')->sole();
+        $this->assertSame(5_000, $audit->before['installments'][1]['amount_cents']);
+        $this->assertSame(5_501, $audit->after['installments'][1]['amount_cents']);
+    }
+
+    public function test_positive_correction_on_fully_paid_account_adds_correction_installment_and_reopens_account(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $this->recordPayment($cashier, $account, 20_000);
+        $this->assertSame('paid', $account->fresh()->status);
+
+        $this->actingAs($cashier)->postJson("/api/billing-accounts/{$account->id}/adjustments", [
+            'type' => 'correction',
+            'amount_cents' => 750,
+            'reason' => 'Fictional correction after the account was fully paid.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('installments', [
+            'billing_account_id' => $account->id,
+            'label' => 'Correction',
+            'sequence' => 3,
+            'amount_cents' => 750,
+            'paid_cents' => 0,
+        ]);
+        $this->assertSame(750, $account->fresh()->balance_cents);
+        $this->assertNotSame('paid', $account->fresh()->status);
     }
 
     public function test_business_date_simulator_uses_date_matched_fictional_payments_and_preserves_locks_and_sign_off(): void
