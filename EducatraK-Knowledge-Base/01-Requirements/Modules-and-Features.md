@@ -386,7 +386,7 @@ Editing a fee item or plan applying to new accounts only requires a **versioning
 |---|---|---|
 | Create school year | Label; set as current | ADM |
 | Add / edit terms and exam periods | Names and start dates | ADM |
-| Manage grade levels and sections | Add, rename, deactivate | ADM |
+| Manage grade levels and sections | Grade levels fixed (Kinder–Grade 12); add, rename, deactivate sections | ADM |
 | Manage payment methods | Add, rename, deactivate | ADM |
 | View lists | Read-only | ACC |
 

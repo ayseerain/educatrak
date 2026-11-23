@@ -280,34 +280,12 @@ class SchoolStructureSettingsController extends Controller
         ]);
     }
 
-    public function updateGradeLevel(Request $request, GradeLevel $gradeLevel, AuditLogger $auditLogger): JsonResponse
+    /** Predefined grade levels are fixed: name, order and active state cannot change (owner decision, Nov 23 2026). */
+    public function updateGradeLevel(): JsonResponse
     {
-        if ($request->hasAny(['name', 'sort_order'])) {
-            throw ValidationException::withMessages([
-                'name' => 'Predefined grade-level names and ordering cannot be changed.',
-            ]);
-        }
-
-        $validated = $request->validate([
-            'active' => ['sometimes', 'required', 'boolean'],
+        throw ValidationException::withMessages([
+            'name' => 'Predefined grade levels cannot be changed.',
         ]);
-
-        $grade = DB::transaction(function () use ($request, $gradeLevel, $auditLogger, $validated): GradeLevel {
-            $grade = GradeLevel::query()->lockForUpdate()->findOrFail($gradeLevel->id);
-            $before = $this->gradeLevelAudit($grade);
-            $grade->forceFill(array_filter([
-                'active' => array_key_exists('active', $validated) ? (bool) $validated['active'] : null,
-            ], fn ($value): bool => $value !== null));
-
-            if ($grade->isDirty()) {
-                $grade->save();
-                $auditLogger->record($request, 'grade_level.updated', $grade, $before, $this->gradeLevelAudit($grade));
-            }
-
-            return $grade;
-        });
-
-        return response()->json(['data' => $this->gradeLevelData($grade->load('sections'))]);
     }
 
     public function storeSection(Request $request, GradeLevel $gradeLevel, AuditLogger $auditLogger): JsonResponse
@@ -502,12 +480,6 @@ class SchoolStructureSettingsController extends Controller
                 ? $grade->sections->map(fn (Section $section): array => $this->sectionData($section))->values()->all()
                 : [],
         ];
-    }
-
-    /** @return array<string, mixed> */
-    private function gradeLevelAudit(GradeLevel $grade): array
-    {
-        return ['name' => $grade->name, 'sort_order' => (int) $grade->sort_order, 'active' => (bool) $grade->active];
     }
 
     /** @return array<string, mixed> */

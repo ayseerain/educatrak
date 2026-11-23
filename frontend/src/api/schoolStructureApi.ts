@@ -69,7 +69,5 @@ export const createTerm = (yearId: string, body: StructurePayload) => send(`/set
 export const updateTerm = (termId: string, body: StructurePayload) => send(`/settings/terms/${id(termId)}`, "PATCH", body);
 export const createExamPeriod = (termId: string, body: StructurePayload) => send(`/settings/terms/${id(termId)}/exam-periods`, "POST", body);
 export const updateExamPeriod = (periodId: string, body: StructurePayload) => send(`/settings/exam-periods/${id(periodId)}`, "PATCH", body);
-export const createGradeLevel = (body: StructurePayload) => send("/settings/grade-levels", "POST", body);
-export const updateGradeLevel = (gradeId: string, body: StructurePayload) => send(`/settings/grade-levels/${id(gradeId)}`, "PATCH", body);
 export const createSection = (gradeId: string, body: StructurePayload) => send(`/settings/grade-levels/${id(gradeId)}/sections`, "POST", body);
 export const updateSection = (sectionId: string, body: StructurePayload) => send(`/settings/sections/${id(sectionId)}`, "PATCH", body);

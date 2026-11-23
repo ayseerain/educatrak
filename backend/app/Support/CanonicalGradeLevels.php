@@ -44,10 +44,9 @@ final class CanonicalGradeLevels
         }
 
         foreach (self::NAMES as $sortOrder => $name) {
-            GradeLevel::query()->firstOrCreate(
-                ['name' => $name],
-                ['sort_order' => $sortOrder, 'active' => true],
-            );
+            if (! GradeLevel::query()->where('name', $name)->exists()) {
+                (new GradeLevel)->forceFill(['name' => $name, 'sort_order' => $sortOrder, 'active' => true])->save();
+            }
         }
     }
 }

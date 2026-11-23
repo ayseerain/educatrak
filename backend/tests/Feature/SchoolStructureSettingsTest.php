@@ -202,6 +202,9 @@ class SchoolStructureSettingsTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('name');
         $this->actingAs($admin)->patchJson("/api/settings/grade-levels/{$grade->id}", ['name' => 'Grade Seven (sample)'])
             ->assertUnprocessable()->assertJsonValidationErrors('name');
+        $this->actingAs($admin)->patchJson("/api/settings/grade-levels/{$grade->id}", ['active' => false])
+            ->assertUnprocessable();
+        $this->assertDatabaseHas('grade_levels', ['id' => $grade->id, 'active' => true]);
 
         $section = $this->actingAs($admin)->postJson("/api/settings/grade-levels/{$grade->id}/sections", ['name' => 'Olive (sample)'])
             ->assertCreated();
