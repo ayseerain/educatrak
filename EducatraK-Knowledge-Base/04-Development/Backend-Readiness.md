@@ -188,3 +188,44 @@ Automatic deletion of old backups is off and stays off until the conditions in t
 - When the drive is full, backups fail and the history shows "The backup file was empty or incomplete" or a tool error. The live database is not affected, but no new recovery copy exists.
 - Do not delete backup files by hand without the backup operator's approval, and record any manual removal.
 - Keep at least one recent copy on separate media, for example an external drive stored securely, as decided by the deployment owner. This is not automated.
+
+
+### Disposable MySQL verification, 2026-11-23
+
+Recorded Monday, November 23, 2026 — 23:50:47 +08:00. This was a disposable test, not production readiness.
+
+**Environment.** Windows 11, PHP 8.4, MySQL Community Server 9.7.0. A separate `mysqld` instance was initialized in a scratch folder, listened only on `127.0.0.1:3399`, and was shut down and deleted afterwards. The workstation's existing MySQL server on port 3306 was not touched. Server collation was `utf8mb4_0900_ai_ci`; the databases were created with Laravel's `utf8mb4_unicode_ci`. Data came from the fictional `DemoDataSeeder` plus two fictional cash payments recorded through `RecordPaymentAction`.
+
+**Accounts.**
+- `edtk_app`: `ALL` on the source database plus global `FLUSH_TABLES`.
+- `edtk_restore`: `ALL` on the restore database only.
+- Random passwords were kept in a scratch file outside Git and deleted afterwards.
+
+**Results.**
+1. The first `php artisan educatrak:backup-database` run failed and recorded a sanitized error. The cause: MySQL 9.7's `mysqldump --single-transaction` needs the global `RELOAD` or `FLUSH_TABLES` privilege. The service now adds a fixed hint for "Access denied" failures and still stores no raw tool output.
+2. After `GRANT FLUSH_TABLES ON *.* TO 'edtk_app'@'127.0.0.1'`, the backup succeeded: 64 KB file, history row with trigger, size and checksum, plus a `backup.succeeded` audit entry. The SHA-256 of the file matched the stored checksum, and the file ended with `-- Dump completed`.
+3. The first restore failed for the restore-only account. The dump contained GTID and `SQL_LOG_BIN` statements that need admin privileges. The service now passes `--set-gtid-purged=OFF` (MySQL driver only), and the next dump restored cleanly with database-level privileges.
+4. Source and restored databases matched exactly on:
+   - row counts for 15 core tables;
+   - account, installment, payment and allocation totals;
+   - receipt numbers `OR-2026-000001` and `OR-2026-000002`, and receipt sequence 2;
+   - student LRNs;
+   - zero orphan allocations and receipts, and zero balance mismatches;
+   - 52 foreign keys.
+5. On the restored database:
+   - all 40 tables are InnoDB with `utf8mb4_unicode_ci`;
+   - `php artisan migrate --pretend` reported "Nothing to migrate";
+   - all five sample staff logins validated;
+   - the account → student → installments → payment → receipt relations resolved.
+6. The database password did not appear in the backup file or `storage/logs/laravel.log`. No temporary credentials file remained. No backup file entered the repository.
+
+**Required production privileges for the backup account:** `SELECT`, `SHOW VIEW`, `TRIGGER`, `LOCK TABLES` on the EducaTrak database, plus global `FLUSH_TABLES` (or `RELOAD`). Use `BACKUP_DB_CONNECTION` to point backups at a separate least-privilege connection if the application account should not hold `FLUSH_TABLES`.
+
+**Restore command used:** `mysql -u <restore user> -p <empty disposable database> < <backup file>`.
+
+**Limitations.**
+- Single workstation and small fictional dataset.
+- No Windows Task Scheduler run.
+- No measurement of restore time at realistic size.
+- No test on the office computer.
+- MariaDB's `mysqldump` (for example from XAMPP) does not accept `--set-gtid-purged`; use the MySQL client tools that match the server.
