@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ClipboardCheck,
   DatabaseBackup,
+  FileUp,
   FileBarChart,
   FileSearch,
   GraduationCap,
@@ -35,6 +36,8 @@ interface NavItem {
   capability: Capability;
   icon: LucideIcon;
   end?: boolean;
+  /** Shown only with the live API (the MockDB has no model for it). */
+  liveOnly?: boolean;
   parentTo?: string;
 }
 
@@ -50,6 +53,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
       { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage", icon: UsersRound },
       { label: "Audit", to: "/admin/audit-log", capability: "audit.view", icon: FileSearch },
       { label: "Security", to: "/admin/security-events", capability: "security.events.view", icon: ShieldCheck },
+      { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.view", icon: DatabaseBackup },
     ] },
   ],
   cashier: [
@@ -65,6 +69,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
         { label: en.nav.cashPaymentsReceipts, to: "/payments", capability: "payment.view", icon: ReceiptText },
         { label: en.nav.installmentsFollowups, to: "/followup", capability: "followup.view", icon: CalendarClock },
         { label: en.nav.dailyCloseout, to: "/closeout", capability: "closeout.submit", icon: WalletCards },
+        { label: "Opening-balance import", to: "/import", capability: "ledger.import.prepare", icon: FileUp, liveOnly: true },
       ],
     },
   ],
@@ -82,6 +87,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
         { label: en.nav.systemSettingsReadOnly, to: "/settings/school", capability: "settings.system.view", icon: Settings },
         { label: en.nav.voidApprovals, to: "/voids", capability: "payment.void.view", icon: BadgeCheck },
         { label: en.nav.closeoutReview, to: "/closeout/history", capability: "closeout.view", icon: ClipboardCheck },
+        { label: "Opening-balance review", to: "/import", capability: "ledger.import.review", icon: FileUp, liveOnly: true },
         { label: en.nav.financialReports, to: "/reports", capability: "report.view", icon: FileBarChart },
         { label: en.nav.followupNotifications, to: "/followup", capability: "followup.view", icon: CalendarClock },
       ],
@@ -97,7 +103,7 @@ const ROLE_NAV_GROUPS: Record<Role, NavGroup[]> = {
       items: [
         { label: en.nav.userAccess, to: "/admin/users", capability: "user.manage", icon: UsersRound },
         { label: en.nav.systemConfiguration, to: "/settings/school", capability: "settings.system.view", icon: Settings },
-        { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.manage", icon: DatabaseBackup },
+        { label: en.nav.backupRecovery, to: "/admin/backup", capability: "backup.view", icon: DatabaseBackup },
         { label: en.nav.securityEvents, to: "/admin/security-events", capability: "security.events.view", icon: ShieldCheck },
       ],
     },
@@ -156,7 +162,7 @@ export function Sidebar({ user, collapsed = false, onToggleSidebar = () => undef
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const visibleGroups = ROLE_NAV_GROUPS[user.role].map((group) => ({
     ...group,
-    items: group.items.filter((item) => can(user, item.capability)),
+    items: group.items.filter((item) => can(user, item.capability) && (!item.liveOnly || isLiveCashierApiEnabled())),
   })).filter((group) => group.items.length > 0);
   const showAccountSwitcher = import.meta.env.DEV;
   const accountSwitcherLabel = isLiveCashierApiEnabled() ? en.header.switchSampleAccount : en.header.previewRole;

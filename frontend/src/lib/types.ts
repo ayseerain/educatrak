@@ -31,5 +31,6 @@ export type Capability =
   | "settings.finance.view" | "settings.finance.manage"
   | "settings.system.view" | "settings.system.manage"
   | "user.manage" | "closeout.submit" | "closeout.signoff" | "closeout.view"
-  | "import.run" | "audit.view" | "security.events.view" | "backup.manage"
+  | "import.run" | "audit.view" | "security.events.view" | "backup.manage" | "backup.view"
+  | "ledger.import.view" | "ledger.import.prepare" | "ledger.import.review"
   | "guardianContact.view";

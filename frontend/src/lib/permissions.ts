@@ -10,7 +10,7 @@ export type ReportKind = "daily" | "monthly" | "outstanding" | "statement";
  */
 const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
   super_admin: new Set<Capability>([
-    "dashboard.view", "user.manage", "security.events.view", "audit.view",
+    "dashboard.view", "user.manage", "security.events.view", "audit.view", "backup.view",
   ]),
   cashier: new Set<Capability>([
     "dashboard.view",
@@ -20,6 +20,7 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
     "followup.view", "followup.send",
     "notification.view", "notification.retry",
     "closeout.submit", "closeout.view",
+    "ledger.import.view", "ledger.import.prepare",
   ]),
   accounting: new Set<Capability>([
     "dashboard.view",
@@ -34,10 +35,11 @@ const CAPABILITY_MATRIX: Record<Role, ReadonlySet<Capability>> = {
     "settings.system.view",
     "notification.view",
     "closeout.signoff", "closeout.view",
+    "ledger.import.view", "ledger.import.review",
   ]),
   administrator: new Set<Capability>([
     "dashboard.view",
-    "settings.system.view", "settings.system.manage", "user.manage", "security.events.view", "backup.manage",
+    "settings.system.view", "settings.system.manage", "user.manage", "security.events.view", "backup.view", "backup.manage",
   ]),
   auditor: new Set<Capability>([
     "dashboard.view",
