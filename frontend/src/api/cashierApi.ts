@@ -28,6 +28,8 @@ export class CashierApiError extends Error {
     public readonly retryAfterSeconds?: number,
     /** Laravel 422 messages keyed by request field (snake_case). */
     public readonly fieldErrors?: Record<string, string[]>,
+    /** Parsed JSON error body, for endpoints that return structured details (e.g. 409 conflicts). */
+    public readonly body?: unknown,
   ) {
     super(message);
   }
@@ -353,6 +355,19 @@ export interface StudentRecordInput {
   guardianRelationship: string;
   guardianEmail: string;
   guardianMobile: string;
+  confirmSharedContactUpdate?: boolean;
+}
+
+export interface SharedGuardianConflict {
+  code: "shared_guardian_confirmation_required";
+  message: string;
+  affectedStudents: { id: string; lrn: string; fullName: string }[];
+}
+
+export function sharedGuardianConflict(error: unknown): SharedGuardianConflict | null {
+  if (!(error instanceof CashierApiError) || error.status !== 409) return null;
+  const body = error.body as Partial<SharedGuardianConflict> | undefined;
+  return body?.code === "shared_guardian_confirmation_required" && Array.isArray(body.affectedStudents) ? body as SharedGuardianConflict : null;
 }
 
 export async function listStudents(filters: { query?: string; grade?: string; section?: string; status?: string; page?: number; perPage?: number }): Promise<{ data: StudentListItem[]; currentPage: number; lastPage: number; total: number; perPage: number }> {
@@ -397,6 +412,7 @@ function toStudentPayload(input: StudentRecordInput) {
     guardian_relationship: input.guardianRelationship,
     guardian_email: input.guardianEmail,
     guardian_mobile: input.guardianMobile,
+    confirm_shared_contact_update: input.confirmSharedContactUpdate || undefined,
   };
 }
 
@@ -472,7 +488,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     credentials: "include",
     ...init,
-    headers: { Accept: "application/json", "Content-Type": "application/json", ...csrfToken, ...init?.headers },
+    // A FormData body sets its own multipart Content-Type with the boundary.
+    headers: { Accept: "application/json", ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...csrfToken, ...init?.headers },
   });
   const body = (await response.json().catch(() => ({}))) as ApiErrorBody & T;
 
@@ -487,6 +504,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       response.status,
       retryAfterSeconds,
       body.errors,
+      body,
     );
   }
 
