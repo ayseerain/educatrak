@@ -37,7 +37,7 @@ class SystemSettingsController extends Controller
         $validated = $request->validate([
             'school_name' => ['sometimes', 'nullable', 'string', 'max:160'],
             'school_address' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'receipt_title' => ['sometimes', 'required', 'string', 'in:Official Receipt,Acknowledgment Receipt'],
+            'receipt_title' => ['sometimes', 'required', 'string', 'in:Acknowledgment Receipt'],
             'paper_size' => ['sometimes', 'required', 'string', 'in:Letter,A4'],
             'email_sender_name' => ['sometimes', 'nullable', 'string', 'max:120'],
             'email_sender_address' => ['sometimes', 'nullable', 'email', 'max:255'],
@@ -88,7 +88,7 @@ class SystemSettingsController extends Controller
         return [
             'schoolName' => $values->get('school.name'),
             'schoolAddress' => $values->get('school.address'),
-            'receiptTitle' => $values->get('receipt.title'),
+            'receiptTitle' => $values->get('receipt.title', 'Acknowledgment Receipt'),
             'paperSize' => $values->get('receipt.paper_size'),
             'emailSenderName' => $values->get('email.sender_name'),
             'emailSenderAddress' => $values->get('email.sender_address'),

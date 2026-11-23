@@ -31,7 +31,7 @@ class SystemSettingsTest extends TestCase
         $this->actingAs($admin)->getJson('/api/settings/system')
             ->assertOk()
             ->assertJsonPath('data.schoolName', null)
-            ->assertJsonPath('data.receiptTitle', null)
+            ->assertJsonPath('data.receiptTitle', 'Acknowledgment Receipt')
             ->assertJsonPath('data.nextReceiptSequence', 123)
             ->assertJsonPath('data.nextReceiptNumber', 'OR-2026-000123');
 
@@ -49,12 +49,28 @@ class SystemSettingsTest extends TestCase
             ->assertJsonPath('data.emailDailySendLimit', 300);
 
         $this->actingAs($admin)->patchJson('/api/settings/system', ['paper_size' => 'A4', 'receipt_title' => 'Official Receipt'])
-            ->assertOk()->assertJsonPath('data.receiptTitle', 'Official Receipt');
+            ->assertUnprocessable()->assertJsonValidationErrors('receipt_title');
 
         $entries = DB::table('audit_entries')->where('action', 'system_settings.updated')->orderBy('id')->get();
-        $this->assertCount(2, $entries);
-        $this->assertSame(['receipt.title' => 'Acknowledgment Receipt'], json_decode($entries[1]->before, true));
-        $this->assertSame(['receipt.title' => 'Official Receipt'], json_decode($entries[1]->after, true));
+        $this->assertCount(1, $entries);
+        $this->assertSame([
+            'school.name' => null,
+            'school.address' => null,
+            'receipt.title' => null,
+            'receipt.paper_size' => null,
+            'email.sender_name' => null,
+            'email.sender_address' => null,
+            'email.daily_send_limit' => null,
+        ], json_decode($entries[0]->before, true));
+        $this->assertSame([
+            'school.name' => 'Sample Christian Academy',
+            'school.address' => 'Sample Street, Sample Town',
+            'receipt.title' => 'Acknowledgment Receipt',
+            'receipt.paper_size' => 'A4',
+            'email.sender_name' => 'Sample Billing Office',
+            'email.sender_address' => 'billing@example.test',
+            'email.daily_send_limit' => 300,
+        ], json_decode($entries[0]->after, true));
         $this->assertDatabaseHas('system_settings', ['key' => 'receipt.paper_size', 'updated_by' => $admin->id]);
     }
 
