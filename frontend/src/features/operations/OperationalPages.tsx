@@ -61,7 +61,10 @@ import {
   archiveMockFeeItem,
   createMockGradeLevel,
   createMockSchoolYear,
+  createMockSection,
+  getMockSectionsForGrade,
   updateMockGradeLevel,
+  updateMockSection,
   archiveMockGradeLevel,
   createMockStudent,
   createMockBillingAccount,
@@ -112,7 +115,7 @@ import { StudentFormPage as LiveStudentFormPage } from "@/features/students/Stud
 import { LiveBillingAccountDetail, LiveBillingAccounts } from "@/features/billing/LiveBillingAccounts";
 import { LiveAccountWizardPage } from "@/features/billing/LiveAccountWizardPage";
 import type { AuthenticatedUser, Capability, Role, StudentGender } from "@/lib/types";
-import { KeyRound, Pencil, RotateCcw, UserCheck, UserX } from "lucide-react";
+import { Archive, Check, Eye, KeyRound, Pencil, RotateCcw, UserCheck, UserX, X } from "lucide-react";
 
 const firstStudent = students[0]!;
 function asDropdownOptions(values: string[]) {
@@ -194,6 +197,89 @@ function MockDialog({
       </Dialog.Portal>
     </Dialog.Root>
   );
+}
+
+function MockGradeLevelsCard({ editable, actorId }: { editable: boolean; actorId: string }) {
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<{ grade: string; name: string; active: boolean } | null>(null);
+  const [name, setName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [active, setActive] = useState(true);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState("");
+  const [, setRevision] = useState(0);
+  const grades = getMockGradeLevels();
+
+  useEffect(() => subscribeToMockState(() => setRevision((revision) => revision + 1)), []);
+
+  function closeAdd(open: boolean) {
+    setAddOpen(open);
+    if (!open) { setName(""); setGrade(""); setError(""); }
+  }
+
+  function addSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      createMockSection(grade, name, actorId);
+      setSaved(`Section ${name.trim()} was added to ${grade}.`);
+      closeAdd(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The section could not be added.");
+    }
+  }
+
+  function saveSection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing) return;
+    try {
+      updateMockSection(editing.grade, editing.name, name, active, actorId);
+      setSaved(`Section ${name.trim()} was updated.`);
+      setEditing(null);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The section could not be updated.");
+    }
+  }
+
+  return <Card className="mb-6 overflow-x-auto">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-base font-semibold text-text-primary">Grade levels and sections</h2>
+        <p className="mt-1 text-sm text-text-secondary">Grade levels are predefined. Administrators can manage their sections.</p>
+      </div>
+      {editable && <Button type="button" onClick={() => { setName(""); setGrade(""); setError(""); setAddOpen(true); }}>Add section</Button>}
+    </div>
+    <table className="mt-4 w-full min-w-[360px] table-fixed border-collapse text-left text-sm">
+      <caption className="sr-only">Grade levels and their sections</caption>
+      <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
+        <th scope="col" className="w-[28%] px-3 py-2">Grade level</th><th scope="col" className="px-3 py-2">Sections</th><th scope="col" className="w-[22%] px-3 py-2">Status</th>
+      </tr></thead>
+      <tbody>{grades.map((gradeLevel) => <tr key={gradeLevel} className="border-b align-top last:border-0">
+        <th scope="row" className="px-3 py-2 text-left font-medium">{gradeLevel}</th>
+        <td className="px-3 py-2">{getMockSectionsForGrade(gradeLevel).length === 0 ? <span className="text-text-secondary">No sections</span> : <ul className="space-y-1">{getMockSectionsForGrade(gradeLevel).map((section) => <li key={section.name} className="flex flex-wrap items-center gap-2"><span>{section.name}</span>{!section.active && <StatusBadge status="inactive" />}{editable && <TableActionButton icon={Pencil} label="Edit" variant="neutral" aria-label={`Edit section ${section.name} in ${gradeLevel}`} onClick={() => { setEditing({ grade: gradeLevel, name: section.name, active: section.active }); setName(section.name); setActive(section.active); setError(""); }} />}</li>)}</ul>}</td>
+        <td className="px-3 py-2"><StatusBadge status="active" /></td>
+      </tr>)}</tbody>
+    </table>
+    {saved && <p role="status" className="mt-4 text-sm text-status-success">{saved}</p>}
+    <MockDialog open={addOpen} onOpenChange={closeAdd} title="Add section">
+      <form className="mt-4 space-y-4" onSubmit={addSection}>
+        <p className="text-sm text-text-secondary">Add a section to one of the school's predefined grade levels.</p>
+        <label className="block text-sm font-medium" htmlFor="mock-section-name">Section name<span className="text-status-error" aria-hidden="true"> *</span><input id="mock-section-name" required maxLength={100} className={inputClass} value={name} onChange={(event) => { setName(event.target.value); setError(""); }} /></label>
+        <label className="block text-sm font-medium">Grade level<span className="text-status-error" aria-hidden="true"> *</span><span className="mt-1 block"><DropdownSelect aria-label="Grade level" aria-required value={grade} options={[{ value: "", label: "Select grade level" }, ...asDropdownOptions(grades)]} onChange={(value) => { setGrade(value); setError(""); }} className="w-full" align="start" /></span></label>
+        {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
+        <div className="flex justify-end gap-2"><Button type="button" variant="neutral" onClick={() => closeAdd(false)}>Cancel</Button><Button type="submit">Add section</Button></div>
+      </form>
+    </MockDialog>
+    <MockDialog open={editing !== null} onOpenChange={(open) => { if (!open) { setEditing(null); setError(""); } }} title={`Edit section ${editing?.name ?? ""}`}>
+      <form className="mt-4 space-y-4" onSubmit={saveSection}>
+        <p className="text-sm text-text-secondary">{editing?.grade}.</p>
+        <label className="block text-sm font-medium" htmlFor="mock-edit-section-name">Section name<span className="text-status-error" aria-hidden="true"> *</span><input id="mock-edit-section-name" required maxLength={100} className={inputClass} value={name} onChange={(event) => { setName(event.target.value); setError(""); }} /></label>
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />Active (available for new records)</label>
+        {error && <p role="alert" className="text-sm text-status-error">{error}</p>}
+        <div className="flex justify-end gap-2"><Button type="button" variant="neutral" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit">Save changes</Button></div>
+      </form>
+    </MockDialog>
+  </Card>;
 }
 
 export function DeniedPage() {
@@ -1738,21 +1824,10 @@ export function VoidsPage({ user }: { user: AuthenticatedUser }) {
             "₱800.00",
             resolved ??
               (canDecide ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("approve"); setActionError(""); }}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("reject"); setActionError(""); }}
-                  >
-                    Reject
-                  </Button>
-                </div>
+                <TableActionGroup>
+                  <TableActionButton icon={Check} label="Approve" onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("approve"); setActionError(""); }} />
+                  <TableActionButton icon={X} label="Reject" variant="secondary" onClick={() => { setSelectedRequestId(getMockState().voidRequests.find((request) => request.status === "pending")?.id ?? null); setDecision("reject"); setActionError(""); }} />
+                </TableActionGroup>
               ) : (
                 "Pending review"
               )),
@@ -2177,7 +2252,7 @@ export function CloseoutHistoryPage({ user }: { user: AuthenticatedUser }) {
           selectMockStaffUsers().find((staff) => staff.id === record.cashierId)?.name ?? "Unavailable",
           format(centavos(record.varianceCents)),
           record.signedOffBy ? "Signed off" : "Unsigned",
-          <Button key={record.id} type="button" variant="secondary" size="sm" onClick={() => { setSelectedId(record.id); setError(""); }}>View</Button>,
+          <TableActionButton key={record.id} icon={Eye} label="View" variant="secondary" onClick={() => { setSelectedId(record.id); setError(""); }} />,
         ])}
       />
       {history.length === 0 && <Card><p className="text-sm text-text-secondary">No close-outs have been submitted.</p></Card>}
@@ -2518,7 +2593,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
           row.loadFee,
           row.status,
           row.attempts,
-          <Button key={`${row.id}-view`} type="button" variant="secondary" size="sm" onClick={() => setSelectedEntryId(row.id)}>View entry</Button>,
+          <TableActionButton key={`${row.id}-view`} icon={Eye} label="View entry" variant="secondary" onClick={() => setSelectedEntryId(row.id)} />,
         ])}
       />
       <MockDialog open={selectedEntry !== null} onOpenChange={(open) => !open && setSelectedEntryId(null)} title="Notification entry">
@@ -2571,8 +2646,6 @@ export function SettingsPage({
   const [, setMockRevision] = useState(0);
   const mockState = getMockState();
   const gradeLevels = getMockGradeLevels();
-  const archivedGrades = new Set(((mockState.config as { archivedGrades?: string[] }).archivedGrades ?? []).map((grade) => grade.toLocaleLowerCase()));
-  const allGradeLevels = mockState.config.grades;
   const schoolYears = mockState.schoolYears;
   const gradeOrder = new Map(gradeLevels.map((grade, index) => [grade, index]));
   const feeRows = [...mockState.feeSchedules]
@@ -2597,7 +2670,6 @@ export function SettingsPage({
   });
   const schoolRows: [string, string, string][] = [
     ...schoolYears.map((year) => ["School year", `${year.label}${year.current ? " current" : ""}`, "Active"] as [string, string, string]),
-    ...allGradeLevels.map((grade) => ["Grade level", grade, archivedGrades.has(grade.toLocaleLowerCase()) ? "Archived" : "Active"] as [string, string, string]),
     ...schoolSupplementRows,
   ];
   const effectiveActorId = actorId ?? (section === "fees" ? "user-accounting" : "user-admin");
@@ -2799,6 +2871,7 @@ export function SettingsPage({
         { label: "Receipt", to: "/settings/receipt", active: section === "receipt" },
         { label: "Email", to: "/settings/email", active: section === "email" },
       ]} />
+      {section === "school" && <MockGradeLevelsCard editable={editable} actorId={effectiveActorId} />}
       <Card>
         <p className="text-sm text-text-secondary">
           {editable && mockActionAvailable
@@ -2811,18 +2884,18 @@ export function SettingsPage({
           className="mt-4"
           headers={editable && mockActionAvailable ? [...current.headers, "Actions"] : [...current.headers]}
           paginate={section === "fees" ? { label: "fee items", fixedPageSize: true } : undefined}
-          columnClassNames={section === "fees" ? ["w-[20%]", "w-[14%]", "w-[36%]", "w-[12%]", editable ? "w-[18%]" : ""] : []}
+          columnClassNames={section === "fees" ? ["w-[20%]", "w-[14%]", "w-[30%]", "w-[12%]", editable ? "w-[24%]" : ""] : []}
           rows={section === "fees"
             ? feeRows.map((row) => [
               row.schoolYear,
               row.gradeLevel,
               row.description,
               row.active ? "Active" : "Archived",
-              ...(editable ? [row.active ? <div key={row.itemId} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" onClick={() => openFeeEditor(row)}>Edit</Button><Button type="button" variant="destructive" size="sm" onClick={() => setArchiveTarget({ kind: "fee", scheduleId: row.scheduleId, itemId: row.itemId, name: row.name })}>Archive</Button></div> : "—"] : []),
+              ...(editable ? [row.active ? <TableActionGroup key={row.itemId}><TableActionButton icon={Pencil} label="Edit" variant="secondary" onClick={() => openFeeEditor(row)} /><TableActionButton icon={Archive} label="Archive" variant="destructive" onClick={() => setArchiveTarget({ kind: "fee", scheduleId: row.scheduleId, itemId: row.itemId, name: row.name })} /></TableActionGroup> : "—"] : []),
             ])
             : (current.rows as ReadonlyArray<readonly string[]>).map((row) => [
               ...row,
-              ...(editable && section === "school" ? [row[0] === "Grade level" && row[2] !== "Archived" ? <div key={row[1]} className="flex flex-wrap justify-center gap-2"><Button type="button" variant="secondary" size="sm" onClick={() => { setEditingGrade(row[1]!); setListItemName(row[1]!); setFeeError(""); }}>Edit</Button><Button type="button" variant="destructive" size="sm" onClick={() => setArchiveTarget({ kind: "grade", name: row[1]! })}>Archive</Button></div> : "—"] : []),
+              ...(editable && section === "school" ? [row[0] === "Grade level" && row[2] !== "Archived" ? <TableActionGroup key={row[1]}><TableActionButton icon={Pencil} label="Edit" variant="secondary" onClick={() => { setEditingGrade(row[1]!); setListItemName(row[1]!); setFeeError(""); }} /><TableActionButton icon={Archive} label="Archive" variant="destructive" onClick={() => setArchiveTarget({ kind: "grade", name: row[1]! })} /></TableActionGroup> : "—"] : []),
             ])}
           centeredColumns={
             section === "fees"
@@ -2922,8 +2995,6 @@ export function SettingsPage({
                 <option value="schoolYear">School year</option>
                 <option value="term">Term</option>
                 <option value="examPeriod">Exam period</option>
-                <option value="gradeLevel">Grade level</option>
-                <option value="section">Section</option>
               </select>
             </label>
             <label className="block text-sm font-medium" htmlFor="list-item-name">
@@ -3407,7 +3478,7 @@ export function RolesPage() {
               change.user,
               change.action,
               change.receipt,
-              <Button key={`${change.receipt}-view`} type="button" variant="secondary" size="sm" onClick={() => setSelectedChange(change)}>View change</Button>,
+              <TableActionButton key={`${change.receipt}-view`} icon={Eye} label="View change" variant="secondary" onClick={() => setSelectedChange(change)} />,
             ])}
           />
       </div>

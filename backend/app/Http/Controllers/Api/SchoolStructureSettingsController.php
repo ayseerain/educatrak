@@ -273,44 +273,29 @@ class SchoolStructureSettingsController extends Controller
         return response()->json(['data' => $grades->map(fn (GradeLevel $grade): array => $this->gradeLevelData($grade))->values()]);
     }
 
-    public function storeGradeLevel(Request $request, AuditLogger $auditLogger): JsonResponse
+    public function storeGradeLevel(): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
+        throw ValidationException::withMessages([
+            'name' => 'Grade levels are predefined and cannot be created.',
         ]);
-
-        $grade = DB::transaction(function () use ($request, $auditLogger, $validated): GradeLevel {
-            $this->ensureGradeLevelAvailable(trim($validated['name']), (int) $validated['sort_order']);
-            $grade = new GradeLevel;
-            $grade->forceFill(['name' => trim($validated['name']), 'sort_order' => (int) $validated['sort_order'], 'active' => true])->save();
-            $auditLogger->record($request, 'grade_level.created', $grade, null, $this->gradeLevelAudit($grade));
-
-            return $grade;
-        });
-
-        return response()->json(['data' => $this->gradeLevelData($grade->load('sections'))], 201);
     }
 
     public function updateGradeLevel(Request $request, GradeLevel $gradeLevel, AuditLogger $auditLogger): JsonResponse
     {
+        if ($request->hasAny(['name', 'sort_order'])) {
+            throw ValidationException::withMessages([
+                'name' => 'Predefined grade-level names and ordering cannot be changed.',
+            ]);
+        }
+
         $validated = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:100'],
-            'sort_order' => ['sometimes', 'required', 'integer', 'min:0', 'max:65535'],
             'active' => ['sometimes', 'required', 'boolean'],
         ]);
 
         $grade = DB::transaction(function () use ($request, $gradeLevel, $auditLogger, $validated): GradeLevel {
             $grade = GradeLevel::query()->lockForUpdate()->findOrFail($gradeLevel->id);
             $before = $this->gradeLevelAudit($grade);
-            $this->ensureGradeLevelAvailable(
-                isset($validated['name']) ? trim($validated['name']) : null,
-                isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
-                $grade->id,
-            );
             $grade->forceFill(array_filter([
-                'name' => isset($validated['name']) ? trim($validated['name']) : null,
-                'sort_order' => isset($validated['sort_order']) ? (int) $validated['sort_order'] : null,
                 'active' => array_key_exists('active', $validated) ? (bool) $validated['active'] : null,
             ], fn ($value): bool => $value !== null));
 
@@ -419,18 +404,6 @@ class SchoolStructureSettingsController extends Controller
 
         if ($duplicate) {
             throw ValidationException::withMessages(['sequence' => 'That term sequence is already used in this school year.']);
-        }
-    }
-
-    private function ensureGradeLevelAvailable(?string $name, ?int $sortOrder, ?int $exceptId = null): void
-    {
-        $others = fn () => GradeLevel::query()->when($exceptId !== null, fn ($grades) => $grades->whereKeyNot($exceptId));
-
-        if ($name !== null && $others()->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists()) {
-            throw ValidationException::withMessages(['name' => 'That grade level is already configured.']);
-        }
-        if ($sortOrder !== null && $others()->where('sort_order', $sortOrder)->exists()) {
-            throw ValidationException::withMessages(['sort_order' => 'That sort order is already used by another grade level.']);
         }
     }
 

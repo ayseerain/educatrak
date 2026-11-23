@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockIntegrityErrors } from "@/api/mock/integrity";
-import { archiveMockFeeItem, archiveMockGradeLevel, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockGradeLevel, createMockStaffUser, createMockStudent, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockState, listMockStudents, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockFollowUpAccounts, selectMockStaffUsers, selectPayments, selectStudents, setMockToday, updateMockFeeItem, updateMockGradeLevel, updateMockStaffUser, updateMockStudent } from "@/api/mock";
+import { archiveMockFeeItem, archiveMockStaffUser, createMockBillingAccount, createMockFeeItem, createMockSection, createMockStaffUser, createMockStudent, getBillingAccount, getMockFeeSchedule, getMockGradeLevels, getMockSectionsForGrade, getMockState, listMockStudents, rawMockDatabase, recordMockBillingPayment, resetMockStore, restoreMockStaffUser, selectBillingAccounts, selectMockFollowUpAccounts, selectMockStaffUsers, selectPayments, selectStudents, setMockToday, updateMockFeeItem, updateMockSection, updateMockStaffUser, updateMockStudent } from "@/api/mock";
 
 describe("central mock database", () => {
   afterEach(() => {
@@ -326,14 +326,13 @@ describe("central mock database", () => {
     expect((getMockState().auditLog as Array<{ action: string }>).map((item) => item.action)).toEqual(expect.arrayContaining(["fee_item.updated", "fee_item.archived"]));
   });
 
-  it("renames and archives a configured grade without deleting its records", () => {
-    createMockGradeLevel("Preparatory (sample)");
-    updateMockGradeLevel("Preparatory (sample)", "Preparatory level (sample)");
-    archiveMockGradeLevel("Preparatory level (sample)");
+  it("keeps fixed grades while persisting section edits through the shared store", () => {
+    expect(getMockGradeLevels()).toEqual(["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]);
+    createMockSection("Grade 7", "Cedar (sample)");
+    updateMockSection("Grade 7", "Cedar (sample)", "Cedar revised (sample)", false);
 
-    expect(getMockState().config.grades).toContain("Preparatory level (sample)");
-    expect(getMockGradeLevels()).not.toContain("Preparatory level (sample)");
-    expect((getMockState().auditLog as Array<{ action: string }>).map((item) => item.action)).toEqual(expect.arrayContaining(["grade_level.updated", "grade_level.archived"]));
+    expect(getMockSectionsForGrade("Grade 7")).toContainEqual({ name: "Cedar revised (sample)", active: false });
+    expect((getMockState().auditLog as Array<{ action: string }>).map((item) => item.action)).toEqual(expect.arrayContaining(["section.created", "section.updated"]));
   });
 
   it.each(["2030-01-15", "2040-03-15", "2050-12-20"])("preserves key billing states on %s", (mockToday) => {

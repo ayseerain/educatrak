@@ -18,12 +18,17 @@ const years = [
   },
 ];
 
-const grades = [
-  { id: "7", name: "Grade 7 (sample)", sortOrder: 7, active: true, sections: [
-    { id: "70", gradeLevelId: "7", name: "Olive (sample)", active: true },
-    { id: "71", gradeLevelId: "7", name: "Maple (sample)", active: false },
-  ] },
-];
+const gradeNames = ["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+const grades = gradeNames.map((name, sortOrder) => ({
+  id: `grade-${sortOrder}`,
+  name,
+  sortOrder,
+  active: true,
+  sections: name === "Grade 7" ? [
+    { id: "70", gradeLevelId: "grade-7", name: "Olive (sample)", active: true },
+    { id: "71", gradeLevelId: "grade-7", name: "Maple (sample)", active: false },
+  ] : [],
+}));
 
 function json(status: number, body: unknown) {
   return { ok: status < 400, status, json: async () => body };
@@ -70,7 +75,7 @@ describe("live school structure settings", () => {
     expect(screen.getByText(/dates locked by billing accounts/)).toBeInTheDocument();
     expect(screen.getByText("First term (sample)")).toBeInTheDocument();
     expect(screen.getByText("Midterm (sample)")).toBeInTheDocument();
-    expect(await screen.findByText("Grade 7 (sample)")).toBeInTheDocument();
+    expect(await screen.findByText("Grade 7")).toBeInTheDocument();
     expect(screen.getByText("Maple (sample)")).toBeInTheDocument();
     expect(screen.getByText("You have read-only access to these settings.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /add|edit|make current/i })).not.toBeInTheDocument();
@@ -152,22 +157,27 @@ describe("live school structure settings", () => {
     })]]));
   });
 
-  it("shows a 422 under the rejected grade-level field and focuses it", async () => {
+  it("uses the canonical grades in one centralized Add section dialog", async () => {
     const user = userEvent.setup();
-    stubApi((url, options) => url === "/api/settings/grade-levels" && options?.method === "POST"
-      ? json(422, { message: "Invalid.", errors: { sort_order: ["That sort order is already used by another grade level."] } })
+    const fetchMock = stubApi((url, options) => url === "/api/settings/grade-levels/grade-7/sections" && options?.method === "POST"
+      ? json(201, { data: {} })
       : undefined);
     renderSchool(true);
 
-    await user.click(await screen.findByRole("button", { name: "Add grade level" }));
+    expect(screen.queryByRole("button", { name: "Add grade level" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Order" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Actions" })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Add section" }));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByLabelText(/^Sort order/)).toHaveValue(8);
-    await user.type(within(dialog).getByLabelText(/^Grade level/), "Grade 8 (sample)");
-    await user.click(within(dialog).getByRole("button", { name: "Add grade level" }));
+    await user.click(within(dialog).getByRole("button", { name: "Grade level" }));
+    expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual(["Select grade level", ...gradeNames]);
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+    await user.type(within(dialog).getByLabelText(/^Section name/), "Cedar (sample)");
+    await user.click(within(dialog).getByRole("button", { name: "Add section" }));
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("That sort order is already used by another grade level.");
-    expect(within(dialog).getByLabelText(/^Sort order/)).toHaveFocus();
-    expect(within(dialog).getByLabelText(/^Sort order/)).toHaveAttribute("aria-invalid", "true");
+    await waitFor(() => expect(writes(fetchMock)).toEqual([["/api/settings/grade-levels/grade-7/sections", expect.objectContaining({
+      method: "POST", body: JSON.stringify({ name: "Cedar (sample)" }),
+    })]]));
   });
 
   it("deactivates a section by sending only the active flag", async () => {
@@ -175,7 +185,7 @@ describe("live school structure settings", () => {
     const fetchMock = stubApi((url, options) => url === "/api/settings/sections/70" && options?.method === "PATCH" ? json(200, { data: {} }) : undefined);
     renderSchool(true);
 
-    await user.click(await screen.findByRole("button", { name: "Edit section Olive (sample)" }));
+    await user.click(await screen.findByRole("button", { name: "Edit section Olive (sample) in Grade 7" }));
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByLabelText(/^Active/));
     await user.click(within(dialog).getByRole("button", { name: "Save changes" }));

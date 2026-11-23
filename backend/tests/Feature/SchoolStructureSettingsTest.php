@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\SchoolYear;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\CanonicalGradeLevels;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -184,33 +185,35 @@ class SchoolStructureSettingsTest extends TestCase
         $this->assertDatabaseHas('audit_entries', ['action' => 'exam_period.updated']);
     }
 
-    public function test_grade_levels_and_sections_can_be_added_renamed_and_deactivated(): void
+    public function test_grade_levels_are_fixed_and_sections_remain_manageable(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
+        CanonicalGradeLevels::ensure();
+        $grade = DB::table('grade_levels')->where('name', 'Grade 7')->first();
 
-        $grade = $this->actingAs($admin)->postJson('/api/settings/grade-levels', ['name' => 'Grade 7 (sample)', 'sort_order' => 7])
-            ->assertCreated()->assertJsonPath('data.active', true);
-        $gradeId = $grade->json('data.id');
-        $this->actingAs($admin)->postJson('/api/settings/grade-levels', ['name' => 'grade 7 (SAMPLE)', 'sort_order' => 8])
+        $this->assertNotNull($grade);
+        $this->assertDatabaseCount('grade_levels', 13);
+        CanonicalGradeLevels::ensure();
+        $this->assertDatabaseCount('grade_levels', 13);
+        $this->assertSame($grade->id, DB::table('grade_levels')->where('name', 'Grade 7')->value('id'));
+        $this->actingAs($admin)->getJson('/api/settings/grade-levels')
+            ->assertOk()->assertJsonPath('data.0.name', 'Kinder')->assertJsonPath('data.12.name', 'Grade 12');
+        $this->actingAs($admin)->postJson('/api/settings/grade-levels', ['name' => 'Preparatory (sample)', 'sort_order' => 14])
             ->assertUnprocessable()->assertJsonValidationErrors('name');
-        $this->actingAs($admin)->postJson('/api/settings/grade-levels', ['name' => 'Grade 8 (sample)', 'sort_order' => 7])
-            ->assertUnprocessable()->assertJsonValidationErrors('sort_order');
+        $this->actingAs($admin)->patchJson("/api/settings/grade-levels/{$grade->id}", ['name' => 'Grade Seven (sample)'])
+            ->assertUnprocessable()->assertJsonValidationErrors('name');
 
-        $section = $this->actingAs($admin)->postJson("/api/settings/grade-levels/{$gradeId}/sections", ['name' => 'Olive (sample)'])
+        $section = $this->actingAs($admin)->postJson("/api/settings/grade-levels/{$grade->id}/sections", ['name' => 'Olive (sample)'])
             ->assertCreated();
-        $this->actingAs($admin)->postJson("/api/settings/grade-levels/{$gradeId}/sections", ['name' => 'olive (sample)'])
+        $this->actingAs($admin)->postJson("/api/settings/grade-levels/{$grade->id}/sections", ['name' => 'olive (sample)'])
             ->assertUnprocessable()->assertJsonValidationErrors('name');
 
         $this->actingAs($admin)->patchJson('/api/settings/sections/'.$section->json('data.id'), ['name' => 'Maple (sample)', 'active' => false])
             ->assertOk()->assertJsonPath('data.name', 'Maple (sample)')->assertJsonPath('data.active', false);
-        $this->actingAs($admin)->patchJson("/api/settings/grade-levels/{$gradeId}", ['name' => 'Grade Seven (sample)', 'active' => false])
-            ->assertOk()->assertJsonPath('data.name', 'Grade Seven (sample)')->assertJsonPath('data.active', false);
-
         $this->actingAs($admin)->getJson('/api/settings/grade-levels')
-            ->assertOk()->assertJsonPath('data.0.sections.0.name', 'Maple (sample)');
-        $this->assertDatabaseCount('grade_levels', 1);
+            ->assertOk()->assertJsonPath('data.7.sections.0.name', 'Maple (sample)');
+        $this->assertDatabaseCount('grade_levels', 13);
         $this->assertDatabaseCount('sections', 1);
-        $this->assertDatabaseHas('audit_entries', ['action' => 'grade_level.updated']);
         $this->assertDatabaseHas('audit_entries', ['action' => 'section.updated']);
     }
 

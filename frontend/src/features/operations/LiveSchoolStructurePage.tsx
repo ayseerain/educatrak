@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Plus } from "lucide-react";
 import { CashierApiError } from "@/api/cashierApi";
 import {
   createExamPeriod,
-  createGradeLevel,
   createSchoolYear,
   createSection,
   createTerm,
@@ -12,7 +12,6 @@ import {
   listSchoolYears,
   makeSchoolYearCurrent,
   updateExamPeriod,
-  updateGradeLevel,
   updateSchoolYear,
   updateSection,
   updateTerm,
@@ -26,10 +25,12 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { DropdownSelect } from "@/components/ui/DropdownSelect";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
 import { SystemSettingsTabs } from "@/features/operations/LiveSystemSettingsPage";
 import { formatDate } from "@/lib/dates";
 
@@ -38,7 +39,7 @@ const LOCKED_HINT = "Locked: billing accounts exist for this school year.";
 interface FieldSpec {
   name: string;
   label: string;
-  type: "text" | "date" | "number" | "checkbox" | "textarea";
+  type: "text" | "date" | "number" | "checkbox" | "textarea" | "select";
   initial: string | boolean;
   required?: boolean;
   maxLength?: number;
@@ -47,6 +48,7 @@ interface FieldSpec {
   max?: number;
   disabled?: boolean;
   hint?: string;
+  options?: { value: string; label: string }[];
 }
 
 interface FormDialogSpec {
@@ -82,6 +84,7 @@ function StructureFormDialog({ spec, onClose }: { spec: FormDialogSpec; onClose:
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Record<string, string | boolean>>(() => Object.fromEntries(spec.fields.map((field) => [field.name, field.initial])));
   const [noChanges, setNoChanges] = useState(false);
+  const [clientErrors, setClientErrors] = useState<Record<string, string[]>>({});
   const save = useMutation({
     mutationFn: spec.submit,
     onSuccess: async () => {
@@ -94,14 +97,22 @@ function StructureFormDialog({ spec, onClose }: { spec: FormDialogSpec; onClose:
 
   // Focus the first invalid field once per failed save.
   useEffect(() => {
-    const errors = save.error instanceof CashierApiError ? save.error.fieldErrors : undefined;
-    const firstInvalid = errors ? Object.keys(errors)[0] : undefined;
+    const errors = { ...fieldErrors, ...clientErrors };
+    const firstInvalid = Object.keys(errors)[0];
     if (firstInvalid) document.getElementById(`structure-${firstInvalid}`)?.focus();
-  }, [save.error]);
+  }, [fieldErrors, clientErrors]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = buildBody(spec, draft);
+    const missing = Object.fromEntries(spec.fields
+      .filter((field) => field.required && fieldValue(field, draft[field.name] ?? field.initial) === null)
+      .map((field) => [field.name, ["This field is required."]]));
+    if (Object.keys(missing).length > 0) {
+      setClientErrors(missing);
+      return;
+    }
+    setClientErrors({});
     if (spec.mode === "edit" && Object.keys(body).length === 0) {
       setNoChanges(true);
       return;
@@ -118,10 +129,14 @@ function StructureFormDialog({ spec, onClose }: { spec: FormDialogSpec; onClose:
         <form className="mt-5 space-y-4" onSubmit={submit}>
           {spec.fields.map((field) => {
             const id = `structure-${field.name}`;
-            const errors = fieldErrors[field.name];
+            const errors = clientErrors[field.name] ?? fieldErrors[field.name];
             const describedBy = [errors?.length ? `${id}-error` : "", field.hint ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined;
             const value = draft[field.name] ?? field.initial;
-            const update = (next: string | boolean) => { setDraft((current) => ({ ...current, [field.name]: next })); setNoChanges(false); };
+            const update = (next: string | boolean) => {
+              setDraft((current) => ({ ...current, [field.name]: next }));
+              setClientErrors((current) => { const { [field.name]: _removed, ...remaining } = current; return remaining; });
+              setNoChanges(false);
+            };
             return <div key={field.name}>
               {field.type === "checkbox"
                 ? <label className="flex items-center gap-2 text-sm font-medium" htmlFor={id}>
@@ -130,7 +145,9 @@ function StructureFormDialog({ spec, onClose }: { spec: FormDialogSpec; onClose:
                   </label>
                 : <>
                     <label className="block text-sm font-medium" htmlFor={id}>{field.label}{field.required && <span className="text-status-error" aria-hidden="true"> *</span>}</label>
-                    {field.type === "textarea"
+                    {field.type === "select"
+                      ? <DropdownSelect id={id} aria-label={field.label} aria-required={field.required || undefined} aria-invalid={errors?.length ? true : undefined} aria-describedby={describedBy} value={value as string} options={field.options ?? []} onChange={update} className="mt-1 w-full" align="start" />
+                      : field.type === "textarea"
                       ? <textarea id={id} rows={4} className="form-control mt-1" value={value as string} required={field.required} minLength={field.minLength} maxLength={field.maxLength} disabled={field.disabled}
                           aria-invalid={errors?.length ? true : undefined} aria-describedby={describedBy} onChange={(event) => update(event.target.value)} />
                       : <input id={id} type={field.type} className="form-control mt-1" value={value as string} required={field.required} maxLength={field.maxLength} min={field.min} max={field.max} disabled={field.disabled}
@@ -180,12 +197,6 @@ const examFields = (period?: ExamPeriod): FieldSpec[] => [
   { name: "ends_on", label: "End date (optional)", type: "date", initial: period?.endsOn ?? "" },
 ];
 
-const gradeFields = (grade?: GradeLevel, nextSortOrder = 0): FieldSpec[] => [
-  { name: "name", label: "Grade level", type: "text", initial: grade?.name ?? "", required: true, maxLength: 100 },
-  { name: "sort_order", label: "Sort order", type: "number", initial: String(grade?.sortOrder ?? nextSortOrder), required: true, min: 0, max: 65535, hint: "Lower numbers are listed first." },
-  ...(grade ? [{ name: "active", label: "Active (available for new records)", type: "checkbox" as const, initial: grade.active }] : []),
-];
-
 const sectionFields = (section?: Section): FieldSpec[] => [
   { name: "name", label: "Section name", type: "text", initial: section?.name ?? "", required: true, maxLength: 100 },
   ...(section ? [{ name: "active", label: "Active (available for new records)", type: "checkbox" as const, initial: section.active }] : []),
@@ -228,7 +239,7 @@ function SchoolYearCard({ year, editable, open }: { year: SchoolYear; editable: 
             <th scope="col" className="w-[22%] px-3 py-2">Term</th>
             <th scope="col" className="w-[25%] px-3 py-2">Dates</th>
             <th scope="col" className="px-3 py-2">Exam periods</th>
-            {editable && <th scope="col" className="w-[20%] px-3 py-2">Actions</th>}
+            {editable && <th scope="col" className="w-[30%] px-3 py-2">Actions</th>}
           </tr></thead>
           <tbody>{terms.map((term) => <tr key={term.id} className="border-b align-top last:border-0">
             <td className="px-3 py-2 font-mono">{term.sequence}</td>
@@ -238,73 +249,71 @@ function SchoolYearCard({ year, editable, open }: { year: SchoolYear; editable: 
               ? <span className="text-text-secondary">None</span>
               : <ul className="space-y-1">{term.examPeriods.map((period) => <li key={period.id} className="flex flex-wrap items-center gap-2">
                   <span><span className="font-medium">{period.name}</span> · {dateRange(period.startsOn, period.endsOn)}</span>
-                  {editable && <Button type="button" size="sm" variant="neutral" aria-label={`Edit exam period ${period.name}`} onClick={() => open({
+                  {editable && <TableActionButton icon={Pencil} label="Edit" variant="neutral" aria-label={`Edit exam period ${period.name}`} onClick={() => open({
                     title: `Edit ${period.name}`, description: `${term.name}, ${year.label}.`, submitLabel: "Save changes", mode: "edit",
                     fields: examFields(period), submit: (body) => updateExamPeriod(period.id, body),
-                  })}>Edit</Button>}
+                  })} />}
                 </li>)}</ul>}</td>
-            {editable && <td className="px-3 py-2"><div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="secondary" aria-label={`Edit term ${term.name}`} onClick={() => open({
+            {editable && <td className="px-3 py-2"><TableActionGroup>
+              <TableActionButton icon={Pencil} label="Edit" variant="secondary" aria-label={`Edit term ${term.name}`} onClick={() => open({
                 title: `Edit ${term.name}`, description: `${year.label}.`, submitLabel: "Save changes", mode: "edit",
                 fields: termFields(year, term), submit: (body) => updateTerm(term.id, body),
-              })}>Edit</Button>
-              <Button type="button" size="sm" variant="secondary" aria-label={`Add exam period to ${term.name}`} onClick={() => open({
+              })} />
+              <TableActionButton icon={Plus} label="Add exam period" variant="secondary" aria-label={`Add exam period to ${term.name}`} onClick={() => open({
                 title: `Add exam period to ${term.name}`, description: `${year.label}.`, submitLabel: "Add exam period", mode: "create",
                 fields: examFields(), submit: (body) => createExamPeriod(term.id, body),
-              })}>Add exam period</Button>
-            </div></td>}
+              })} />
+            </TableActionGroup></td>}
           </tr>)}</tbody>
         </table>}
   </Card>;
 }
 
 function GradeLevelsCard({ grades, editable, open }: { grades: GradeLevel[]; editable: boolean; open: (spec: FormDialogSpec) => void }) {
-  const nextSortOrder = grades.reduce((highest, grade) => Math.max(highest, grade.sortOrder + 1), 0);
+  const addSection = () => open({
+    title: "Add section",
+    description: "Add a section to one of the school's predefined grade levels.",
+    submitLabel: "Add section",
+    mode: "create",
+    fields: [
+      ...sectionFields(),
+      { name: "grade_level_id", label: "Grade level", type: "select", initial: "", required: true, options: [{ value: "", label: "Select grade level" }, ...grades.map((grade) => ({ value: grade.id, label: grade.name }))] },
+    ],
+    submit: (body) => {
+      const { grade_level_id: gradeId, ...section } = body;
+      return createSection(String(gradeId), section);
+    },
+  });
   return <Card className="overflow-x-auto">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="text-base font-semibold text-text-primary">Grade levels and sections</h2>
-        <p className="mt-1 text-sm text-text-secondary">Inactive grades and sections stay in history and are not offered for new records.</p>
+        <p className="mt-1 text-sm text-text-secondary">Grade levels are predefined. Administrators can manage their sections.</p>
       </div>
-      {editable && <Button type="button" size="sm" variant="secondary" onClick={() => open({
-        title: "Add grade level", description: "New grade levels start active.", submitLabel: "Add grade level", mode: "create",
-        fields: gradeFields(undefined, nextSortOrder), submit: createGradeLevel,
-      })}>Add grade level</Button>}
+      {editable && <Button type="button" onClick={addSection}>Add section</Button>}
     </div>
     {grades.length === 0
       ? <div className="mt-4"><EmptyState message="No grade levels are configured." /></div>
-      : <table className="mt-4 w-full min-w-[640px] border-collapse text-left text-sm">
+      : <table className="mt-4 w-full min-w-[360px] table-fixed border-collapse text-left text-sm">
+          <caption className="sr-only">Grade levels and their sections</caption>
           <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
-            <th scope="col" className="w-[8%] px-3 py-2">Order</th>
-            <th scope="col" className="w-[20%] px-3 py-2">Grade level</th>
+            <th scope="col" className="w-[28%] px-3 py-2">Grade level</th>
             <th scope="col" className="px-3 py-2">Sections</th>
-            <th scope="col" className="w-[12%] px-3 py-2">Status</th>
-            {editable && <th scope="col" className="w-[20%] px-3 py-2">Actions</th>}
+            <th scope="col" className="w-[22%] px-3 py-2">Status</th>
           </tr></thead>
           <tbody>{grades.map((grade) => <tr key={grade.id} className="border-b align-top last:border-0">
-            <td className="px-3 py-2 font-mono">{grade.sortOrder}</td>
-            <td className="px-3 py-2">{grade.name}</td>
+            <th scope="row" className="px-3 py-2 text-left font-medium">{grade.name}</th>
             <td className="px-3 py-2">{grade.sections.length === 0
-              ? <span className="text-text-secondary">None</span>
+              ? <span className="text-text-secondary">No sections</span>
               : <ul className="space-y-1">{grade.sections.map((section) => <li key={section.id} className="flex flex-wrap items-center gap-2">
                   <span>{section.name}</span>
                   {!section.active && <StatusBadge status="inactive" />}
-                  {editable && <Button type="button" size="sm" variant="neutral" aria-label={`Edit section ${section.name}`} onClick={() => open({
+                  {editable && <TableActionButton icon={Pencil} label="Edit" variant="neutral" aria-label={`Edit section ${section.name} in ${grade.name}`} onClick={() => open({
                     title: `Edit section ${section.name}`, description: `${grade.name}.`, submitLabel: "Save changes", mode: "edit",
                     fields: sectionFields(section), submit: (body) => updateSection(section.id, body),
-                  })}>Edit</Button>}
+                  })} />}
                 </li>)}</ul>}</td>
             <td className="px-3 py-2"><StatusBadge status={grade.active ? "active" : "inactive"} /></td>
-            {editable && <td className="px-3 py-2"><div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="secondary" aria-label={`Edit grade level ${grade.name}`} onClick={() => open({
-                title: `Edit ${grade.name}`, description: "Renaming keeps every existing student and account link.", submitLabel: "Save changes", mode: "edit",
-                fields: gradeFields(grade), submit: (body) => updateGradeLevel(grade.id, body),
-              })}>Edit</Button>
-              <Button type="button" size="sm" variant="secondary" aria-label={`Add section to ${grade.name}`} onClick={() => open({
-                title: `Add section to ${grade.name}`, description: "New sections start active.", submitLabel: "Add section", mode: "create",
-                fields: sectionFields(), submit: (body) => createSection(grade.id, body),
-              })}>Add section</Button>
-            </div></td>}
           </tr>)}</tbody>
         </table>}
   </Card>;

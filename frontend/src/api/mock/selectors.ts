@@ -161,32 +161,11 @@ function nextId(prefix: string, rows: ReadonlyArray<{ id: string }>): string {
   return `${prefix}-${value}`;
 }
 
-function gradeLevelOrder(label: string): number | undefined {
-  if (label.trim().toLocaleLowerCase() === "kinder") return 0;
-  const grade = /^grade\s+(\d+)$/i.exec(label.trim());
-  return grade ? Number(grade[1]) : undefined;
-}
+export const CANONICAL_MOCK_GRADE_LEVELS = ["Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"] as const;
 
 /** Returns the configured active grade labels once, in the school's natural grade order. */
 export function getMockGradeLevels(): string[] {
-  const archived = new Set(((getMockState().config as { archivedGrades?: string[] }).archivedGrades ?? []).map((grade) => grade.toLocaleLowerCase()));
-  const seen = new Set<string>();
-  return getMockState().config.grades
-    .map((grade) => grade.trim())
-    .filter((grade) => {
-      const key = grade.toLocaleLowerCase();
-      if (!grade || archived.has(key) || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((left, right) => {
-      const leftOrder = gradeLevelOrder(left);
-      const rightOrder = gradeLevelOrder(right);
-      if (leftOrder !== undefined && rightOrder !== undefined) return leftOrder - rightOrder;
-      if (leftOrder !== undefined) return -1;
-      if (rightOrder !== undefined) return 1;
-      return left.localeCompare(right);
-    });
+  return [...CANONICAL_MOCK_GRADE_LEVELS];
 }
 
 function appendAudit(action: string, entityId: string, actorId: string): void {
@@ -493,55 +472,72 @@ export function archiveMockFeeItem(scheduleId: string, itemId: string, actorId =
 }
 
 export function createMockGradeLevel(label: string, actorId = "user-admin"): string {
-  const name = label.trim();
-  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
-  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
-  if (!name) throw new Error("Enter a grade-level name.");
-  if (getMockGradeLevels().some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already configured.");
-  updateMockState((state) => {
-    state.config.grades.push(name);
-    appendAudit("grade_level.created", name, actorId);
-  });
-  return name;
+  void label;
+  void actorId;
+  throw new Error("Grade levels are predefined and cannot be created.");
 }
 
 export function updateMockGradeLevel(previousLabel: string, label: string, actorId = "user-admin"): string {
-  const previous = previousLabel.trim();
-  const name = label.trim();
-  const actor = getMockState().staffUsers.find((user) => user.id === actorId);
-  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
-  if (!previous || !name) throw new Error("Enter a grade-level name.");
-  if (!getMockState().config.grades.includes(previous)) throw new Error("That grade level is no longer available.");
-  if (previous.toLocaleLowerCase() !== name.toLocaleLowerCase() && getMockState().config.grades.some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already configured.");
-  updateMockState((state) => {
-    const index = state.config.grades.indexOf(previous);
-    state.config.grades[index] = name;
-    state.students.forEach((student) => { if (student.grade === previous) student.grade = name; });
-    state.feeSchedules.forEach((schedule) => { if (schedule.gradeLevel === previous) schedule.gradeLevel = name; });
-    (state.billingAccounts as Array<{ gradeLevel?: string }>).forEach((account) => { if (account.gradeLevel === previous) account.gradeLevel = name; });
-    const sections = state.config.sectionsByGrade as Record<string, string[]>;
-    if (sections[previous]) {
-      sections[name] = sections[previous];
-      delete sections[previous];
-    }
-    const config = state.config as typeof state.config & { archivedGrades?: string[] };
-    if (config.archivedGrades) config.archivedGrades = config.archivedGrades.map((grade) => grade === previous ? name : grade);
-    appendAudit("grade_level.updated", name, actorId);
-  });
-  return name;
+  void previousLabel;
+  void label;
+  void actorId;
+  throw new Error("Predefined grade-level names cannot be changed.");
 }
 
 export function archiveMockGradeLevel(label: string, actorId = "user-admin"): void {
-  const name = label.trim();
+  void label;
+  void actorId;
+  throw new Error("Predefined grade levels cannot be archived.");
+}
+
+export interface MockSection {
+  name: string;
+  active: boolean;
+}
+
+export function getMockSectionsForGrade(gradeLevel: string): MockSection[] {
+  const sections = getMockState().config.sectionsByGrade as Record<string, string[]>;
+  const inactive = (getMockState().config as { inactiveSections?: Record<string, string[]> }).inactiveSections ?? {};
+  return (sections[gradeLevel] ?? []).map((name) => ({ name, active: !inactive[gradeLevel]?.some((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase()) }));
+}
+
+function assertSchoolStructureAdministrator(actorId: string): void {
   const actor = getMockState().staffUsers.find((user) => user.id === actorId);
-  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage grade levels.");
-  if (!getMockState().config.grades.includes(name)) throw new Error("That grade level is no longer available.");
+  if (!actor || !actor.active || actor.role !== "administrator") throw new Error("Only an active Administrator can manage sections.");
+}
+
+export function createMockSection(gradeLevel: string, label: string, actorId = "user-admin"): void {
+  const name = label.trim();
+  assertSchoolStructureAdministrator(actorId);
+  if (!getMockGradeLevels().includes(gradeLevel)) throw new Error("Select a configured grade level.");
+  if (!name) throw new Error("Enter a section name.");
+  if (getMockSectionsForGrade(gradeLevel).some((section) => section.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That section is already configured for this grade level.");
   updateMockState((state) => {
-    const config = state.config as typeof state.config & { archivedGrades?: string[] };
-    const archived = config.archivedGrades ?? [];
-    if (archived.some((grade) => grade.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That grade level is already archived.");
-    config.archivedGrades = [...archived, name];
-    appendAudit("grade_level.archived", name, actorId);
+    const sections = state.config.sectionsByGrade as Record<string, string[]>;
+    sections[gradeLevel] = [...(sections[gradeLevel] ?? []), name];
+    appendAudit("section.created", `${gradeLevel}:${name}`, actorId);
+  });
+}
+
+export function updateMockSection(gradeLevel: string, previousLabel: string, label: string, active: boolean, actorId = "user-admin"): void {
+  const previous = previousLabel.trim();
+  const name = label.trim();
+  assertSchoolStructureAdministrator(actorId);
+  if (!getMockGradeLevels().includes(gradeLevel) || !previous || !name) throw new Error("That section is no longer available.");
+  const others = getMockSectionsForGrade(gradeLevel).filter((section) => section.name.toLocaleLowerCase() !== previous.toLocaleLowerCase());
+  if (others.some((section) => section.name.toLocaleLowerCase() === name.toLocaleLowerCase())) throw new Error("That section is already configured for this grade level.");
+  updateMockState((state) => {
+    const sections = state.config.sectionsByGrade as Record<string, string[]>;
+    const index = (sections[gradeLevel] ?? []).findIndex((section) => section.toLocaleLowerCase() === previous.toLocaleLowerCase());
+    if (index < 0) throw new Error("That section is no longer available.");
+    sections[gradeLevel]![index] = name;
+    state.students.forEach((student) => { if (student.grade === gradeLevel && student.section === previous) student.section = name; });
+    const config = state.config as typeof state.config & { inactiveSections?: Record<string, string[]> };
+    const inactive = config.inactiveSections ?? {};
+    const current = (inactive[gradeLevel] ?? []).filter((section) => section.toLocaleLowerCase() !== previous.toLocaleLowerCase());
+    inactive[gradeLevel] = active ? current : [...current, name];
+    config.inactiveSections = inactive;
+    appendAudit("section.updated", `${gradeLevel}:${name}`, actorId);
   });
 }
 

@@ -8,6 +8,7 @@ interface DropdownSelectOption<TValue extends string> {
 }
 
 interface DropdownSelectProps<TValue extends string> {
+  id?: string;
   value: TValue;
   options: DropdownSelectOption<TValue>[];
   onChange: (value: TValue) => void;
@@ -22,6 +23,7 @@ interface DropdownSelectProps<TValue extends string> {
 }
 
 export function DropdownSelect<TValue extends string>({
+  id,
   value,
   options,
   onChange,
@@ -40,6 +42,7 @@ export function DropdownSelect<TValue extends string>({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
+          id={id}
           type="button"
           aria-label={ariaLabel}
           aria-describedby={ariaDescribedBy}
