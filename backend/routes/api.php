@@ -185,6 +185,9 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:ledger.import.prepare');
             Route::post('/ledger-imports/{importBatch}/reject', [LedgerImportController::class, 'reject'])
                 ->middleware('capability:ledger.import.review');
+            Route::post('/ledger-imports/{importBatch}/rows/{line}/resolution', [LedgerImportController::class, 'resolveConflict'])
+                ->whereNumber('line')
+                ->middleware('capability:ledger.import.review');
             Route::post('/ledger-imports/{importBatch}/confirm', [LedgerImportController::class, 'confirm'])
                 ->middleware('capability:ledger.import.review');
             Route::get('/close-outs/today', [CloseOutController::class, 'today'])

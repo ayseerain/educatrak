@@ -181,16 +181,70 @@ class LedgerImportController extends Controller
         });
     }
 
+    /**
+     * Accounting records how a conflict row is resolved. This writes only the resolution and its
+     * audit entry: it never creates charges or changes accounts, installments, payments or receipts.
+     * `already_accounted` needs an evidenced duplicate; every other case is referred to the separately
+     * approved correction procedure. A resolution is final.
+     */
+    public function resolveConflict(Request $request, ImportBatch $importBatch, int $line, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $request->validate([
+            'resolution' => ['required', 'in:already_accounted,requires_correction'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+        $this->authorizeBatchAccess($request, $importBatch);
+
+        $batch = DB::transaction(function () use ($request, $importBatch, $line, $validated, $auditLogger): ImportBatch {
+            $batch = ImportBatch::query()->lockForUpdate()->findOrFail($importBatch->id);
+            $this->assertNotPreparer($request, $batch);
+            if (! in_array($batch->status, ['submitted', 'confirmed'], true)) {
+                abort(409, 'Conflicts can be resolved only on a submitted or recorded batch.');
+            }
+            $row = collect($this->currentRows($batch))->firstWhere('line', $line);
+            if ($row === null || $row['status'] !== 'conflict') {
+                abort(404, 'This line is not a conflict row in this batch.');
+            }
+            $resolutions = $batch->summary['resolutions'] ?? [];
+            if (isset($resolutions[(string) $line])) {
+                abort(409, 'This conflict has already been resolved.');
+            }
+            $classification = $row['reconciliation']['classification'] ?? 'insufficient_information';
+            if ($validated['resolution'] === 'already_accounted' && $classification !== 'evidenced_duplicate') {
+                throw ValidationException::withMessages(['resolution' => 'Only an evidenced duplicate can be marked as already accounted for.']);
+            }
+            $resolution = [
+                'resolution' => $validated['resolution'],
+                'reason' => $validated['reason'],
+                'classification' => $classification,
+                'differenceCents' => $row['reconciliation']['differenceCents'] ?? null,
+                'resolvedBy' => (string) $request->user()->id,
+                'resolvedAt' => now()->toIso8601String(),
+            ];
+            // Keyed by line number; plain assignment keeps the numeric keys (array spread would renumber them).
+            $resolutions[(string) $line] = $resolution;
+            $batch->summary = [...$batch->summary, 'resolutions' => $resolutions];
+            $batch->save();
+            $auditLogger->record($request, 'ledger_import.conflict_resolved', $batch, null, ['line' => $line, ...$resolution]);
+
+            return $batch;
+        });
+
+        return response()->json(['data' => $this->batchData($batch, true), 'meta' => $this->meta()]);
+    }
+
     /** CSV of every row that is not eligible, with its reasons. Cell values are neutralized against spreadsheet formulas. */
     public function errorReport(Request $request, ImportBatch $importBatch): StreamedResponse
     {
         $this->authorizeBatchAccess($request, $importBatch);
         $rows = collect($this->currentRows($importBatch))->where('status', '!=', 'eligible');
+        $resolutions = $importBatch->summary['resolutions'] ?? [];
 
-        return response()->streamDownload(function () use ($rows): void {
+        return response()->streamDownload(function () use ($rows, $resolutions): void {
             $output = fopen('php://output', 'wb');
-            fputcsv($output, ['line', 'status', 'source_row_id', 'student_lrn', 'school_year', 'errors']);
+            fputcsv($output, ['line', 'status', 'source_row_id', 'student_lrn', 'school_year', 'errors', 'reconciliation', 'difference_cents', 'resolution']);
             foreach ($rows as $row) {
+                $reconciliation = $row['reconciliation'] ?? null;
                 fputcsv($output, array_map($this->safeCell(...), [
                     (string) $row['line'],
                     $row['status'],
@@ -198,6 +252,9 @@ class LedgerImportController extends Controller
                     $row['values']['student_lrn'],
                     $row['values']['school_year'],
                     implode(' ', $row['errors']),
+                    $reconciliation['classification'] ?? '',
+                    isset($reconciliation['differenceCents']) ? (string) $reconciliation['differenceCents'] : '',
+                    $resolutions[(string) $row['line']]['resolution'] ?? '',
                 ]));
             }
             fclose($output);
@@ -344,9 +401,8 @@ class LedgerImportController extends Controller
         $recorded = OpeningBalanceConversion::query()->get(['student_id', 'school_year_id'])
             ->map(fn (OpeningBalanceConversion $conversion): string => $conversion->student_id.':'.$conversion->school_year_id)
             ->flip();
-        $accounts = BillingAccount::query()->whereIn('student_id', $students->values())->get(['student_id', 'school_year_id'])
-            ->map(fn (BillingAccount $account): string => $account->student_id.':'.$account->school_year_id)
-            ->flip();
+        $accounts = BillingAccount::query()->whereIn('student_id', $students->values())->get()
+            ->keyBy(fn (BillingAccount $account): string => $account->student_id.':'.$account->school_year_id);
         $sourceIdCounts = array_count_values(array_filter(array_column($rows, 'source_row_id'), fn (string $id): bool => $id !== ''));
         $studentYearCounts = [];
         foreach ($rows as $values) {
@@ -417,7 +473,7 @@ class LedgerImportController extends Controller
                 }
                 if ($status === 'eligible' && isset($accounts[$key])) {
                     $status = 'conflict';
-                    $errors[] = 'The student already has a billing account for this school year. Accounting must reconcile it under an approved rule; it is not recorded.';
+                    $errors[] = 'The student already has a billing account for this school year. It is excluded and needs Accounting reconciliation.';
                 }
             }
 
@@ -428,10 +484,47 @@ class LedgerImportController extends Controller
                 'errors' => $errors,
                 'student_id' => $studentId,
                 'school_year_id' => $schoolYearId,
+                'reconciliation' => $status === 'conflict' ? $this->reconcile($accounts[$studentId.':'.$schoolYearId], (int) $values['balance_cents'], $cutover) : null,
             ];
         }
 
         return $classified;
+    }
+
+    /**
+     * Compares an imported balance with an existing account's position at the cutover date. The
+     * position is supported only when the account had no activity after the cutover (no later
+     * account creation, fee items, adjustments, payments or payment changes such as voids);
+     * otherwise the result is insufficient information. Nothing is written.
+     *
+     * @return array{classification: string, accountId: string, accountBalanceCents: int|null, importedBalanceCents: int, differenceCents: int|null, reason: string}
+     */
+    private function reconcile(BillingAccount $account, int $importedBalance, ?string $cutover): array
+    {
+        $result = ['accountId' => (string) $account->id, 'importedBalanceCents' => $importedBalance, 'accountBalanceCents' => null, 'differenceCents' => null];
+        if ($cutover === null) {
+            return [...$result, 'classification' => 'insufficient_information', 'reason' => 'The cutover date is not approved, so the account position at cutover cannot be determined.'];
+        }
+        $cutoverEnd = CarbonImmutable::parse($cutover.' 23:59:59', 'Asia/Manila')->setTimezone(config('app.timezone'));
+        $changedAfterCutover = $account->created_at?->greaterThan($cutoverEnd)
+            || $account->items()->where('created_at', '>', $cutoverEnd)->exists()
+            || $account->adjustments()->where('effective_at', '>', $cutoverEnd)->exists()
+            || $account->payments()->where(fn ($query) => $query->where('paid_on', '>', $cutover)->orWhere('updated_at', '>', $cutoverEnd))->exists();
+        if ($changedAfterCutover) {
+            return [...$result, 'classification' => 'insufficient_information', 'reason' => 'The account changed after the cutover date, so its position at cutover is not supported by the records.'];
+        }
+        $balance = (int) $account->balance_cents;
+        $difference = $importedBalance - $balance;
+
+        return [
+            ...$result,
+            'accountBalanceCents' => $balance,
+            'differenceCents' => $difference,
+            'classification' => $difference === 0 ? 'evidenced_duplicate' : 'discrepancy',
+            'reason' => $difference === 0
+                ? 'The imported balance equals the account balance at cutover.'
+                : 'The imported balance differs from the account balance at cutover. Use the approved correction procedure; nothing is changed here.',
+        ];
     }
 
     /**
@@ -489,12 +582,15 @@ class LedgerImportController extends Controller
             'reviewedAt' => $batch->reviewed_at?->toIso8601String(),
         ];
         if ($includeRows) {
+            $resolutions = $batch->summary['resolutions'] ?? [];
             $data['rows'] = array_map(fn (array $row): array => [
                 'line' => $row['line'],
                 'status' => $row['status'],
                 'outcome' => $row['outcome'] ?? null,
                 'values' => $row['values'],
                 'errors' => $row['errors'],
+                'reconciliation' => $row['reconciliation'] ?? null,
+                'resolution' => $resolutions[(string) $row['line']] ?? null,
             ], $rows);
         }
 

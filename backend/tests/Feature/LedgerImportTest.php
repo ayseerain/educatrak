@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\GradeLevel;
 use App\Models\ImportBatch;
@@ -184,9 +185,57 @@ class LedgerImportTest extends TestCase
             ->assertJsonPath('data.rows.0.status', 'duplicate');
     }
 
-    private function existingAccount(string $lrn): void
+    public function test_conflicts_are_compared_at_cutover_and_resolved_without_changing_accounts(): void
     {
-        BillingAccount::query()->create([
+        $student = Student::query()->where('lrn', '000000009001')->sole();
+        Student::query()->create(['lrn' => '000000009004', 'full_name' => 'Ledger Student 9004 (sample)', 'grade_level_id' => $student->grade_level_id, 'section_id' => $student->section_id, 'status' => 'enrolled']);
+        $this->existingAccount('000000009001', '2026-06-01 08:00:00');
+        $this->existingAccount('000000009002', '2026-06-01 08:00:00');
+        $this->existingAccount('000000009003');
+        $batch = $this->upload($this->cashier, [
+            'R1,000000009001,SY 2025-2026,2026-05-31,1000,0,1000,Ref,',
+            'R2,000000009002,SY 2025-2026,2026-05-31,1500,0,1500,Ref,',
+            'R3,000000009003,SY 2025-2026,2026-05-31,1000,0,1000,Ref,',
+            'R4,000000009004,SY 2025-2026,2026-05-31,500,0,500,Ref,',
+        ])->assertCreated()
+            ->assertJsonPath('data.rows.0.reconciliation.classification', 'evidenced_duplicate')
+            ->assertJsonPath('data.rows.1.reconciliation.classification', 'discrepancy')
+            ->assertJsonPath('data.rows.1.reconciliation.differenceCents', 500)
+            ->assertJsonPath('data.rows.2.reconciliation.classification', 'insufficient_information')
+            ->assertJsonPath('data.rows.2.reconciliation.accountBalanceCents', null)
+            ->assertJsonPath('data.rows.3.reconciliation', null);
+        $id = $batch->json('data.id');
+        $this->actingAs($this->cashier)->postJson("/api/ledger-imports/{$id}/submit")->assertOk();
+
+        $resolve = fn (User $user, int $line, string $resolution) => $this->actingAs($user)
+            ->postJson("/api/ledger-imports/{$id}/rows/{$line}/resolution", ['resolution' => $resolution, 'reason' => 'Fictional check against the paper ledger.']);
+        $resolve($this->cashier, 2, 'already_accounted')->assertForbidden();
+        $resolve($this->accounting, 3, 'already_accounted')->assertUnprocessable();
+        $resolve($this->accounting, 5, 'requires_correction')->assertNotFound();
+        $resolve($this->accounting, 2, 'already_accounted')->assertOk()->assertJsonPath('data.rows.0.resolution.resolution', 'already_accounted');
+        $resolve($this->accounting, 2, 'requires_correction')->assertConflict();
+        $resolve($this->accounting, 3, 'requires_correction')->assertOk()->assertJsonPath('data.rows.1.resolution.differenceCents', 500);
+
+        $this->actingAs($this->accounting)->postJson("/api/ledger-imports/{$id}/confirm", ['file_sha256' => $batch->json('data.fileSha256'), 'eligible_lines' => [5]])
+            ->assertOk()->assertJsonPath('data.summary.recordedCount', 1)->assertJsonPath('data.rows.0.resolution.resolution', 'already_accounted');
+        $this->assertDatabaseCount('opening_balance_conversions', 1);
+        $this->assertSame([1000, 1000, 1000], BillingAccount::query()->orderBy('id')->pluck('balance_cents')->all());
+        foreach (['adjustments', 'installments', 'payments', 'receipts'] as $table) {
+            $this->assertDatabaseCount($table, 0);
+        }
+        $this->assertDatabaseCount('audit_entries', 5);
+        $this->assertSame(2, AuditEntry::query()->where('action', 'ledger_import.conflict_resolved')->count());
+        $report = $this->actingAs($this->accounting)->get("/api/ledger-imports/{$id}/error-report")->streamedContent();
+        $this->assertStringContainsString('evidenced_duplicate,0,already_accounted', $report);
+
+        config(['educatrak.ledger_cutover_date' => null]);
+        $this->upload($this->cashier, ['R9,000000009001,SY 2025-2026,2026-05-31,1000,0,1000,Ref,'])
+            ->assertJsonPath('data.rows.0.reconciliation.classification', 'insufficient_information');
+    }
+
+    private function existingAccount(string $lrn, ?string $createdAt = null): void
+    {
+        $account = BillingAccount::query()->create([
             'student_id' => Student::query()->where('lrn', $lrn)->value('id'),
             'school_year_id' => SchoolYear::query()->value('id'),
             'status' => 'current',
@@ -195,6 +244,9 @@ class LedgerImportTest extends TestCase
             'balance_cents' => 1000,
             'created_by' => $this->cashier->id,
         ]);
+        if ($createdAt !== null) {
+            $account->forceFill(['created_at' => $createdAt, 'updated_at' => $createdAt])->saveQuietly();
+        }
     }
 
     /** @param list<string> $lines */
