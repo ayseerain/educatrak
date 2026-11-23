@@ -168,3 +168,76 @@ Status: proposal for owner and finance approval. Confirmation remains storage-on
    - A repeated confirmation posts nothing twice.
    - A failure midway rolls back the whole batch.
    - The one-account-per-student-per-year constraint holds.
+
+
+## Project-owner decisions — third round, November 23, 2026
+
+**Recorded:** Monday, November 23, 2026 — 23:50:47 +08:00
+**Authority:** Project-owner decisions on historical opening balances, conflict reconciliation, backup verification and Privacy Policy wording. Not institutional approval. The cutover date is still unapproved, so nothing may be financially posted.
+
+### Opening balances stay with their original school year
+
+- The PROPOSED posting mapping above is accepted as the planning target, with one change: past-year balances stay attached to their own school year and are never moved into the current-year account automatically.
+- Past-year balances may appear in a student's consolidated outstanding view. Reports must keep opening balances separate from new charges and from collections, and must never count one amount twice.
+- Ordinary account creation stays current-year only. Posting needs a narrow historical-opening-balance exception, designed below and awaiting approval.
+- Every posted amount must trace back to its batch and source row.
+
+### Conflict rows: fail-closed Accounting reconciliation (implemented, no financial effect)
+
+- A conflict row (an existing account for that student and school year) is compared with the account's position at the cutover date. The result is one of three: `evidenced_duplicate` (equal), `discrepancy` (different, with the difference), or `insufficient_information`.
+- The result is `insufficient_information` when the cutover is unset, or when the account changed after the cutover (created later; or fee items, adjustments, payments or payment changes such as voids after it). The system never estimates a past position.
+- Accounting (never the preparer) records one final resolution per conflict row, with a 10–1000 character reason and an audit entry:
+  - `already_accounted`, allowed only for an evidenced duplicate;
+  - `requires_correction`, a referral to a separately approved correction procedure.
+- Recording a resolution never adds charges and never changes accounts, installments, allocations, payments or receipts. Confirming an import grants no adjustment authority.
+- Independent eligible rows are still recorded (storage only). The full row report, including comparison and resolution, stays available.
+
+### Privacy Policy wording (changed)
+
+- The public text no longer says audit logs are kept 10 years and other personal information 5 years. It now says the schedule is under review, not yet approved, and not automated, and gives the Academy administration office as the contact.
+- The 10-year and 5-year periods stay in this file as proposals only. Nothing is purged automatically.
+- The Academy's designated privacy/policy authority must review the public Privacy Policy before publication.
+
+### Backup verification on disposable MySQL (done in an isolated instance)
+
+Evidence and the required database privileges are in `04-Development/Backend-Readiness.md` ("Disposable MySQL verification, 2026-11-23"). Automatic deletion stays off.
+
+## PROPOSED — historical opening-balance account exception (awaiting approval; not implemented)
+
+Implement only after the cutover date, this exception, the reconciliation and correction procedure, and the remaining financial controls are approved.
+
+**Schema (additive):**
+- `billing_accounts.source`: `standard` (default) or `opening_balance`.
+- `billing_accounts.opening_balance_conversion_id`: nullable and unique, with a FK to `opening_balance_conversions`. This gives traceability to the batch and source row.
+- `opening_balance_conversions` gains `posted_billing_account_id` (nullable, unique), `posted_by`, `posted_at` and `installment_due_date`.
+- The account item is `category = opening_balance`, with no fee item, labelled "Opening balance as of {as_of_date}". There is one installment labelled "Opening balance".
+
+**API and authorization:**
+- `POST /api/billing-accounts` is unchanged and stays current-year only.
+- New `POST /api/ledger-imports/{batch}/post`, behind a new capability `ledger.import.post`: Accounting only, never the preparer, and disabled by configuration until approved.
+- Body: `file_sha256`, `eligible_lines`, `installment_due_date`. The due date must be on or after the cutover date.
+- It runs a dedicated `CreateOpeningBalanceAccountAction` inside one transaction. That action is the only code path that may create a non-current-year account, and it checks each of these:
+  - no account exists for that student and year;
+  - the conversion is not yet posted;
+  - the balance is above zero;
+  - no fee schedule or payment plan is applied.
+- Zero-balance rows stay in the import record and create no account. Posting twice is refused.
+
+**Reporting (one source of truth):**
+- After posting, every total is read from billing accounts only. The conversion record becomes evidence and is never added again.
+- The outstanding report, follow-up and statements include opening-balance accounts and label them "Opening balance carried forward".
+- Collection reports, receipts and close-outs are unchanged, because no payment is created.
+- Current-year dashboard widgets keep current-year scope. A separate "Opening balances outstanding" figure shows past-year amounts, so they are visible but not mixed in.
+
+**Open question before design approval:** the payment screen lists only current-school-year accounts (`PaymentController` filters on `is_current`). Should Cashiers collect on posted past-year opening-balance accounts? If so, payment selection needs a matching narrow exception, using oldest-first allocation and ordinary receipts.
+
+**Tests required before activation:**
+- One account, item and installment per eligible row.
+- Ordinary account creation still rejects non-current years.
+- No fee schedule is applied.
+- Collections totals are unchanged.
+- Outstanding, follow-up and statements show the labelled balance exactly once.
+- Conflicts and zero-balance rows never post.
+- Repeated posting and concurrent posting do not duplicate anything.
+- A mid-batch failure rolls back the whole batch.
+- The preparer and unauthorized roles are denied.
