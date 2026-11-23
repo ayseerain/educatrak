@@ -1,5 +1,7 @@
 # Modules and Features
 
+> **SRS v3.0 policy reconciliation — November 22, 2026.** The dated project-owner confirmation in `06-Decisions/2026-11-22-srs-v3-policy-confirmations.md` supersedes conflicting active module text: Registrar manages guardians; Cashier prepares ledger batches and Accounting confirms; Cashier commits valid audited adjustments without an Accounting threshold; Super Admin alone assigns Accounting Officer; backups are daily/system plus Administrator manual; the approved receipt title is `Acknowledgment Receipt`. Unspecified operational semantics remain open and must not be inferred.
+
 > **Student masterlist import — November 7, 2026.** Approved for the frontend MockDB workflow: Registrar-only `/students/import`, complete masterlist via CSV or XLSX, LRN matching, row-level blockers with warnings, valid rows may proceed, and no backend changes. See `06-Decisions/2026-11-07-student-masterlist-import.md` for approved field and status rules.
 
 > **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.

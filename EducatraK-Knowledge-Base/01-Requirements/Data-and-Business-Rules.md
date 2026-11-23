@@ -1,5 +1,7 @@
 # Data Model and Business Rules
 
+> **SRS v3.0 policy reconciliation — November 22, 2026.** Apply the confirmed policies in `06-Decisions/2026-11-22-srs-v3-policy-confirmations.md` over conflicting legacy rules. In particular, adjustments require Cashier authority, a reason, and audit evidence but no Accounting approval threshold; no installment redistribution rule has been confirmed. Retention periods are proposed and unenforced pending institutional approval.
+
 > **Approved operational reassignment — November 5, 2026.** Registrar updates change only the current student record and must not recalculate, replace, or overwrite billing accounts, charges, payments, receipts, or audit evidence. No clearance or exam-permit rule is active. Guardian ownership is unchanged and is not implied by Registrar student-record authority.
 
 > Source-derived data and business rules extracted from the canonical Project Specification.

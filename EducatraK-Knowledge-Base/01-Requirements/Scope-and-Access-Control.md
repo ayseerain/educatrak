@@ -1,5 +1,7 @@
 # Scope and Access Control
 
+> **SRS v3.0 policy reconciliation — November 22, 2026.** The dated project-owner confirmation in `06-Decisions/2026-11-22-srs-v3-policy-confirmations.md` supersedes conflicting active access text below for guardian management (Registrar only), ledger preparation/review (Cashier/Accounting), direct Cashier adjustments, Super Admin-only Accounting Officer assignment, Administrator manual backup, and the receipt title (`Acknowledgment Receipt`). It does not settle the listed lifecycle, posting, retention, backup, performance, or UAT decisions.
+
 > **MockDB profile update — November 7, 2026.** In the frontend MockDB workflow, Registrar's `/students/:id` profile shows academic, personal, and guardian information without billing content. Personal fields are Registrar-only. Cashier and Accounting retain their existing financial profile behavior. Live API behavior is outside this change.
 
 > **Approved operational reassignment — November 5, 2026.** Older clearance, permit, and Cashier student-editing provisions are superseded. Registrar may view and manage the shared Students module's basic records, grade, section, and enrollment status without financial or guardian data. Cashier may view the shared module and perform approved billing actions, but cannot create or edit students. Accounting keeps its financial oversight permissions. Clearance and exam permits are not active features.
