@@ -519,6 +519,8 @@ class CashierOperationsTest extends TestCase
             ->assertJsonPath('data.createdBy', $cashier->full_name);
         $this->assertSame(18_500, $account->fresh()->total_due_cents);
         $this->assertSame(18_500, $account->fresh()->balance_cents);
+        $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 1, 'amount_cents' => 13_875, 'paid_cents' => 0]);
+        $this->assertDatabaseHas('installments', ['billing_account_id' => $account->id, 'sequence' => 2, 'amount_cents' => 4_625, 'paid_cents' => 0]);
         $this->assertDatabaseHas('audit_entries', ['action' => 'adjustment.created', 'user_id' => $cashier->id]);
     }
 
