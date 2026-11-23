@@ -1,5 +1,7 @@
 # Open Decisions and Clarifications
 
+> **November 22, 2026 SRS v3.0 update:** `2026-11-22-srs-v3-policy-confirmations.md` resolves the policy owner for guardian management, direct adjustments, Accounting Officer assignment, receipt title, ledger workflow roles, backup intent, proposed retention periods, performance-target approach, and UAT participant categories. It does **not** resolve the detailed ledger-posting, shared-guardian/primary-contact, installment redistribution, retention-enforcement, backup-operation, performance-measurement, or UAT-sign-off questions listed there. Older sections remain historical context where they conflict.
+
 > Source-derived unresolved decisions. Do not treat these items as settled requirements.
 
 ## 31. Open Decisions and Clarifications
