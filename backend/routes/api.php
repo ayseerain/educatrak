@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceSettingsController;
 use App\Http\Controllers\Api\FollowUpController;
 use App\Http\Controllers\Api\GuardianController;
+use App\Http\Controllers\Api\LedgerImportController;
 use App\Http\Controllers\Api\NotificationLogController;
 use App\Http\Controllers\Api\OutstandingReportController;
 use App\Http\Controllers\Api\PaymentController;
@@ -53,6 +54,8 @@ Route::middleware('web')->group(function (): void {
             Route::get('/audit-log', [AuditLogController::class, 'index'])
                 ->middleware('capability:audit.view');
             Route::get('/backups', [BackupController::class, 'index'])
+                ->middleware('capability:backup.view');
+            Route::post('/backups', [BackupController::class, 'store'])
                 ->middleware('capability:backup.manage');
             Route::get('/notifications', [NotificationLogController::class, 'index'])
                 ->middleware('capability:notification.view');
@@ -168,6 +171,22 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:void.view');
             Route::patch('/void-requests/{voidRequest}', [VoidRequestController::class, 'update'])
                 ->middleware('capability:void.approve');
+            Route::get('/ledger-imports', [LedgerImportController::class, 'index'])
+                ->middleware('capability:ledger.import.view');
+            Route::post('/ledger-imports', [LedgerImportController::class, 'store'])
+                ->middleware('capability:ledger.import.prepare');
+            Route::get('/ledger-imports/{importBatch}', [LedgerImportController::class, 'show'])
+                ->middleware('capability:ledger.import.view');
+            Route::get('/ledger-imports/{importBatch}/error-report', [LedgerImportController::class, 'errorReport'])
+                ->middleware('capability:ledger.import.view');
+            Route::post('/ledger-imports/{importBatch}/submit', [LedgerImportController::class, 'submit'])
+                ->middleware('capability:ledger.import.prepare');
+            Route::post('/ledger-imports/{importBatch}/cancel', [LedgerImportController::class, 'cancel'])
+                ->middleware('capability:ledger.import.prepare');
+            Route::post('/ledger-imports/{importBatch}/reject', [LedgerImportController::class, 'reject'])
+                ->middleware('capability:ledger.import.review');
+            Route::post('/ledger-imports/{importBatch}/confirm', [LedgerImportController::class, 'confirm'])
+                ->middleware('capability:ledger.import.review');
             Route::get('/close-outs/today', [CloseOutController::class, 'today'])
                 ->middleware('capability:closeout.submit');
             Route::get('/close-outs/business-date', [BusinessDateSimulatorController::class, 'show'])
