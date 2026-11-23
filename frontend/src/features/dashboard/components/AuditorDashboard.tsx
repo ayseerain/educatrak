@@ -13,7 +13,6 @@ export function AuditorDashboard({ summary }: AuditorDashboardProps) {
       description={en.dashboard.auditActivityHelp}
       entries={summary.recentAuditActivity}
       emptyMessage={en.dashboard.noAuditActivity}
-      emptyStateClassName="flex min-h-56 items-center"
     />
   );
 }

@@ -6,6 +6,7 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { CollectionTrend } from "@/features/dashboard/components/CollectionTrend";
 import { AdminDashboard } from "@/features/dashboard/components/AdminDashboard";
+import { AuditorDashboard } from "@/features/dashboard/components/AuditorDashboard";
 import type { AuthenticatedUser } from "@/lib/types";
 import * as mockAdapter from "@/api/mockAdapter";
 import { centavos } from "@/lib/money";
@@ -130,6 +131,34 @@ describe("DashboardPage", () => {
     expect(todayBars).toHaveLength(points.length);
     expect(todayBars).toEqual(last7DayBars);
     expect(todayBars).toEqual(last30DayBars);
+  });
+
+  it("centers empty dashboard reminders in their available widget space", () => {
+    render(
+      <CollectionTrend points={[{ date: "2026-11-23", totalCollected: centavos(0) }]} range="today" />,
+    );
+
+    const collectionReminder = screen.getByText(/no collections are recorded for this period/i);
+    expect(collectionReminder.parentElement).toHaveClass("w-full");
+    expect(collectionReminder.parentElement?.parentElement).toHaveClass("items-center");
+
+    render(
+      <AuditorDashboard
+        summary={{
+          role: "auditor",
+          overallEnrolledStudents: 0,
+          todayCollectionsTotal: centavos(0),
+          paymentsTodayCount: 0,
+          rangeCollectionsTotal: centavos(0),
+          paymentsInRangeCount: 0,
+          recentAuditActivity: [],
+        }}
+      />,
+    );
+
+    const auditReminder = screen.getByText(/no audit events are recorded/i);
+    expect(auditReminder.parentElement).toHaveClass("w-full");
+    expect(auditReminder.parentElement?.parentElement).toHaveClass("items-center", "justify-center", "min-h-56");
   });
 
   it("renders the dashboard for Cashier", async () => {

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card, CardLabel } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/dates";
 import { en } from "@/i18n/en";
@@ -13,7 +14,6 @@ interface AuditActivityPreviewProps {
   to?: string;
   actionLabel?: string;
   className?: string;
-  emptyStateClassName?: string;
 }
 
 export function AuditActivityPreview({
@@ -24,7 +24,6 @@ export function AuditActivityPreview({
   to,
   actionLabel,
   className,
-  emptyStateClassName,
 }: AuditActivityPreviewProps) {
   const visibleEntries = entries.slice(0, 5);
   const headingId = `audit-preview-${(to ?? "overview").replace(/[^a-z0-9]+/gi, "-")}`;
@@ -52,7 +51,9 @@ export function AuditActivityPreview({
           ))}
         </ol>
       ) : (
-        <p className={cn("px-5 py-5 text-sm text-text-secondary", emptyStateClassName)}>{emptyMessage}</p>
+        <div className="flex min-h-56 items-center justify-center px-5 py-5">
+          <EmptyState message={emptyMessage} />
+        </div>
       )}
     </Card>
   );
