@@ -14,12 +14,32 @@ export interface LedgerImportMeta {
   columns: LedgerColumn[];
 }
 
+export type ConflictClassification = "evidenced_duplicate" | "discrepancy" | "insufficient_information";
+export type ConflictResolution = "already_accounted" | "requires_correction";
+
 export interface LedgerImportRow {
   line: number;
   status: LedgerRowStatus;
   outcome: "recorded" | "excluded" | null;
   values: Record<LedgerColumn, string>;
   errors: string[];
+  /** Present on conflict rows: comparison with the existing account's position at the cutover date. */
+  reconciliation?: {
+    classification: ConflictClassification;
+    accountId: string;
+    accountBalanceCents: number | null;
+    importedBalanceCents: number;
+    differenceCents: number | null;
+    reason: string;
+  } | null;
+  resolution?: {
+    resolution: ConflictResolution;
+    reason: string;
+    classification: ConflictClassification;
+    differenceCents: number | null;
+    resolvedBy: string;
+    resolvedAt: string;
+  } | null;
 }
 
 export interface LedgerImportBatch {
@@ -80,6 +100,11 @@ export async function confirmLedgerImport(batch: LedgerImportBatch): Promise<Bat
     method: "POST",
     body: JSON.stringify({ file_sha256: batch.fileSha256, eligible_lines: eligibleLines }),
   });
+}
+
+/** Records how Accounting resolved a conflict row. It never changes accounts or creates charges. */
+export async function resolveLedgerConflict(id: string, line: number, resolution: ConflictResolution, reason: string): Promise<BatchResponse> {
+  return request(`/ledger-imports/${encodeURIComponent(id)}/rows/${line}/resolution`, { method: "POST", body: JSON.stringify({ resolution, reason }) });
 }
 
 export function ledgerErrorReportUrl(id: string): string {

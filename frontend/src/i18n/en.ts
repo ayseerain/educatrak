@@ -84,8 +84,8 @@ export const en = {
         id: "retention",
         title: "Retention and disposal",
         paragraphs: [
-          "Audit logs are retained for ten years. Other personal information processed in EducaTrak, including student, guardian, staff-account, billing, payment, notification, import, and backup-related records, is retained for five years.",
-          "After the applicable period, information is disposed of or anonymized using methods appropriate to the record and subject to applicable legal, accounting, audit, or dispute-related requirements.",
+          "The Academy's detailed data-retention and disposal schedule for EducaTrak is under review. Proposed retention periods have not yet received final institutional approval or been implemented as an automated disposal policy.",
+          "Applicable retention and disposal requirements will be finalized according to the Academy's approved policies and relevant legal, accounting, audit, and record-preservation obligations. Data subjects may direct retention or privacy concerns to the Academy administration office.",
         ],
       },
       {

@@ -89,6 +89,37 @@ describe("opening-balance ledger import", () => {
     expect(screen.getByRole("link", { name: "Download error report" })).toHaveAttribute("href", "/api/ledger-imports/5/error-report");
   });
 
+  it("shows the cutover comparison on a conflict row and records Accounting's resolution", async () => {
+    const conflictBatch = () => {
+      const data = batch();
+      data.rows[2] = { ...data.rows[2]!, reconciliation: { classification: "discrepancy", accountId: "44", accountBalanceCents: 1000, importedBalanceCents: 1500, differenceCents: 500, reason: "The imported balance differs from the account balance at cutover." } } as never;
+      return data;
+    };
+    const bodies: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/sanctum/csrf-cookie") return { ok: true, status: 204, json: async () => ({}) };
+      if (init?.method === "POST") {
+        bodies.push({ url, body: JSON.parse(String(init.body)) });
+        const data = conflictBatch();
+        data.rows[2] = { ...data.rows[2]!, resolution: { resolution: "requires_correction", reason: "Fictional ledger differs.", classification: "discrepancy", differenceCents: 500, resolvedBy: "8", resolvedAt: "2026-11-23T11:00:00+08:00" } } as never;
+        return { ok: true, status: 200, json: async () => ({ data, meta: meta("2026-06-30") }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ data: conflictBatch(), meta: meta("2026-06-30") }) };
+    }));
+    renderAt("/import/5", <LedgerImportDetailPage user={accounting} />, "/import/:id");
+
+    expect(await screen.findByText(/Discrepancy: imported ₱15\.00, account at cutover ₱10\.00, difference ₱5\.00\./)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Resolve" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByText("Already accounted for")).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Fictional ledger differs." } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record resolution" }));
+
+    expect(await screen.findByText(/Resolved: Refer to approved correction procedure/)).toBeInTheDocument();
+    expect(bodies[0]).toEqual({ url: "/api/ledger-imports/5/rows/4/resolution", body: { resolution: "requires_correction", reason: "Fictional ledger differs." } });
+    expect(screen.queryByRole("button", { name: "Resolve" })).not.toBeInTheDocument();
+  });
+
   it("lets the Cashier check a file with auto-matched columns", async () => {
     const uploads: FormData[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {

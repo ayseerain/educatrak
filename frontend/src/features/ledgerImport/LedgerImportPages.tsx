@@ -22,11 +22,13 @@ import {
   readCsvHeader,
   readFileStart,
   rejectLedgerImport,
+  resolveLedgerConflict,
   submitLedgerImport,
   uploadLedgerImport,
   type LedgerColumn,
   type LedgerImportBatch,
   type LedgerImportMeta,
+  type ConflictResolution,
   type LedgerImportRow,
 } from "@/api/ledgerImportApi";
 import { formatDateTime } from "@/lib/dates";
@@ -52,6 +54,34 @@ const ROW_STATUS_LABEL: Record<LedgerImportRow["status"], string> = {
 
 function countLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+const CLASSIFICATION_LABEL: Record<NonNullable<LedgerImportRow["reconciliation"]>["classification"], string> = {
+  evidenced_duplicate: "Evidenced duplicate",
+  discrepancy: "Discrepancy",
+  insufficient_information: "Insufficient information",
+};
+
+const RESOLUTION_LABEL: Record<ConflictResolution, string> = {
+  already_accounted: "Already accounted for",
+  requires_correction: "Refer to approved correction procedure",
+};
+
+function centavoText(value: number | null): string {
+  if (value === null) return "Not determinable";
+  return value < 0 ? `-${formatMoney(centavos(-value))}` : formatMoney(centavos(value));
+}
+
+/** Comparison and resolution text for a conflict row, shown in the Findings column. */
+function conflictFindings(row: LedgerImportRow): string {
+  const reconciliation = row.reconciliation;
+  if (!reconciliation) return row.errors.join(" ");
+  const parts = [
+    `${CLASSIFICATION_LABEL[reconciliation.classification]}: imported ${centavoText(reconciliation.importedBalanceCents)}, account at cutover ${centavoText(reconciliation.accountBalanceCents)}, difference ${centavoText(reconciliation.differenceCents)}.`,
+    reconciliation.reason,
+  ];
+  if (row.resolution) parts.push(`Resolved: ${RESOLUTION_LABEL[row.resolution.resolution]} (${row.resolution.reason}).`);
+  return parts.join(" ");
 }
 
 const COLUMN_LABEL: Record<LedgerColumn, string> = {
@@ -237,12 +267,19 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
   const [rowFilter, setRowFilter] = useState<"all" | LedgerImportRow["status"]>("all");
   const [dialog, setDialog] = useState<"confirm" | "reject" | "cancel" | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [resolving, setResolving] = useState<LedgerImportRow | null>(null);
+  const [resolutionChoice, setResolutionChoice] = useState<ConflictResolution>("requires_correction");
+  const [resolutionReason, setResolutionReason] = useState("");
   const { sort, toggle } = useTableSort();
   const refresh = (data: { data: LedgerImportBatch; meta: LedgerImportMeta }) => {
     queryClient.setQueryData(["ledger-import", id], data);
     void queryClient.invalidateQueries({ queryKey: ["ledger-imports"] });
     setDialog(null);
   };
+  const resolve = useMutation({
+    mutationFn: () => resolveLedgerConflict(id, resolving!.line, resolutionChoice, resolutionReason.trim()),
+    onSuccess: (data) => { refresh(data); setResolving(null); },
+  });
   const action = useMutation({
     mutationFn: async (kind: "submit" | "cancel" | "confirm" | "reject") => {
       const current = batch.data!.data;
@@ -268,6 +305,7 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
   const notEligible = summary.rowCount - summary.eligibleCount;
   const isPreparer = can(user, "ledger.import.prepare") && current.preparedBy === user.id;
   const isReviewer = can(user, "ledger.import.review");
+  const canResolve = isReviewer && (current.status === "submitted" || current.status === "confirmed") && current.preparedBy !== user.id;
   const confirmBlocker = meta.cutoverPending
     ? "Recording is unavailable until the cutover date is approved and configured."
     : summary.eligibleCount === 0 ? "There are no eligible rows to record." : null;
@@ -327,7 +365,7 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
         </div>
         {sorted.length === 0 ? <EmptyState message="No rows match this filter." /> : (
           <div className={TABLE_SCROLL_CLASS}>
-            <table className={`${TABLE_CLASS} min-w-[60rem]`}>
+            <table className={`${TABLE_CLASS} min-w-[66rem]`}>
               <caption className="sr-only">Rows in this import batch</caption>
               <thead>
                 <tr className="border-b border-border">
@@ -338,6 +376,7 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
                   <SortableHeader sortKey="school_year" sort={sort} onSort={toggle} className="w-32">School year</SortableHeader>
                   <SortableHeader sortKey="balance" sort={sort} onSort={toggle} className="w-32 text-right">Balance</SortableHeader>
                   <SortableHeader sortKey="errors" sort={sort} onSort={toggle}>Findings</SortableHeader>
+                  {canResolve && <th scope="col" className="w-28 px-3 py-2 text-left text-xs font-semibold text-text-secondary">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -349,7 +388,8 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
                     <td className={`${TABLE_BODY_CELL_CLASS} tabular-nums`}>{row.values.student_lrn || "—"}</td>
                     <td className={TABLE_BODY_CELL_CLASS}>{row.values.school_year || "—"}</td>
                     <td className={`${TABLE_BODY_CELL_CLASS} text-right tabular-nums`}>{/^\d{1,15}$/.test(row.values.balance_cents) ? formatMoney(centavos(Number(row.values.balance_cents))) : row.values.balance_cents || "—"}</td>
-                    <td className={`${TABLE_BODY_CELL_CLASS} text-text-secondary`}>{row.errors.length === 0 ? "No issues" : row.errors.join(" ")}</td>
+                    <td className={`${TABLE_BODY_CELL_CLASS} text-text-secondary`}>{row.errors.length === 0 ? "No issues" : conflictFindings(row)}</td>
+                    {canResolve && <td className={TABLE_BODY_CELL_CLASS}>{row.status === "conflict" && !row.resolution && <Button type="button" size="sm" variant="secondary" onClick={() => { resolve.reset(); setResolutionChoice(row.reconciliation?.classification === "evidenced_duplicate" ? "already_accounted" : "requires_correction"); setResolutionReason(""); setResolving(row); }}>Resolve</Button>}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -385,6 +425,44 @@ export function LedgerImportDetailPage({ user }: { user: AuthenticatedUser }) {
           <Button type="button" variant="secondary" onClick={() => setDialog(null)}>Keep reviewing</Button>
           <Button type="button" variant="destructive" disabled={action.isPending || rejectNote.trim().length < 10} onClick={() => action.mutate("reject")}>{action.isPending ? "Rejecting…" : "Reject batch"}</Button>
         </div>
+      </LedgerDialog>
+
+      <LedgerDialog open={resolving !== null} onClose={() => setResolving(null)} title={`Resolve conflict on line ${resolving?.line ?? ""}`}>
+        {resolving?.reconciliation && <>
+          <p className="mt-2 text-sm text-text-secondary">This records Accounting's decision only. It does not add charges or change the account, installments, payments or receipts.</p>
+          <dl className="mt-4 space-y-2 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-text-secondary">Comparison</dt><dd className="font-semibold">{CLASSIFICATION_LABEL[resolving.reconciliation.classification]}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-text-secondary">Imported balance</dt><dd className="font-semibold tabular-nums">{centavoText(resolving.reconciliation.importedBalanceCents)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-text-secondary">Account balance at cutover</dt><dd className="font-semibold tabular-nums">{centavoText(resolving.reconciliation.accountBalanceCents)}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-text-secondary">Difference</dt><dd className="font-semibold tabular-nums">{centavoText(resolving.reconciliation.differenceCents)}</dd></div>
+          </dl>
+          <p className="mt-3 text-sm text-text-secondary">{resolving.reconciliation.reason} <Link to={`/accounts/${resolving.reconciliation.accountId}`} className="font-semibold text-brand-green-dark transition-colors duration-150 hover:text-brand-green motion-reduce:transition-none">Open the account</Link></p>
+          <label className="mt-4 block text-sm font-medium text-text-primary">
+            Resolution
+            <span className="mt-1 block">
+              <DropdownSelect
+                aria-label="Resolution"
+                value={resolutionChoice}
+                options={[
+                  ...(resolving.reconciliation.classification === "evidenced_duplicate" ? [{ value: "already_accounted" as const, label: RESOLUTION_LABEL.already_accounted }] : []),
+                  { value: "requires_correction" as const, label: RESOLUTION_LABEL.requires_correction },
+                ]}
+                onChange={setResolutionChoice}
+                className="w-full"
+              />
+            </span>
+          </label>
+          <label className="mt-4 block text-sm font-medium text-text-primary">
+            Reason <span aria-hidden="true">*</span>
+            <textarea value={resolutionReason} onChange={(event) => setResolutionReason(event.target.value)} rows={3} maxLength={1000} aria-describedby="resolution-hint" className="form-control mt-1 w-full" />
+          </label>
+          <p id="resolution-hint" className="mt-1 text-xs text-text-secondary">At least 10 characters. The decision is final and audited.</p>
+          {resolve.isError && <p role="alert" className="mt-3 text-sm text-status-error">{resolve.error.message}</p>}
+          <div className="mt-5 flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setResolving(null)}>Cancel</Button>
+            <Button type="button" disabled={resolve.isPending || resolutionReason.trim().length < 10} onClick={() => resolve.mutate()}>{resolve.isPending ? "Saving…" : "Record resolution"}</Button>
+          </div>
+        </>}
       </LedgerDialog>
 
       <LedgerDialog open={dialog === "cancel"} onClose={() => setDialog(null)} title="Cancel this batch?">
