@@ -40,7 +40,7 @@ class StudentAccessTest extends TestCase
     public function test_registrar_student_search_returns_financial_context_without_guardians(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 4', 'sort_order' => 4, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $gradeId = (int) DB::table('grade_levels')->where('name', 'Grade 4')->value('id');
         $sectionId = DB::table('sections')->insertGetId(['grade_level_id' => $gradeId, 'name' => 'Orchid', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $student = Student::factory()->create([
             'lrn' => '000000004001',
@@ -63,20 +63,22 @@ class StudentAccessTest extends TestCase
     public function test_registrar_can_read_active_student_record_options_contract(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
-        $activeGradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 3', 'sort_order' => 3, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $activeGradeId = (int) DB::table('grade_levels')->where('name', 'Grade 3')->value('id');
         $inactiveGradeId = DB::table('grade_levels')->insertGetId(['name' => 'Archived Grade', 'sort_order' => 99, 'active' => false, 'created_at' => now(), 'updated_at' => now()]);
         DB::table('sections')->insert([
             ['grade_level_id' => $activeGradeId, 'name' => 'Acacia', 'active' => true, 'created_at' => now(), 'updated_at' => now()],
             ['grade_level_id' => $activeGradeId, 'name' => 'Archived Acacia', 'active' => false, 'created_at' => now(), 'updated_at' => now()],
             ['grade_level_id' => $inactiveGradeId, 'name' => 'Archived Grade Section', 'active' => true, 'created_at' => now(), 'updated_at' => now()],
         ]);
+        DB::table('grade_levels')->where('name', 'Grade 1')->delete();
 
         $this->actingAs($registrar)->getJson('/api/student-record-options')
             ->assertOk()
-            ->assertJsonPath('data.grades.0.name', 'Grade 3')
-            ->assertJsonPath('data.grades.0.sections.0.name', 'Acacia')
+            ->assertJsonPath('data.grades.0.name', 'Kinder')
+            ->assertJsonPath('data.grades.3.name', 'Grade 3')
+            ->assertJsonPath('data.grades.3.sections.0.name', 'Acacia')
             ->assertJsonPath('data.statuses', ['enrolled', 'inactive'])
-            ->assertJsonMissingPath('data.grades.0.sections.1');
+            ->assertJsonMissingPath('data.grades.3.sections.1');
     }
 
     public function test_accounting_can_read_student_list_with_active_year_balance_field(): void
@@ -368,7 +370,7 @@ class StudentAccessTest extends TestCase
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
-        $gradeId = DB::table('grade_levels')->insertGetId(['name' => 'Grade 6', 'sort_order' => 6, 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $gradeId = (int) DB::table('grade_levels')->where('name', 'Grade 6')->value('id');
         $sectionId = DB::table('sections')->insertGetId(['grade_level_id' => $gradeId, 'name' => 'Cedar', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $payload = ['lrn' => '000000006001', 'full_name' => 'Taylor Sample Student', 'grade_level_id' => $gradeId, 'section_id' => $sectionId, 'status' => 'inactive'];
 
@@ -434,13 +436,7 @@ class StudentAccessTest extends TestCase
     /** @return array{int, int} */
     private function createStudentPlacement(): array
     {
-        $gradeId = DB::table('grade_levels')->insertGetId([
-            'name' => 'Grade 6',
-            'sort_order' => 6,
-            'active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $gradeId = (int) DB::table('grade_levels')->where('name', 'Grade 6')->value('id');
         $sectionId = DB::table('sections')->insertGetId([
             'grade_level_id' => $gradeId,
             'name' => 'Cedar',

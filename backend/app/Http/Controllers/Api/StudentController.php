@@ -10,6 +10,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\CanonicalGradeLevels;
 use App\Support\CapabilityMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -107,6 +108,7 @@ class StudentController extends Controller
 
     public function recordOptions(): JsonResponse
     {
+        CanonicalGradeLevels::ensure();
         $grades = GradeLevel::query()
             ->where('active', true)
             ->orderBy('sort_order')
