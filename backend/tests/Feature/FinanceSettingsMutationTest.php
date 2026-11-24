@@ -237,9 +237,7 @@ class FinanceSettingsMutationTest extends TestCase
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $scheduleId = $this->createFeeSchedule();
         $schoolYearId = DB::table('fee_schedules')->where('id', $scheduleId)->value('school_year_id');
-        $secondGradeId = DB::table('grade_levels')->insertGetId([
-            'name' => 'Grade 6', 'sort_order' => 6, 'active' => true, 'created_at' => now(), 'updated_at' => now(),
-        ]);
+        $secondGradeId = (int) DB::table('grade_levels')->where('name', 'Grade 6')->value('id');
         $secondScheduleId = DB::table('fee_schedules')->insertGetId([
             'school_year_id' => $schoolYearId, 'grade_level_id' => $secondGradeId, 'name' => 'Grade 6 sample schedule', 'active' => true, 'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -275,9 +273,7 @@ class FinanceSettingsMutationTest extends TestCase
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $scheduleId = $this->createFeeSchedule();
         $schoolYearId = DB::table('fee_schedules')->where('id', $scheduleId)->value('school_year_id');
-        $secondGradeId = DB::table('grade_levels')->insertGetId([
-            'name' => 'Grade 7', 'sort_order' => 7, 'active' => true, 'created_at' => now(), 'updated_at' => now(),
-        ]);
+        $secondGradeId = (int) DB::table('grade_levels')->where('name', 'Grade 7')->value('id');
         $secondScheduleId = DB::table('fee_schedules')->insertGetId([
             'school_year_id' => $schoolYearId, 'grade_level_id' => $secondGradeId, 'name' => 'Grade 7 sample schedule', 'active' => true, 'created_at' => now(), 'updated_at' => now(),
         ]);
@@ -311,13 +307,7 @@ class FinanceSettingsMutationTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $gradeId = DB::table('grade_levels')->insertGetId([
-            'name' => 'Grade 5',
-            'sort_order' => 5,
-            'active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $gradeId = (int) DB::table('grade_levels')->where('name', 'Grade 5')->value('id');
 
         return DB::table('fee_schedules')->insertGetId([
             'school_year_id' => $schoolYearId,

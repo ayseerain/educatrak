@@ -22,13 +22,7 @@ class FinanceSettingsReadTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $gradeId = DB::table('grade_levels')->insertGetId([
-            'name' => 'Grade 4',
-            'sort_order' => 4,
-            'active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $gradeId = (int) DB::table('grade_levels')->where('name', 'Grade 4')->value('id');
         $scheduleId = DB::table('fee_schedules')->insertGetId([
             'school_year_id' => $schoolYearId,
             'grade_level_id' => $gradeId,
