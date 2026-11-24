@@ -10,6 +10,7 @@ use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Term;
 use App\Services\AuditLogger;
+use App\Support\CanonicalGradeLevels;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -268,6 +269,7 @@ class SchoolStructureSettingsController extends Controller
 
     public function gradeLevels(): JsonResponse
     {
+        CanonicalGradeLevels::ensure();
         $grades = GradeLevel::query()->with('sections')->orderBy('sort_order')->orderBy('id')->get();
 
         return response()->json(['data' => $grades->map(fn (GradeLevel $grade): array => $this->gradeLevelData($grade))->values()]);

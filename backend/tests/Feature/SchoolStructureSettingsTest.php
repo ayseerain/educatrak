@@ -188,16 +188,24 @@ class SchoolStructureSettingsTest extends TestCase
     public function test_grade_levels_are_fixed_and_sections_remain_manageable(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
-        CanonicalGradeLevels::ensure();
         $grade = DB::table('grade_levels')->where('name', 'Grade 7')->first();
 
         $this->assertNotNull($grade);
         $this->assertDatabaseCount('grade_levels', 13);
+        $this->assertDatabaseHas('grade_levels', ['name' => 'Kinder', 'sort_order' => 0, 'active' => true]);
+        $this->assertDatabaseHas('grade_levels', ['name' => 'Grade 12', 'sort_order' => 12, 'active' => true]);
         CanonicalGradeLevels::ensure();
         $this->assertDatabaseCount('grade_levels', 13);
         $this->assertSame($grade->id, DB::table('grade_levels')->where('name', 'Grade 7')->value('id'));
         $this->actingAs($admin)->getJson('/api/settings/grade-levels')
             ->assertOk()->assertJsonPath('data.0.name', 'Kinder')->assertJsonPath('data.12.name', 'Grade 12');
+
+        DB::table('grade_levels')->where('name', 'Grade 1')->delete();
+        $this->assertDatabaseCount('grade_levels', 12);
+        $this->actingAs($admin)->getJson('/api/settings/grade-levels')
+            ->assertOk()->assertJsonPath('data.1.name', 'Grade 1');
+        $this->assertDatabaseCount('grade_levels', 13);
+
         $this->actingAs($admin)->postJson('/api/settings/grade-levels', ['name' => 'Preparatory (sample)', 'sort_order' => 14])
             ->assertUnprocessable()->assertJsonValidationErrors('name');
         $this->actingAs($admin)->patchJson("/api/settings/grade-levels/{$grade->id}", ['name' => 'Grade Seven (sample)'])
@@ -239,7 +247,7 @@ class SchoolStructureSettingsTest extends TestCase
         }
 
         $this->assertDatabaseCount('school_years', 1);
-        $this->assertDatabaseCount('grade_levels', 0);
+        $this->assertDatabaseCount('grade_levels', 13);
     }
 
     private function failAuditRecording(): void
