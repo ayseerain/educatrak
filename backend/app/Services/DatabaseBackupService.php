@@ -131,12 +131,15 @@ class DatabaseBackupService
     {
         $configured = (string) config('educatrak.backup.destination');
         $destination = $configured === '' ? false : realpath($configured);
-        if ($destination === false || ! is_dir($destination) || ! is_writable($destination)) {
+        if ($destination === false || ! is_dir($destination)) {
             throw new RuntimeException('The backup destination is not configured, does not exist, or is not writable.');
         }
         $applicationRoot = realpath(base_path());
         if ($applicationRoot !== false && str_starts_with(strtolower($destination.DIRECTORY_SEPARATOR), strtolower($applicationRoot.DIRECTORY_SEPARATOR))) {
             throw new RuntimeException('The backup destination must be outside the application folder.');
+        }
+        if (! is_writable($destination)) {
+            throw new RuntimeException('The backup destination is not configured, does not exist, or is not writable.');
         }
 
         return $destination;
