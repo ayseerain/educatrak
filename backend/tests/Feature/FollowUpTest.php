@@ -39,7 +39,7 @@ class FollowUpTest extends TestCase
     {
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 5', 'sort_order' => 5]);
+        $grade = GradeLevel::query()->where('name', 'Grade 5')->firstOrFail();
         $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Sample Section']);
         $student = Student::query()->create(['lrn' => '000000007001', 'full_name' => 'Morgan Sample', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $account = $this->createAccount($student, $year, $cashier);

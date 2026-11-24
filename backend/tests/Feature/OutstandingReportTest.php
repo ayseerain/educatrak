@@ -21,7 +21,7 @@ class OutstandingReportTest extends TestCase
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 4', 'sort_order' => 4]);
+        $grade = GradeLevel::query()->where('name', 'Grade 4')->firstOrFail();
         $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Orchid']);
         $overdueStudent = Student::query()->create(['lrn' => '000000009201', 'full_name' => 'Avery Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $overdue = $this->createAccount($overdueStudent, $year, $admin, 15_000);
@@ -57,7 +57,7 @@ class OutstandingReportTest extends TestCase
         $accounting = User::factory()->create(['role' => UserRole::Accounting]);
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2027-2028', 'starts_on' => '2027-06-01', 'ends_on' => '2028-05-31', 'is_current' => true]);
-        $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 5', 'sort_order' => 5]);
+        $grade = GradeLevel::query()->where('name', 'Grade 5')->firstOrFail();
         $section = Section::query()->forceCreate(['grade_level_id' => $grade->id, 'name' => 'Jasmine']);
         $firstStudent = Student::query()->create(['lrn' => '000000009203', 'full_name' => 'Jordan Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
         $secondStudent = Student::query()->create(['lrn' => '000000009204', 'full_name' => 'Casey Sample Student', 'grade_level_id' => $grade->id, 'section_id' => $section->id, 'status' => 'enrolled']);
