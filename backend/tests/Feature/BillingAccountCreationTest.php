@@ -243,7 +243,7 @@ class BillingAccountCreationTest extends TestCase
     {
         $now = now();
         $year = DB::table('school_years')->insertGetId(['label' => 'SY 2026-2027 (sample)', 'is_current' => true, 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'created_at' => $now, 'updated_at' => $now]);
-        $grade = DB::table('grade_levels')->insertGetId(['name' => 'Grade 7 (sample)', 'sort_order' => 7, 'active' => true, 'created_at' => $now, 'updated_at' => $now]);
+        $grade = (int) DB::table('grade_levels')->where('name', 'Grade 7')->value('id');
         $student = DB::table('students')->insertGetId(['lrn' => '000000000903', 'full_name' => 'Account Student (sample)', 'grade_level_id' => $grade, 'status' => 'enrolled', 'created_at' => $now, 'updated_at' => $now]);
         $schedule = DB::table('fee_schedules')->insertGetId(['school_year_id' => $year, 'grade_level_id' => $grade, 'name' => 'Grade 7 fees (sample)', 'active' => true, 'created_at' => $now, 'updated_at' => $now]);
         $item = fn (string $name, int $amount, bool $required, bool $active, int $sort): int => DB::table('fee_items')->insertGetId([

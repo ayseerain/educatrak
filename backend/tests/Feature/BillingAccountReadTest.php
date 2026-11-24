@@ -22,7 +22,7 @@ class BillingAccountReadTest extends TestCase
     {
         $cashier = User::factory()->create(['role' => UserRole::Cashier]);
         $year = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
-        $grade = GradeLevel::query()->forceCreate(['name' => 'Grade 4', 'sort_order' => 4]);
+        $grade = GradeLevel::query()->where('name', 'Grade 4')->firstOrFail();
         $student = Student::query()->create(['lrn' => '000000004002', 'full_name' => 'Morgan Sample Student', 'grade_level_id' => $grade->id, 'status' => 'enrolled']);
         $account = BillingAccount::query()->create([
             'student_id' => $student->id,
