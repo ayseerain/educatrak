@@ -133,6 +133,11 @@ export function normalizeStatus(status: string) {
 }
 
 export function formatStatusLabel(status: string): string {
-  const normalized = normalizeStatus(status);
+  return formatDisplayLabel(status);
+}
+
+/** Formats persisted enum values for sentence-case UI labels without changing their stored form. */
+export function formatDisplayLabel(value: string): string {
+  const normalized = normalizeStatus(value);
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "";
 }

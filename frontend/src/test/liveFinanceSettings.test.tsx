@@ -38,6 +38,8 @@ describe("live finance settings", () => {
 
     expect(screen.getByRole("heading", { name: "Fees" })).toBeInTheDocument();
     expect(await screen.findByText("Grade 4 sample schedule")).toBeInTheDocument();
+    expect(screen.getByText("Tuition")).toBeInTheDocument();
+    expect(screen.queryByText("tuition")).not.toBeInTheDocument();
     expect(screen.getByText("₱2,500.00")).toBeInTheDocument();
     expect(screen.getByText("These finance settings are read-only for your role.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /add fee item/i })).not.toBeInTheDocument();

@@ -11,6 +11,7 @@ import { TableActionButton, TableActionGroup } from "@/components/ui/TableAction
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { can } from "@/lib/permissions";
 import { centavos, format } from "@/lib/money";
+import { formatDisplayLabel } from "@/lib/status";
 import type { AuthenticatedUser } from "@/lib/types";
 
 export function LiveVoidsPage({ user }: { user: AuthenticatedUser }) {
@@ -57,7 +58,7 @@ export function LiveVoidsPage({ user }: { user: AuthenticatedUser }) {
                   <td className="px-3 py-2 text-right font-mono">{format(centavos(item.amountCents))}</td>
                   <td className="px-3 py-2">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(item.requestedAt))}</td>
                   <td className="min-w-72 px-3 py-2">
-                    {item.status !== "pending" ? <><p className="font-medium capitalize">{item.status}</p>{item.decisionNote && <p className="mt-1 text-xs text-text-secondary">{item.decisionNote}</p>}</> : canDecide ? (
+                    {item.status !== "pending" ? <><p className="font-medium">{formatDisplayLabel(item.status)}</p>{item.decisionNote && <p className="mt-1 text-xs text-text-secondary">{item.decisionNote}</p>}</> : canDecide ? (
                       decisionFor?.item.id === item.id ? (
                         <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); decisionMutation.mutate(); }}>
                           <p className="font-medium">{decisionFor.decision === "approved" ? "Approve" : "Reject"} this request?</p>

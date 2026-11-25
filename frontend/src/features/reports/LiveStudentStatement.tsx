@@ -17,6 +17,7 @@ import { printDocumentWhenReady } from "@/lib/printing";
 import { formatDate } from "@/lib/dates";
 import { PrintSurface } from "@/components/printing/PrintSurface";
 import { PrinterIcon } from "@/components/printing/ReceiptPrintAction";
+import { formatDisplayLabel } from "@/lib/status";
 
 export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedUser; studentId: string }) {
   const [printError, setPrintError] = useState("");
@@ -30,9 +31,9 @@ export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedU
     {statement.data && <PrintSurface className="report-print-root student-statement-print">
       <PrintDocumentHeader title="STUDENT STATEMENT OF ACCOUNT" subtitle={`School year: ${statement.data.schoolYear}`} details={[`Prepared by: ${user.name}`]} />
       <div className="report-print-summary"><strong>Student:</strong> {statement.data.studentName} · {statement.data.lrn}<br /><strong>Total due:</strong> {money(statement.data.totalDueCents)} · <strong>Total paid:</strong> {money(statement.data.totalPaidCents)} · <strong>Balance:</strong> {money(statement.data.balanceCents)}</div>
-      <PrintDocumentTable title="Fees" headings={["Item", "Category", "Amount"]} rightAlignColumns={[2]} rows={statement.data.items.map((item) => [item.name, item.category, money(item.amountCents)])} />
-      <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid", "Status"]} rightAlignColumns={[2, 3]} rows={statement.data.installments.map((item) => [item.label, formatDate(item.dueDate), money(item.amountCents), money(item.paidCents), item.status.replace(/_/g, " ")])} />
-      <PrintDocumentTable title="Payments" headings={["Paid on", "Receipt", "Amount", "Status"]} rightAlignColumns={[2]} rows={statement.data.payments.map((item) => [formatDate(item.paidOn), item.receiptNo ?? "Unavailable", money(item.amountCents), item.status.replace(/_/g, " ")])} />
+      <PrintDocumentTable title="Fees" headings={["Item", "Category", "Amount"]} rightAlignColumns={[2]} rows={statement.data.items.map((item) => [item.name, formatDisplayLabel(item.category), money(item.amountCents)])} />
+      <PrintDocumentTable title="Installment schedule" headings={["Installment", "Due date", "Amount", "Paid", "Status"]} rightAlignColumns={[2, 3]} rows={statement.data.installments.map((item) => [item.label, formatDate(item.dueDate), money(item.amountCents), money(item.paidCents), formatDisplayLabel(item.status)])} />
+      <PrintDocumentTable title="Payments" headings={["Paid on", "Receipt", "Amount", "Status"]} rightAlignColumns={[2]} rows={statement.data.payments.map((item) => [formatDate(item.paidOn), item.receiptNo ?? "Unavailable", money(item.amountCents), formatDisplayLabel(item.status)])} />
       <PrintDocumentFooter preparedBy={user.name} />
     </PrintSurface>}
     <BackButton to="/reports" label="Back to reports" className="mb-2" />
@@ -42,9 +43,9 @@ export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedU
         {can(user, "report.view") && <Button type="button" variant="secondary" onClick={() => {
           const data = statement.data!;
           const rows = [
-            ...data.items.map((item) => ["Fee", item.name, item.category, "", money(item.amountCents), "", ""]),
-            ...data.installments.map((item) => ["Installment", item.label, "", item.dueDate, money(item.amountCents), money(item.paidCents), item.status.replace(/_/g, " ")]),
-            ...data.payments.map((item) => ["Payment", item.receiptNo ?? "Unavailable", "", item.paidOn, money(item.amountCents), "", item.status.replace(/_/g, " ")]),
+            ...data.items.map((item) => ["Fee", item.name, formatDisplayLabel(item.category), "", money(item.amountCents), "", ""]),
+            ...data.installments.map((item) => ["Installment", item.label, "", item.dueDate, money(item.amountCents), money(item.paidCents), formatDisplayLabel(item.status)]),
+            ...data.payments.map((item) => ["Payment", item.receiptNo ?? "Unavailable", "", item.paidOn, money(item.amountCents), "", formatDisplayLabel(item.status)]),
             ["Balance", "", "", "", money(data.balanceCents), "", ""],
           ];
           const safeStudentNo = data.lrn.replace(/[^A-Za-z0-9_-]/g, "_");
@@ -58,9 +59,9 @@ export function LiveStudentStatement({ user, studentId }: { user: AuthenticatedU
     {statement.isError && <ErrorState message={statement.error.message} onRetry={() => void statement.refetch()} />}
     {statement.data && <>
       <Card className="mb-5"><div className="grid gap-4 sm:grid-cols-2"><div><p className="text-sm text-text-secondary">Student</p><p className="font-semibold">{statement.data.studentName} · {statement.data.lrn}</p></div><div><p className="text-sm text-text-secondary">School year</p><p className="font-semibold">{statement.data.schoolYear}</p></div></div><div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-3"><Metric label="Total due" cents={statement.data.totalDueCents} /><Metric label="Total paid" cents={statement.data.totalPaidCents} /><Metric label="Balance" cents={statement.data.balanceCents} /></div></Card>
-      <DataTable title="Fees" headers={["Item", "Category", "Amount"]} rows={statement.data.items.map((item) => [item.name, item.category, money(item.amountCents)])} />
-      <DataTable title="Installment schedule" headers={["Installment", "Due date", "Amount", "Paid", "Status"]} rows={statement.data.installments.map((item) => [item.label, item.dueDate, money(item.amountCents), money(item.paidCents), item.status.replace(/_/g, " ")])} />
-      <DataTable title="Payments" headers={["Paid on", "Receipt", "Amount", "Status"]} rows={statement.data.payments.map((item) => [item.paidOn, item.receiptNo ?? "Unavailable", money(item.amountCents), item.status.replace(/_/g, " ")])} />
+      <DataTable title="Fees" headers={["Item", "Category", "Amount"]} rows={statement.data.items.map((item) => [item.name, formatDisplayLabel(item.category), money(item.amountCents)])} />
+      <DataTable title="Installment schedule" headers={["Installment", "Due date", "Amount", "Paid", "Status"]} rows={statement.data.installments.map((item) => [item.label, item.dueDate, money(item.amountCents), money(item.paidCents), formatDisplayLabel(item.status)])} />
+      <DataTable title="Payments" headers={["Paid on", "Receipt", "Amount", "Status"]} rows={statement.data.payments.map((item) => [item.paidOn, item.receiptNo ?? "Unavailable", money(item.amountCents), formatDisplayLabel(item.status)])} />
     </>}
   </>;
 }

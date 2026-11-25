@@ -22,6 +22,7 @@ import { TableActionButton, TableActionGroup } from "@/components/ui/TableAction
 import { useClientPagination } from "@/components/ui/useClientPagination";
 import { LivePaymentPlans } from "@/features/operations/LivePaymentPlans";
 import { centavos, format, parse } from "@/lib/money";
+import { formatDisplayLabel } from "@/lib/status";
 
 function FinanceSettingsHeader({ title, editable, section }: { title: string; editable: boolean; section: "fees" | "plans" }) {
   return <>
@@ -185,7 +186,7 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
             </tr></thead>
             <tbody>{pagination.items.map((item) => <tr key={item.id} className="border-b last:border-0">
               <td className="px-3 py-2">{item.name}</td>
-              <td className="px-3 py-2">{item.category}</td>
+              <td className="px-3 py-2">{formatDisplayLabel(item.category)}</td>
               <td className="px-3 py-2 text-right font-mono">{format(centavos(item.amountCents))}</td>
               <td className="px-3 py-2">{item.required ? "Yes" : "No"}</td>
               <td className="px-3 py-2 font-mono">{item.version}</td>
