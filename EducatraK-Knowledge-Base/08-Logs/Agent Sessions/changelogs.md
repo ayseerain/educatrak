@@ -3481,3 +3481,19 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Summary:** The live School Settings grade endpoint and live student-record-options endpoint now ensure the fixed Kinder–Grade 12 catalogue before reading it. This makes existing partial databases recover their missing defaults as soon as a live workflow requests grades, while the migration remains the durable deployment backfill. Also corrected backup-destination validation order: an in-application path is rejected as unsafe before writability is considered, fixing the previously failing backend test.
 - **Files:** Updated `backend/app/Http/Controllers/Api/SchoolStructureSettingsController.php`, `backend/app/Http/Controllers/Api/StudentController.php`, `backend/app/Services/DatabaseBackupService.php`, `backend/tests/Feature/{SchoolStructureSettingsTest,StudentAccessTest}.php`, the issue tracker, and this changelog.
 - **Validation:** Focused Laravel coverage passed (33 tests / 283 assertions). Full Laravel suite passed (220 tests / 1,975 assertions, 2 skipped). Full Vitest suite passed. Frontend production build passed. Pint and `git diff --check` passed. The separate `npm run verify:production-assets` scan still reports MockDB fixture markers in the production bundle; it is a pre-existing tracked issue outside the live-grade workflow.
+
+### Tuesday, November 24, 2026 — 10:02:17 +08:00 | Normalize displayed finance and account labels
+
+- **Agent:** Codex
+- **Summary:** Added a shared display-only sentence-case formatter for stored enum values. The Accounting Fees category column now shows `Tuition`, `Miscellaneous`, and `Other`; the same presentation is applied to billing-account fee categories and adjustment types, student-statement screen/print/CSV categories and statuses, payment-detail metrics and exports, and void-request decisions. Persisted/API values and filtering semantics are unchanged.
+- **Files:** Updated `frontend/src/lib/status.ts`, `frontend/src/features/{operations/LiveFinanceSettingsPage.tsx,operations/LivePaymentsPage.tsx,operations/LiveVoidsPage.tsx,billing/LiveBillingAccounts.tsx,reports/LiveStudentStatement.tsx}`, `frontend/src/test/liveFinanceSettings.test.tsx`; added `frontend/src/test/status.test.ts`; updated this changelog.
+- **Validation:** `npx vitest run src/test/status.test.ts src/test/liveFinanceSettings.test.tsx` passed (2 files / 6 tests). `npx vitest run src/test/liveBillingAccounts.test.tsx src/test/liveStudentStatement.test.tsx` passed (2 files / 7 tests). `npx tsc -b --noEmit`, Impeccable detector (`[]`), and `git diff --check` passed. `npm run build` was started twice but exceeded the available 30-second command window before a final result was returned, so no build pass is claimed.
+- **Follow-ups:** None. The production build result should be collected in an environment that permits waiting beyond 30 seconds if release validation requires it.
+
+### Tuesday, November 24, 2026 — 10:05:33 +08:00 | Extend enum label casing to daily payment reporting
+
+- **Agent:** Codex
+- **Summary:** Extended the same display-only formatter to the Daily Report’s on-screen, printed, and CSV payment-method/status and void-decision cells, and to the live Payments table’s Method cell. This completes the observed cross-role report/account surfaces without mutating stored values.
+- **Files:** Updated `frontend/src/features/{operations/LivePaymentsPage.tsx,reports/LiveDailyReport.tsx}` and this changelog.
+- **Validation:** `npx vitest run src/test/status.test.ts src/test/liveFinanceSettings.test.tsx src/test/liveBillingAccounts.test.tsx src/test/liveStudentStatement.test.tsx src/test/liveDailyReport.test.tsx` passed (5 files / 16 tests). `npx tsc -b --noEmit`, `git diff --check`, and the Impeccable detector (`[]`) passed.
+- **Follow-ups:** The frontend production build remains unverified in this session because its final output did not return within the available 30-second command window.
