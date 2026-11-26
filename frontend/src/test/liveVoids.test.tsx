@@ -42,9 +42,10 @@ describe("live void approval queue", () => {
     expect(screen.getByText("Duplicate entry during handover")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Approve" }));
     await user.type(screen.getByLabelText("Decision note"), "Verified duplicate receipt.");
-    await user.click(screen.getByRole("button", { name: "Confirm" }));
+    await user.click(screen.getByRole("button", { name: "Approve" }));
 
-    await waitFor(() => expect(screen.getByText("approved")).toBeInTheDocument());
+    await user.click(await screen.findByRole("tab", { name: /Void history/ }));
+    await waitFor(() => expect(screen.getByText("Approved")).toBeInTheDocument());
     expect(screen.getByText("Verified duplicate receipt.")).toBeInTheDocument();
   });
 

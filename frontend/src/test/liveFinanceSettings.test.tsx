@@ -37,7 +37,7 @@ describe("live finance settings", () => {
     renderSettings("fees");
 
     expect(screen.getByRole("heading", { name: "Fees" })).toBeInTheDocument();
-    expect(await screen.findByText("Grade 4 sample schedule")).toBeInTheDocument();
+    expect(await screen.findByText(/Grade 4 sample schedule/, { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText("Tuition")).toBeInTheDocument();
     expect(screen.queryByText("tuition")).not.toBeInTheDocument();
     expect(screen.getByText("₱2,500.00")).toBeInTheDocument();

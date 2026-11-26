@@ -1204,8 +1204,8 @@ describe("operational page navigation", () => {
   it("shows only permitted primary pages for each of the six account roles", () => {
     const expectedLinks = new Map<AuthenticatedUser, string[]>([
       [{ id: "super-admin", name: "Morgan Super Admin", role: "super_admin" }, ["Dashboard", "Users", "Audit", "Security", "Backups"]],
-      [cashier, ["Dashboard", "Students", "Accounts", "Payments", "Follow-up", "Close-out"]],
-      [accounting, ["Dashboard", "Accounts", "Payment review", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Follow-up"]],
+      [cashier, ["Dashboard", "Students", "Accounts", "Payments", "Notifications", "Close-out"]],
+      [accounting, ["Dashboard", "Accounts", "Payments", "Finance", "Settings", "Void requests", "Close-out review", "Reports", "Notifications"]],
       [administrator, ["Dashboard", "Users", "Settings", "Backups", "Security"]],
       [auditor, ["Dashboard", "Audit"]],
       [registrar, ["Dashboard", "Students"]],
@@ -1230,7 +1230,7 @@ describe("operational page navigation", () => {
     cashierPage.unmount();
 
     render(<MemoryRouter><PaymentsPage user={accounting} /></MemoryRouter>);
-    expect(screen.getByRole("heading", { name: "Payment review" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Payments" })).toBeInTheDocument();
   });
 
   it("shows grade, section, and a prominent email status on the MockDB payment detail", () => {

@@ -136,10 +136,13 @@ function FeeSchedulesTable({
   onDeactivate: (item: FinanceFeeSchedule["items"][number]) => void;
   isDeactivating: boolean;
 }) {
+  const [selectedScheduleId, setSelectedScheduleId] = useState("");
+  const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) ?? schedules[0];
   if (schedules.length === 0) return <EmptyState message="No fee schedules are configured." />;
 
-  return <div className="grid gap-4">
-    {schedules.map((schedule) => <FeeScheduleCard key={schedule.id} schedule={schedule} editable={editable} onAdd={onAdd} onEdit={onEdit} onDeactivate={onDeactivate} isDeactivating={isDeactivating} />)}
+  return <div className="space-y-4">
+    <div className="max-w-sm"><label className="block text-sm font-medium" htmlFor="fee-grade-selector">Grade level</label><DropdownSelect id="fee-grade-selector" aria-label="Grade level" value={selectedSchedule?.id ?? ""} options={schedules.map((schedule) => ({ value: schedule.id, label: `${schedule.gradeLevel} · ${schedule.schoolYear}` }))} onChange={setSelectedScheduleId} className="mt-1 w-full" align="start" /></div>
+    {selectedSchedule && <FeeScheduleCard schedule={selectedSchedule} editable={editable} onAdd={onAdd} onEdit={onEdit} onDeactivate={onDeactivate} isDeactivating={isDeactivating} />}
   </div>;
 }
 
@@ -155,11 +158,10 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
   return <Card className="overflow-x-auto">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-text-primary">{schedule.name}</h2>
-          <p className="mt-1 text-sm text-text-secondary">{schedule.schoolYear} · {schedule.gradeLevel}</p>
+          <div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-semibold text-text-primary">{schedule.gradeLevel}</h2><StatusBadge status={schedule.active ? "active" : "inactive"} /></div>
+          <p className="mt-1 text-sm text-text-secondary">{schedule.name} · {schedule.schoolYear}</p>
         </div>
         <div className="flex items-center gap-2">
-          <StatusBadge status={schedule.active ? "active" : "inactive"} />
           {editable && schedule.active && <Button type="button" size="sm" onClick={() => onAdd(schedule)}>Add fee item</Button>}
         </div>
       </div>
@@ -193,7 +195,7 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
               <td className="px-3 py-2"><StatusBadge status={schedule.active && item.active ? "active" : "inactive"} /></td>
               {editable && <td className="px-3 py-2"><TableActionGroup>
                 <TableActionButton icon={Pencil} label="Edit" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onEdit(schedule, item)} />
-                <TableActionButton icon={CircleOff} label="Deactivate" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onDeactivate(item)} />
+                <TableActionButton icon={CircleOff} label="Deactivate" variant="destructive" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onDeactivate(item)} />
               </TableActionGroup></td>}
             </tr>)}</tbody>
           </table>}

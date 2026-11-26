@@ -152,10 +152,10 @@ describe("live cashier payment entry", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/payments/payment-1"]}><Routes><Route path="/payments/:id" element={<LivePaymentsPage user={administrator} detail />} /></Routes></MemoryRouter></QueryClientProvider>);
 
-    expect(await screen.findByRole("heading", { name: "Receipt notification status" })).toBeInTheDocument();
+    expect(await screen.findByText("Receipt notifications")).toBeInTheDocument();
     expect(screen.getByText("Queued").parentElement).toHaveClass("text-xs", "font-semibold");
     expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
-    expect(screen.getByText("payment recorded")).toBeInTheDocument();
+    expect(screen.getByText("Payment recorded")).toBeInTheDocument();
     expect(getPayment).toHaveBeenCalledWith("payment-1");
   });
 

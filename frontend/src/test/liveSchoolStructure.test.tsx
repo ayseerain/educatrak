@@ -67,6 +67,7 @@ describe("live school structure settings", () => {
   });
 
   it("shows years, terms, exam periods, grades and sections read-only to Accounting", async () => {
+    const user = userEvent.setup();
     const fetchMock = stubApi();
     renderSchool(false);
 
@@ -75,7 +76,10 @@ describe("live school structure settings", () => {
     expect(screen.getByText(/dates locked by billing accounts/)).toBeInTheDocument();
     expect(screen.getByText("First term (sample)")).toBeInTheDocument();
     expect(screen.getByText("Midterm (sample)")).toBeInTheDocument();
-    expect(await screen.findByText("Grade 7")).toBeInTheDocument();
+    await screen.findByRole("button", { name: "Grade level" });
+    await user.click(screen.getByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+    expect(screen.getAllByText("Grade 7")).toHaveLength(2);
     expect(screen.getByText("Maple (sample)")).toBeInTheDocument();
     expect(screen.getByText("You have read-only access to these settings.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /add|edit|make current/i })).not.toBeInTheDocument();
@@ -185,6 +189,8 @@ describe("live school structure settings", () => {
     const fetchMock = stubApi((url, options) => url === "/api/settings/sections/70" && options?.method === "PATCH" ? json(200, { data: {} }) : undefined);
     renderSchool(true);
 
+    await user.click(await screen.findByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
     await user.click(await screen.findByRole("button", { name: "Edit section Olive (sample) in Grade 7" }));
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByLabelText(/^Active/));

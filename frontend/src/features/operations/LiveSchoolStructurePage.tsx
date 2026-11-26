@@ -31,6 +31,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TableActionButton, TableActionGroup } from "@/components/ui/TableActionButton";
+import { useClientPagination } from "@/components/ui/useClientPagination";
 import { SystemSettingsTabs } from "@/features/operations/LiveSystemSettingsPage";
 import { formatDate } from "@/lib/dates";
 
@@ -270,6 +271,11 @@ function SchoolYearCard({ year, editable, open }: { year: SchoolYear; editable: 
 }
 
 function GradeLevelsCard({ grades, editable, open }: { grades: GradeLevel[]; editable: boolean; open: (spec: FormDialogSpec) => void }) {
+  const [selectedGradeId, setSelectedGradeId] = useState("");
+  const selectedGrade = grades.find((grade) => grade.id === selectedGradeId) ?? grades[0];
+  useEffect(() => {
+    if (selectedGrade && selectedGrade.id !== selectedGradeId && !grades.some((grade) => grade.id === selectedGradeId)) setSelectedGradeId(selectedGrade.id);
+  }, [grades, selectedGrade, selectedGradeId]);
   const addSection = () => open({
     title: "Add section",
     description: "Add a section to one of the school's predefined grade levels.",
@@ -294,28 +300,28 @@ function GradeLevelsCard({ grades, editable, open }: { grades: GradeLevel[]; edi
     </div>
     {grades.length === 0
       ? <div className="mt-4"><EmptyState message="No grade levels are configured." /></div>
-      : <table className="mt-4 w-full min-w-[360px] table-fixed border-collapse text-left text-sm">
-          <caption className="sr-only">Grade levels and their sections</caption>
+      : <><div className="mt-4 max-w-sm"><label className="block text-sm font-medium" htmlFor="school-grade-selector">Grade level</label><DropdownSelect id="school-grade-selector" aria-label="Grade level" value={selectedGrade?.id ?? ""} options={grades.map((grade) => ({ value: grade.id, label: grade.name }))} onChange={setSelectedGradeId} className="mt-1 w-full" align="start" /></div><table className="mt-4 w-full min-w-[360px] table-fixed border-collapse text-left text-sm">
+          <caption className="sr-only">Selected grade level and its sections</caption>
           <thead><tr className="border-b border-border text-xs font-semibold text-text-secondary">
             <th scope="col" className="w-[28%] px-3 py-2">Grade level</th>
             <th scope="col" className="px-3 py-2">Sections</th>
             <th scope="col" className="w-[22%] px-3 py-2">Status</th>
           </tr></thead>
-          <tbody>{grades.map((grade) => <tr key={grade.id} className="border-b align-top last:border-0">
-            <th scope="row" className="px-3 py-2 text-left font-medium">{grade.name}</th>
-            <td className="px-3 py-2">{grade.sections.length === 0
+          <tbody>{selectedGrade && <tr key={selectedGrade.id} className="border-b align-top last:border-0">
+            <th scope="row" className="px-3 py-2 text-left font-medium">{selectedGrade.name}</th>
+            <td className="px-3 py-2">{selectedGrade.sections.length === 0
               ? <span className="text-text-secondary">No sections</span>
-              : <ul className="space-y-1">{grade.sections.map((section) => <li key={section.id} className="flex flex-wrap items-center gap-2">
+              : <ul className="space-y-1">{selectedGrade.sections.map((section) => <li key={section.id} className="flex flex-wrap items-center gap-2">
                   <span>{section.name}</span>
                   {!section.active && <StatusBadge status="inactive" />}
-                  {editable && <TableActionButton icon={Pencil} label="Edit" variant="neutral" aria-label={`Edit section ${section.name} in ${grade.name}`} onClick={() => open({
-                    title: `Edit section ${section.name}`, description: `${grade.name}.`, submitLabel: "Save changes", mode: "edit",
+                  {editable && <TableActionButton icon={Pencil} label="Edit" variant="neutral" aria-label={`Edit section ${section.name} in ${selectedGrade.name}`} onClick={() => open({
+                    title: `Edit section ${section.name}`, description: `${selectedGrade.name}.`, submitLabel: "Save changes", mode: "edit",
                     fields: sectionFields(section), submit: (body) => updateSection(section.id, body),
                   })} />}
                 </li>)}</ul>}</td>
-            <td className="px-3 py-2"><StatusBadge status={grade.active ? "active" : "inactive"} /></td>
-          </tr>)}</tbody>
-        </table>}
+            <td className="px-3 py-2"><StatusBadge status={selectedGrade.active ? "active" : "inactive"} /></td>
+          </tr>}</tbody>
+        </table></>}
   </Card>;
 }
 
@@ -323,6 +329,7 @@ export function LiveSchoolStructurePage({ editable }: { editable: boolean }) {
   const [dialog, setDialog] = useState<FormDialogSpec | null>(null);
   const years = useQuery({ queryKey: ["school-structure", "years"], queryFn: listSchoolYears });
   const grades = useQuery({ queryKey: ["school-structure", "grades"], queryFn: listGradeLevels });
+  const yearPagination = useClientPagination(years.data ?? [], "school years");
 
   return <>
     <PageHeader
@@ -342,7 +349,7 @@ export function LiveSchoolStructurePage({ editable }: { editable: boolean }) {
       {years.isError && <ErrorState message={years.error.message} onRetry={() => void years.refetch()} />}
       {years.data && (years.data.length === 0
         ? <EmptyState message="No school years are configured." />
-        : <div className="grid gap-4">{years.data.map((year) => <SchoolYearCard key={year.id} year={year} editable={editable} open={setDialog} />)}</div>)}
+        : <><div className="grid gap-4">{yearPagination.items.map((year) => <SchoolYearCard key={year.id} year={year} editable={editable} open={setDialog} />)}</div>{yearPagination.controls}</>)}
     </section>
     {grades.isPending && <LoadingState message="Loading grade levels…" layout="table" columns={4} />}
     {grades.isError && <ErrorState message={grades.error.message} onRetry={() => void grades.refetch()} />}

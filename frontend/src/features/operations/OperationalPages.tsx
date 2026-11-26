@@ -1192,7 +1192,7 @@ export function PaymentsPage({
   return (
     <>
       <PageHeader
-        title={user.role === "accounting" ? "Payment review" : "Payments"}
+        title="Payments"
         description={
           user.role === "cashier"
             ? "Your recorded payments are shown by default."
@@ -1955,7 +1955,7 @@ export function FollowupPage({ user, workspaceSwitch }: { user: AuthenticatedUse
   return (
     <>
       <PageHeader
-        title="Follow-up"
+        title="Notifications"
         description="Review reminder activity and notification history without merging their records."
         action={
           can(user, "followup.send") ? (
@@ -2574,7 +2574,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
   return (
     <>
       <PageHeader
-        title="Follow-up"
+        title="Notifications"
         description="View email and SMS notification attempts, including any configured SMS load fee."
       />
       {workspaceSwitch}
@@ -2605,7 +2605,7 @@ export function MockNotificationsPage({ user, workspaceSwitch }: { user: Authent
 }
 /** Opening-balance ledger import. It talks to the live API only; the MockDB has no ledger-import model. */
 export function ImportPage({ user, detail = false }: { user: AuthenticatedUser; detail?: boolean }) {
-  if (!isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Opening-balance import" feature="Opening-balance import" />;
+  if (!isLiveCashierApiEnabled()) return <UnavailableFeaturePage title="Import" feature="opening-balance import" />;
   return detail ? <LedgerImportDetailPage user={user} /> : <LedgerImportListPage user={user} />;
 }
 
