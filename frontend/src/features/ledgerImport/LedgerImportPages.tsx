@@ -130,7 +130,7 @@ export function LedgerImportListPage({ user }: { user: AuthenticatedUser }) {
   return (
     <>
       <PageHeader
-        title="Opening-balance import"
+        title="Import"
         description={canPrepare ? "Upload a ledger CSV, check every row, and submit it for Accounting review." : "Review submitted opening-balance batches and record their eligible rows."}
       />
       {batches.isPending && <LoadingState message="Loading import batches…" layout="table" columns={5} />}
