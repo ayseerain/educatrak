@@ -229,3 +229,9 @@ Recorded Monday, November 23, 2026 — 23:50:47 +08:00. This was a disposable te
 - No measurement of restore time at realistic size.
 - No test on the office computer.
 - MariaDB's `mysqldump` (for example from XAMPP) does not accept `--set-gtid-purged`; use the MySQL client tools that match the server.
+
+### MariaDB archive-migration rehearsal — Thursday, November 26, 2026 — 20:30:50 +08:00
+
+The Phase 5C-M2 disposable MariaDB 10.11.19 rehearsal established that Laravel's `mysql` driver does not identify the dump executable. The installed MariaDB `mysqldump.exe` rejects MySQL's `--set-gtid-purged=OFF`. `DatabaseBackupService` now checks the configured executable's `--version` output: it keeps that option for MySQL dump tools, omits it for MariaDB dump tools, and refuses an unrecognized tool. Existing destination, credential-file, lock, checksum, audit and disabled-rotation protections remain in place. A fictional application backup from an isolated MariaDB process restored into a separate disposable database with matching core counts, financial sums and relationships; details are in `10-Quality-Audits/Phase-5C-M2-Migration-Safety-Readiness.md`.
+
+The existing `educatrak` target still has the backup-attempt metadata migration pending. The application backup service writes those new columns after a dump, so it cannot be the target's **pre-migration** backup method. Before any target migration, use an owner-approved native MariaDB dump with a protected, short-lived client option file and an absolute destination outside the repository, verify SHA-256, and prove restore to a separately named disposable database. Confirm the source, destination, operator and procedure before reading target contents. The old MySQL 9.7 test above remains historical evidence for MySQL only; its instruction to use MySQL tools is superseded for MariaDB by this verified MariaDB procedure.

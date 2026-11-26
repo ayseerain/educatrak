@@ -1,5 +1,7 @@
 # EducaTrak executable-schema data dictionary
 
+> **Phase 5C-B pending migration, November 26, 2026:** `backend/database/migrations/2026_11_26_175138_add_archive_state_to_school_years_and_sections.php` adds nullable, indexed `archived_at` timestamps to `school_years` and `sections` only. Existing rows stay unarchived. `sections.active` remains independent; term/exam/student/financial FKs and monetary columns are unchanged. This schema was exercised only in PHPUnit's in-memory SQLite; the owner's existing MySQL has not been migrated. The older executable-schema inventory below describes the pre-migration baseline.
+
 **Status:** derived from the 12 EducaTrak domain migrations and Laravel support migrations at `feature/backend-foundation` / `124a78637e36ee91fd0b3a126813b5a394305ab6`. Ordered migrations are authoritative. No development, shared, or production database was inspected or migrated. This is not an approved target-schema specification.
 
 ## Conventions and boundaries

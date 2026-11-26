@@ -1,5 +1,22 @@
 # Backend API Contract — current feature/backend-foundation snapshot
 
+## Phase 5C-B archive contract (prepared; existing MySQL migration pending)
+
+The scoped implementation adds these authenticated routes without changing existing capability assignments:
+
+| Method and path | Input and output | Access and errors |
+| --- | --- | --- |
+| `GET /api/settings/school-years` | Optional `view=all|active|archived`; default `all` retains older clients. Each year retains existing fields and adds nullable ISO `archivedAt`; attached `terms.examPeriods` remain in the response. | `settings.system.view` (Administrator and Accounting). Invalid view: 422. |
+| `POST /api/settings/school-years/{schoolYear}/archive` | No body; 200 `{data: schoolYear}` with non-null `archivedAt`. Same ID, linked records and `current=false`. | `settings.system.manage` (Administrator). Current or already archived: 409; absent ID: 404; denied: 403. |
+| `POST /api/settings/school-years/{schoolYear}/restore` | No body; 200 `{data: schoolYear}` with `archivedAt=null` and `current=false`. | Same access; not archived: 409. Does not make current. |
+| `GET /api/settings/grade-levels` | Optional `section_view=all|active|archived`; default `all`. Every grade remains in canonical order; its `sections` array is filtered. Each section retains `active` and adds nullable ISO `archivedAt`. | `settings.system.view`; invalid view: 422. Here `active` means unarchived, including inactive sections; it does not override the separate `active` boolean. |
+| `POST /api/settings/sections/{section}/archive` | No body; 200 `{data: section}` with non-null `archivedAt`; `active` unchanged. | `settings.system.manage`; assigned students or already archived: 409. Reassign students first. |
+| `POST /api/settings/sections/{section}/restore` | No body; 200 `{data: section}` with `archivedAt=null`; prior `active` unchanged. | Same access; not archived: 409. |
+
+While a year is archived, `PATCH /api/settings/school-years/{schoolYear}` accepts audited label correction but rejects date keys with 409; make-current and term/exam mutations also return 409. Existing 422 date-lock and case-insensitive name/label validation remain. Archived section names remain reserved and can be corrected through the audited existing PATCH, but `active` changes require restore. Student record options exclude inactive or archived sections. Direct new student assignments to those sections return 422; unrelated edits retaining an existing section link remain allowed. The archive events use `school_year.archived`, `school_year.restored`, `section.archived`, and `section.restored` with actor, timestamp, and before/after state. Historical collection and outstanding report routes retain their prior filters, rows, totals, and permissions regardless of year archive state.
+
+The migration file adds nullable indexed `archived_at` to `school_years` and `sections`. It has **not** been applied to the owner's existing MySQL database; these routes require a separately approved deployment migration before live use. The older snapshot inventory below is retained as historical evidence and does not describe this new route set.
+
 > Current evidence is in the 2026-11-09 reconciliation section. The original nine-route inventory below is retained as historical Part 1 evidence at `ae6fcee9d9edc6f592ce4e18611f995c0f00e458`; it is superseded by the current 51-route inventory below.
 
 ## Status and scope
