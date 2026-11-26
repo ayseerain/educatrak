@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\Installment;
 use App\Models\NotificationLog;
@@ -142,6 +143,60 @@ class DashboardTest extends TestCase
             ->assertJsonMissingPath('data.recentActivity');
     }
 
+    public function test_governance_and_audit_dashboards_return_role_safe_activity_projections(): void
+    {
+        $superAdmin = User::factory()->create(['role' => UserRole::SuperAdmin, 'full_name' => 'Morgan Governance (sample)']);
+        $administrator = User::factory()->create(['role' => UserRole::Admin, 'full_name' => 'Jordan Administrator (sample)']);
+        $auditor = User::factory()->create(['role' => UserRole::Auditor]);
+        User::factory()->create(['role' => UserRole::Cashier]);
+        User::factory()->create(['role' => UserRole::Accounting]);
+        User::factory()->create(['role' => UserRole::Registrar]);
+        User::factory()->inactive()->create(['role' => UserRole::Cashier]);
+        SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => true]);
+
+        $this->createAuditEntry($administrator, 'system_settings.updated', '2026-10-24 08:00:00');
+        $this->createAuditEntry($administrator, 'auth.login', '2026-10-24 09:00:00');
+        $financialAudit = $this->createAuditEntry($administrator, 'payment.recorded', '2026-10-24 10:00:00');
+
+        $this->actingAs($administrator)->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.role', 'admin')
+            ->assertJsonPath('data.staffAccounts.active', 6)
+            ->assertJsonPath('data.staffAccounts.inactive', 1)
+            ->assertJsonPath('data.staffAccounts.privileged', 2)
+            ->assertJsonPath('data.staffAccounts.byRole.0.role', 'super_admin')
+            ->assertJsonPath('data.staffAccounts.byRole.1.role', 'administrator')
+            ->assertJsonPath('data.staffAccounts.byRole.1.count', 1)
+            ->assertJsonPath('data.configuration.schoolYear', 'SY 2026-2027')
+            ->assertJsonPath('data.configuration.gradeLevelCount', 13)
+            ->assertJsonPath('data.configuration.paymentMethodCount', 1)
+            ->assertJsonPath('data.recentAdministrativeActivity.0.label', 'System Settings Updated')
+            ->assertJsonPath('data.securityEvents.0.label', 'Auth Login')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.0.before')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.0.after')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.0.amount_cents')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.2');
+
+        $this->actingAs($superAdmin)->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.staffAccounts.byRole.1.role', 'administrator')
+            ->assertJsonPath('data.recentAdministrativeActivity.0.id', (string) $financialAudit->id)
+            ->assertJsonPath('data.recentAdministrativeActivity.0.label', 'Payment Recorded')
+            ->assertJsonPath('data.securityEvents.0.label', 'Auth Login')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.0.before')
+            ->assertJsonMissingPath('data.recentAdministrativeActivity.0.after')
+            ->assertJsonMissingPath('data.todayCollectionsTotal')
+            ->assertJsonMissingPath('data.collectionTrend');
+
+        $this->actingAs($auditor)->getJson('/api/dashboard?range=today')
+            ->assertOk()
+            ->assertJsonPath('data.recentAuditActivity.0.id', (string) $financialAudit->id)
+            ->assertJsonPath('data.recentAuditActivity.0.actor', 'Jordan Administrator (sample)')
+            ->assertJsonPath('data.recentAuditActivity.0.label', 'Payment Recorded')
+            ->assertJsonMissingPath('data.recentAuditActivity.0.before')
+            ->assertJsonMissingPath('data.recentAuditActivity.0.after');
+    }
+
     public function test_registrar_receives_a_limited_dashboard_and_unknown_ranges_are_rejected(): void
     {
         $registrar = User::factory()->create(['role' => UserRole::Registrar]);
@@ -218,6 +273,19 @@ class DashboardTest extends TestCase
             'status' => $status,
             'recorded_by' => $cashier->id,
             'recorded_at' => Carbon::parse($date.' 09:00:00', 'Asia/Manila'),
+        ]);
+    }
+
+    private function createAuditEntry(User $user, string $action, string $occurredAt): AuditEntry
+    {
+        return AuditEntry::query()->forceCreate([
+            'user_id' => $user->id,
+            'action' => $action,
+            'entity_type' => $user->getMorphClass(),
+            'entity_id' => (string) $user->id,
+            'before' => ['amount_cents' => 100],
+            'after' => ['amount_cents' => 200],
+            'occurred_at' => $occurredAt,
         ]);
     }
 }

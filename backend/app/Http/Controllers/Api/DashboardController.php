@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditEntry;
 use App\Models\BillingAccount;
 use App\Models\CloseOut;
+use App\Models\GradeLevel;
 use App\Models\Installment;
 use App\Models\NotificationLog;
 use App\Models\Payment;
@@ -16,10 +18,34 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
+    private const SecurityAuditActions = [
+        'auth.login',
+        'auth.login_failed',
+        'auth.logout',
+        'auth.change_password',
+        'user.created',
+        'user.updated',
+        'user.password_reset',
+        'user.archived',
+        'user.restored',
+        'user.super_admin_bootstrapped',
+    ];
+
+    private const AdministrativeAuditActionPrefixes = [
+        'user.',
+        'system_settings.',
+        'school_year.',
+        'term.',
+        'exam_period.',
+        'grade_level.',
+        'section.',
+    ];
+
     public function show(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -145,8 +171,7 @@ class DashboardController extends Controller
     private function systemSummary(string $role): array
     {
         $backup = DB::table('backup_records')->orderByDesc('completed_at')->first();
-
-        return [
+        $summary = [
             'role' => $role,
             'lastBackupAt' => $backup?->completed_at,
             'lastBackupSucceeded' => match ($backup?->result) {
@@ -155,6 +180,23 @@ class DashboardController extends Controller
                 default => null,
             },
             'activeUserCount' => User::query()->where('active', true)->count(),
+        ];
+
+        if ($role === 'super_admin') {
+            return [
+                ...$summary,
+                'staffAccounts' => $this->staffAccountSummary(),
+                'recentAdministrativeActivity' => $this->dashboardAuditActivity(),
+                'securityEvents' => $this->dashboardAuditActivity(self::SecurityAuditActions),
+            ];
+        }
+
+        return [
+            ...$summary,
+            'staffAccounts' => $this->staffAccountSummary(),
+            'configuration' => $this->configurationSummary(),
+            'recentAdministrativeActivity' => $this->dashboardAuditActivity([], self::AdministrativeAuditActionPrefixes),
+            'securityEvents' => $this->dashboardAuditActivity(self::SecurityAuditActions),
         ];
     }
 
@@ -170,7 +212,80 @@ class DashboardController extends Controller
             'paymentsTodayCount' => $todayPayments->where('status', '!=', 'voided')->count(),
             'rangeCollectionsTotal' => (int) $rangePayments->where('status', '!=', 'voided')->sum('amount_cents'),
             'paymentsInRangeCount' => $rangePayments->where('status', '!=', 'voided')->count(),
+            'recentAuditActivity' => $this->dashboardAuditActivity(),
         ];
+    }
+
+    private function staffAccountSummary(): array
+    {
+        $roleCounts = User::query()
+            ->select('role', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('role')
+            ->pluck('aggregate', 'role');
+        $roles = [
+            'super_admin' => 'super_admin',
+            'admin' => 'administrator',
+            'accounting' => 'accounting',
+            'cashier' => 'cashier',
+            'auditor' => 'auditor',
+            'registrar' => 'registrar',
+        ];
+
+        return [
+            'active' => User::query()->where('active', true)->count(),
+            'inactive' => User::query()->where('active', false)->count(),
+            'privileged' => User::query()
+                ->where('active', true)
+                ->whereIn('role', ['super_admin', 'admin'])
+                ->count(),
+            'byRole' => collect($roles)
+                ->map(fn (string $dashboardRole, string $storedRole): array => [
+                    'role' => $dashboardRole,
+                    'count' => (int) ($roleCounts->get($storedRole) ?? 0),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function configurationSummary(): array
+    {
+        return [
+            'schoolYear' => SchoolYear::query()->where('is_current', true)->value('label'),
+            'gradeLevelCount' => GradeLevel::query()->count(),
+            'paymentMethodCount' => 1,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $actions
+     * @param  list<string>  $actionPrefixes
+     * @return list<array{id: string, label: string, actor: ?string, occurredAt: string}>
+     */
+    private function dashboardAuditActivity(array $actions = [], array $actionPrefixes = []): array
+    {
+        return AuditEntry::query()
+            ->leftJoin('users as actors', 'audit_entries.user_id', '=', 'actors.id')
+            ->select(['audit_entries.*', 'actors.full_name as actor_name', 'actors.username as actor_username'])
+            ->when($actions !== [], fn ($query) => $query->whereIn('audit_entries.action', $actions))
+            ->when($actionPrefixes !== [], function ($query) use ($actionPrefixes): void {
+                $query->where(function ($matches) use ($actionPrefixes): void {
+                    foreach ($actionPrefixes as $prefix) {
+                        $matches->orWhere('audit_entries.action', 'like', $prefix.'%');
+                    }
+                });
+            })
+            ->latest('audit_entries.occurred_at')
+            ->latest('audit_entries.id')
+            ->limit(8)
+            ->get()
+            ->map(fn (AuditEntry $entry): array => [
+                'id' => (string) $entry->id,
+                'label' => Str::headline(str_replace('.', ' ', $entry->action)),
+                'actor' => $entry->actor_name ?: $entry->actor_username,
+                'occurredAt' => $entry->occurred_at->toISOString(),
+            ])
+            ->all();
     }
 
     private function paymentsInRange(CarbonImmutable $start, CarbonImmutable $end, ?User $cashier = null)
