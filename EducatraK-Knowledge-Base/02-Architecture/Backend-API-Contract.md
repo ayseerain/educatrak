@@ -152,7 +152,7 @@ for follow-up rather than implied.
 | 3 | `GET /api/auth/me` | No input; 200 `{data: profile}` with `id`, `username`, `fullName`, `role`, `active`, `isProtected`, `mustChangePassword`, `lastLoginAt`, `capabilities`. | `auth:sanctum`, `active.user`; `AuthController::me`; `AuthenticationTest::test_user_can_log_in_and_read_their_profile`. |
 | 4 | `POST /api/auth/logout` | No body; 204 empty. | Auth + active; `AuthController::logout`; `auth.logout` audit. `AuthenticationTest::test_authenticated_user_can_logout_through_the_session_guard`. |
 | 5 | `POST /api/auth/change-password` | Required `current_password` checked against web guard; required string password min 12 with matching `password_confirmation`; 200 `{data: profile}`. | Auth + active; `ChangePasswordRequest`; `auth.change_password` audit. `AuthenticationTest::test_password_change_accepts_the_server_minimum_without_undocumented_character_class_rules`, `::test_temporary_password_users_are_limited_to_session_and_password_change_until_updated`. |
-| 6 | `GET /api/dashboard` | Optional `range` in `today`, `last_7_days`, `last_30_days`, `school_year` (default `last_7_days`); 200 `{data: role-specific summary}`. | Auth + active + password changed; `dashboard.view`; `DashboardController::show`. `DashboardTest::test_cashier_dashboard_uses_own_payments_and_current_school_year_accounts`, `::test_accounting_auditor_and_administrator_summaries_match_their_approved_widgets`, `::test_administrator_backup_widget_handles_missing_and_unknown_results`, `::test_super_admin_dashboard_shows_governance_status_without_financial_fields`, `::test_registrar_receives_a_limited_dashboard_and_unknown_ranges_are_rejected`, `::test_date_ranges_use_inclusive_manila_calendar_day_boundaries`. |
+| 6 | `GET /api/dashboard` | Optional `range` in `today`, `last_7_days`, `last_30_days`, `school_year` (default `last_7_days`); 200 `{data: role-specific summary}`. Super Admin receives governance staff aggregates and redacted audit/security previews; Administrator receives the same staff aggregate plus configuration and redacted administrative/security previews; Auditor receives its existing aggregate plus a redacted audit preview. | Auth + active + password changed; `dashboard.view`; `DashboardController::show`. `DashboardTest::test_cashier_dashboard_uses_own_payments_and_current_school_year_accounts`, `::test_accounting_auditor_and_administrator_summaries_match_their_approved_widgets`, `::test_administrator_backup_widget_handles_missing_and_unknown_results`, `::test_super_admin_dashboard_shows_governance_status_without_financial_fields`, `::test_governance_and_audit_dashboards_return_role_safe_activity_projections`, `::test_registrar_receives_a_limited_dashboard_and_unknown_ranges_are_rejected`, `::test_date_ranges_use_inclusive_manila_calendar_day_boundaries`. |
 | 7 | `GET /api/admin/users` | Optional `query` max 120; `role`; `status` active/inactive/archived; `sort` name/created_at; `direction` asc/desc; `date_from`, `date_to`; `page`; `per_page` 10/25/50 (default 10). Returns `{data,meta}`. | Capability `users.manage`; `UserAdministrationController::index`. `UserAdministrationTest::test_administrator_user_list_filters_ordinary_accounts_by_query_role_and_status` covers the direct list-filter contract. |
 | 8 | `POST /api/admin/users` | Required username max 100/pattern/unique, `full_name` max 255, role enum with actor-based restrictions; nullable unique valid email max 255. 201 `{data: profile,temporaryPassword}`. | `users.manage`; `user.created` audit. `UserAdministrationTest::test_administrator_can_create_a_staff_account_with_a_one_time_temporary_password`, `::test_administrator_cannot_create_or_promote_an_accounting_officer_without_approved_assignment_policy`, `::test_super_admin_can_create_administrators_but_cannot_enter_payment_workflows`. |
 | 9 | `PATCH /api/admin/users/{staffUser}` | Optional `full_name` max 255, nullable valid unique `email`, actor-restricted role enum, boolean `active`; 200 `{data: profile}`. | `users.manage`; before/after audit; protected/self/last-admin safeguards. `UserAdministrationTest::test_administrator_can_update_an_ordinary_user_contract` covers the ordinary update response/persistence/audit contract. |
@@ -213,6 +213,101 @@ for follow-up rather than implied.
 | 71 | `POST /api/billing-accounts` | Required `student_id`, `school_year_id`, `payment_plan_id`; optional `excluded_fee_item_ids[]`. The student must be enrolled with a grade; the year must be current; the plan must be active; exactly one active fee schedule must exist for (year, grade). Only optional active items may be removed. One account per student and year. Total ≥1. 201 with the detail shape of route 34. | `accounts.manage`; `billing_account.created` audit in the same transaction. `BillingAccountCreationTest::test_cashier_creates_an_account_with_fee_snapshots_and_an_exact_installment_schedule`, `::test_optional_fees_are_included_unless_removed_and_rounding_lands_on_the_last_installment`, `::test_duplicate_account_and_invalid_fee_removals_are_rejected`, `::test_inactive_student_non_current_year_inactive_plan_and_ambiguous_schedules_are_rejected`, `::test_account_creation_rolls_back_when_audit_recording_fails`, `::test_only_cashier_can_create_or_preview_accounts`, `::test_a_payment_can_be_recorded_against_a_new_account`. |
 | 72 | `POST /api/billing-accounts/preview` | Same body and rules as route 71; returns items, `totalDueCents` and installments without writing. | `accounts.manage`. `::test_preview_returns_the_schedule_without_writing`. |
 | 73 | `GET /api/billing-accounts/creation-options` | No query. `currentSchoolYear` {id, label}, or null unless exactly one year is current; `paymentPlans` lists active plans only, with version, down payment and installments. Read-only. Added 2026-11-20 by owner decision, so account creators need no `settings.*` read capability. | `accounts.manage`. `BillingAccountCreationTest::test_creation_options_list_the_current_year_and_only_active_plans`, `::test_only_cashier_can_create_or_preview_accounts`. |
+
+### Phase 2A dashboard projection handoff
+
+The following synthetic examples document the additive fields introduced for the
+existing `GET /api/dashboard` route. Each activity item is deliberately
+redacted to `id`, `label`, `actor`, and `occurredAt`; it does not return audit
+`before`/`after` payloads, account identifiers, or money fields. `staffAccounts.byRole`
+uses the frontend role key `administrator` while the persisted Laravel enum
+remains `admin`.
+
+```json
+{
+  "data": {
+    "role": "super_admin",
+    "lastBackupAt": "2026-10-24T03:00:00.000000Z",
+    "lastBackupSucceeded": true,
+    "activeUserCount": 6,
+    "staffAccounts": {
+      "active": 6,
+      "inactive": 1,
+      "privileged": 2,
+      "byRole": [
+        { "role": "super_admin", "count": 1 },
+        { "role": "administrator", "count": 1 },
+        { "role": "accounting", "count": 1 },
+        { "role": "cashier", "count": 2 },
+        { "role": "auditor", "count": 1 },
+        { "role": "registrar", "count": 1 }
+      ]
+    },
+    "recentAdministrativeActivity": [
+      { "id": "9001", "label": "Payment Recorded", "actor": "Jordan Administrator (sample)", "occurredAt": "2026-10-24T02:00:00.000000Z" }
+    ],
+    "securityEvents": [
+      { "id": "9002", "label": "Auth Login", "actor": "Jordan Administrator (sample)", "occurredAt": "2026-10-24T01:00:00.000000Z" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "role": "admin",
+    "lastBackupAt": null,
+    "lastBackupSucceeded": null,
+    "activeUserCount": 6,
+    "staffAccounts": {
+      "active": 6,
+      "inactive": 1,
+      "privileged": 2,
+      "byRole": [
+        { "role": "super_admin", "count": 1 },
+        { "role": "administrator", "count": 1 },
+        { "role": "accounting", "count": 1 },
+        { "role": "cashier", "count": 2 },
+        { "role": "auditor", "count": 1 },
+        { "role": "registrar", "count": 1 }
+      ]
+    },
+    "configuration": {
+      "schoolYear": "SY 2026-2027",
+      "gradeLevelCount": 13,
+      "paymentMethodCount": 1
+    },
+    "recentAdministrativeActivity": [
+      { "id": "9003", "label": "System Settings Updated", "actor": "Jordan Administrator (sample)", "occurredAt": "2026-10-24T00:00:00.000000Z" }
+    ],
+    "securityEvents": []
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "role": "auditor",
+    "overallEnrolledStudents": 0,
+    "todayCollectionsTotal": 0,
+    "paymentsTodayCount": 0,
+    "rangeCollectionsTotal": 0,
+    "paymentsInRangeCount": 0,
+    "recentAuditActivity": [
+      { "id": "9001", "label": "Payment Recorded", "actor": "Jordan Administrator (sample)", "occurredAt": "2026-10-24T02:00:00.000000Z" }
+    ]
+  }
+}
+```
+
+The endpoint, query parameters, 200 response status, authentication middleware,
+and `dashboard.view` capability are unchanged. Super Admin and Auditor use
+their existing governance/audit access; Administrator receives only
+administrative and security activity, not financial audit activity. No frontend
+file changed in this phase; its existing optional fields can consume these
+additive values without a version bump.
 
 **Evidence quality note:** this ledger reflects current validation,
 serialization, audit calls, and named test evidence. A named test may assert
