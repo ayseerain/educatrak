@@ -93,9 +93,9 @@ class StudentController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $attributes = $this->validatedAttributes($request);
-        $attributes['status'] = 'enrolled';
-        $student = DB::transaction(function () use ($attributes, $request): Student {
+        $student = DB::transaction(function () use ($request): Student {
+            $attributes = $this->validatedAttributes($request);
+            $attributes['status'] = 'enrolled';
             $student = Student::query()->create($attributes);
             $this->syncGuardian($request, $student, $request->validated());
             $this->auditLogger->record($request, 'student.created', $student, null, $this->studentAuditData($student));
@@ -119,6 +119,7 @@ class StudentController extends Controller
                 'sections' => Section::query()
                     ->where('grade_level_id', $grade->id)
                     ->where('active', true)
+                    ->whereNull('archived_at')
                     ->orderBy('name')
                     ->get(['id', 'name'])
                     ->map(fn (Section $section): array => ['id' => (string) $section->id, 'name' => $section->name])
@@ -133,9 +134,9 @@ class StudentController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $attributes = $this->validatedAttributes($request);
-        $student = DB::transaction(function () use ($attributes, $request, $student): Student {
+        $student = DB::transaction(function () use ($request, $student): Student {
             $student = Student::query()->lockForUpdate()->findOrFail($student->id);
+            $attributes = $this->validatedAttributes($request, $student);
             $before = $this->studentAuditData($student);
             $student->update($attributes);
             $this->syncGuardian($request, $student, $request->validated());
@@ -149,16 +150,16 @@ class StudentController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function validatedAttributes(UpsertStudentRequest $request): array
+    private function validatedAttributes(UpsertStudentRequest $request, ?Student $student = null): array
     {
         $attributes = $request->validated();
-        $sectionMatchesGrade = Section::query()
-            ->whereKey($attributes['section_id'])
-            ->where('grade_level_id', $attributes['grade_level_id'])
-            ->exists();
+        $section = Section::query()->lockForUpdate()->find($attributes['section_id']);
 
-        if (! $sectionMatchesGrade) {
+        if ($section === null || (int) $section->grade_level_id !== (int) $attributes['grade_level_id']) {
             throw ValidationException::withMessages(['section_id' => 'The selected section does not belong to the selected grade level.']);
+        }
+        if (($section->archived_at !== null || ! $section->active) && ($student === null || (int) $student->section_id !== (int) $section->id)) {
+            throw ValidationException::withMessages(['section_id' => 'The selected section is unavailable for new assignments.']);
         }
 
         return $attributes;

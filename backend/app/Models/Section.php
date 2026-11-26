@@ -14,7 +14,7 @@ class Section extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean'];
+        return ['active' => 'boolean', 'archived_at' => 'datetime'];
     }
 
     public function gradeLevel(): BelongsTo

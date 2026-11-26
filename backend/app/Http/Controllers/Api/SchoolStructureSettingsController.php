@@ -8,12 +8,14 @@ use App\Models\ExamPeriod;
 use App\Models\GradeLevel;
 use App\Models\SchoolYear;
 use App\Models\Section;
+use App\Models\Student;
 use App\Models\Term;
 use App\Services\AuditLogger;
 use App\Support\CanonicalGradeLevels;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -24,10 +26,13 @@ class SchoolStructureSettingsController extends Controller
 {
     private const DATE = 'date_format:Y-m-d';
 
-    public function schoolYears(): JsonResponse
+    public function schoolYears(Request $request): JsonResponse
     {
+        $view = $request->validate(['view' => ['sometimes', Rule::in(['all', 'active', 'archived'])]])['view'] ?? 'all';
         $years = SchoolYear::query()
             ->with('terms.examPeriods')
+            ->when($view === 'active', fn ($query) => $query->whereNull('archived_at'))
+            ->when($view === 'archived', fn ($query) => $query->whereNotNull('archived_at'))
             ->orderByDesc('starts_on')
             ->orderByDesc('id')
             ->get();
@@ -75,6 +80,9 @@ class SchoolStructureSettingsController extends Controller
 
         [$year, $locked] = DB::transaction(function () use ($request, $schoolYear, $auditLogger, $validated): array {
             $year = SchoolYear::query()->lockForUpdate()->findOrFail($schoolYear->id);
+            if ($year->archived_at !== null && (array_key_exists('starts_on', $validated) || array_key_exists('ends_on', $validated))) {
+                abort(409, 'Restore this school year before editing its dates.');
+            }
             $locked = $this->datesLocked($year);
             $before = $this->schoolYearAudit($year);
             $startsOn = $validated['starts_on'] ?? $this->dateString($year->starts_on);
@@ -115,8 +123,14 @@ class SchoolStructureSettingsController extends Controller
         $year = DB::transaction(function () use ($request, $schoolYear, $auditLogger, $validated): SchoolYear {
             $years = SchoolYear::query()->lockForUpdate()->get();
             $target = $years->firstWhere('id', $schoolYear->id);
+            if ($target === null) {
+                abort(404);
+            }
             if ($target->is_current) {
                 abort(409, 'This school year is already the current school year.');
+            }
+            if ($target->archived_at !== null) {
+                abort(409, 'Restore this school year before making it current.');
             }
 
             $previous = $years->firstWhere('is_current', true);
@@ -136,6 +150,49 @@ class SchoolStructureSettingsController extends Controller
         return response()->json(['data' => $this->schoolYearData($year->load('terms.examPeriods'), $this->datesLocked($year))]);
     }
 
+    public function archiveSchoolYear(Request $request, SchoolYear $schoolYear, AuditLogger $auditLogger): JsonResponse
+    {
+        $year = DB::transaction(function () use ($request, $schoolYear, $auditLogger): SchoolYear {
+            $years = SchoolYear::query()->lockForUpdate()->get();
+            $year = $years->firstWhere('id', $schoolYear->id);
+            if ($year === null) {
+                abort(404);
+            }
+            if ($year->is_current) {
+                abort(409, 'The current school year cannot be archived. Make another year current first.');
+            }
+            if ($year->archived_at !== null) {
+                abort(409, 'This school year is already archived.');
+            }
+            $before = $this->schoolYearAudit($year);
+            $year->archived_at = now();
+            $year->save();
+            $auditLogger->record($request, 'school_year.archived', $year, $before, $this->schoolYearAudit($year));
+
+            return $year;
+        });
+
+        return response()->json(['data' => $this->schoolYearData($year->load('terms.examPeriods'), $this->datesLocked($year))]);
+    }
+
+    public function restoreSchoolYear(Request $request, SchoolYear $schoolYear, AuditLogger $auditLogger): JsonResponse
+    {
+        $year = DB::transaction(function () use ($request, $schoolYear, $auditLogger): SchoolYear {
+            $year = SchoolYear::query()->lockForUpdate()->findOrFail($schoolYear->id);
+            if ($year->archived_at === null) {
+                abort(409, 'This school year is not archived.');
+            }
+            $before = $this->schoolYearAudit($year);
+            $year->archived_at = null;
+            $year->save();
+            $auditLogger->record($request, 'school_year.restored', $year, $before, $this->schoolYearAudit($year));
+
+            return $year;
+        });
+
+        return response()->json(['data' => $this->schoolYearData($year->load('terms.examPeriods'), $this->datesLocked($year))]);
+    }
+
     public function storeTerm(Request $request, SchoolYear $schoolYear, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validate([
@@ -147,6 +204,7 @@ class SchoolStructureSettingsController extends Controller
 
         $term = DB::transaction(function () use ($request, $schoolYear, $auditLogger, $validated): Term {
             $year = SchoolYear::query()->lockForUpdate()->findOrFail($schoolYear->id);
+            $this->ensureYearIsActive($year);
             $startsOn = $validated['starts_on'] ?? null;
             $endsOn = $validated['ends_on'] ?? null;
             if ($this->datesLocked($year) && ($startsOn !== null || $endsOn !== null)) {
@@ -182,6 +240,7 @@ class SchoolStructureSettingsController extends Controller
 
         $term = DB::transaction(function () use ($request, $term, $auditLogger, $validated): Term {
             $year = SchoolYear::query()->lockForUpdate()->findOrFail($term->school_year_id);
+            $this->ensureYearIsActive($year);
             $current = Term::query()->lockForUpdate()->findOrFail($term->id);
             $before = $this->termAudit($current);
             $startsOn = array_key_exists('starts_on', $validated) ? $validated['starts_on'] : $this->dateString($current->starts_on);
@@ -222,6 +281,8 @@ class SchoolStructureSettingsController extends Controller
         ]);
 
         $examPeriod = DB::transaction(function () use ($request, $term, $auditLogger, $validated): ExamPeriod {
+            $year = SchoolYear::query()->lockForUpdate()->findOrFail($term->school_year_id);
+            $this->ensureYearIsActive($year);
             $examPeriod = new ExamPeriod;
             $examPeriod->forceFill([
                 'term_id' => $term->id,
@@ -246,6 +307,9 @@ class SchoolStructureSettingsController extends Controller
         ]);
 
         $examPeriod = DB::transaction(function () use ($request, $examPeriod, $auditLogger, $validated): ExamPeriod {
+            $term = Term::query()->findOrFail($examPeriod->term_id);
+            $year = SchoolYear::query()->lockForUpdate()->findOrFail($term->school_year_id);
+            $this->ensureYearIsActive($year);
             $current = ExamPeriod::query()->lockForUpdate()->findOrFail($examPeriod->id);
             $before = $this->examPeriodData($current);
             $startsOn = $validated['starts_on'] ?? $this->dateString($current->starts_on);
@@ -267,10 +331,17 @@ class SchoolStructureSettingsController extends Controller
         return response()->json(['data' => $this->examPeriodData($examPeriod)]);
     }
 
-    public function gradeLevels(): JsonResponse
+    public function gradeLevels(Request $request): JsonResponse
     {
+        $view = $request->validate(['section_view' => ['sometimes', Rule::in(['all', 'active', 'archived'])]])['section_view'] ?? 'all';
         CanonicalGradeLevels::ensure();
-        $grades = GradeLevel::query()->with('sections')->orderBy('sort_order')->orderBy('id')->get();
+        $grades = GradeLevel::query()->with(['sections' => function ($query) use ($view): void {
+            if ($view === 'active') {
+                $query->whereNull('archived_at');
+            } elseif ($view === 'archived') {
+                $query->whereNotNull('archived_at');
+            }
+        }])->orderBy('sort_order')->orderBy('id')->get();
 
         return response()->json(['data' => $grades->map(fn (GradeLevel $grade): array => $this->gradeLevelData($grade))->values()]);
     }
@@ -317,6 +388,9 @@ class SchoolStructureSettingsController extends Controller
 
         $section = DB::transaction(function () use ($request, $section, $auditLogger, $validated): Section {
             $current = Section::query()->lockForUpdate()->findOrFail($section->id);
+            if ($current->archived_at !== null && array_key_exists('active', $validated)) {
+                abort(409, 'Restore this section before changing its active status.');
+            }
             $before = $this->sectionAudit($current);
             if (isset($validated['name'])) {
                 $this->ensureSectionAvailable($current->grade_level_id, trim($validated['name']), $current->id);
@@ -335,6 +409,52 @@ class SchoolStructureSettingsController extends Controller
         });
 
         return response()->json(['data' => $this->sectionData($section)]);
+    }
+
+    public function archiveSection(Request $request, Section $section, AuditLogger $auditLogger): JsonResponse
+    {
+        $section = DB::transaction(function () use ($request, $section, $auditLogger): Section {
+            $current = Section::query()->lockForUpdate()->findOrFail($section->id);
+            if ($current->archived_at !== null) {
+                abort(409, 'This section is already archived.');
+            }
+            if (Student::query()->where('section_id', $current->id)->exists()) {
+                abort(409, 'Reassign students before archiving this section.');
+            }
+            $before = $this->sectionAudit($current);
+            $current->archived_at = now();
+            $current->save();
+            $auditLogger->record($request, 'section.archived', $current, $before, $this->sectionAudit($current));
+
+            return $current;
+        });
+
+        return response()->json(['data' => $this->sectionData($section)]);
+    }
+
+    public function restoreSection(Request $request, Section $section, AuditLogger $auditLogger): JsonResponse
+    {
+        $section = DB::transaction(function () use ($request, $section, $auditLogger): Section {
+            $current = Section::query()->lockForUpdate()->findOrFail($section->id);
+            if ($current->archived_at === null) {
+                abort(409, 'This section is not archived.');
+            }
+            $before = $this->sectionAudit($current);
+            $current->archived_at = null;
+            $current->save();
+            $auditLogger->record($request, 'section.restored', $current, $before, $this->sectionAudit($current));
+
+            return $current;
+        });
+
+        return response()->json(['data' => $this->sectionData($section)]);
+    }
+
+    private function ensureYearIsActive(SchoolYear $year): void
+    {
+        if ($year->archived_at !== null) {
+            abort(409, 'Restore this school year before changing its terms or exam periods.');
+        }
     }
 
     private function datesLocked(SchoolYear $year): bool
@@ -412,6 +532,7 @@ class SchoolStructureSettingsController extends Controller
             'id' => (string) $year->id,
             'label' => $year->label,
             'current' => (bool) $year->is_current,
+            'archivedAt' => $year->archived_at?->toIso8601String(),
             'startsOn' => $this->dateString($year->starts_on),
             'endsOn' => $this->dateString($year->ends_on),
             'datesLocked' => $datesLocked,
@@ -425,6 +546,7 @@ class SchoolStructureSettingsController extends Controller
         return [
             'label' => $year->label,
             'is_current' => (bool) $year->is_current,
+            'archived_at' => $year->archived_at?->toIso8601String(),
             'starts_on' => $this->dateString($year->starts_on),
             'ends_on' => $this->dateString($year->ends_on),
         ];
@@ -492,12 +614,13 @@ class SchoolStructureSettingsController extends Controller
             'gradeLevelId' => (string) $section->grade_level_id,
             'name' => $section->name,
             'active' => (bool) $section->active,
+            'archivedAt' => $section->archived_at?->toIso8601String(),
         ];
     }
 
     /** @return array<string, mixed> */
     private function sectionAudit(Section $section): array
     {
-        return ['grade_level_id' => (int) $section->grade_level_id, 'name' => $section->name, 'active' => (bool) $section->active];
+        return ['grade_level_id' => (int) $section->grade_level_id, 'name' => $section->name, 'active' => (bool) $section->active, 'archived_at' => $section->archived_at?->toIso8601String()];
     }
 }

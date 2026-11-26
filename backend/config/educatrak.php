@@ -13,7 +13,7 @@ return [
     ],
 
     /*
-     * Local MySQL backups (SRS v3.0). The destination must be outside the web root and must already
+     * Local MySQL/MariaDB backups (SRS v3.0). The destination must be outside the web root and must already
      * exist; it is never created or exposed by the API. Time is Asia/Manila.
      */
     'backup' => [

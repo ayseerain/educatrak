@@ -95,6 +95,10 @@ Route::middleware('web')->group(function (): void {
                 ->middleware('capability:settings.system.manage');
             Route::post('/settings/school-years/{schoolYear}/make-current', [SchoolStructureSettingsController::class, 'makeCurrent'])
                 ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/archive', [SchoolStructureSettingsController::class, 'archiveSchoolYear'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/school-years/{schoolYear}/restore', [SchoolStructureSettingsController::class, 'restoreSchoolYear'])
+                ->middleware('capability:settings.system.manage');
             Route::post('/settings/school-years/{schoolYear}/terms', [SchoolStructureSettingsController::class, 'storeTerm'])
                 ->middleware('capability:settings.system.manage');
             Route::patch('/settings/terms/{term}', [SchoolStructureSettingsController::class, 'updateTerm'])
@@ -112,6 +116,10 @@ Route::middleware('web')->group(function (): void {
             Route::post('/settings/grade-levels/{gradeLevel}/sections', [SchoolStructureSettingsController::class, 'storeSection'])
                 ->middleware('capability:settings.system.manage');
             Route::patch('/settings/sections/{section}', [SchoolStructureSettingsController::class, 'updateSection'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/sections/{section}/archive', [SchoolStructureSettingsController::class, 'archiveSection'])
+                ->middleware('capability:settings.system.manage');
+            Route::post('/settings/sections/{section}/restore', [SchoolStructureSettingsController::class, 'restoreSection'])
                 ->middleware('capability:settings.system.manage');
             Route::get('/reports/daily', [DailyReportController::class, 'show'])
                 ->middleware('capability:reports.view');

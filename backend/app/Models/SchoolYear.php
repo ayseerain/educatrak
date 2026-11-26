@@ -16,6 +16,7 @@ class SchoolYear extends Model
     {
         return [
             'is_current' => 'boolean',
+            'archived_at' => 'datetime',
         ];
     }
 
