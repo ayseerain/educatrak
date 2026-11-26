@@ -12,7 +12,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * One local MySQL backup path shared by the daily schedule and the Administrator's manual request
+ * One local MySQL/MariaDB backup path shared by the daily schedule and the Administrator's manual request
  * (SRS v3.0, owner decision 2026-11-23). Writes a temporary file, checks it, then renames it.
  * Never exposes credentials, absolute paths, or raw tool output in history or audit records.
  */
@@ -80,18 +80,17 @@ class DatabaseBackupService
             $finalPath = $destination.DIRECTORY_SEPARATOR.$fileName;
             $temporaryPath = $finalPath.'.partial';
             $credentialsPath = $this->writeCredentialsFile($connection);
+            $dumpTool = (string) config('educatrak.backup.mysqldump_path');
 
             $result = Process::timeout($timeout)->run([
-                (string) config('educatrak.backup.mysqldump_path'),
+                $dumpTool,
                 '--defaults-extra-file='.$credentialsPath,
                 '--single-transaction',
                 '--routines',
                 '--triggers',
                 '--hex-blob',
                 '--no-tablespaces',
-                // MySQL only (MariaDB's mysqldump rejects it): leave GTID/binlog statements out so a
-                // database-level account can restore the file into a separate database.
-                ...($connection['driver'] === 'mysql' ? ['--set-gtid-purged=OFF'] : []),
+                ...$this->gtidOptions($dumpTool),
                 '--result-file='.$temporaryPath,
                 (string) $connection['database'],
             ]);
@@ -127,6 +126,25 @@ class DatabaseBackupService
         }
     }
 
+    /** MariaDB's dump tool can be named mysqldump even when Laravel uses the mysql driver. */
+    private function gtidOptions(string $dumpTool): array
+    {
+        $version = Process::timeout(10)->run([$dumpTool, '--version']);
+        if ($version->failed()) {
+            throw new RuntimeException('The backup tool version could not be checked.');
+        }
+
+        $identity = strtolower($version->output().' '.$version->errorOutput());
+        if (str_contains($identity, 'mariadb')) {
+            return [];
+        }
+        if (str_contains($identity, 'mysql')) {
+            return ['--set-gtid-purged=OFF'];
+        }
+
+        throw new RuntimeException('The backup tool is not a supported MySQL or MariaDB dump executable.');
+    }
+
     private function destination(): string
     {
         $configured = (string) config('educatrak.backup.destination');
@@ -150,7 +168,7 @@ class DatabaseBackupService
     {
         $connection = config('database.connections.'.config('educatrak.backup.connection'));
         if (! is_array($connection) || ! in_array($connection['driver'] ?? null, ['mysql', 'mariadb'], true) || blank($connection['database'] ?? null)) {
-            throw new RuntimeException('Backups require a configured MySQL database connection.');
+            throw new RuntimeException('Backups require a configured MySQL or MariaDB database connection.');
         }
 
         return $connection;

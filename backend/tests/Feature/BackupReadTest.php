@@ -88,6 +88,18 @@ class BackupReadTest extends TestCase
         $this->assertDatabaseHas('audit_entries', ['action' => 'backup.succeeded', 'user_id' => $administrator->id]);
     }
 
+    public function test_mariadb_dump_omits_mysql_only_gtid_option_even_with_mysql_laravel_driver(): void
+    {
+        $this->fakeDump("-- MariaDB dump\nCREATE TABLE fictional (id int);\n-- Dump completed on 2026-11-26\n", 'mariadb-dump  Ver 10.19 Distrib 10.11.19-MariaDB');
+
+        $this->artisan('educatrak:backup-database')->assertSuccessful();
+
+        Process::assertRan(fn (PendingProcess $process): bool => collect((array) $process->command)
+            ->contains(fn (string $argument): bool => str_starts_with($argument, '--result-file='))
+            && ! in_array('--set-gtid-purged=OFF', (array) $process->command, true));
+        $this->assertDatabaseHas('backup_records', ['result' => 'succeeded']);
+    }
+
     public function test_unconfigured_executor_is_reported_and_manual_run_is_refused_without_running(): void
     {
         Process::fake();
@@ -134,7 +146,9 @@ class BackupReadTest extends TestCase
 
     public function test_privilege_failure_gets_a_fixed_hint_without_raw_tool_output(): void
     {
-        Process::fake(fn () => Process::result('', "mysqldump: Couldn't execute 'FLUSH TABLES': Access denied; you need the RELOAD or FLUSH_TABLES privilege for user 'edtk_app'@'127.0.0.1' (1227)", 2));
+        Process::fake(fn (PendingProcess $process) => in_array('--version', (array) $process->command, true)
+            ? Process::result('mysqldump  Ver 8.4 Distrib MySQL Community Server')
+            : Process::result('', "mysqldump: Couldn't execute 'FLUSH TABLES': Access denied; you need the RELOAD or FLUSH_TABLES privilege for user 'edtk_app'@'127.0.0.1' (1227)", 2));
 
         $this->artisan('educatrak:backup-database')->assertFailed();
 
@@ -178,9 +192,12 @@ class BackupReadTest extends TestCase
         $this->assertSame(12, $dated->map(fn (string $name): string => substr($name, 10, 6))->unique()->count());
     }
 
-    private function fakeDump(string $contents): void
+    private function fakeDump(string $contents, string $version = 'mysqldump  Ver 8.4 Distrib MySQL Community Server'): void
     {
-        Process::fake(function (PendingProcess $process) use ($contents) {
+        Process::fake(function (PendingProcess $process) use ($contents, $version) {
+            if (in_array('--version', (array) $process->command, true)) {
+                return Process::result($version);
+            }
             foreach ((array) $process->command as $argument) {
                 if (str_starts_with($argument, '--result-file=')) {
                     file_put_contents(substr($argument, strlen('--result-file=')), $contents);
