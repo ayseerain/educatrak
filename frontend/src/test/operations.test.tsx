@@ -323,7 +323,7 @@ describe("operational page navigation", () => {
     expect(within(administratorRow).getAllByRole("cell")[3]).toHaveClass("text-center");
   });
 
-  it("shows all mock accounts permitted to the signed-in administrator and centers Actions", () => {
+  it("shows all mock accounts permitted to the signed-in administrator and start-aligns expanding actions", () => {
     const administratorUsers = render(<MemoryRouter><UsersPage user={administrator} /></MemoryRouter>);
 
     expect(screen.getAllByRole("row")).toHaveLength(6);
@@ -331,8 +331,8 @@ describe("operational page navigation", () => {
     expect(screen.getByText("Arden Auditor (sample)")).toBeInTheDocument();
     expect(screen.getByText("Riley Registrar (sample)")).toBeInTheDocument();
     expect(screen.queryByText("Morgan Super Admin (sample)")).not.toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Actions" })).toHaveClass("text-center");
-    expect(within(screen.getByRole("row", { name: /Alex Administrator \(sample\)/ })).getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-center");
+    expect(screen.getByRole("columnheader", { name: "Actions" })).not.toHaveClass("text-center");
+    expect(within(screen.getByRole("row", { name: /Alex Administrator \(sample\)/ })).getByRole("button", { name: "Edit" }).parentElement).toHaveClass("justify-start");
     administratorUsers.unmount();
 
     render(<MemoryRouter><UsersPage user={superAdmin} /></MemoryRouter>);
@@ -359,14 +359,19 @@ describe("operational page navigation", () => {
     expect(screen.getByRole("cell", { name: "sample.cashier: Inactive -> Active" })).toBeInTheDocument();
   });
 
-  it("aligns status heading and values on configuration pages", () => {
+  it("aligns the shared configuration-list status column without assuming it is the only Status table", () => {
     for (const section of ["fees", "plans", "school", "receipt", "email"] as const) {
       const { unmount } = render(<MemoryRouter><SettingsPage section={section} editable /></MemoryRouter>);
 
-      const statusHeader = screen.getByRole("columnheader", { name: "Status" });
+      const statusHeader = screen.getAllByRole("columnheader", { name: "Status" }).find((header) => header.classList.contains("text-center"));
+      expect(statusHeader).toBeDefined();
+      if (!statusHeader) throw new Error("Expected a centered Status header in the shared configuration list.");
       expect(statusHeader).toHaveClass("text-center");
-      const statusIndex = screen.getAllByRole("columnheader").indexOf(statusHeader);
-      const dataRows = screen.getAllByRole("row").slice(1);
+      const table = statusHeader.closest("table");
+      expect(table).not.toBeNull();
+      if (!table) throw new Error("Expected the Status header to belong to a table.");
+      const statusIndex = within(table).getAllByRole("columnheader").indexOf(statusHeader);
+      const dataRows = within(table).getAllByRole("row").slice(1);
       expect(dataRows.length).toBeGreaterThan(0);
       expect(dataRows.every((row) => {
         const cells = within(row).getAllByRole("cell");
@@ -453,25 +458,24 @@ describe("operational page navigation", () => {
     await act(async () => { loadMockSnapshot(before); });
   });
 
-  it("makes a grade registered in School Settings available to the fee-item dropdown", async () => {
-    const before = mockSnapshot();
+  it("keeps School Settings grades predefined and exposes the canonical K–12 list to fee items", async () => {
     const user = userEvent.setup();
     const school = render(<MemoryRouter><SettingsPage section="school" editable /></MemoryRouter>);
 
     await user.click(screen.getByRole("button", { name: "Add list item" }));
     const schoolDialog = screen.getByRole("dialog", { name: "Add list item" });
-    await user.selectOptions(within(schoolDialog).getByLabelText("List type"), "gradeLevel");
-    await user.type(within(schoolDialog).getByLabelText("Name"), "Preparatory (sample)");
-    await user.click(within(schoolDialog).getByRole("button", { name: "Add list item" }));
-    expect(screen.getByRole("cell", { name: "Preparatory (sample)" })).toBeInTheDocument();
+    expect(within(schoolDialog).getByLabelText("List type")).not.toHaveTextContent("Grade level");
+    await user.click(within(schoolDialog).getByRole("button", { name: "Cancel" }));
     school.unmount();
 
     render(<MemoryRouter><SettingsPage section="fees" editable /></MemoryRouter>);
     await user.click(screen.getByRole("button", { name: "Add fee item" }));
     await user.click(screen.getByRole("dialog", { name: "Add fee item" }).querySelector('[aria-label="Grade level"]')!);
-    expect(screen.getByRole("menuitemradio", { name: "Preparatory (sample)" })).toBeInTheDocument();
+    expect(screen.getAllByRole("menuitemradio").map((option) => option.textContent)).toEqual([
+      "Select grade level", "All grades", "Kinder", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6",
+      "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    ]);
     await user.keyboard("{Escape}");
-    await act(async () => { loadMockSnapshot(before); });
   });
 
   it("filters user administration rows by name or username", async () => {

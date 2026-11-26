@@ -3561,3 +3561,19 @@ Validation update: Sunday, October 25, 2026 — 14:42:56 Asia/Manila. Frontend T
 - **Files:** Updated `frontend/src/features/operations/LivePaymentsPage.tsx`, `frontend/src/test/livePayments.test.tsx`, `EducatraK-Knowledge-Base/10-Quality-Audits/Per-Role-Audit-Report.md`, and `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`.
 - **Validation:** `frontend/npx vitest run --silent src/test/livePayments.test.tsx` passed (9 tests). The immediately preceding production build passed with only Vite's existing >500 kB chunk warning.
 - **Follow-ups:** Notification delivery remains policy/configuration-blocked (CSH-07); this UI change only exposes recorded statuses.
+
+### Thursday, November 26, 2026 — 14:24:59 +08:00 | Final per-role audit verification (Phase 4)
+
+- **Agent:** Codex
+- **Summary:** Reverified all 33 audit IDs against the current worktree, approved decisions, and regression evidence. Reconciled the three remaining `operations.test.tsx` failures without changing product behavior: actions are intentionally start-aligned under the shared expanding-action rule; the Status assertion now scopes its target table; and the obsolete mutable-grade fixture now verifies the approved predefined Kinder–Grade 12 model. The formal audit now marks 23 items verified, 7 blocked by policy/environment/contract, and 3 runtime-unverified.
+- **Files:** Updated `frontend/src/test/operations.test.tsx`, `EducatraK-Knowledge-Base/10-Quality-Audits/Per-Role-Audit-Report.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog. No backend application, migration, database, role, or financial-rule file changed in Phase 4.
+- **Validation:** `frontend/npx vitest run --silent src/test/operations.test.tsx` passed (65 tests). Full `frontend/npm run test -- --run --silent` passed (44 files, 297 tests). `frontend/npm run build` passed; Vite retained its existing >500 kB chunk-size warning. Explicit PHP 8.4.28 `backend/artisan test` passed (225 tests, 2 skipped, 2,040 assertions). `git diff --check` passed. Browser verification remained unavailable: ports 8000/3306 were closed and no Playwright/browser runner is installed; no migration or runtime database was created.
+- **Follow-ups:** Require deployment-owner-supplied sanitized backup SQLSTATE plus matching disposable MySQL, project-owner archive/delivery/report-contract decisions, and an approved fictional authenticated browser environment for responsive/date/print runtime acceptance.
+
+### Thursday, November 26, 2026 — 15:11:43 +08:00 | Phase 5A isolated browser environment readiness
+
+- **Agent:** Codex
+- **Summary:** Inspected the PHP/Composer/Node toolchain, current live frontend/backend configuration without revealing credentials, local listener state, PHPUnit SQLite support, and fictional demo seeders. Prepared a precise disposable SQLite browser setup and cleanup proposal. No database was created, migrated, seeded, or connected; no servers or browser verification were run.
+- **Files:** Updated `EducatraK-Knowledge-Base/10-Quality-Audits/Per-Role-Audit-Report.md`, `EducatraK-Knowledge-Base/08-Logs/Agent Sessions/Issues-and-TODOs.md`, and this changelog. No application or environment configuration file changed.
+- **Validation:** PHP 8.4.28 reports `pdo_sqlite`, `sqlite3`, and `pdo_mysql`; Composer 2.11.2, Node 26.13.1, npm 11.20.0, Laravel vendor autoload, and frontend Vite dependencies are present. Ports 8000/3306/5173 were not listening. The proposed disposable target folder and file did not exist. Documentation diff validation pending final check.
+- **Follow-ups:** Explicit owner approval is required before creating/migrating/seeding the named disposable SQLite file. Browser verification for ADM-02, ADM-03, and ACC-10 remains unverified; backup SQLSTATE still needs separate matching disposable MySQL evidence.

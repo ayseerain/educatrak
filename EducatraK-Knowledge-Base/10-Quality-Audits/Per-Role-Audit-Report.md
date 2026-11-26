@@ -236,3 +236,107 @@ Frontend-only implementation and focused synthetic-data tests were completed. No
 - Focused Vitest suite for the changed dashboard-adjacent, school, finance, student, payment, void, notification, and import screens: **56 passed**.
 - Full Vitest: **294 passed, 3 failed**. The remaining failures are the previously tracked unrelated MockDB assertions in `operations.test.tsx` (Actions alignment, repeated Status-header query, and obsolete mutable-grade fixture).
 - `npm run build`: **passed** after the implementation (existing chunk-size warning only).
+
+## Phase 4 final per-role verification — Thursday, November 26, 2026 — 14:20:44 +08:00
+
+Phase 4 re-ran the completed frontend and backend evidence using the current worktree. The former `operations.test.tsx` failures were evaluated against the approved compact-action and canonical-grade requirements, then replaced with stronger assertions of the current behavior: action groups are intentionally start-aligned while labels expand; configuration-list status assertions are scoped to their table; and the fee editor offers only the predefined Kinder–Grade 12 set. No application behavior, API contract, permission, migration, financial rule, or real record changed for this test reconciliation.
+
+| ID | Final status | Verification evidence / remaining condition |
+| --- | --- | --- |
+| SA-01 | **Verified** | PHP 8.4.28 dashboard feature/full-suite coverage and frontend dashboard suite confirm the role-safe staff aggregate. |
+| SA-02 | **Verified** | PHP role-scoped activity projection coverage and frontend dashboard rendering pass. |
+| SA-03 | **Blocked — environment** | `127.0.0.1:3306` is unavailable; no sanitized `SQLSTATE[42S22]` or matching disposable MySQL schema exists. |
+| ADM-01 | **Verified** | Role-safe dashboard configuration/activity fields pass PHP and frontend dashboard coverage. |
+| ADM-02 | **Unverified — browser runtime** | No authenticated browser runner or live backend is available for representative viewport interaction. |
+| ADM-03 | **Unverified — browser/runtime** | Controlled date/request tests exist, but a live authenticated date-selection request cannot be made without the safe backend environment. |
+| ADM-04 | **Verified** | `liveSchoolStructure.test.tsx` verifies school-year pagination behavior. |
+| ADM-05 | **Blocked — policy/backend** | Durable archive/restore, correction, dependency, and term semantics remain undecided. |
+| ADM-06 | **Verified** | Focused school-structure coverage verifies one selected grade on the same page. |
+| ADM-07 | **Blocked — policy/backend** | Section archive/restore semantics and student-assignment effects are not approved. |
+| ADM-08 | **Blocked — policy/backend** | No approved persisted archived-section view exists. |
+| ADM-09 | **Blocked — environment** | Same missing SQLSTATE/schema evidence as SA-03. |
+| CSH-01 | **Verified** | Student status badge coverage passes. |
+| CSH-02 | **Verified** | Student LRN/name presentation coverage passes. |
+| CSH-03 | **Verified** | Billing-account shared status-badge coverage passes. |
+| CSH-04 | **Verified** | Isolated PHP fictional-data diagnostic verifies account scoping and payment/adjustment totals. |
+| CSH-05 | **Verified** | Payment-detail audit label rendering coverage passes. |
+| CSH-06 | **Verified** | Payment-detail tests confirm existing per-channel notification status presentation. |
+| CSH-07 | **Blocked — policy/configuration** | Delivery remains intentionally gated; no provider/configuration authorization exists. |
+| CSH-08 | **Verified** | Notification workspace tests retain the two subviews and routes under the approved top-level name. |
+| CSH-09 | **Verified** | Ledger-import tests and UI labels retain the Import title without rule changes. |
+| CSH-10 | **Verified** | Ledger-import suite confirms approved cutover and storage-only safeguards remain intact. |
+| ACC-01 | **Verified** | Isolated PHP diagnostic and dashboard/frontend tests confirm the established Manila trend contract. |
+| ACC-02 | **Verified** | Payments naming is covered by operations/frontend tests. |
+| ACC-03 | **Verified** | Finance-settings tests verify selected-grade schedule presentation. |
+| ACC-04 | **Verified** | Finance-settings status presentation tests pass. |
+| ACC-05 | **Verified** | Destructive fee action presentation and existing safeguards remain covered. |
+| ACC-06 | **Verified** | Void decision dialog workflow passes focused coverage. |
+| ACC-07 | **Verified** | Pending/history tab separation and history presentation pass focused coverage. |
+| ACC-08 | **Verified** | Read-only Accounting School Settings behavior passes focused coverage. |
+| ACC-09 | **Blocked — report contract** | Daily report behavior is verified; no approved broader KPI/monthly API contract or fictional expected case exists. |
+| ACC-10 | **Unverified — print runtime** | Component/print-path tests pass, but no browser print preview against a fictional multi-page live report was possible. |
+| AUD-01 | **Verified** | PHP role-safe audit projection and frontend dashboard coverage pass. |
+
+### Phase 4 validation
+
+- `frontend/npx vitest run --silent src/test/operations.test.tsx`: **65 passed**.
+- Full `frontend/npm run test -- --run --silent`: **44 files, 297 tests passed**.
+- `frontend/npm run build`: **passed**; Vite retained its existing >500 kB chunk-size warning.
+- Explicit PHP 8.4.28 `backend/artisan test`: **225 passed, 2 skipped, 2,040 assertions**.
+- `git diff --check`: **passed**.
+- Authenticated browser verification: **unavailable**. `frontend/.env` targets `http://127.0.0.1:8000`; TCP ports 8000 and 3306 were both closed, the repository has no installed Playwright/browser runner, and creating a migrated runtime database is outside this phase's no-migration boundary.
+
+### Blocker disposition and next action
+
+| Issues | Current blocker | Required owner/environment input | Safe eventual resolution |
+| --- | --- | --- | --- |
+| SA-03, ADM-09 | Backup SQLSTATE is not reproducible. | Sanitized `42S22` message/column and approved matching disposable MySQL access. | Diagnose schema/query mismatch first; only then propose a focused backend or migration correction. |
+| ADM-05, ADM-07, ADM-08 | Archive intent lacks durable lifecycle details. | Archive state, restore/correction, dependencies, current-year and term behavior, and student-assignment rules. | Add the smallest persisted backend/frontend archive workflow only after approval. |
+| CSH-07 | Delivery deliberately remains disabled. | Owner/configuration approval and non-production provider evidence. | Verify guarded delivery end-to-end without bypassing policy. |
+| ACC-09 | Broader report KPI/monthly expectation is unspecified. | Approved response contract and deterministic fictional expected cases. | Add or change only the contracted reporting API/client behavior. |
+| ADM-02, ADM-03, ACC-10 | No safe authenticated browser environment. | Disposable backend with fictional accounts plus browser runner. | Test desktop/mobile action layout, date payload/retention, and multi-page print preview before classifying verified. |
+
+## Phase 5A isolated runtime readiness — Thursday, November 26, 2026 — 15:10:56 +08:00
+
+This is a read-only readiness check and proposed setup. No database, migration, seed, server, browser session, or real record was created or changed. ADM-02, ADM-03, and ACC-10 remain runtime-unverified.
+
+| Check | Observed result |
+| --- | --- |
+| Runtime | Explicit WinGet PHP `C:\Users\ibasc\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.4_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe` is 8.4.28 with `pdo_sqlite`, `sqlite3`, and `pdo_mysql`. Composer 2.11.2 is installed, but its default PHP is XAMPP 8.3.37; use the explicit PHP for Artisan. |
+| Dependencies | `backend/vendor/autoload.php` and `frontend/node_modules/vite` exist; Node 26.13.1 and npm 11.20.0 are installed. |
+| Existing configuration | `frontend/.env` selects live mode and `http://127.0.0.1:8000`; `backend/.env` selects MySQL port 3306. No Laravel config cache exists. TCP ports 8000, 3306 and 5173 were closed during this check. The configured MySQL connection therefore has no listener; credentials were not inspected or displayed. |
+| Isolated storage | PHPUnit already runs migrations against SQLite `:memory:` and the PHP 8.4 suite passed in Phase 4. A persistent, distinct SQLite file is suitable for the browser routes; the production MySQL backup `42S22` incident still requires a matching disposable MySQL instance. |
+| Fictional accounts | `DatabaseSeeder` calls `DemoDataSeeder`, which creates `sample.admin`, `sample.accounting`, and other fictional role users plus three fictional billing accounts. Its sample password is defined in source and must be used only against the disposable database. Three accounts do not establish a multi-page outstanding print case; additional fictional factory records are required for that scenario after approval. |
+
+### Proposed disposable setup — awaiting explicit approval
+
+Target only `C:\Users\ibasc\AppData\Local\Temp\educatrak-phase5a-browser\browser.sqlite`. The folder and file did not exist during inspection. Before creating them, resolve and recheck this exact path and ensure it is not an existing database. Run all backend commands from `D:\ibasc\Desktop\PROJECTS\educatrak\backend` in one dedicated PowerShell session. These commands are **proposed, not executed**:
+
+```powershell
+$testDir = 'C:\Users\ibasc\AppData\Local\Temp\educatrak-phase5a-browser'
+$testDb = Join-Path $testDir 'browser.sqlite'
+if (Test-Path -LiteralPath $testDir) { throw 'Disposable target already exists; inspect before proceeding.' }
+New-Item -ItemType Directory -Path $testDir | Out-Null
+New-Item -ItemType File -Path $testDb | Out-Null
+$php84 = 'C:\Users\ibasc\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.4_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe'
+$env:APP_ENV = 'local'
+$env:APP_DEBUG = 'false'
+$env:APP_KEY = 'base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$env:APP_URL = 'http://127.0.0.1:8000'
+$env:DB_CONNECTION = 'sqlite'
+$env:DB_DATABASE = $testDb
+$env:DB_URL = ''
+$env:SESSION_DRIVER = 'database'
+$env:CACHE_STORE = 'database'
+$env:QUEUE_CONNECTION = 'sync'
+$env:MAIL_MAILER = 'array'
+& $php84 artisan migrate --force --no-interaction
+& $php84 artisan db:seed --class=DemoDataSeeder --force --no-interaction
+& $php84 artisan serve --host=127.0.0.1 --port=8000 --no-interaction
+```
+
+The separate frontend process may use the existing `frontend/.env`: run `npm run dev -- --host 127.0.0.1 --port 5173` from `frontend/`. Confirm the backend `/up` health route, fetch Sanctum CSRF cookie, sign in using a fictional seeder account, and verify role-limited API responses before exercising the audit screens. Do not use an existing database or real credentials. If extra print rows are needed, add only fictional accounts to this isolated file, using existing factories or approved application actions.
+
+After testing, stop both servers and all processes holding the disposable SQLite file. Verify `$testDir` resolves to the exact folder above and contains only the test database plus its SQLite sidecar files; remove that folder with PowerShell `Remove-Item -LiteralPath $testDir -Recurse` only after this check. Keep the existing `backend/.env`, `frontend/.env`, and development MySQL database unchanged. A browser automation package is not installed in the frontend; use a manual authenticated browser checklist or obtain separate approval for an installation.
+
+The manual checklist is: ADM-02 inspect archived users and action expansion at widths 1440/1366/768/390, keyboard focus and horizontal scrolling; ADM-03 choose synthetic dates, inspect the network request body and response, refresh, and check locked-year constraints; ACC-10 print a synthetic multi-page outstanding report, compare on-screen/export/print records, school year, LRN, balances, headers, wrapping, and page breaks. None of these browser outcomes is currently verified.
