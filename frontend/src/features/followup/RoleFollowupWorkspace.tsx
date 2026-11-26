@@ -15,7 +15,7 @@ export function RoleFollowupWorkspace({ user }: { user: AuthenticatedUser }) {
 
   const workspaceSwitch = (
     <ViewTabs
-      label="Follow-up and notification workspace"
+      label="Notifications workspace"
       items={[
         { key: "followups", label: "Follow-up", selected: view === "followups", onSelect: () => selectView("followups") },
         { key: "notifications", label: "Notification log", selected: view === "notifications", onSelect: () => selectView("notifications") },
