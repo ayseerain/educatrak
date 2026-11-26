@@ -120,7 +120,8 @@ function accountsNeedingAttention() {
   return billingAccounts
     .filter(
       (account) =>
-        account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR && account.balance > 0,
+        account.schoolYear === CURRENT_MOCK_SCHOOL_YEAR && account.balance > 0 &&
+        (account.status === "Due soon" || account.status === "Overdue"),
     )
     .sort((first, second) => second.balance - first.balance)
     .map((account) => ({

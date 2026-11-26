@@ -106,6 +106,33 @@ class DailyReportTest extends TestCase
             ->assertJsonPath('message', 'No billing account exists for the current school year.');
     }
 
+    public function test_archived_year_keeps_valid_and_pending_void_collections_but_excludes_voided_payments(): void
+    {
+        $accounting = User::factory()->create(['role' => UserRole::Accounting]);
+        $cashier = User::factory()->create(['role' => UserRole::Cashier]);
+        SchoolYear::query()->forceCreate(['label' => 'SY 2027-2028', 'starts_on' => '2027-06-01', 'ends_on' => '2028-05-31', 'is_current' => true]);
+        $priorYear = SchoolYear::query()->forceCreate(['label' => 'SY 2026-2027', 'starts_on' => '2026-06-01', 'ends_on' => '2027-05-31', 'is_current' => false]);
+        $student = Student::query()->create(['lrn' => '000000009203', 'full_name' => 'Historical Sample Student', 'status' => 'enrolled']);
+        $account = BillingAccount::query()->create(['student_id' => $student->id, 'school_year_id' => $priorYear->id, 'status' => 'current', 'total_due_cents' => 20_000, 'total_paid_cents' => 18_000, 'balance_cents' => 2_000, 'created_by' => $cashier->id]);
+        $this->createPayment($account, $student, $cashier, 10_000, 'OR-SAMPLE-9201');
+        $this->createPayment($account, $student, $cashier, 5_000, 'OR-SAMPLE-9202')->forceFill(['status' => 'void_pending'])->save();
+        $this->createPayment($account, $student, $cashier, 3_000, 'OR-SAMPLE-9203')->forceFill(['status' => 'voided'])->save();
+
+        $before = $this->actingAs($accounting)->getJson('/api/reports/daily?date=2026-10-24')->assertOk();
+        $before->assertJsonPath('data.totalCents', 15_000)
+            ->assertJsonPath('data.byMethod.0.transactionCount', 2)
+            ->assertJsonPath('data.meta.totalPayments', 3);
+
+        $priorYear->forceFill(['archived_at' => now()])->save();
+        $after = $this->actingAs($accounting)->getJson('/api/reports/daily?date=2026-10-24')->assertOk();
+
+        $this->assertSame($before->json('data.totalCents'), $after->json('data.totalCents'));
+        $this->assertSame($before->json('data.byMethod'), $after->json('data.byMethod'));
+        $this->assertSame($before->json('data.meta.totalPayments'), $after->json('data.meta.totalPayments'));
+        $this->assertSame(18_000, $account->fresh()->total_paid_cents);
+        $this->assertDatabaseCount('receipts', 3);
+    }
+
     private function createPayment(BillingAccount $account, Student $student, User $cashier, int $amount, string $receiptNo): Payment
     {
         $payment = Payment::query()->create([

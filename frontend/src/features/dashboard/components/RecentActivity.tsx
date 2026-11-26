@@ -60,7 +60,7 @@ export function RecentActivity({
       accessorKey: "receiptNo",
       header: en.table.receiptNo,
       cell: ({ getValue }) => (
-        <span className="font-mono text-xs">{getValue<string>()}</span>
+        <span className="tabular-nums text-xs">{getValue<string>()}</span>
       ),
     },
     {

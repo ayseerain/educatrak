@@ -189,9 +189,9 @@ function FeeScheduleCard({ schedule, editable, onAdd, onEdit, onDeactivate, isDe
             <tbody>{pagination.items.map((item) => <tr key={item.id} className="border-b last:border-0">
               <td className="px-3 py-2">{item.name}</td>
               <td className="px-3 py-2">{formatDisplayLabel(item.category)}</td>
-              <td className="px-3 py-2 text-right font-mono">{format(centavos(item.amountCents))}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{format(centavos(item.amountCents))}</td>
               <td className="px-3 py-2">{item.required ? "Yes" : "No"}</td>
-              <td className="px-3 py-2 font-mono">{item.version}</td>
+              <td className="px-3 py-2 tabular-nums">{item.version}</td>
               <td className="px-3 py-2"><StatusBadge status={schedule.active && item.active ? "active" : "inactive"} /></td>
               {editable && <td className="px-3 py-2"><TableActionGroup>
                 <TableActionButton icon={Pencil} label="Edit" variant="secondary" disabled={!schedule.active || !item.active || isDeactivating} onClick={() => onEdit(schedule, item)} />

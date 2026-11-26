@@ -378,14 +378,15 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
     : "Not available";
   return (
     <>
-      <PageHeader
-        title="My profile"
-        description="Review your account details and change your password."
-      />
-      <div className="max-w-4xl space-y-4">
+      <div className="mx-auto w-full max-w-2xl">
+        <PageHeader
+          title="My profile"
+          description="Review your account details and change your password."
+        />
+        <div className="space-y-4">
         <Card>
           <h2 className="text-base font-semibold text-text-primary">Account details</h2>
-          <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+          <dl className="mt-3 grid gap-4 sm:grid-cols-2">
             <div><dt className="text-sm text-text-secondary">Name</dt><dd className="mt-1 font-medium">{user.name}</dd></div>
             <div><dt className="text-sm text-text-secondary">Role</dt><dd className="mt-1 font-medium">{roleLabel(user.role)}</dd></div>
             <div><dt className="text-sm text-text-secondary">Last login</dt><dd className="mt-1 font-medium">{lastLogin}</dd></div>
@@ -427,6 +428,7 @@ export function ProfilePage({ user }: { user: AuthenticatedUser }) {
             <div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => { setCurrentPassword(""); setNewPassword(""); setConfirmation(""); setError(null); }}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving ? "Updating…" : "Update password"}</Button></div>
           </form>
         </Card>
+        </div>
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -210,6 +210,12 @@ describe("DashboardPage", () => {
     expect(await screen.findByText(/accounts needing attention/i)).toBeInTheDocument();
     const summary = await mockAdapter.fetchDashboardSummary(cashier, "today");
     if (summary.role !== "cashier") throw new Error("Cashier dashboard summary expected");
+    expect(summary.accountsNeedingAttention.every((account) => account.severity === "warning" || account.severity === "error")).toBe(true);
+    const attention = document.querySelector('[aria-labelledby="accounts-needing-attention-heading"]');
+    if (!attention) throw new Error("Attention card expected");
+    const total = summary.accountStatusOverview.dueSoon + summary.accountStatusOverview.overdue;
+    expect(summary.accountsNeedingAttention).toHaveLength(total);
+    expect(within(attention as HTMLElement).getByText(`${total} due soon or overdue accounts · showing ${Math.min(2, total)}`)).toBeInTheDocument();
     for (const account of summary.accountsNeedingAttention.slice(0, 2)) {
       expect(screen.getByText(account.studentName)).toBeInTheDocument();
       expect(screen.getByText(new RegExp((account.amountDue / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", "\\.")))).toBeInTheDocument();

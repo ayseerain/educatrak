@@ -296,7 +296,7 @@ function SchoolYearCard({ year, editable, open, confirm }: { year: SchoolYear; e
             {editable && !year.archivedAt && <th scope="col" className="w-[30%] px-3 py-2">Actions</th>}
           </tr></thead>
           <tbody>{terms.map((term) => <tr key={term.id} className="border-b align-top last:border-0">
-            <td className="px-3 py-2 font-mono">{term.sequence}</td>
+            <td className="px-3 py-2 tabular-nums">{term.sequence}</td>
             <td className="px-3 py-2">{term.name}</td>
             <td className="px-3 py-2">{dateRange(term.startsOn, term.endsOn)}</td>
             <td className="px-3 py-2">{term.examPeriods.length === 0

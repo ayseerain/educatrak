@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { LiveStudentProfilePage, LiveStudentsPage } from "@/features/students/LiveStudentsPage";
@@ -55,6 +56,66 @@ describe("live Registrar student list", () => {
     expect(screen.getByRole("heading", { name: "Add student" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /LRN/i })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /mobile number/i })).toBeInTheDocument();
+  });
+
+  it("opens the live Add Student form and saves a valid student after options load", async () => {
+    const requests: Record<string, unknown>[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/student-record-options") return { ok: true, status: 200, json: async () => ({ data: { grades: [{ id: "1", name: "Grade 4", sections: [{ id: "2", name: "Orchid" }] }], statuses: ["enrolled", "inactive"] } }) };
+      if (url === "/sanctum/csrf-cookie") return { ok: true, status: 204, json: async () => ({}) };
+      if (url === "/api/students" && init?.method === "POST") {
+        requests.push(JSON.parse(String(init.body)));
+        return { ok: true, status: 201, json: async () => ({ data: { id: "sample-created" } }) };
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const user = userEvent.setup();
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/students/new"]}><Routes><Route path="/students/new" element={<LiveStudentFormPage />} /><Route path="/students/sample-created" element={<p>Saved profile</p>} /></Routes></MemoryRouter></QueryClientProvider>);
+
+    expect(await screen.findByRole("heading", { name: "Add student" })).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "LRN" }), "000000004001");
+    await user.type(screen.getByRole("textbox", { name: "Student name" }), "Avery Sample Student");
+    await user.click(screen.getByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 4" }));
+    await user.click(screen.getByRole("button", { name: "Section" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Orchid" }));
+    await user.click(screen.getByRole("button", { name: "Create student" }));
+
+    expect(await screen.findByText("Saved profile")).toBeInTheDocument();
+    expect(requests[0]).toMatchObject({ lrn: "000000004001", grade_level_id: 1, section_id: 2, status: "enrolled" });
+  });
+
+  it("shows an options error instead of waiting indefinitely", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503, headers: new Headers(), json: async () => ({ message: "Student options are unavailable." }) })));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveStudentFormPage /></MemoryRouter></QueryClientProvider>);
+
+    expect(await screen.findByText("Student options are unavailable.")).toBeInTheDocument();
+    expect(screen.queryByText("Loading student record form…")).not.toBeInTheDocument();
+  });
+
+  it("rejects an invalid LRN before sending a student record", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/student-record-options") return { ok: true, status: 200, json: async () => ({ data: { grades: [{ id: "1", name: "Grade 4", sections: [{ id: "2", name: "Orchid" }] }], statuses: ["enrolled", "inactive"] } }) };
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const user = userEvent.setup();
+    render(<QueryClientProvider client={queryClient}><MemoryRouter><LiveStudentFormPage /></MemoryRouter></QueryClientProvider>);
+
+    await screen.findByRole("heading", { name: "Add student" });
+    await user.type(screen.getByRole("textbox", { name: "LRN" }), "123");
+    await user.type(screen.getByRole("textbox", { name: "Student name" }), "Avery Sample Student");
+    await user.click(screen.getByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 4" }));
+    await user.click(screen.getByRole("button", { name: "Section" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Orchid" }));
+    await user.click(screen.getByRole("button", { name: "Create student" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("LRN must be exactly 12 digits.");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("shows the MockDB existing-student edit form when mock mode is active", () => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -175,7 +176,7 @@ export function LivePaymentEntryPage() {
               {searchQuery.data?.length === 0 && <EmptyState message="No matching students were found." />}
               {searchQuery.data && searchQuery.data.length > 0 && (
                 <ul className="mt-3 divide-y divide-border rounded-md border border-border" aria-label="Matching students">
-                  {searchQuery.data.map((student) => <li key={student.id}><button type="button" onClick={() => selectStudent(student)} className="flex min-h-control w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark"><span className="font-medium">{student.name}</span><span className="font-mono text-sm text-text-secondary">{student.number}</span></button></li>)}
+                  {searchQuery.data.map((student) => <li key={student.id}><button type="button" onClick={() => selectStudent(student)} className="flex min-h-control w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark"><span className="font-medium">{student.name}</span><span className="tabular-nums text-sm text-text-secondary">{student.number}</span></button></li>)}
                 </ul>
               )}
             </div>
@@ -217,20 +218,26 @@ export function LivePaymentEntryPage() {
                       {(["email", "sms"] as const).map((channel) => <label key={channel} className="inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={channels.includes(channel)} disabled={saveMutation.isPending} onChange={(event) => { setChannels((current) => event.target.checked ? [...current, channel] : current.filter((item) => item !== channel)); setReviewing(false); setError(""); idempotencyKey.current = null; }} />{channel === "email" ? "Email" : "SMS"}</label>)}
                     </div>
                   </fieldset>
-                  {error && <p role="alert" className="rounded-md border border-status-error p-3 text-sm text-status-error">{error}</p>}
-                  {reviewing ? (
-                    <div className="rounded-md border border-border p-4" aria-label="Payment confirmation">
-                      <h2 className="text-base font-semibold text-text-primary">Confirm cash payment</h2>
-                      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2"><div><dt className="text-text-secondary">Student</dt><dd>{context.student.name} · {context.student.number}</dd></div><div><dt className="text-text-secondary">Amount</dt><dd>{format(centavos(amountCents))}</dd></div><div><dt className="text-text-secondary">Date of payment</dt><dd>{paidOn}</dd></div><div><dt className="text-text-secondary">Balance after payment</dt><dd>{format(centavos(balanceAfter))}</dd></div><div><dt className="text-text-secondary">Method</dt><dd>Cash</dd></div>{notes.trim() && <div><dt className="text-text-secondary">Note</dt><dd>{notes.trim()}</dd></div>}</dl>
-                      <div className="mt-4 flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => setReviewing(false)}>Edit</Button><Button type="button" disabled={saveMutation.isPending} onClick={() => void savePayment()}>{saveMutation.isPending ? "Saving…" : "Confirm and save"}</Button></div>
-                    </div>
-                  ) : <Button type="submit" disabled={saveMutation.isPending}>Review payment</Button>}
+                  {error && !reviewing && <p role="alert" className="rounded-md border border-status-error p-3 text-sm text-status-error">{error}</p>}
+                  <div className="flex justify-end"><Button type="submit" disabled={saveMutation.isPending}>Review payment</Button></div>
                 </form>
               )}
             </>
           )}
         </Card>
       )}
+      <Dialog.Root open={reviewing && !saved} onOpenChange={(open) => { if (!open && !saveMutation.isPending) setReviewing(false); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-text-primary/40" />
+          <Dialog.Content aria-describedby="payment-review-description" className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-white p-6 shadow-raised">
+            <Dialog.Title className="text-lg font-semibold text-text-primary">Confirm cash payment</Dialog.Title>
+            <Dialog.Description id="payment-review-description" className="mt-1 text-sm text-text-secondary">Check these details before recording the payment.</Dialog.Description>
+            {selectedStudent && context && <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-text-secondary">Student</dt><dd className="font-medium">{context.student.name} · {context.student.number}</dd></div><div><dt className="text-text-secondary">Amount received</dt><dd className="font-semibold tabular-nums">{format(centavos(amountCents))}</dd></div><div><dt className="text-text-secondary">Date of payment</dt><dd className="font-medium">{paidOn}</dd></div><div><dt className="text-text-secondary">Balance after payment</dt><dd className="font-medium tabular-nums">{format(centavos(balanceAfter))}</dd></div><div><dt className="text-text-secondary">Method</dt><dd>Cash</dd></div><div><dt className="text-text-secondary">Receipt notification</dt><dd>{channels.map((channel) => channel === "sms" ? "SMS" : "Email").join(" and ")}</dd></div>{notes.trim() && <div className="sm:col-span-2"><dt className="text-text-secondary">Note</dt><dd className="break-words">{notes.trim()}</dd></div>}</dl>}
+            {error && <p role="alert" className="mt-4 rounded-md border border-status-error p-3 text-sm text-status-error">{error}</p>}
+            <div className="mt-5 flex flex-wrap justify-end gap-2"><Button type="button" variant="secondary" disabled={saveMutation.isPending} onClick={() => setReviewing(false)}>Cancel</Button><Button type="button" disabled={saveMutation.isPending} onClick={() => void savePayment()}>{saveMutation.isPending ? "Saving…" : "Confirm and save"}</Button></div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }

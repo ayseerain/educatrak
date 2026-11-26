@@ -158,7 +158,7 @@ function SystemSettingsDialog({ section, settings, onOpenChange }: { section: Se
               ]} onChange={(value) => update("paper_size", value)} /></span>
               <FieldError id="system-paper_size-error" messages={fieldErrors.paper_size} />
             </div>
-            <p className="text-sm text-text-secondary">Next receipt number: <span className="font-mono">{settings.nextReceiptNumber ?? NOT_SET}</span> (assigned by the system, read-only).</p>
+            <p className="text-sm text-text-secondary">Next receipt number: <span className="tabular-nums">{settings.nextReceiptNumber ?? NOT_SET}</span> (assigned by the system, read-only).</p>
           </> : <>
             {textField("email_sender_name", "Sender name", { maxLength: 120 })}
             {textField("email_sender_address", "Sender address", { type: "email", maxLength: 255 })}
@@ -211,7 +211,7 @@ export function LiveSystemSettingsPage({ section, editable }: { section: Section
         </tr></thead>
         <tbody>{displayRows(section, settings.data).map(([label, value]) => <tr key={label} className="border-b last:border-0">
           <th scope="row" className="px-3 py-2 font-medium text-text-primary">{label}</th>
-          <td className={value === NOT_SET ? "px-3 py-2 text-text-secondary" : label === "Next receipt number" ? "px-3 py-2 font-mono" : "px-3 py-2 whitespace-pre-line"}>{value}</td>
+          <td className={value === NOT_SET ? "px-3 py-2 text-text-secondary" : label === "Next receipt number" ? "px-3 py-2 tabular-nums" : "px-3 py-2 whitespace-pre-line"}>{value}</td>
         </tr>)}</tbody>
       </table>
     </Card>}

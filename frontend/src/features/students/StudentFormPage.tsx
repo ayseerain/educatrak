@@ -46,8 +46,8 @@ export function StudentFormPage({ edit = false }: { edit?: boolean }) {
     setGuardianMobile(guardian?.mobile ?? "");
   }, [current.data, options.data]);
 
-  if (options.isPending || current.isPending) return <LoadingState message="Loading student record form…" layout="detail" />;
-  if (options.isError || current.isError) return <ErrorState message={(options.error ?? current.error)?.message ?? "Student record form could not be loaded."} onRetry={() => { void options.refetch(); void current.refetch(); }} />;
+  if (options.isPending || (edit && current.isPending)) return <LoadingState message="Loading student record form…" layout="detail" />;
+  if (options.isError || (edit && current.isError)) return <ErrorState message={(options.error ?? current.error)?.message ?? "Student record form could not be loaded."} onRetry={() => { void options.refetch(); if (edit) void current.refetch(); }} />;
   if (edit && !current.data) return <EmptyState message="The requested student record is not available." />;
 
   const grade = options.data.grades.find((item) => item.id === gradeLevelId);
@@ -56,6 +56,14 @@ export function StudentFormPage({ edit = false }: { edit?: boolean }) {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!/^\d{12}$/.test(lrn)) {
+      setError("LRN must be exactly 12 digits.");
+      return;
+    }
+    if (!gradeLevelId || !sectionId) {
+      setError("Select a grade level and section before saving.");
+      return;
+    }
     void save(false);
   }
 

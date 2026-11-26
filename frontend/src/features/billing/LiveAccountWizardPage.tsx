@@ -42,7 +42,7 @@ function StudentPicker({ selected, onSelect }: { selected: PaymentStudent | null
 
   if (selected) {
     return <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-brand-green-light bg-status-success/5 p-4 text-sm">
-      <p role="status"><span className="font-medium">{selected.name}</span> · LRN <span className="font-mono">{selected.number}</span>{selected.grade ? ` · ${selected.grade}` : " · no grade level"}{selected.section ? ` ${selected.section}` : ""}</p>
+      <p role="status"><span className="font-medium">{selected.name}</span> · LRN <span className="tabular-nums">{selected.number}</span>{selected.grade ? ` · ${selected.grade}` : " · no grade level"}{selected.section ? ` ${selected.section}` : ""}</p>
       <Button type="button" size="sm" variant="secondary" onClick={() => { onSelect(null); setSearch(""); }}>Change student</Button>
     </div>;
   }
@@ -57,14 +57,14 @@ function StudentPicker({ selected, onSelect }: { selected: PaymentStudent | null
     {results.data && results.data.length > 0 && <ul aria-label="Matching students" className="mt-2 divide-y divide-border overflow-hidden rounded-md border border-border bg-white shadow-raised">
       {results.data.map((student) => <li key={student.id}><button type="button" onClick={() => onSelect(student)} className="flex min-h-control w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-green-dark">
         <span className="font-medium">{student.name}</span>
-        <span className="text-sm text-text-secondary"><span className="font-mono">{student.number}</span>{student.grade ? ` · ${student.grade}` : ""}{student.section ? ` ${student.section}` : ""}</span>
+        <span className="text-sm text-text-secondary"><span className="tabular-nums">{student.number}</span>{student.grade ? ` · ${student.grade}` : ""}{student.section ? ` ${student.section}` : ""}</span>
       </button></li>)}
     </ul>}
   </div>;
 }
 
 function SectionHeading({ step, title }: { step: number; title: string }) {
-  return <h2 className="text-base font-semibold text-text-primary"><span className="mr-2 font-mono text-text-secondary">{step}.</span>{title}</h2>;
+  return <h2 className="text-base font-semibold text-text-primary"><span className="mr-2 tabular-nums text-text-secondary">{step}.</span>{title}</h2>;
 }
 
 export function LiveAccountWizardPage() {
@@ -158,7 +158,7 @@ export function LiveAccountWizardPage() {
                   <span>{item.name}</span>
                   <span className="text-text-secondary">{item.required ? "· required" : "· optional"}</span>
                 </label>
-                <span className={included ? "font-mono" : "font-mono text-text-secondary line-through"}>{format(centavos(item.amountCents))}</span>
+                <span className={included ? "tabular-nums" : "tabular-nums text-text-secondary line-through"}>{format(centavos(item.amountCents))}</span>
               </li>;
             })}
           </ul>
@@ -175,11 +175,11 @@ export function LiveAccountWizardPage() {
               <tbody>{current.data.installments.map((row) => <tr key={row.sequence} className="border-b last:border-0">
                 <td className="px-3 py-2">{row.label}</td>
                 <td className="px-3 py-2">{formatDate(row.dueDate)}</td>
-                <td className="px-3 py-2 text-right font-mono">{format(centavos(row.amountCents))}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{format(centavos(row.amountCents))}</td>
               </tr>)}</tbody>
               <tfoot><tr className="border-t border-border font-semibold">
                 <td className="px-3 py-2" colSpan={2}>Total due</td>
-                <td className="px-3 py-2 text-right font-mono">{format(centavos(current.data.totalDueCents))}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{format(centavos(current.data.totalDueCents))}</td>
               </tr></tfoot>
             </table>
           </div>}
@@ -191,7 +191,7 @@ export function LiveAccountWizardPage() {
         <SectionHeading step={4} title="Review and create" />
         <label className="mt-3 flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={confirmed} disabled={create.isPending} onChange={(event) => setConfirmed(event.target.checked)} />
-          <span>Create a new billing account for <span className="font-medium">{student.name}</span> in <span className="font-medium">{year.label}</span> with a total due of <span className="font-mono font-medium">{format(centavos(current.data.totalDueCents))}</span>.</span>
+          <span>Create a new billing account for <span className="font-medium">{student.name}</span> in <span className="font-medium">{year.label}</span> with a total due of <span className="tabular-nums font-medium">{format(centavos(current.data.totalDueCents))}</span>.</span>
         </label>
         {create.isError && <p role="alert" className="mt-3 text-sm text-status-error">{create.error.message}</p>}
         <div className="mt-5 flex justify-end gap-3">

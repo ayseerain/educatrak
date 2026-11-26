@@ -37,6 +37,7 @@ export function CashierDashboard({ summary, range }: CashierDashboardProps) {
         <CloseoutStatus done={summary.closeoutDone} />
         <AccountStatusOverview
           accountsNeedingAttention={summary.accountsNeedingAttention}
+          totalCount={summary.accountStatusOverview.dueSoon + summary.accountStatusOverview.overdue}
         />
       </div>
 

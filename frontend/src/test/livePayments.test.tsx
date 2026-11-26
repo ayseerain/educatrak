@@ -105,6 +105,22 @@ describe("live cashier payment entry", () => {
     expect(searchPaymentStudents).not.toHaveBeenCalled();
   });
 
+  it("reviews payment details in a modal and cancels without submitting", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByRole("searchbox", { name: "Student name or number" }), "Talia");
+    await user.click(await screen.findByRole("button", { name: /Talia Test Student/ }));
+    await screen.findByText("Current balance");
+    await user.type(screen.getByLabelText("Cash received"), "50.00");
+    await user.click(screen.getByRole("button", { name: "Review payment" }));
+    expect(screen.getByRole("dialog", { name: "Confirm cash payment" })).toHaveTextContent("Talia Test Student (sample)");
+    expect(screen.getByRole("dialog")).toHaveTextContent("50.00");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(recordCashPaymentForStudent).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Cash received")).toHaveValue(50);
+  });
+
   it("supports the next-installment shortcut, back-dating controls, duplicate reasons, and notes", async () => {
     const user = userEvent.setup();
     recordCashPaymentForStudent.mockReset();

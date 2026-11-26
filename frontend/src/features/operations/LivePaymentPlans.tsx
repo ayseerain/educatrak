@@ -224,14 +224,14 @@ function PreviewDialog({ plan, onClose }: { plan: FinancePaymentPlan; onClose: (
           <th scope="col" className="px-3 py-2 text-right">Amount</th>
         </tr></thead>
         <tbody>{preview.data.installments.map((row) => <tr key={row.sequence} className="border-b last:border-0">
-          <td className="px-3 py-2 font-mono">{row.sequence}</td>
+          <td className="px-3 py-2 tabular-nums">{row.sequence}</td>
           <td className="px-3 py-2">{row.label}</td>
           <td className="px-3 py-2">{formatDate(row.dueDate)}</td>
-          <td className="px-3 py-2 text-right font-mono">{format(centavos(row.amountCents))}</td>
+          <td className="px-3 py-2 text-right tabular-nums">{format(centavos(row.amountCents))}</td>
         </tr>)}</tbody>
         <tfoot><tr className="border-t border-border font-semibold">
           <td className="px-3 py-2" colSpan={3}>Total</td>
-          <td className="px-3 py-2 text-right font-mono">{format(centavos(preview.data.installments.reduce((sum, row) => sum + row.amountCents, 0)))}</td>
+          <td className="px-3 py-2 text-right tabular-nums">{format(centavos(preview.data.installments.reduce((sum, row) => sum + row.amountCents, 0)))}</td>
         </tr></tfoot>
       </table>
     </div>}
@@ -284,7 +284,7 @@ function PlanCard({ plan, supersededBy, editable, open }: { plan: FinancePayment
               <th scope="col" className="py-2">Share of remaining balance</th>
             </tr></thead>
             <tbody>{installments.map((installment) => <tr key={installment.sequence} className="border-b last:border-0">
-              <td className="py-2 pr-4 font-mono">{installment.sequence}</td>
+              <td className="py-2 pr-4 tabular-nums">{installment.sequence}</td>
               <td className="py-2 pr-4">{installment.label}</td>
               <td className="py-2 pr-4">{installment.dueDayOffset} days</td>
               <td className="py-2">{percentLabel(installment.percentOfRemainingBasisPoints)}</td>

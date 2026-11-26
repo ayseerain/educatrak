@@ -1,7 +1,6 @@
 import { ChevronRight, ListChecks } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardHeader } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { en } from "@/i18n/en";
@@ -11,18 +10,20 @@ import type { CashierAttentionAccount } from "@/api/dashboardTypes";
 
 interface AccountStatusOverviewProps {
   accountsNeedingAttention: CashierAttentionAccount[];
+  totalCount: number;
   className?: string;
 }
 
 const ATTENTION_ACCOUNT_LIMIT = 2;
 
-/** CLINIQ list card: header with a count, divided rows with a status badge and a plain amount. */
+/** CLINIQ list card: count and preview scope, divided rows with status and amount. */
 export function AccountStatusOverview({
   accountsNeedingAttention,
+  totalCount,
   className,
 }: AccountStatusOverviewProps) {
   const visibleAccounts = accountsNeedingAttention.slice(0, ATTENTION_ACCOUNT_LIMIT);
-  const count = visibleAccounts.length;
+  const count = totalCount;
   return (
     <Card
       className={cn("flex flex-col p-0", className)}
@@ -31,12 +32,7 @@ export function AccountStatusOverview({
       <CardHeader
         titleId="accounts-needing-attention-heading"
         icon={<ListChecks aria-hidden="true" />}
-        title={
-          <span className="flex items-center gap-2 whitespace-nowrap">
-            {en.dashboard.accountsNeedingAttention}
-            <Badge tone="neutral" label={String(count)} />
-          </span>
-        }
+        title={en.dashboard.accountsNeedingAttention}
         actions={
           <Link
             to="/followup"
@@ -47,11 +43,14 @@ export function AccountStatusOverview({
         }
       />
       {count > 0 ? (
-        <ul className="divide-y divide-border border-t border-border">
-          {visibleAccounts.map((account) => (
-            <AttentionAccountRow key={account.id} account={account} />
-          ))}
-        </ul>
+        <div className="border-t border-border">
+          <p className="px-5 py-2 text-xs text-text-secondary">{count} due soon or overdue accounts · showing {visibleAccounts.length}</p>
+          <ul className="divide-y divide-border border-t border-border">
+            {visibleAccounts.map((account) => (
+              <AttentionAccountRow key={account.id} account={account} />
+            ))}
+          </ul>
+        </div>
       ) : (
         <EmptyState message={en.dashboard.noAccountsNeedingAttention} />
       )}

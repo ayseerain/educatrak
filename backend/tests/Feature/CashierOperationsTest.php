@@ -19,6 +19,7 @@ use App\Services\AuditLogger;
 use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Mockery\MockInterface;
 use RuntimeException;
@@ -204,6 +205,67 @@ class CashierOperationsTest extends TestCase
         ]);
         Queue::assertPushed(DeliverNotification::class, 2);
         $this->assertSame(7_500, $account->fresh()->balance_cents);
+    }
+
+    public function test_email_delivery_attempts_update_only_the_notification_log(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        Queue::fake();
+        $payment = $this->recordPayment($cashier, $account, 5_000);
+        $notification = NotificationLog::query()->where('payment_id', $payment->id)->sole();
+        $paymentCount = Payment::query()->count();
+        $receiptCount = DB::table('receipts')->count();
+        $balance = $account->fresh()->balance_cents;
+
+        Mail::shouldReceive('raw')->once()->withArgs(fn (string $message): bool => str_contains($message, '50.00') && str_contains($message, 'receipt'));
+        (new DeliverNotification($notification->id))->handle();
+
+        $this->assertDatabaseHas('notification_logs', ['id' => $notification->id, 'status' => 'queued', 'attempts' => 1, 'failure_reason' => null]);
+        $this->assertSame($paymentCount, Payment::query()->count());
+        $this->assertSame($receiptCount, DB::table('receipts')->count());
+        $this->assertSame($balance, $account->fresh()->balance_cents);
+        $this->assertSame(5_000, $payment->fresh()->amount_cents);
+    }
+
+    public function test_rejected_email_delivery_marks_failure_without_changing_payment(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        Queue::fake();
+        $payment = $this->recordPayment($cashier, $account, 5_000);
+        $notification = NotificationLog::query()->where('payment_id', $payment->id)->sole();
+        $balance = $account->fresh()->balance_cents;
+
+        Mail::shouldReceive('raw')->once()->andThrow(new RuntimeException('Fictional provider rejection.'));
+        (new DeliverNotification($notification->id))->handle();
+
+        $this->assertDatabaseHas('notification_logs', [
+            'id' => $notification->id,
+            'status' => 'failed',
+            'attempts' => 1,
+            'failure_reason' => 'The EMAIL provider rejected or could not accept this notification.',
+        ]);
+        $this->assertSame(5_000, $payment->fresh()->amount_cents);
+        $this->assertSame('valid', $payment->fresh()->status);
+        $this->assertSame($balance, $account->fresh()->balance_cents);
+    }
+
+    public function test_missing_guardian_email_is_not_sent_and_payment_remains_recorded(): void
+    {
+        [$cashier, $account] = $this->createBillingContext();
+        $account->student->guardians()->firstOrFail()->forceFill(['email' => null, 'email_status' => 'missing'])->save();
+        Queue::fake();
+
+        $payment = $this->recordPayment($cashier, $account, 5_000);
+
+        $this->assertDatabaseHas('notification_logs', [
+            'payment_id' => $payment->id,
+            'channel' => 'email',
+            'status' => 'not_sent',
+            'failure_reason' => 'No guardian email is available.',
+        ]);
+        Queue::assertNotPushed(DeliverNotification::class);
+        $this->assertSame(5_000, $payment->fresh()->amount_cents);
+        $this->assertSame(15_000, $account->fresh()->balance_cents);
     }
 
     public function test_cashier_can_retry_a_failed_payment_confirmation_email(): void
