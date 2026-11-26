@@ -7,10 +7,10 @@ import { SettingsPage } from "@/features/operations/OperationalPages";
 
 const years = [
   {
-    id: "2", label: "SY sample-next", current: false, startsOn: "2027-06-01", endsOn: "2028-05-31", datesLocked: false, terms: [],
+    id: "2", label: "SY sample-next", current: false, startsOn: "2027-06-01", endsOn: "2028-05-31", datesLocked: false, archivedAt: null, terms: [],
   },
   {
-    id: "1", label: "SY sample-current", current: true, startsOn: "2026-06-01", endsOn: "2027-05-31", datesLocked: true,
+    id: "1", label: "SY sample-current", current: true, startsOn: "2026-06-01", endsOn: "2027-05-31", datesLocked: true, archivedAt: null,
     terms: [{
       id: "10", schoolYearId: "1", name: "First term (sample)", sequence: 1, startsOn: "2026-06-01", endsOn: "2026-10-31",
       examPeriods: [{ id: "100", termId: "10", name: "Midterm (sample)", startsOn: "2026-08-10", endsOn: "2026-08-14" }],
@@ -25,8 +25,8 @@ const grades = gradeNames.map((name, sortOrder) => ({
   sortOrder,
   active: true,
   sections: name === "Grade 7" ? [
-    { id: "70", gradeLevelId: "grade-7", name: "Olive (sample)", active: true },
-    { id: "71", gradeLevelId: "grade-7", name: "Maple (sample)", active: false },
+    { id: "70", gradeLevelId: "grade-7", name: "Olive (sample)", active: true, archivedAt: null },
+    { id: "71", gradeLevelId: "grade-7", name: "Maple (sample)", active: false, archivedAt: null },
   ] : [],
 }));
 
@@ -41,8 +41,8 @@ function stubApi(handler: Handler = () => undefined) {
     const handled = handler(url, options);
     if (handled) return handled;
     if (url === "/sanctum/csrf-cookie") return json(204, {});
-    if (url === "/api/settings/school-years" && !options?.method) return json(200, { data: years });
-    if (url === "/api/settings/grade-levels" && !options?.method) return json(200, { data: grades });
+    if (url === "/api/settings/school-years?view=active" && !options?.method) return json(200, { data: years });
+    if (url === "/api/settings/grade-levels?section_view=active" && !options?.method) return json(200, { data: grades });
     throw new Error(`Unexpected request: ${options?.method ?? "GET"} ${url}`);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -79,13 +79,13 @@ describe("live school structure settings", () => {
     await screen.findByRole("button", { name: "Grade level" });
     await user.click(screen.getByRole("button", { name: "Grade level" }));
     await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
-    expect(screen.getAllByText("Grade 7")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Grade level" })).toHaveTextContent("Grade 7");
     expect(screen.getByText("Maple (sample)")).toBeInTheDocument();
     expect(screen.getByText("You have read-only access to these settings.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /add|edit|make current/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /add|edit|make current|archive|restore/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/settings/school-years", expect.anything());
-    expect(fetchMock).toHaveBeenCalledWith("/api/settings/grade-levels", expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith("/api/settings/school-years?view=active", expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith("/api/settings/grade-levels?section_view=active", expect.anything());
   });
 
   it("lets an Administrator add a school year and refreshes the list", async () => {
@@ -104,7 +104,7 @@ describe("live school structure settings", () => {
     expect(writes(fetchMock)).toEqual([["/api/settings/school-years", expect.objectContaining({
       method: "POST", body: JSON.stringify({ label: "SY sample-later", starts_on: "2028-06-01", ends_on: "2029-05-31" }),
     })]]);
-    expect(fetchMock.mock.calls.filter(([url, options]) => url === "/api/settings/school-years" && !options?.method)).toHaveLength(2);
+    expect(fetchMock.mock.calls.filter(([url, options]) => url === "/api/settings/school-years?view=active" && !options?.method)).toHaveLength(2);
   });
 
   it("locks dates on a year with billing accounts and sends only the changed label", async () => {
@@ -199,6 +199,111 @@ describe("live school structure settings", () => {
     await waitFor(() => expect(writes(fetchMock)).toEqual([["/api/settings/sections/70", expect.objectContaining({
       method: "PATCH", body: JSON.stringify({ active: false }),
     })]]));
+  });
+
+  it("archives and restores a non-current year through the filtered views without changing its children", async () => {
+    const user = userEvent.setup();
+    let archived = false;
+    const fetchMock = stubApi((url, options) => {
+      if (url === "/api/settings/school-years/2/archive" && options?.method === "POST") { archived = true; return json(200, { data: { ...years[0], archivedAt: "2026-11-26T10:00:00Z" } }); }
+      if (url === "/api/settings/school-years/2/restore" && options?.method === "POST") { archived = false; return json(200, { data: years[0] }); }
+      if (url === "/api/settings/school-years?view=active") return json(200, { data: archived ? [years[1]] : years });
+      if (url === "/api/settings/school-years?view=archived") return json(200, { data: archived ? [{ ...years[0], archivedAt: "2026-11-26T10:00:00Z" }] : [] });
+      return undefined;
+    });
+    renderSchool(true);
+    expect(await screen.findByRole("heading", { name: "SY sample-current" })).toBeInTheDocument();
+    expect(screen.getByText("Current school year cannot be archived.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Archive school year SY sample-current" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Archive school year SY sample-next" }));
+    let dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/payments and historical collection totals stay unchanged/)).toBeInTheDocument();
+    expect(writes(fetchMock)).toHaveLength(0);
+    await user.click(within(dialog).getByRole("button", { name: "Archive school year" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("SY sample-next archived.");
+    await user.click(within(screen.getByRole("tablist", { name: "School year views" })).getByRole("tab", { name: "Archived" }));
+    const archivedCard = (await screen.findByRole("heading", { name: "SY sample-next" })).closest("div.overflow-x-auto") as HTMLElement;
+    expect(within(archivedCard).queryByRole("button", { name: "Add term" })).not.toBeInTheDocument();
+    expect(within(archivedCard).queryByRole("button", { name: "Make current" })).not.toBeInTheDocument();
+    await user.click(within(archivedCard).getByRole("button", { name: "Edit" }));
+    dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByLabelText(/^Start date/)).toBeDisabled();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await user.click(within(archivedCard).getByRole("button", { name: "Restore school year SY sample-next" }));
+    dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Restore school year" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(writes(fetchMock).map(([url]) => url)).toEqual(["/api/settings/school-years/2/archive", "/api/settings/school-years/2/restore"]);
+    await user.click(within(screen.getByRole("tablist", { name: "School year views" })).getByRole("tab", { name: "Active" }));
+    expect(await screen.findByRole("heading", { name: "SY sample-next" })).toBeInTheDocument();
+    expect(screen.getByText("First term (sample)")).toBeInTheDocument();
+  });
+
+  it("keeps the selected grade and inactive status across section archive views and shows assigned-student 409", async () => {
+    const user = userEvent.setup();
+    let archived = false;
+    let rejectArchive = true;
+    const fetchMock = stubApi((url, options) => {
+      if (url === "/api/settings/sections/71/archive" && options?.method === "POST") {
+        if (rejectArchive) return json(409, { message: "Reassign students before archiving this section." });
+        archived = true; return json(200, { data: { ...grades[7]!.sections[1], archivedAt: "2026-11-26T10:00:00Z" } });
+      }
+      if (url === "/api/settings/sections/71/restore" && options?.method === "POST") { archived = false; return json(200, { data: grades[7]!.sections[1] }); }
+      if (url === "/api/settings/grade-levels?section_view=active") return json(200, { data: grades.map((grade) => grade.name === "Grade 7" ? { ...grade, sections: archived ? [grade.sections[0]] : grade.sections } : grade) });
+      if (url === "/api/settings/grade-levels?section_view=archived") return json(200, { data: grades.map((grade) => ({ ...grade, sections: grade.name === "Grade 7" && archived ? [{ ...grade.sections[1], archivedAt: "2026-11-26T10:00:00Z" }] : [] })) });
+      return undefined;
+    });
+    renderSchool(true);
+    await user.click(await screen.findByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+    expect(screen.getByRole("row", { name: /Maple \(sample\)/ })).toHaveTextContent("Inactive");
+    await user.click(screen.getByRole("button", { name: "Archive section Maple (sample) in Grade 7" }));
+    let dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Archive section" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Reassign students before archiving this section.");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("row", { name: /Maple \(sample\)/ })).toHaveTextContent("Inactive");
+    rejectArchive = false;
+    await user.click(screen.getByRole("button", { name: "Archive section Maple (sample) in Grade 7" }));
+    dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Archive section" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await user.click(within(screen.getByRole("tablist", { name: "Section views" })).getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByRole("row", { name: /Maple \(sample\)/ })).toHaveTextContent("Inactive");
+    expect(screen.getByRole("button", { name: "Grade level" })).toHaveTextContent("Grade 7");
+    await user.click(screen.getByRole("button", { name: "Edit section Maple (sample) in Grade 7" }));
+    dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByLabelText(/Active \(available/)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Restore section Maple (sample) in Grade 7" }));
+    dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Restore section" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(writes(fetchMock).map(([url]) => url)).toEqual(["/api/settings/sections/71/archive", "/api/settings/sections/71/archive", "/api/settings/sections/71/restore"]);
+    await user.click(within(screen.getByRole("tablist", { name: "Section views" })).getByRole("tab", { name: "Active" }));
+    expect(await screen.findByRole("row", { name: /Maple \(sample\)/ })).toHaveTextContent("Inactive");
+  });
+
+  it("shows archived year and section history without write controls to a read-only role", async () => {
+    const user = userEvent.setup();
+    const archivedYear = { ...years[0], archivedAt: "2026-11-26T10:00:00Z", terms: years[1]!.terms };
+    const fetchMock = stubApi((url) => {
+      if (url === "/api/settings/school-years?view=archived") return json(200, { data: [archivedYear] });
+      if (url === "/api/settings/grade-levels?section_view=archived") return json(200, { data: grades.map((grade) => ({ ...grade, sections: grade.name === "Grade 7" ? [{ ...grade.sections[1], archivedAt: "2026-11-26T10:00:00Z" }] : [] })) });
+      return undefined;
+    });
+    renderSchool(false);
+    await user.click(within(screen.getByRole("tablist", { name: "School year views" })).getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByRole("heading", { name: "SY sample-next" })).toBeInTheDocument();
+    expect(screen.getByText("First term (sample)")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /archive|restore|edit/i })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Grade level" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grade 7" }));
+    await user.click(within(screen.getByRole("tablist", { name: "Section views" })).getByRole("tab", { name: "Archived" }));
+    expect(await screen.findByRole("row", { name: /Maple \(sample\)/ })).toHaveTextContent("Inactive");
+    expect(screen.queryByRole("button", { name: /archive|restore|edit/i })).not.toBeInTheDocument();
+    expect(writes(fetchMock)).toHaveLength(0);
   });
 
   it("keeps the mock school page in mock mode", () => {

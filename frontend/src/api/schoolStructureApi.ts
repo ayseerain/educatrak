@@ -27,6 +27,7 @@ export interface SchoolYear {
   endsOn: string;
   /** True once a billing account exists for the year: year and term dates can no longer change. */
   datesLocked: boolean;
+  archivedAt: string | null;
   terms: Term[];
 }
 
@@ -35,6 +36,7 @@ export interface Section {
   gradeLevelId: string;
   name: string;
   active: boolean;
+  archivedAt: string | null;
 }
 
 export interface GradeLevel {
@@ -49,21 +51,24 @@ export interface GradeLevel {
 export type StructurePayload = Record<string, string | number | boolean | null>;
 
 const id = encodeURIComponent;
+export type ArchiveView = "active" | "archived";
 
 async function send(path: string, method: "POST" | "PATCH", body: StructurePayload): Promise<void> {
   await request(path, { method, body: JSON.stringify(body) });
 }
 
-export async function listSchoolYears(): Promise<SchoolYear[]> {
-  return (await request<{ data: SchoolYear[] }>("/settings/school-years")).data;
+export async function listSchoolYears(view: ArchiveView = "active"): Promise<SchoolYear[]> {
+  return (await request<{ data: SchoolYear[] }>(`/settings/school-years?view=${view}`)).data;
 }
 
-export async function listGradeLevels(): Promise<GradeLevel[]> {
-  return (await request<{ data: GradeLevel[] }>("/settings/grade-levels")).data;
+export async function listGradeLevels(view: ArchiveView = "active"): Promise<GradeLevel[]> {
+  return (await request<{ data: GradeLevel[] }>(`/settings/grade-levels?section_view=${view}`)).data;
 }
 
 export const createSchoolYear = (body: StructurePayload) => send("/settings/school-years", "POST", body);
 export const updateSchoolYear = (yearId: string, body: StructurePayload) => send(`/settings/school-years/${id(yearId)}`, "PATCH", body);
+export const archiveSchoolYear = async (yearId: string): Promise<void> => { await request(`/settings/school-years/${id(yearId)}/archive`, { method: "POST" }); };
+export const restoreSchoolYear = async (yearId: string): Promise<void> => { await request(`/settings/school-years/${id(yearId)}/restore`, { method: "POST" }); };
 export const makeSchoolYearCurrent = (yearId: string, reason: string) => send(`/settings/school-years/${id(yearId)}/make-current`, "POST", { reason });
 export const createTerm = (yearId: string, body: StructurePayload) => send(`/settings/school-years/${id(yearId)}/terms`, "POST", body);
 export const updateTerm = (termId: string, body: StructurePayload) => send(`/settings/terms/${id(termId)}`, "PATCH", body);
@@ -71,3 +76,5 @@ export const createExamPeriod = (termId: string, body: StructurePayload) => send
 export const updateExamPeriod = (periodId: string, body: StructurePayload) => send(`/settings/exam-periods/${id(periodId)}`, "PATCH", body);
 export const createSection = (gradeId: string, body: StructurePayload) => send(`/settings/grade-levels/${id(gradeId)}/sections`, "POST", body);
 export const updateSection = (sectionId: string, body: StructurePayload) => send(`/settings/sections/${id(sectionId)}`, "PATCH", body);
+export const archiveSection = async (sectionId: string): Promise<void> => { await request(`/settings/sections/${id(sectionId)}/archive`, { method: "POST" }); };
+export const restoreSection = async (sectionId: string): Promise<void> => { await request(`/settings/sections/${id(sectionId)}/restore`, { method: "POST" }); };
